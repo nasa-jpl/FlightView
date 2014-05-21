@@ -6,7 +6,7 @@ EXE   = cuda_take
 
 SOURCES  = $(SOURCEDIR)/cuda_take.c 
 
-IDIR      = -I../include
+IDIR      = -Iinclude -IEDT_include
 
 OBJS        = $(SOURCES:.c=.o)
 
@@ -14,7 +14,8 @@ CFLAGS     = -O3
 
 NVCCFLAGS  = -arch=sm_20
 
-LFLAGS      = -lm
+LINKDIR 	= lib
+LFLAGS      = -L$(LINKDIR) -lm -lpdv
 
 
 all : cuda_take
