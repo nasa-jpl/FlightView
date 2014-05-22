@@ -9,7 +9,10 @@ SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 IDIR      = -Iinclude -IEDT_include
 
 OBJS        = $(SOURCES:.c=.o)
+OBJS		+= $(SOURCES:.cpp=.o)
+OBJS		+= $(SOURCES:.cu=.o)
 
+H_FILES = include/constant_filter.cuh
 CFLAGS     = -O3
 
 NVCCFLAGS  = -arch=sm_20
@@ -24,6 +27,9 @@ $(EXE) : $(OBJS) $(SOURCEDIR)/cuda_take.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
 
 $(SOURCEDIR)/%.o : $(SOURCEDIR)/%.c
+	$(CC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
+	
+$(SOURCEDIR)/%.o : $(SOURCEDIR)/%.cpp
 	$(CC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
 
 $(SOURCEDIR)/%.o : $(SOURCEDIR)/%.cu $(H_FILES)
