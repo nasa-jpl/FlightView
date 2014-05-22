@@ -1,4 +1,4 @@
-#include "constant_filter.h"
+#include "constant_filter.cuh"
 //#include <cuda.h>
 //#include <cuda_runtime_api.h>
 

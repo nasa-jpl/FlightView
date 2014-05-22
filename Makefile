@@ -4,7 +4,7 @@ SOURCEDIR = src
 
 EXE   = cuda_take
 
-SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.c 
+SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 
 IDIR      = -Iinclude -IEDT_include
 
