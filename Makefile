@@ -23,7 +23,7 @@ OBJS		+= $(SOURCES:%.cu=%.o)
 #OBJS = $(shell ls src/*.o)
 OBJDIR = obj
 H_FILES = include/constant_filter.cuh
-CFLAGS     = -O3
+CFLAGS     = -O2 -g
 
 NVCCFLAGS  = -arch=sm_20
 
@@ -38,6 +38,8 @@ all : cuda_take
 $(EXE) : $(objects)
 
 #	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
+#	$(CC) $(CFLAGS) $@ -c src/cuda_take.c -o   obj/cuda_take.o obj/constant_filter.o $(LFLAGS)
+
 	$(CC) $(CFLAGS) -o $@ obj/cuda_take.o obj/constant_filter.o $(LFLAGS)
 $(objects): | obj
 

@@ -11,7 +11,11 @@ void parse_args(int argc, char **argv);
 char   *progname ;
 char edt_devname[128];
 char    bmpfname[128] = "test.bmp";
+char    bmpfname_cu[128] = "test_filterd.bmp";
+
 char    rawfname[128] = "test.raw";
+char    rawfname_cu[128] = "test_filterd.raw";
+
 
 int     channel = 0;
 int     loops = 1;
@@ -126,13 +130,18 @@ int main(int argc, char **argv)
 			    recovering_timeout = FALSE;
 			    printf("\nrestarted....\n");
 			}
+		char * image_p_filterd = apply_constant_filter(image_p, width, height, 5000);
 		if (*bmpfname)
 		{	printf("writing bmp to %s\n", bmpfname);
 			dvu_write_bmp(bmpfname, image_p, width, height);
+			dvu_write_bmp(bmpfname_cu, image_p_filterd, width, height);
+
 		}
 		if (*rawfname)
 		{	printf("writing raw to %s\n", rawfname);
 			dvu_write_raw(height*width*2, image_p, rawfname);
+			dvu_write_raw(height*width*2, image_p_filterd, rawfname_cu);
+
 		}
 
 	}
