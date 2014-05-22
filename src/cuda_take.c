@@ -13,7 +13,7 @@ char    bmpfname[128] = "test.bmp";
 char    rawfname[128] = "test.raw";
 
 int     channel = 0;
-int     loops = 10;
+int     loops = 1;
 int     numbufs = 4;
 int      unit = 0;
 
