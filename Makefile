@@ -4,14 +4,24 @@ SOURCEDIR = src
 
 EXE   = cuda_take
 
-SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
+#SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
+SOURCES = cuda_take.c constant_filter.cu
+vpath %.c $(SOURCEDIR)
+vpath %.cu $(SOURCEDIR)
+vpath %.cpp $(SOURCEDIR)
+
+objects = $(patsubst %.c,obj/%.o,$(SOURCES)) 
+objects += $(patsubst %.cpp,obj/%.o,$(SOURCES)) 
+objects += $(patsubst %.cu,obj/%.o,$(SOURCES)) 
 
 IDIR      = -Iinclude -IEDT_include
 
-OBJS        = $(SOURCES:.c=.o)
-OBJS		+= $(SOURCES:.cpp=.o)
-OBJS		+= $(SOURCES:.cu=.o)
+OBJS        = $(SOURCES:%.c=%.o)
+OBJS		+= $(SOURCES:%.cpp=%.o)
+OBJS		+= $(SOURCES:%.cu=%.o)
 
+#OBJS = $(shell ls src/*.o)
+OBJDIR = obj
 H_FILES = include/constant_filter.cuh
 CFLAGS     = -O3
 
@@ -22,18 +32,28 @@ LFLAGS      = -L$(LINKDIR) -lm -lpdv
 
 
 all : cuda_take
+#	@echo $(SOURCES)
+#	@echo $(objects)
+#	@echo $(OBJS)
+$(EXE) : $(objects)
 
-$(EXE) : $(OBJS) $(SOURCEDIR)/cuda_take.o
-	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
+#	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
+	$(CC) $(CFLAGS) -o $@ obj/cuda_take.o obj/constant_filter.o $(LFLAGS)
+$(objects): | obj
 
-$(SOURCEDIR)/%.o : $(SOURCEDIR)/%.c
-	$(CC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
+obj:
+	@mkdir -p $@
 	
-$(SOURCEDIR)/%.o : $(SOURCEDIR)/%.cpp
+#what to do to build c files -> o files
+$(OBJDIR)/%.o : %.c
 	$(CC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
 
-$(SOURCEDIR)/%.o : $(SOURCEDIR)/%.cu $(H_FILES)
+#what to do to build cpp files -> o files
+$(OBJDIR)/%.o : %.cpp
 	$(CC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
 
+#What to do to build cu files -> o files
+$(OBJDIR)/%.o : %.cu $(H_FILES)
+	$(CC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
 clean:
-	rm -f $(OBJS) $(EXE)
+	rm -rf $(OBJDIR)

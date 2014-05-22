@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "edtinc.h"
+#include "constant_filter.cuh"
 
 //Really 14, but 16 will work.
 #define BYTES_PER_PIXEL 2

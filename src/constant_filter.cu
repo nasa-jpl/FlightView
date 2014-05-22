@@ -22,7 +22,6 @@ __global__ void pixel_constant_filter(u_char * pic_d, int16_t magnitude, int wid
 	pic_d[offset*BYTES_PER_PIXEL] =(u_char) current_value; //We want the LSB here
 	pic_d[offset*BYTES_PER_PIXEL] =(u_char) (current_value << 8); //We want the MSB here
 
-
 	}
 
 
@@ -49,7 +48,7 @@ u_char * apply_constant_filter(u_char * picture_in, int width, int height, int16
 	cudaMemcpy(picture_out,picture_device,pic_size,cudaMemcpyDeviceToHost);
 
 	cudaFree(picture_device);
-
+	return picture_out;
 }
 
 
