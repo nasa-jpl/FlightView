@@ -1,13 +1,17 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "edtinc.h"
 #include "constant_filter.cuh"
+#include "dark_subtraction_filter.cuh"
 
 //Really 14, but 16 will work.
 #define BYTES_PER_PIXEL 2
 
 static void usage(char *progname, char *errmsg);
 void parse_args(int argc, char **argv);
+size_t load_mask(char * mask_file_name, u_char * mask_ptr);
 char   *progname ;
 char edt_devname[128];
 char    bmpfname[128] = "test.bmp";
@@ -98,14 +102,14 @@ int main(int argc, char **argv)
 		// fflush(stdout);
 		image_p = pdv_wait_image(pdv_p);
 
-			if ((overrun = (edt_reg_read(pdv_p, PDV_STAT) & PDV_OVERRUN)))
-			    ++overruns;
+		if ((overrun = (edt_reg_read(pdv_p, PDV_STAT) & PDV_OVERRUN)))
+			++overruns;
 
 		if (i < loops - started) // If we have started fewer than 4 loops
 		{
 			pdv_start_image(pdv_p);
 		}
-		 timeouts = pdv_timeouts(pdv_p);
+		timeouts = pdv_timeouts(pdv_p);
 
 		/*
 		 * check for timeouts or data overruns -- timeouts occur when data
@@ -115,34 +119,40 @@ int main(int argc, char **argv)
 		 * ROI can sometimes mask timeouts
 		 */
 		if (timeouts > last_timeouts)
-		 {
+		{
 
-		 /* pdv_timeout_cleanup helps recover gracefully after a timeout,
-		 * particularly if multiple buffers were prestarted
-		 */
-		 pdv_timeout_restart(pdv_p, TRUE);
-		 last_timeouts = timeouts;
-		 recovering_timeout = TRUE;
-		 printf("\ntimeout....\n");
-			} else if (recovering_timeout)
-			{
-			    pdv_timeout_restart(pdv_p, TRUE);
-			    recovering_timeout = FALSE;
-			    printf("\nrestarted....\n");
-			}
-		char * image_p_filterd = apply_constant_filter(image_p, width, height, 20000);
+			/* pdv_timeout_cleanup helps recover gracefully after a timeout,
+			 * particularly if multiple buffers were prestarted
+			 */
+			pdv_timeout_restart(pdv_p, TRUE);
+			last_timeouts = timeouts;
+			recovering_timeout = TRUE;
+			printf("\ntimeout....\n");
+		} else if (recovering_timeout)
+		{
+			pdv_timeout_restart(pdv_p, TRUE);
+			recovering_timeout = FALSE;
+			printf("\nrestarted....\n");
+		}
+		u_char * mask_ptr;
+		load_mask("mask.raw",mask_ptr)
+
+
+		//u_char * image_p_filterd = apply_constant_filter(image_p, width, height, 20000);
+		u_char * image_p_filterd = apply_dark_subtraction_filter(image_p, width, height, 20000);
+
 		if (*bmpfname)
 		{	printf("writing bmp to %s\n", bmpfname);
-			dvu_write_bmp(bmpfname, image_p, width, height);
-			dvu_write_bmp(bmpfname_cu, image_p_filterd, width, height);
+		dvu_write_bmp(bmpfname, image_p, width, height);
+		dvu_write_bmp(bmpfname_cu, image_p_filterd, width, height);
 
 		}
 		if (*rawfname)
 		{	printf("writing raw to %s\n", rawfname);
-			dvu_write_raw(height*width*2, image_p, rawfname);
-			dvu_write_raw(height*width*2, image_p_filterd, rawfname_cu);
-
+		dvu_write_raw(height*width*BYTES_PER_PIXEL, image_p, rawfname);
+		dvu_write_raw(height*width*BYTES_PER_PIXEL, image_p_filterd, rawfname_cu);
 		}
+
 
 	}
 	puts("");
@@ -164,6 +174,35 @@ int main(int argc, char **argv)
 	return 0;
 }
 
+size_t load_mask(char * mask_file_name, u_char * mask_ptr)
+{
+	//Get size of file to read
+	struct stat st;
+	stat(mask_file_name, &st);
+
+	//Allocate memory to fit the data in the raw file
+	mask_ptr = (u_char *) malloc(st.st_size);
+
+	//Create file pointer
+	FILE * fp;
+	fp = fopen(mask_file_name,"r"); //Open the file
+	if(ferror(fp) != 0)
+	{
+		printf("Couldn't open file... :(");
+		exit(1);
+
+	}
+	fread(mask_ptr,sizeof(u_char), st.st_size, fp);
+	if(ferror(fp) != 0)
+	{
+		printf("Couldn't read file... :(");
+		exit(1);
+	}
+	fclose(fp);
+	free(fp);
+	return st.st_size;
+
+}
 void parse_args(int argc, char **argv)
 {
 	progname = argv[0];

@@ -41,7 +41,6 @@ __global__ void pixel_constant_filter(u_char * pic_d, int16_t magnitude, int wid
 u_char * apply_constant_filter(u_char * picture_in, int width, int height, int16_t filter_coeff)
 {
 	int pic_size = width*height*BYTES_PER_PIXEL;
-	int block_length = 20;
 
 	//u_char * picture_in; //Device (GPU) copy of picture in.
 	u_char * picture_out = (u_char * )malloc(pic_size); //Create buffer for CPU memory output
