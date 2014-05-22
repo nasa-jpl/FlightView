@@ -14,9 +14,10 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 
+#ifdef __cplusplus
+extern "C"
+#endif
 
-extern "C"{
 u_char * apply_constant_filter(u_char * picture_in, int width, int height, int16_t filter_coeff);
-};
 
 #endif /* CONSTANT_FILTER_H_ */

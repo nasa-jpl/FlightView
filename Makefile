@@ -23,10 +23,12 @@ OBJS		+= $(SOURCES:%.cu=%.o)
 #OBJS = $(shell ls src/*.o)
 OBJDIR = obj
 H_FILES = include/constant_filter.cuh
-CFLAGS     = -O2 -g
+GPUFLAGS = -G
 
+CFLAGS     = -g
+CFLAGS += $(GPUFLAGS)
 NVCCFLAGS  = -arch=sm_20
-
+NVCCFLAGS += $(CFLAGS)
 LINKDIR 	= lib
 LFLAGS      = -L$(LINKDIR) -lm -lpdv
 

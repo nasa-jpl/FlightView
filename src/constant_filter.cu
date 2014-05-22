@@ -11,7 +11,7 @@
 //Kernel code, this runs on the GPU (device)
 __global__ void pixel_constant_filter(u_char * pic_d, int16_t magnitude, int width, int height)
 {
-	int offset = blockIdx.x*gridDim.x +threadIdx.x; //This gives us how far we are into the u_char
+	int offset = blockIdx.x*blockDim.x +threadIdx.x; //This gives us how far we are into the u_char
 
 	if(offset < width*height) //Because we needed an interger grid size, we will have a few threads that don't correspond to a location in the image.
 	{
@@ -19,8 +19,19 @@ __global__ void pixel_constant_filter(u_char * pic_d, int16_t magnitude, int wid
 	// For this filter, we don't need to know where we are in the 2D sense since we are only doing a map operation. For gathers or stencils we will need to work on this.
 	uint16_t current_value = pic_d[offset*BYTES_PER_PIXEL] | (pic_d[offset*BYTES_PER_PIXEL+1] << 8);
 	//current_value += magnitude;
+	//if(offset < width*height/4)
+	//{
+	current_value += magnitude;
+	//}
+	/*
+	else
+	{
+	current_value = 0;
+	}
+
+	*/
 	pic_d[offset*BYTES_PER_PIXEL] =(u_char) current_value; //We want the LSB here
-	pic_d[offset*BYTES_PER_PIXEL] =(u_char) (current_value << 8); //We want the MSB here
+	pic_d[offset*BYTES_PER_PIXEL + 1] =(u_char) (current_value << 8); //We want the MSB here
 
 	}
 
@@ -48,6 +59,7 @@ u_char * apply_constant_filter(u_char * picture_in, int width, int height, int16
 	cudaMemcpy(picture_out,picture_device,pic_size,cudaMemcpyDeviceToHost);
 
 	cudaFree(picture_device);
+	//memcpy(picture_out,picture_in,pic_size);
 	return picture_out;
 }
 

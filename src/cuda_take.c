@@ -130,7 +130,7 @@ int main(int argc, char **argv)
 			    recovering_timeout = FALSE;
 			    printf("\nrestarted....\n");
 			}
-		char * image_p_filterd = apply_constant_filter(image_p, width, height, 5000);
+		char * image_p_filterd = apply_constant_filter(image_p, width, height, 20000);
 		if (*bmpfname)
 		{	printf("writing bmp to %s\n", bmpfname);
 			dvu_write_bmp(bmpfname, image_p, width, height);
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 	puts("");
 
 	printf("%d images %d timeouts %d overruns\n", loops, last_timeouts, overruns);
-
+	printf("sizeof uchar: %i", sizeof(u_char));
 	/*
 	 * if we got timeouts it indicates there is a problem
 	 */
