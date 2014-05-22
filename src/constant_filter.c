@@ -1,20 +1,31 @@
 #include "constant_filter.h"
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+//#include <cuda.h>
+//#include <cuda_runtime_api.h>
 
 #ifndef BYTES_PER_PIXEL
 #define BYTES_PER_PIXEL 2
 #endif
+//This code largely inspired by http://madsravn.dk/posts/simple-image-processing-with-cuda/
 
+
+//Kernel code, this runs on the GPU (device)
 __global__ void pixel_constant_filter(int16_t magnitude, int width, int height)
 {
-	int x_offset = blockIdx.x*gridIdx.x +threadIdx.x;
-	int y_offset = blockIdx.y*gridIdx.y +threadIdx.y;
+	int offset = blockIdx.x*gridIdx.x +threadIdx.x; //This gives us how far we are into the u_char
 
-	if(x_offset < width && y_offset < height)
+	if(offset < width*height) //Because we needed an interger grid size, we will have a few threads that don't correspond to a location in the image.
 	{
-		picture_device[x_offset + ]
+	//Each grayscale depth in the u_char * is represented by adjacent bytes in little endian order.
+	// For this filter, we don't need to know where we are in the 2D sense since we are only doing a map operation. For gathers or stencils we will need to work on this.
+	uint16_t current_value = picture_device[offset*BYTES_PER_PIXEL] | (picture_device[offset*BYTES_PER_PIXEL+1] << 8);
+	current_value += magnitude;
+	picture_device[offset*BYTES_PER_PIXEL] =(u_char) current_value; //We want the LSB here
+	picture_device[offset*BYTES_PER_PIXEL] =(u_char) (current_value << 8); //We want the MSB here
+
+
 	}
+
+
 
 }
 u_char * apply_constant_filter(u_char * picture_in, int width, int height, int16_t filter_coeff)
@@ -29,8 +40,9 @@ u_char * apply_constant_filter(u_char * picture_in, int width, int height, int16
 	cudaMalloc( (void **)&picture_device, pic_size);
 
 	cudaMemcpy(picture_device, picture_in, pic_size, cudaMemcpyHostToDevice);
-	dim3 blockDims(block_length,block_length,1);
-	dim3 gridDims(ceil((float)width/block_length), ceil((float)height/block_length));
+	//dim3 blockDims(block_length,block_length,1);
+	dim3 blockDims(512,1,1);
+	dim3 gridDims(ceil((float)width*height/blockDims.x,1,1);
 
 
 	pixel_constant_filter<<gridDims,blockDims>>(picture_device, picture_device, filter_coeff, width, height);
