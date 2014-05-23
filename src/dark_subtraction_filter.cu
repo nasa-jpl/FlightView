@@ -20,9 +20,18 @@ __global__ void pixel_dark_subtraction_filter(u_char * pic_d, u_char * mask_d, i
 	uint16_t current_value = pic_d[offset*BYTES_PER_PIXEL] | (pic_d[offset*BYTES_PER_PIXEL+1] << 8);
 	uint16_t mask_value = mask_d[offset*BYTES_PER_PIXEL] | (mask_d[offset*BYTES_PER_PIXEL+1] << 8);
 
-	current_value -=mask_value; //We could have horrible overflow problems here... Worth checking
+	// Cuda does not check for underflow so we have to check here.
+	if(current_value - mask_value >= 0)
+	{
+	current_value -=mask_value;
+	}
+	else
+	{
+		current_value = 0;
+	}
+
 	pic_d[offset*BYTES_PER_PIXEL] =(u_char) current_value; //We want the LSB here
-	pic_d[offset*BYTES_PER_PIXEL + 1] =(u_char) (current_value << 8); //We want the MSB here
+	pic_d[offset*BYTES_PER_PIXEL + 1] =(u_char) (current_value >> 8); //We want the MSB here
 
 	}
 
@@ -55,7 +64,6 @@ u_char * apply_dark_subtraction_filter(u_char * picture_in, u_char * dark_mask, 
 	cudaMemcpy(picture_out,picture_device,pic_size,cudaMemcpyDeviceToHost);
 
 	cudaFree(picture_device);
-	//memcpy(picture_out,picture_in,pic_size);
 	return picture_out;
 }
 

@@ -136,18 +136,19 @@ int main(int argc, char **argv)
 		}
 		u_char * mask_ptr;
 		size_t mask_size = load_mask("mask.raw",&mask_ptr);
-		printf("sizeof mask %i", mask_size);
-
+		printf("sizeof mask %i\n", mask_size);
 
 		//u_char * image_p_filterd = apply_constant_filter(image_p, width, height, 20000);
-		u_char * image_p_filterd = apply_dark_subtraction_filter(image_p, image_p_filterd, width, height);
+		u_char * image_p_filterd = apply_dark_subtraction_filter(image_p, mask_ptr, width, height);
 
+		/*
 		if (*bmpfname)
 		{	printf("writing bmp to %s\n", bmpfname);
 		dvu_write_bmp(bmpfname, image_p, width, height);
 		dvu_write_bmp(bmpfname_cu, image_p_filterd, width, height);
-
 		}
+		*/
+
 		if (*rawfname)
 		{	printf("writing raw to %s\n", rawfname);
 		dvu_write_raw(height*width*BYTES_PER_PIXEL, image_p, rawfname);

@@ -18,20 +18,17 @@ __global__ void pixel_constant_filter(u_char * pic_d, int16_t magnitude, int wid
 	//Each grayscale depth in the u_char * is represented by adjacent bytes in little endian order.
 	// For this filter, we don't need to know where we are in the 2D sense since we are only doing a map operation. For gathers or stencils we will need to work on this.
 	uint16_t current_value = pic_d[offset*BYTES_PER_PIXEL] | (pic_d[offset*BYTES_PER_PIXEL+1] << 8);
-	//current_value += magnitude;
-	//if(offset < width*height/4)
-	//{
+	if(offset < width*height)
+	{
 	current_value += magnitude;
-	//}
-	/*
+	}
 	else
 	{
 	current_value = 0;
 	}
 
-	*/
 	pic_d[offset*BYTES_PER_PIXEL] =(u_char) current_value; //We want the LSB here
-	pic_d[offset*BYTES_PER_PIXEL + 1] =(u_char) (current_value << 8); //We want the MSB here
+	pic_d[offset*BYTES_PER_PIXEL + 1] =(u_char) (current_value >> 8); //We want the MSB here
 
 	}
 
@@ -58,7 +55,6 @@ u_char * apply_constant_filter(u_char * picture_in, int width, int height, int16
 	cudaMemcpy(picture_out,picture_device,pic_size,cudaMemcpyDeviceToHost);
 
 	cudaFree(picture_device);
-	//memcpy(picture_out,picture_in,pic_size);
 	return picture_out;
 }
 
