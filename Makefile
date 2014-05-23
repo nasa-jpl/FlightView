@@ -5,7 +5,7 @@ SOURCEDIR = src
 EXE   = cuda_take
 
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
-SOURCES = cuda_take.c constant_filter.cu
+SOURCES = cuda_take.c constant_filter.cu dark_subtraction_filter.cu
 vpath %.c $(SOURCEDIR)
 vpath %.cu $(SOURCEDIR)
 vpath %.cpp $(SOURCEDIR)
@@ -42,7 +42,7 @@ $(EXE) : $(objects)
 #	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
 #	$(CC) $(CFLAGS) $@ -c src/cuda_take.c -o   obj/cuda_take.o obj/constant_filter.o $(LFLAGS)
 
-	$(CC) $(CFLAGS) -o $@ obj/cuda_take.o obj/constant_filter.o $(LFLAGS)
+	$(CC) $(CFLAGS) -o $@ obj/cuda_take.o obj/constant_filter.o obj/dark_subtraction_filter.o $(LFLAGS)
 $(objects): | obj
 
 obj:

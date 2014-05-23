@@ -17,7 +17,7 @@
 extern "C"
 #endif
 
-u_char * apply_dark_subtraction_filter(u_char * picture_in, u_char * dark_mask, int width, int height)
+u_char * apply_dark_subtraction_filter(u_char * picture_in, u_char * dark_mask, int width, int height);
 
 
 #endif /* DARK_SUBTRACTION_FILTER_CUH_ */

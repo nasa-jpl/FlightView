@@ -11,7 +11,7 @@
 
 static void usage(char *progname, char *errmsg);
 void parse_args(int argc, char **argv);
-size_t load_mask(char * mask_file_name, u_char * mask_ptr);
+size_t load_mask(char * mask_file_name, u_char ** mask_ptr);
 char   *progname ;
 char edt_devname[128];
 char    bmpfname[128] = "test.bmp";
@@ -135,11 +135,12 @@ int main(int argc, char **argv)
 			printf("\nrestarted....\n");
 		}
 		u_char * mask_ptr;
-		load_mask("mask.raw",mask_ptr)
+		size_t mask_size = load_mask("mask.raw",&mask_ptr);
+		printf("sizeof mask %i", mask_size);
 
 
 		//u_char * image_p_filterd = apply_constant_filter(image_p, width, height, 20000);
-		u_char * image_p_filterd = apply_dark_subtraction_filter(image_p, width, height, 20000);
+		u_char * image_p_filterd = apply_dark_subtraction_filter(image_p, image_p_filterd, width, height);
 
 		if (*bmpfname)
 		{	printf("writing bmp to %s\n", bmpfname);
@@ -174,15 +175,19 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-size_t load_mask(char * mask_file_name, u_char * mask_ptr)
+size_t load_mask(char * mask_file_name, u_char ** mask_dptr)
 {
 	//Get size of file to read
 	struct stat st;
 	stat(mask_file_name, &st);
-
+	size_t filesize = st.st_size;
 	//Allocate memory to fit the data in the raw file
-	mask_ptr = (u_char *) malloc(st.st_size);
-
+	*mask_dptr = (u_char *) malloc(filesize);
+	if(*mask_dptr == NULL)
+	{
+		printf("Could not allocate memory for mask :(");
+		exit(1);
+	}
 	//Create file pointer
 	FILE * fp;
 	fp = fopen(mask_file_name,"r"); //Open the file
@@ -192,15 +197,14 @@ size_t load_mask(char * mask_file_name, u_char * mask_ptr)
 		exit(1);
 
 	}
-	fread(mask_ptr,sizeof(u_char), st.st_size, fp);
+	fread(*mask_dptr,sizeof(u_char), filesize, fp);
 	if(ferror(fp) != 0)
 	{
 		printf("Couldn't read file... :(");
 		exit(1);
 	}
 	fclose(fp);
-	free(fp);
-	return st.st_size;
+	return filesize;
 
 }
 void parse_args(int argc, char **argv)
