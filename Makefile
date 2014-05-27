@@ -7,7 +7,7 @@ SOURCEDIR = src
 EXE   = cuda_take
 
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
-SOURCES = cuda_take.c constant_filter.cu dark_subtraction_filter.cu takeobject.cpp
+SOURCES = cuda_take.c constant_filter.cu dark_subtraction_filter.cu take_object.cpp frame.cpp
 vpath %.c $(SOURCEDIR)
 vpath %.cu $(SOURCEDIR)
 vpath %.cpp $(SOURCEDIR)
@@ -37,7 +37,7 @@ NVCCFLAGS  = -arch=sm_20 -G
 NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= lib
-LFLAGS      = -L$(LINKDIR) -lm -lpdv
+LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread
 
 
 all : cuda_take
