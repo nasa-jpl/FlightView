@@ -1,11 +1,13 @@
-CC = nvcc
+CC = gcc
+CCPP = g++
+NVCC = nvcc
 
 SOURCEDIR = src
 
 EXE   = cuda_take
 
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
-SOURCES = cuda_take.c constant_filter.cu dark_subtraction_filter.cu
+SOURCES = cuda_take.c constant_filter.cu dark_subtraction_filter.cu takeobject.cpp
 vpath %.c $(SOURCEDIR)
 vpath %.cu $(SOURCEDIR)
 vpath %.cpp $(SOURCEDIR)
@@ -23,12 +25,17 @@ OBJS		+= $(SOURCES:%.cu=%.o)
 #OBJS = $(shell ls src/*.o)
 OBJDIR = obj
 H_FILES = include/constant_filter.cuh
-GPUFLAGS = -G
 
+
+#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 CFLAGS     = -g
-CFLAGS += $(GPUFLAGS)
-NVCCFLAGS  = -arch=sm_20
+
+CPPFLAGS = -std=c++11
+CPPFLAGS += $(CFLAGS)
+
+NVCCFLAGS  = -arch=sm_20 -G
 NVCCFLAGS += $(CFLAGS)
+
 LINKDIR 	= lib
 LFLAGS      = -L$(LINKDIR) -lm -lpdv
 
@@ -38,11 +45,12 @@ all : cuda_take
 #	@echo $(objects)
 #	@echo $(OBJS)
 $(EXE) : $(objects)
-
-#	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
-#	$(CC) $(CFLAGS) $@ -c src/cuda_take.c -o   obj/cuda_take.o obj/constant_filter.o $(LFLAGS)
-
-	$(CC) $(CFLAGS) -o $@ obj/cuda_take.o obj/constant_filter.o obj/dark_subtraction_filter.o $(LFLAGS)
+	$(NVCC) $(NVCCFLAGS) -o $@ $(wildcard obj/*.o) $(LFLAGS)
+	#attempts at getting this to work
+	#	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
+	#	$(CC) $(CFLAGS) $@ -c src/cuda_take.c -o   obj/cuda_take.o obj/constant_filter.o $(LFLAGS)
+	#manually list
+	#$(NVCC) $(NVCCFLAGS) -o $@ obj/cuda_take.o obj/constant_filter.o obj/dark_subtraction_filter.o $(LFLAGS)
 $(objects): | obj
 
 obj:
@@ -50,14 +58,14 @@ obj:
 	
 #what to do to build c files -> o files
 $(OBJDIR)/%.o : %.c
-	$(CC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
+	$(CC) $(CFLAGS) $(IDIR) -c -o $@ $<
 
 #what to do to build cpp files -> o files
 $(OBJDIR)/%.o : %.cpp
-	$(CC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
+	$(CCPP) $(CPPFLAGS) $(IDIR) -c -o $@ $<
 
 #What to do to build cu files -> o files
 $(OBJDIR)/%.o : %.cu $(H_FILES)
-	$(CC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
+	$(NVCC) $(CFLAGS) $(IDIR) -c -o $@ $<
 clean:
 	rm -rf $(OBJDIR)
