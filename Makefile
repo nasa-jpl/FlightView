@@ -8,9 +8,15 @@ EXE   = cuda_take
 LIBOUT = libcuda_take.a
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 SOURCES = main.cpp constant_filter.cu dark_subtraction_filter.cu take_object.cpp frame.cpp
+
+
 vpath %.c $(SOURCEDIR)
 vpath %.cu $(SOURCEDIR)
 vpath %.cpp $(SOURCEDIR)
+
+#SOURCES = $(wildcard src/*.c)
+#SOURCES = $(wildcard src/*.cpp)
+#SOURCES = $(wildcard src/*.cu)
 
 objects = $(patsubst %.c,obj/%.o,$(SOURCES)) 
 objects += $(patsubst %.cpp,obj/%.o,$(SOURCES)) 
@@ -39,7 +45,7 @@ LINKDIR 	= lib
 LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread
 
 
-all : cuda_take
+all : $(EXE) $(LIBOUT)
 #	@echo $(SOURCES)
 #	@echo $(objects)
 #	@echo $(OBJS)
