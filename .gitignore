@@ -1,0 +1,29 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Executables
+*.exe
+*.out
+*.app
+
+#generated image files
+*.bmp
+*.raw
+
+#QT Specific stuff
+moc_*.cpp
+qrc_*.cpp
+ui_*.cpp
+
+Debug/
+Release/
+#Windows stuff
+Thumbs.db
+desktop.ini
+#Mac Specific things (Why am I copying this if it's only being used in Linux?)
+.DS_Store
+#Temp files
+*~
