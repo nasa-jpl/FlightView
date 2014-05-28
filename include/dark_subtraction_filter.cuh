@@ -14,7 +14,7 @@
 #include "cuda_runtime.h"
 
 #ifdef __cplusplus
-extern "C"
+extern "C" //Makes this callable from c
 #endif
 
 u_char * apply_dark_subtraction_filter(u_char * picture_in, u_char * dark_mask, int width, int height);

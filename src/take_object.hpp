@@ -13,16 +13,23 @@
 #include <atomic>
 #include <mutex>
 */
-#include <boost/thread.hpp>
 //#include <boost/atomic.hpp> //Atomic isn't in the boost library till 1.5.4, debian wheezy has 1.4.9 :(
+#include <boost/thread.hpp>
+#include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
+
+#include <boost/shared_ptr.hpp>
 #include <boost/circular_buffer.hpp>
+
+
+
 #include "edtinc.h"
 #include "frame.hpp"
 class take_object {
 	PdvDev * pdv_p;
-	boost::circular_buffer<frame> frame_buffer;
+	boost::circular_buffer<boost::shared_ptr<frame>> frame_buffer;
 	boost::thread pdv_thread;
+
 
 	unsigned int size;
 	unsigned int height;
@@ -34,9 +41,12 @@ public:
 	take_object(int channel_num = 0, int number_of_buffers = 4, int fmsize = 1000);
 	virtual ~take_object();
 	void start();
+	boost::shared_ptr<frame> getFrontFrame();
+	boost::condition_variable newFrameAvailable;
+	boost::mutex framebuffer_mutex;
 private:
 	void pdv_init();
-	void append_to_frame_buffer(u_char *, int framesize);
+	void append_to_frame_buffer(u_char *);
 
 };
 

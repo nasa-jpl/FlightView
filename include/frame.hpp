@@ -13,16 +13,20 @@
 #endif //Bytes per pixel
 
 #include "edtinc.h"
+#include <stdlib.h>
+#include <stdint.h>
 struct frame
 {	//All these default to public since declaration was as struct
 	unsigned int height; //The height and width of the image not including the first header row
 	unsigned int width;
+	uint16_t framecount;
+	uint64_t cmTime;
 	u_char * raw_data;
 	u_char * image_data_ptr; //= raw_data + width*BYTES_PER_PIXEL; //To get where the data actually begins
-
-
-	frame(u_char * data_in, int size, int height, int width);
+	//uint16_t ** image2d;
+	frame(u_char * data_in, int size, int ht, int wd);
 	virtual ~frame();
+
 	//To get this as a 2d array, use a reinterpret cast, not going use a union here.
 
 };
