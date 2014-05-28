@@ -27,7 +27,7 @@
 #include "frame.hpp"
 class take_object {
 	PdvDev * pdv_p;
-	boost::circular_buffer<boost::shared_ptr<frame>> frame_buffer;
+    boost::circular_buffer<boost::shared_ptr<frame> > frame_buffer;
 	boost::thread pdv_thread;
 
 

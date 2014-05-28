@@ -2,6 +2,7 @@ CC = gcc
 CCPP = g++
 NVCC = nvcc
 AR = ar
+LIBTOOL = libtool
 SOURCEDIR = src
 
 EXE   = cuda_take
@@ -43,8 +44,8 @@ NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= lib
 LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread
-
-
+AR_COMBINE_SCRIPT = combine_libs_script.ar
+STATIC_COMPILE_SYSTEM_LIBS = 1
 all : $(EXE) $(LIBOUT)
 #	@echo $(SOURCES)
 #	@echo $(objects)
@@ -53,7 +54,12 @@ $(EXE) : $(objects)
 	$(NVCC) $(NVCCFLAGS) -o $@ $(wildcard obj/*.o) $(LFLAGS)
 	
 $(LIBOUT) : $(objects)
+ifeq ($(STATIC_COMPILE_SYSTEM_LIBS), 1)
+	$(AR) rcs thin_$@ $(filter-out obj/main.o, $(wildcard obj/*.o))		
+	$(AR) -M <$(AR_COMBINE_SCRIPT)
+else
 	$(AR) rcs $@ $(filter-out obj/main.o, $(wildcard obj/*.o))
+endif
 $(objects): | obj
 
 obj:
@@ -71,4 +77,4 @@ $(OBJDIR)/%.o : %.cpp
 $(OBJDIR)/%.o : %.cu 
 	$(NVCC) $(CFLAGS) $(IDIR) -c -o $@ $<
 clean:
-	rm -rf $(OBJDIR) $(EXE) $(LIBOUT)
+	rm -rf $(OBJDIR) $(EXE) $(LIBOUT) thin_$(LIBOUT)
