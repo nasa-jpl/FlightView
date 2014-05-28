@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 using namespace std;
-
+#define INFINITE
 int main()
 {
 	take_object to;
@@ -18,15 +18,25 @@ int main()
 	int size = 640*481*2;
 	std::string fname;
 
+#ifndef INFINITE
 	for(int i = 0; i < 50; i++)
 	{
 		to.newFrameAvailable.wait(lock);
-		std::cout << "new frame availblable fc: " << (* to.getFrontFrame()).framecount << "timestamp: " << to.getFrontFrame()->cmTime << std::endl;
+		std::cout << "new frame availblable fc: " << (* to.getFrontFrame()).framecount << " timestamp: " << to.getFrontFrame()->cmTime << std::endl;
 		fname = "raws/raw_f" + boost::lexical_cast<std::string>(i) + ".raw";
 		char *cstr = new char[fname.length() + 1];
 		strcpy(cstr, fname.c_str());
 		dvu_write_raw(size, to.getFrontFrame()->raw_data, cstr);
 
 	}
+#else
+	while(1)
+		{
+			to.newFrameAvailable.wait(lock);
+			std::cout << "new frame availblable fc: " << (* to.getFrontFrame()).framecount << " timestamp: " << to.getFrontFrame()->cmTime << std::endl;
+
+
+		}
+#endif
 	return 0;
 }

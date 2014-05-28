@@ -16,7 +16,9 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize)
 }
 take_object::~take_object()
 {
+	int dummy;
 	pdv_thread.interrupt();
+	pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
 	pdv_close(pdv_p);
 	//Apparently if I use pdv_open, it implicitly calls malloc and therefore I should use free, not delete.
 	free(this->pdv_p);
@@ -52,13 +54,18 @@ void take_object::start()
 }
 void take_object::pdv_init()
 {
+	u_char * new_image_address;
 	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 	while(1)
 	{
 		//boost::lock_guard<boost::mutex> lock(this->framebuffer_mutex);
-		u_char * new_image_address = pdv_wait_image(pdv_p); //Once you get one
+		{
+			boost::this_thread::disable_interruption di; //This ensures that the interruption will hit while we're not waitign for an image
+			new_image_address = pdv_wait_image(pdv_p); //Once you get one frame
+
 		pdv_start_image(pdv_p); //Start another
 		append_to_frame_buffer(new_image_address);
+		}
 		newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
 
 	}

@@ -1,11 +1,11 @@
 CC = gcc
 CCPP = g++
 NVCC = nvcc
-
+AR = ar
 SOURCEDIR = src
 
 EXE   = cuda_take
-
+LIBOUT = libcuda_take.a
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 SOURCES = main.cpp constant_filter.cu dark_subtraction_filter.cu take_object.cpp frame.cpp
 vpath %.c $(SOURCEDIR)
@@ -24,7 +24,6 @@ OBJS		+= $(SOURCES:%.cu=%.o)
 
 #OBJS = $(shell ls src/*.o)
 OBJDIR = obj
-H_FILES = include/constant_filter.cuh
 
 
 #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
@@ -46,11 +45,9 @@ all : cuda_take
 #	@echo $(OBJS)
 $(EXE) : $(objects)
 	$(NVCC) $(NVCCFLAGS) -o $@ $(wildcard obj/*.o) $(LFLAGS)
-	#attempts at getting this to work
-	#	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
-	#	$(CC) $(CFLAGS) $@ -c src/cuda_take.c -o   obj/cuda_take.o obj/constant_filter.o $(LFLAGS)
-	#manually list
-	#$(NVCC) $(NVCCFLAGS) -o $@ obj/cuda_take.o obj/constant_filter.o obj/dark_subtraction_filter.o $(LFLAGS)
+	
+$(LIBOUT) : $(objects)
+	$(AR) rcs $@ $(filter-out obj/main.o, $(wildcard obj/*.o))
 $(objects): | obj
 
 obj:
@@ -65,7 +62,7 @@ $(OBJDIR)/%.o : %.cpp
 	$(CCPP) $(CPPFLAGS) $(IDIR) -c -o $@ $<
 
 #What to do to build cu files -> o files
-$(OBJDIR)/%.o : %.cu $(H_FILES)
+$(OBJDIR)/%.o : %.cu 
 	$(NVCC) $(CFLAGS) $(IDIR) -c -o $@ $<
 clean:
-	rm -rf $(OBJDIR)
+	rm -rf $(OBJDIR) $(EXE) $(LIBOUT)
