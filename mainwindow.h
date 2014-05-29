@@ -17,7 +17,10 @@ private:
     QWidget * mainwidget;
     ControlsBox * controlbox;
     frameview_widget * unfiltered_widget;
-    frameview_widget * filtered_widget;
+    QWidget * filtered_widget;
+public slots:
+    void updateFPS(unsigned int fps);
+
 };
 
 #endif // MAINWINDOW_H

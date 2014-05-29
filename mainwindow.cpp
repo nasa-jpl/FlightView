@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //Create tabs
     tabWidget = new QTabWidget;
-    filtered_widget = new frameview_widget();
+    filtered_widget = new QWidget();
     unfiltered_widget = new frameview_widget();
     tabWidget->addTab(unfiltered_widget, QString("Live View"));
     tabWidget->addTab(filtered_widget, QString("Analytics"));
@@ -30,4 +30,8 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     
+}
+void MainWindow::updateFPS(unsigned int fps)
+{
+//controlbox->fps_label->setText();
 }

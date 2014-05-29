@@ -101,4 +101,6 @@ ControlsBox::ControlsBox(QWidget *parent) :
     controls_layout->addWidget(SaveButtonsBox);
     this->setLayout(controls_layout);
     this->setMaximumHeight(150);
+
+
 }

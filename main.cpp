@@ -1,8 +1,9 @@
 #include <QApplication>
 #include <QPixmap>
 #include <QSplashScreen>
+#include <QDesktopWidget>
 #include <QTime>
-
+#include <QStyle>
 #include "mainwindow.h"
 
 void delay(int);
@@ -18,6 +19,14 @@ int main(int argc, char *argv[])
 
     delay(500);
     MainWindow w;
+    w.setGeometry(    QStyle::alignedRect(
+                          Qt::LeftToRight,
+                          Qt::AlignCenter,
+                          w.size(),
+                          a.desktop()->availableGeometry()
+                          ));
+    QPixmap icon_pixmap(":images/icon.png");
+    w.setWindowIcon(QIcon(icon_pixmap));
     w.show();
     splash.finish(&w);
     return a.exec();
