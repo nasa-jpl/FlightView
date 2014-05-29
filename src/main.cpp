@@ -34,7 +34,8 @@ int main()
 		{
 			to.newFrameAvailable.wait(lock);
 			std::cout << "new frame availblable fc: " << (* to.getFrontFrame()).framecount << " timestamp: " << to.getFrontFrame()->cmTime << std::endl;
-
+			std::cout<<to.height;
+			to.getStdDevFrame(32);
 
 		}
 #endif

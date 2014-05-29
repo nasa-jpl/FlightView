@@ -32,8 +32,7 @@ class take_object {
 
 
 	unsigned int size;
-	unsigned int height;
-	unsigned int width;
+
 	unsigned int channel;
 	unsigned int numbufs;
 	unsigned int frame_history_size;
@@ -44,6 +43,9 @@ public:
 	boost::shared_ptr<frame> getFrontFrame();
 	boost::condition_variable newFrameAvailable;
 	boost::mutex framebuffer_mutex;
+	unsigned int height;
+	unsigned int width;
+	u_char * getStdDevFrame(int N);
 private:
 	void pdv_init();
 	void append_to_frame_buffer(u_char *);

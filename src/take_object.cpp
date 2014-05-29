@@ -6,6 +6,7 @@
  */
 
 #include "take_object.hpp"
+#include "std_dev_filter.cuh"
 #include <iostream>
 take_object::take_object(int channel_num, int number_of_buffers, int fmsize)
 {
@@ -80,5 +81,9 @@ boost::shared_ptr<frame> take_object::getFrontFrame()
 {
 	return frame_buffer[0];
 
+}
+u_char * take_object::getStdDevFrame(int N)
+{
+	return apply_std_dev_filter(frame_buffer, N);
 }
 

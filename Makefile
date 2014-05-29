@@ -8,7 +8,7 @@ SOURCEDIR = src
 EXE   = cuda_take
 LIBOUT = libcuda_take.a
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
-SOURCES = main.cpp constant_filter.cu dark_subtraction_filter.cu take_object.cpp frame.cpp
+SOURCES = main.cpp constant_filter.cu dark_subtraction_filter.cu take_object.cpp frame.cpp std_dev_filter.cu
 
 
 vpath %.c $(SOURCEDIR)
@@ -34,12 +34,12 @@ OBJDIR = obj
 
 
 #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
-CFLAGS     = -g
+CFLAGS     = -g -O2
 
 CPPFLAGS = -std=c++11
 CPPFLAGS += $(CFLAGS)
 
-NVCCFLAGS  = -arch=sm_20 -G
+NVCCFLAGS  = -arch=sm_20 -G 
 NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= lib

@@ -1,6 +1,5 @@
 CREATE libcuda_take.a
 ADDLIB thin_libcuda_take.a
 ADDLIB lib/libpdv.a
-ADDLIB /usr/lib/libboost_thread.a
 SAVE
 END
