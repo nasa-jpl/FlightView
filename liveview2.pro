@@ -39,7 +39,7 @@ RESOURCES += \
     images.qrc
 #RC_FILE = liveview2.rc
 
-unix:!macx:!symbian: LIBS += -L$$PWD/../../cuda_take/ -lcuda_take -lboost_thread
+unix:!macx:!symbian: LIBS += -L$$PWD/../../cuda_take/ -lcuda_take -lboost_thread -lcudart
 INCLUDEPATH += $$PWD/../../cuda_take/include\
 $$PWD/../../cuda_take/EDT_include
 DEPENDPATH += $$PWD/../../cuda_take

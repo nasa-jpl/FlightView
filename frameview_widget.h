@@ -7,6 +7,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QTimer>
+#include <QPushButton>
 #include "frame_worker.h"
 class frameview_widget : public QWidget
 {
@@ -18,6 +19,8 @@ class frameview_widget : public QWidget
     QLabel * fpsLabel;
     unsigned int fps;
     QTimer * fpstimer;
+    QPushButton * toggleGrayScaleButton;
+    bool outputGrayScale;
 
 public:
     explicit frameview_widget(QWidget *parent = 0);
@@ -27,6 +30,7 @@ signals:
 public slots:
     void handleNewFrame();
     void updateFPS();
+    void toggleGrayScale();
 private:
 
 };
