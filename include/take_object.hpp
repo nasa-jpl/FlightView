@@ -19,6 +19,8 @@
 #include <boost/thread/mutex.hpp>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/shared_array.hpp>
+
 #include <boost/circular_buffer.hpp>
 
 
@@ -45,7 +47,7 @@ public:
 	boost::mutex framebuffer_mutex;
 	unsigned int height;
 	unsigned int width;
-	u_char * getStdDevFrame(int N);
+	boost::shared_array<u_char> getStdDevFrame(int N);
 private:
 	void pdv_init();
 	void append_to_frame_buffer(u_char *);

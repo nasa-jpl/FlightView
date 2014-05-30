@@ -82,7 +82,7 @@ boost::shared_ptr<frame> take_object::getFrontFrame()
 	return frame_buffer[0];
 
 }
-u_char * take_object::getStdDevFrame(int N)
+boost::shared_array<u_char>  take_object::getStdDevFrame(int N)
 {
 	return apply_std_dev_filter(frame_buffer, N);
 }

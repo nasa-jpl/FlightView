@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/circular_buffer.hpp>
+#include <boost/shared_array.hpp>
 #include "edtinc.h"
 #include "cuda.h"
 #include "frame.hpp"
@@ -21,7 +22,7 @@
 extern "C" //Makes this callable from c
 #endif
 
-u_char * apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer, unsigned int N);
+boost::shared_array<u_char> apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer, unsigned int N);
 
 
 #endif /* STD_DEV_FILTER_CUH_ */

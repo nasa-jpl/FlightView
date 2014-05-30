@@ -4,14 +4,15 @@
 #endif
 
 //This is useful for figuring out how to do caching.
-#define SHARED_MEM_PER_BLOCK_GTX590 49152
-#define MAX_N 1000
+//This number was derived from a "ptxas" error, apparently cuda props lied.
+#define SHARED_MEM_PER_BLOCK_GTX590 (0x4000 - 0x10)
+#define MAX_N 500
 
-#define THREADS_PER_BLOCK SHARED_MEM_PER_BLOCK_GTX590/BYTES_PER_PIXEL*MAX_N //If we want to cache into shared memory, this gives us the maximum number of threads per block should be 24 with truncation
+#define THREADS_PER_BLOCK SHARED_MEM_PER_BLOCK_GTX590/(BYTES_PER_PIXEL*MAX_N) //If we want to cache into shared memory, this gives us the maximum number of threads per block should be 24 with truncation
 //Kernel code, this runs on the GPU (device) uses shared memory to decrease time
-__global__ void std_dev_filter(u_char * pic_d, int width, int height, int N)
+__global__ void std_dev_filter(u_char * pic_d, u_char * picture_out_device, int width, int height, int N)
 {
-	__shared__ uint16_t cached_block_data [THREADS_PER_BLOCK*MAX_N*BYTES_PER_PIXEL]; //Should equal 48000Bytes or 24000 uint_16s
+	__shared__ uint16_t cached_block_data [THREADS_PER_BLOCK*MAX_N]; //Should equal 48000Bytes or 24000 uint_16s
 	int offset = (blockIdx.x*blockDim.x +threadIdx.x)*BYTES_PER_PIXEL; //This gives us how far we are into the u_char
 	uint32_t pic_size = height*width*BYTES_PER_PIXEL; //recalculting this value, integer math is cheaper than I/O
 	//Doing allocation outside of if because it reduces forked code size?
@@ -38,29 +39,32 @@ __global__ void std_dev_filter(u_char * pic_d, int width, int height, int N)
 		{
 			acc+=(cached_block_data[i + threadIdx.x*MAX_N] - mean)^2;
 		}
-		std_dev = (uint16_t) (sqrt(acc/(N-1));
+		std_dev = (uint16_t) (sqrt(acc/(N-1)));
 
-		pic_d[offset*BYTES_PER_PIXEL] =(u_char) current_value; //We want the LSB here
-		pic_d[offset*BYTES_PER_PIXEL + 1] =(u_char) (current_value >> 8); //We want the MSB here
+		picture_out_device[offset*BYTES_PER_PIXEL] =(u_char) std_dev; //We want the LSB here
+		picture_out_device[offset*BYTES_PER_PIXEL + 1] =(u_char) (std_dev >> 8); //We want the MSB here
 
 	}
 
 
 
 }
-boost::shared_ptr<frame> apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer, unsigned int N)
+boost::shared_array<u_char> apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer, unsigned int N)
 				{
 
 	int width = frame_buffer[0]->width; //Making the assumption that all frames in a frame buffer are the same size
 	int height = frame_buffer[0]->height;
 	int pic_size = width*height*BYTES_PER_PIXEL;
-
+	std::cout << "threads per block" << THREADS_PER_BLOCK << std::endl;
 
 	u_char * pictures_device;
 	u_char * current_picture_device;
-	u_char * picture_out = (u_char * )malloc(pic_size); //Create buffer for CPU memory output
+	//u_char * picture_out = (u_char * )malloc(pic_size); //Create buffer for CPU memory output
+
+	boost::shared_array<u_char> picture_out(new u_char[pic_size]);
+
 	u_char * picture_out_device;
-	if(N <= frame_buffer.size() && N < MAX_N) //We can't calculate the std. dev farther back in time then we are keeping track.
+	if(N <= frame_buffer.size() && N <= MAX_N) //We can't calculate the std. dev farther back in time then we are keeping track.
 	{
 		cudaMalloc( (void **)&pictures_device, pic_size*N); //Allocate a huge amount of memory on the GPU (N times the size of each frame stored as a u_char)
 		current_picture_device = pictures_device;
@@ -79,22 +83,21 @@ boost::shared_ptr<frame> apply_std_dev_filter(boost::circular_buffer<boost::shar
 		//+1 to account for possible integer-division truncation
 		dim3 gridDims((width*height/blockDims.x +1),1,1);
 
-		std_dev_filter<<<gridDims,blockDims>>>(pictures_device, width, height, N);
+		std_dev_filter<<<gridDims,blockDims>>>(pictures_device, picture_out_device, width, height, N);
 		//cudaMemcpy(picture_out,picture_device,pic_size,cudaMemcpyDeviceToHost);
 
-		cudaMemcpy(picture_out,picture_out_device,pic_size,cudaMemcpyDeviceToHost);
+		cudaMemcpy(picture_out.get(),picture_out_device,pic_size,cudaMemcpyDeviceToHost);
 
 		cudaFree(pictures_device); //do not free current picture because it poitns to a location inside pictures_device
 		cudaFree(picture_out_device);
 		//return picture_out;
 		//TODO: Fix this
-		return frame_buffer[0];
+		return picture_out;
 
 	}
+	std::cerr << "Couldn't take std. dev, N exceeded length of history or maximum alllowed N (" << MAX_N << ")" << std::endl;
 
-	std::cerr << "Couldn't take std. dev, N exceeded length of history or maximum alllowed N (1000)" << std::endl;
-
-	return frame_buffer[0];
+	return picture_out;
 
 				}
 

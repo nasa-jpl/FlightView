@@ -31,13 +31,13 @@ int main()
 	}
 #else
 	while(1)
-		{
-			to.newFrameAvailable.wait(lock);
-			std::cout << "new frame availblable fc: " << (* to.getFrontFrame()).framecount << " timestamp: " << to.getFrontFrame()->cmTime << std::endl;
-			std::cout<<to.height;
-			to.getStdDevFrame(32);
+	{
+		to.newFrameAvailable.wait(lock);
+		std::cout << "new frame availblable fc: " << (* to.getFrontFrame()).framecount << " timestamp: " << to.getFrontFrame()->cmTime << std::endl;
+		std::cout<<to.height;
+		to.getStdDevFrame(500);
 
-		}
+	}
 #endif
 	return 0;
 }
