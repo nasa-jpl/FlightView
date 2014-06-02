@@ -8,7 +8,7 @@ SOURCEDIR = src
 EXE   = cuda_take
 LIBOUT = libcuda_take.a
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
-SOURCES = main.cpp constant_filter.cu dark_subtraction_filter.cu take_object.cpp frame.cpp std_dev_filter.cu
+SOURCES = main.cpp constant_filter.cu dark_subtraction_filter.cu take_object.cpp frame.cpp std_dev_filter.cu 
 
 
 vpath %.c $(SOURCEDIR)
