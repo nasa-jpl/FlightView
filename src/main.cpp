@@ -30,13 +30,21 @@ int main()
 
 	}
 #else
+	int i = 0;
 	while(1)
 	{
 		to.newFrameAvailable.wait(lock);
 		std::cout << "new frame availblable fc: " << (* to.getFrontFrame()).framecount << " timestamp: " << to.getFrontFrame()->cmTime << std::endl;
 		std::cout<<to.height;
-		to.getStdDevFrame(500);
 
+		if(i > 30)
+		{
+		u_char * result = to.getStdDevFrame(30).get();
+
+		std::cout << (result[1001] << 8 || result[1000]) << std::endl;
+		return 3;
+		}
+		i++;
 	}
 #endif
 	return 0;

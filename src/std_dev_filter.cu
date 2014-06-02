@@ -92,8 +92,9 @@ boost::shared_array<u_char> apply_std_dev_filter(boost::circular_buffer<boost::s
 		cudaFree(picture_out_device);
 		//return picture_out;
 		//TODO: Fix this
+		//boost::shared_ptr<frame> * result = new boost::shared_ptr<frame>(picture_out,  height, width);
 		return picture_out;
-
+		//return result;
 	}
 	std::cerr << "Couldn't take std. dev, N exceeded length of history or maximum alllowed N (" << MAX_N << ")" << std::endl;
 
