@@ -57,11 +57,15 @@ __global__ void std_dev_filter_kernel(u_char * pic_d, float * picture_out_device
 }
 std_dev_filter::std_dev_filter(int nWidth, int nHeight, int nN)
 {
+
 	width = nWidth; //Making the assumption that all frames in a frame buffer are the same size
 	height = nHeight;
 	pic_size = width*height*BYTES_PER_PIXEL;
 	N = nN;
-		//std::cout << "threads per block" << THREADS_PER_BLOCK << std::endl;
+	picture_out.reset(new float[width*height]);
+
+	HANDLE_ERROR(cudaStreamCreate(&std_dev_stream));
+	//std::cout << "threads per block" << THREADS_PER_BLOCK << std::endl;
 	HANDLE_ERROR(cudaMalloc( (void **)&pictures_device, pic_size*N)); //Allocate a huge amount of memory on the GPU (N times the size of each frame stored as a u_char)
 	HANDLE_ERROR(cudaMalloc( (void **)&picture_out_device, width*height*sizeof(float))); //Allocate memory on GPU for reduce target
 
@@ -70,25 +74,26 @@ std_dev_filter::~std_dev_filter()
 {
 	//All the memory leaks!
 	HANDLE_ERROR(cudaFree(pictures_device)); //do not free current picture because it poitns to a location inside pictures_device
-			HANDLE_ERROR(cudaFree(picture_out_device));
+	HANDLE_ERROR(cudaFree(picture_out_device));
+	HANDLE_ERROR(cudaStreamDestroy(std_dev_stream));
 }
-boost::shared_array<float> std_dev_filter::apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer)
-				{
-	cudaProfilerStart();
+void std_dev_filter::start_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer)
+{
+
+	//cudaProfilerStart();
 
 	//u_char * picture_out = (u_char * )malloc(pic_size); //Create buffer for CPU memory output
 
-	boost::shared_array<float> picture_out(new float[width*height]);
 
 	if(N <= frame_buffer.size() && N <= MAX_N) //We can't calculate the std. dev farther back in time then we are keeping track.
 	{
-
 		current_picture_device = pictures_device;
 
 		//Copy raw image data to device
+
 		for(int i = 0; i < N; i++)
 		{
-			HANDLE_ERROR(cudaMemcpy(current_picture_device, frame_buffer[i].get()->image_data_ptr, pic_size,cudaMemcpyHostToDevice));
+			HANDLE_ERROR(cudaMemcpyAsync(current_picture_device, frame_buffer[i].get()->image_data_ptr, pic_size,cudaMemcpyHostToDevice,std_dev_stream));
 			current_picture_device += pic_size; //Increment the pointer by the size we just filled
 		}
 
@@ -99,24 +104,35 @@ boost::shared_array<float> std_dev_filter::apply_std_dev_filter(boost::circular_
 		dim3 gridDims((width*height/blockDims.x +1),1,1);
 
 		std_dev_filter_kernel <<<gridDims,blockDims>>>(pictures_device, picture_out_device, width, height, N);
-		HANDLE_ERROR( cudaPeekAtLastError() );
-		HANDLE_ERROR( cudaDeviceSynchronize() );
+		//HANDLE_ERROR( cudaPeekAtLastError() );
+		//HANDLE_ERROR( cudaDeviceSynchronize() );
 
-		HANDLE_ERROR(cudaMemcpy(picture_out.get(),picture_out_device,pic_size,cudaMemcpyDeviceToHost));
+		HANDLE_ERROR(cudaMemcpyAsync(picture_out.get(),picture_out_device,pic_size,cudaMemcpyDeviceToHost));
+		//HANDLE_ERROR( cudaPeekAtLastError() );
 
 
 		//return picture_out;
 		//TODO: Fix this
 		//boost::shared_ptr<frame> * result = new boost::shared_ptr<frame>(picture_out,  height, width);
-		cudaProfilerStop();
+		//cudaProfilerStop();
 
-		return picture_out;
+		//return std_dev_stream;
 		//return result;
+
 	}
-	std::cerr << "Couldn't take std. dev, N exceeded length of history or maximum alllowed N (" << MAX_N << ")" << std::endl;
+	else
+	{
+		//std::cerr << "Couldn't take std. dev, N exceeded length of history or maximum alllowed N (" << MAX_N << ")" << std::endl;
+		//std::fill_n(picture_out.get(),width*height,-1); //Fill with -1 to indicate fail
+	}
+
+}
+boost::shared_array <float> std_dev_filter::wait_std_dev_filter()
+{
+	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //blocks until done
+	HANDLE_ERROR( cudaPeekAtLastError() );
 
 	return picture_out;
-
-				}
+}
 
 

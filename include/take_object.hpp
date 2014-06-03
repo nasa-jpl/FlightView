@@ -18,6 +18,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 
+
 #include <boost/shared_ptr.hpp>
 #include <boost/shared_array.hpp>
 
@@ -33,15 +34,17 @@ class take_object {
 	std_dev_filter * sdvf;
     boost::circular_buffer<boost::shared_ptr<frame> > frame_buffer;
 	boost::thread pdv_thread;
-
+	boost::shared_array<float> std_dev_data;
 
 	unsigned int size;
 
 	unsigned int channel;
 	unsigned int numbufs;
 	unsigned int frame_history_size;
+	unsigned int filter_refresh_rate;
+	unsigned long count;
 public:
-	take_object(int channel_num = 0, int number_of_buffers = 4, int fmsize = 1000);
+	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_period = 10);
 	virtual ~take_object();
 	void start();
 	void initFilters(int hs);
@@ -50,7 +53,7 @@ public:
 	boost::mutex framebuffer_mutex;
 	unsigned int height;
 	unsigned int width;
-	boost::shared_array<float> getStdDevFrame();
+	boost::shared_array<float> getStdDevData();
 private:
 	void pdv_init();
 	void append_to_frame_buffer(u_char *);

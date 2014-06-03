@@ -24,9 +24,12 @@ class std_dev_filter
 public:
 	std_dev_filter(int nWidth, int nHeight, int nN);
 	virtual ~std_dev_filter();
-	boost::shared_array<float> apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer);
+	void start_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer);
+	boost::shared_array< float > wait_std_dev_filter();
+	cudaStream_t std_dev_stream;
 private:
 	std_dev_filter() {}//Private defauklt constructor
+	boost::shared_array<float> picture_out;
 	int width;
 	int height;
 	int pic_size;

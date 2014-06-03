@@ -7,12 +7,14 @@
 
 #include "take_object.hpp"
 #include <iostream>
-take_object::take_object(int channel_num, int number_of_buffers, int fmsize)
+take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int frf)
 {
 	this->channel = channel_num;
 	this->numbufs = number_of_buffers;
 	this->frame_history_size = fmsize;
+	this->filter_refresh_rate =frf;
 	this->frame_buffer = boost::circular_buffer<boost::shared_ptr<frame>>(fmsize); //Initialize the ring buffer of frames
+	this->count = 0;
 }
 take_object::~take_object()
 {
@@ -59,6 +61,7 @@ void take_object::pdv_init()
 {
 	u_char * new_image_address;
 	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
+	//sdvf->start_std_dev_filter(frame_buffer);
 	while(1)
 	{
 		//boost::lock_guard<boost::mutex> lock(this->framebuffer_mutex);
@@ -68,8 +71,22 @@ void take_object::pdv_init()
 
 		pdv_start_image(pdv_p); //Start another
 
-		//boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
+		boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
 		append_to_frame_buffer(new_image_address);
+
+		if(count % filter_refresh_rate == 0)
+		{
+			std_dev_data = sdvf->wait_std_dev_filter();
+
+
+			sdvf->start_std_dev_filter(frame_buffer);
+
+			//std_dev_data = boost::shared_array < float > (sdvf->wait_std_dev_filter()); //Use copy constructor
+		}
+
+		count++;
+		lock.unlock();
+
 		}
 		newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
 
@@ -86,8 +103,8 @@ boost::shared_ptr<frame> take_object::getFrontFrame()
 	return frame_buffer[0];
 
 }
-boost::shared_array<float>  take_object::getStdDevFrame()
+boost::shared_array<float>  take_object::getStdDevData()
 {
-	return sdvf->apply_std_dev_filter(frame_buffer);
+	return std_dev_data;
 }
 

@@ -28,7 +28,7 @@ int main()
 	while(1)
 	{
 		to.newFrameAvailable.wait(lock);
-
+		std::cout << i << std::endl;
 		boost::shared_ptr<frame> frame =to.getFrontFrame();
 		//lock.unlock(); //Once we've got a pointer to the frame, let lock go!
 		//std::cout << "new frame availblable fc: " << frame->framecount << " timestamp: " << frame->cmTime << std::endl;
@@ -41,20 +41,23 @@ int main()
 		}
 		lastfc = frame->framecount;
 
-		/*
+
 		if(i > samples && i%10 == 0)
 		{
+			/*
 			while(! pixel_hist.empty())
 			{
 				std::cout << ' ' << pixel_hist.front() << ',';
 				pixel_hist.pop(); //Unlike every other language ever, this does not return a value.
 			}
-			boost::shared_array <float> bpt = to.getStdDevFrame();
-			std::cout  << "\nstd_dev: " << bpt[read_me] <<   std::endl;
+			*/
+			//boost::shared_array <float> bpt = to.getStdDevData();
+			//std::cout << bpt[read_me] << std::endl;
+			//std::cout  << "\nstd_dev: " << bpt[read_me] <<   std::endl;
 		}
-		pixel_hist.push(value_targ);
+		//pixel_hist.push(value_targ);
 		//std::cout << value_targ << std::endl;
-		*/
+
 		i++;
 
 
