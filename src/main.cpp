@@ -5,47 +5,56 @@
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <string>
+#include <queue>
 using namespace std;
 #define INFINITE
 int main()
 {
 	take_object to;
-	boost::unique_lock<boost::mutex> lock(to.framebuffer_mutex);
 	to.start();
-	to.newFrameAvailable.wait(lock);
 	//std::cout << "notified once" << std::endl;
 	//while(1)
 	int size = 640*481*2;
 	std::string fname;
 
-#ifndef INFINITE
-	for(int i = 0; i < 50; i++)
-	{
-		to.newFrameAvailable.wait(lock);
-		std::cout << "new frame availblable fc: " << (* to.getFrontFrame()).framecount << " timestamp: " << to.getFrontFrame()->cmTime << std::endl;
-		fname = "raws/raw_f" + boost::lexical_cast<std::string>(i) + ".raw";
-		char *cstr = new char[fname.length() + 1];
-		strcpy(cstr, fname.c_str());
-		dvu_write_raw(size, to.getFrontFrame()->raw_data, cstr);
 
-	}
-#else
 	int i = 0;
+	int read_me = 250;
+	int samples = 30;
+	std::queue<uint16_t> pixel_hist;
+	uint16_t lastfc = 0;
 	while(1)
 	{
+		boost::unique_lock< boost::mutex > lock(to.framebuffer_mutex); //Grab the lock so that ppl won't be writing as you read the frame. Shared lock because many readers, but one writer
 		to.newFrameAvailable.wait(lock);
-		std::cout << "new frame availblable fc: " << (* to.getFrontFrame()).framecount << " timestamp: " << to.getFrontFrame()->cmTime << std::endl;
-		std::cout<<to.height;
 
-		if(i > 30)
+		boost::shared_ptr<frame> frame =to.getFrontFrame();
+		//lock.unlock(); //Once we've got a pointer to the frame, let lock go!
+		//std::cout << "new frame availblable fc: " << frame->framecount << " timestamp: " << frame->cmTime << std::endl;
+		//std::cout<<to.height;
+		int value_targ = (frame->image_data_ptr[read_me*BYTES_PER_PIXEL+1] << 8 | frame->image_data_ptr[read_me]);
+
+		if(frame->framecount -1 != lastfc)
 		{
-		u_char * result = to.getStdDevFrame(30).get();
-
-		std::cout << (result[1001] << 8 || result[1000]) << std::endl;
-		return 3;
+			std::cerr << "WARN MISSED FRAME" << frame->framecount << " " << lastfc << std::endl;
+			lastfc = frame->framecount;
 		}
+		if(i == samples)
+		{
+			while(! pixel_hist.empty())
+			{
+				std::cout << ' ' << pixel_hist.front() << ',';
+				pixel_hist.pop(); //Unlike every other language ever, this does not return a value.
+			}
+			boost::shared_array <float> bpt = to.getStdDevFrame(samples);
+			std::cout << "std_dev: " << bpt[read_me] <<   std::endl;
+			return 3;
+
+		}
+		pixel_hist.push(value_targ);
+		//std::cout << value_targ << std::endl;
 		i++;
+
 	}
-#endif
 	return 0;
 }

@@ -65,6 +65,8 @@ void take_object::pdv_init()
 			new_image_address = pdv_wait_image(pdv_p); //Once you get one frame
 
 		pdv_start_image(pdv_p); //Start another
+
+		boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
 		append_to_frame_buffer(new_image_address);
 		}
 		newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
@@ -82,7 +84,7 @@ boost::shared_ptr<frame> take_object::getFrontFrame()
 	return frame_buffer[0];
 
 }
-boost::shared_array<u_char>  take_object::getStdDevFrame(int N)
+boost::shared_array<float>  take_object::getStdDevFrame(int N)
 {
 	return apply_std_dev_filter(frame_buffer, N);
 }

@@ -39,7 +39,7 @@ CFLAGS     = -g -O2
 CPPFLAGS = -std=c++11
 CPPFLAGS += $(CFLAGS)
 
-NVCCFLAGS  = -arch=sm_20 -G 
+NVCCFLAGS  = -arch=sm_20 -G -lineinfo
 NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= lib

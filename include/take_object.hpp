@@ -47,7 +47,7 @@ public:
 	boost::mutex framebuffer_mutex;
 	unsigned int height;
 	unsigned int width;
-	boost::shared_array<u_char> getStdDevFrame(int N);
+	boost::shared_array<float> getStdDevFrame(int N);
 private:
 	void pdv_init();
 	void append_to_frame_buffer(u_char *);

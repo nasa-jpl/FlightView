@@ -22,7 +22,7 @@
 extern "C" //Makes this callable from c
 #endif
 
-boost::shared_array<u_char> apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer, unsigned int N);
+boost::shared_array<float> apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer, unsigned int N);
 
 
 #endif /* STD_DEV_FILTER_CUH_ */
