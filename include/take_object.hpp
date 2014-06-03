@@ -22,6 +22,7 @@
 #include <boost/shared_array.hpp>
 
 #include <boost/circular_buffer.hpp>
+#include "std_dev_filter.cuh"
 
 
 
@@ -29,6 +30,7 @@
 #include "frame.hpp"
 class take_object {
 	PdvDev * pdv_p;
+	std_dev_filter * sdvf;
     boost::circular_buffer<boost::shared_ptr<frame> > frame_buffer;
 	boost::thread pdv_thread;
 
@@ -42,12 +44,13 @@ public:
 	take_object(int channel_num = 0, int number_of_buffers = 4, int fmsize = 1000);
 	virtual ~take_object();
 	void start();
+	void initFilters(int hs);
 	boost::shared_ptr<frame> getFrontFrame();
 	boost::condition_variable newFrameAvailable;
 	boost::mutex framebuffer_mutex;
 	unsigned int height;
 	unsigned int width;
-	boost::shared_array<float> getStdDevFrame(int N);
+	boost::shared_array<float> getStdDevFrame();
 private:
 	void pdv_init();
 	void append_to_frame_buffer(u_char *);

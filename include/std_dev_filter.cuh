@@ -18,11 +18,22 @@
 #include "frame.hpp"
 #include "cuda_runtime.h"
 
-#ifdef __cplusplus
-extern "C" //Makes this callable from c
-#endif
+__global__ void std_dev_filter_kernel(u_char * pic_d, float * picture_out_device, int width, int height, int N);
+class std_dev_filter
+{
+public:
+	std_dev_filter(int nWidth, int nHeight, int nN);
+	virtual ~std_dev_filter();
+	boost::shared_array<float> apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer);
+private:
+	std_dev_filter() {}//Private defauklt constructor
+	int width;
+	int height;
+	int pic_size;
+	int N;
+	u_char * pictures_device;
+	u_char * current_picture_device;
+	float * picture_out_device;
 
-boost::shared_array<float> apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer, unsigned int N);
-
-
+};
 #endif /* STD_DEV_FILTER_CUH_ */

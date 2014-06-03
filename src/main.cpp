@@ -20,12 +20,13 @@ int main()
 
 	int i = 0;
 	int read_me = 250;
-	int samples = 30;
+	int samples = 50;
 	std::queue<uint16_t> pixel_hist;
 	uint16_t lastfc = 0;
+	boost::unique_lock< boost::mutex > lock(to.framebuffer_mutex); //Grab the lock so that ppl won't be writing as you read the frame. Shared lock because many readers, but one writer
+	to.initFilters(samples);
 	while(1)
 	{
-		boost::unique_lock< boost::mutex > lock(to.framebuffer_mutex); //Grab the lock so that ppl won't be writing as you read the frame. Shared lock because many readers, but one writer
 		to.newFrameAvailable.wait(lock);
 
 		boost::shared_ptr<frame> frame =to.getFrontFrame();
@@ -37,23 +38,25 @@ int main()
 		if(frame->framecount -1 != lastfc)
 		{
 			std::cerr << "WARN MISSED FRAME" << frame->framecount << " " << lastfc << std::endl;
-			lastfc = frame->framecount;
 		}
-		if(i == samples)
+		lastfc = frame->framecount;
+
+		/*
+		if(i > samples && i%10 == 0)
 		{
 			while(! pixel_hist.empty())
 			{
 				std::cout << ' ' << pixel_hist.front() << ',';
 				pixel_hist.pop(); //Unlike every other language ever, this does not return a value.
 			}
-			boost::shared_array <float> bpt = to.getStdDevFrame(samples);
-			std::cout << "std_dev: " << bpt[read_me] <<   std::endl;
-			return 3;
-
+			boost::shared_array <float> bpt = to.getStdDevFrame();
+			std::cout  << "\nstd_dev: " << bpt[read_me] <<   std::endl;
 		}
 		pixel_hist.push(value_targ);
 		//std::cout << value_targ << std::endl;
+		*/
 		i++;
+
 
 	}
 	return 0;

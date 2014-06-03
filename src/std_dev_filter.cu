@@ -1,5 +1,7 @@
 #include "std_dev_filter.cuh"
 #include "cuda_utils.cuh"
+#include <cudaProfiler.h>
+#include <cuda_profiler_api.h>
 #ifndef BYTES_PER_PIXEL
 #define BYTES_PER_PIXEL 2
 #endif
@@ -13,7 +15,7 @@
 
 #define THREADS_PER_BLOCK SHARED_MEM_PER_BLOCK_GTX590/(BYTES_PER_PIXEL*MAX_N) //If we want to cache into shared memory, this gives us the maximum number of threads per block should be 24 with truncation
 //Kernel code, this runs on the GPU (device) uses shared memory to decrease time
-__global__ void std_dev_filter(u_char * pic_d, float * picture_out_device, int width, int height, int N)
+__global__ void std_dev_filter_kernel(u_char * pic_d, float * picture_out_device, int width, int height, int N)
 {
 	__shared__ uint16_t cached_block_data [THREADS_PER_BLOCK*MAX_N]; //Should equal 48000Bytes or 24000 uint_16s
 	int offset = (blockIdx.x*blockDim.x +threadIdx.x)*BYTES_PER_PIXEL; //This gives us how far we are into the u_char
@@ -44,7 +46,7 @@ __global__ void std_dev_filter(u_char * pic_d, float * picture_out_device, int w
 			acc += pow((cached_block_data[i + threadIdx.x*MAX_N] - mean),2);
 		}
 
-		std_dev = sqrt((float)acc/(N-1));
+		std_dev = sqrt(acc/(N-1));
 		//Reset offset
 		offset = (blockIdx.x*blockDim.x +threadIdx.x);
 		picture_out_device[offset] = std_dev;
@@ -53,27 +55,36 @@ __global__ void std_dev_filter(u_char * pic_d, float * picture_out_device, int w
 
 
 }
-boost::shared_array<float> apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer, unsigned int N)
+std_dev_filter::std_dev_filter(int nWidth, int nHeight, int nN)
+{
+	width = nWidth; //Making the assumption that all frames in a frame buffer are the same size
+	height = nHeight;
+	pic_size = width*height*BYTES_PER_PIXEL;
+	N = nN;
+		//std::cout << "threads per block" << THREADS_PER_BLOCK << std::endl;
+	HANDLE_ERROR(cudaMalloc( (void **)&pictures_device, pic_size*N)); //Allocate a huge amount of memory on the GPU (N times the size of each frame stored as a u_char)
+	HANDLE_ERROR(cudaMalloc( (void **)&picture_out_device, width*height*sizeof(float))); //Allocate memory on GPU for reduce target
+
+}
+std_dev_filter::~std_dev_filter()
+{
+	//All the memory leaks!
+	HANDLE_ERROR(cudaFree(pictures_device)); //do not free current picture because it poitns to a location inside pictures_device
+			HANDLE_ERROR(cudaFree(picture_out_device));
+}
+boost::shared_array<float> std_dev_filter::apply_std_dev_filter(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer)
 				{
+	cudaProfilerStart();
 
-	int width = frame_buffer[0]->width; //Making the assumption that all frames in a frame buffer are the same size
-	int height = frame_buffer[0]->height;
-	int pic_size = width*height*BYTES_PER_PIXEL;
-	//std::cout << "threads per block" << THREADS_PER_BLOCK << std::endl;
-
-	u_char * pictures_device;
-	u_char * current_picture_device;
 	//u_char * picture_out = (u_char * )malloc(pic_size); //Create buffer for CPU memory output
 
 	boost::shared_array<float> picture_out(new float[width*height]);
 
-	float * picture_out_device;
 	if(N <= frame_buffer.size() && N <= MAX_N) //We can't calculate the std. dev farther back in time then we are keeping track.
 	{
-		HANDLE_ERROR(cudaMalloc( (void **)&pictures_device, pic_size*N)); //Allocate a huge amount of memory on the GPU (N times the size of each frame stored as a u_char)
+
 		current_picture_device = pictures_device;
 
-		HANDLE_ERROR(cudaMalloc( (void **)&picture_out_device, width*height*sizeof(float))); //Allocate memory on GPU for reduce target
 		//Copy raw image data to device
 		for(int i = 0; i < N; i++)
 		{
@@ -87,17 +98,18 @@ boost::shared_array<float> apply_std_dev_filter(boost::circular_buffer<boost::sh
 		//+1 to account for possible integer-division truncation
 		dim3 gridDims((width*height/blockDims.x +1),1,1);
 
-		std_dev_filter<<<gridDims,blockDims>>>(pictures_device, picture_out_device, width, height, N);
+		std_dev_filter_kernel <<<gridDims,blockDims>>>(pictures_device, picture_out_device, width, height, N);
 		HANDLE_ERROR( cudaPeekAtLastError() );
 		HANDLE_ERROR( cudaDeviceSynchronize() );
 
 		HANDLE_ERROR(cudaMemcpy(picture_out.get(),picture_out_device,pic_size,cudaMemcpyDeviceToHost));
 
-		HANDLE_ERROR(cudaFree(pictures_device)); //do not free current picture because it poitns to a location inside pictures_device
-		HANDLE_ERROR(cudaFree(picture_out_device));
+
 		//return picture_out;
 		//TODO: Fix this
 		//boost::shared_ptr<frame> * result = new boost::shared_ptr<frame>(picture_out,  height, width);
+		cudaProfilerStop();
+
 		return picture_out;
 		//return result;
 	}

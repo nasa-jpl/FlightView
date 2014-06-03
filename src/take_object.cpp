@@ -6,7 +6,6 @@
  */
 
 #include "take_object.hpp"
-#include "std_dev_filter.cuh"
 #include <iostream>
 take_object::take_object(int channel_num, int number_of_buffers, int fmsize)
 {
@@ -25,7 +24,10 @@ take_object::~take_object()
 	free(this->pdv_p);
 }
 
-
+void take_object::initFilters(int history_size)
+{
+sdvf=new std_dev_filter(width,height,history_size);
+}
 void take_object::start()
 {
 	this->pdv_p = NULL;
@@ -66,7 +68,7 @@ void take_object::pdv_init()
 
 		pdv_start_image(pdv_p); //Start another
 
-		boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
+		//boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
 		append_to_frame_buffer(new_image_address);
 		}
 		newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
@@ -84,8 +86,8 @@ boost::shared_ptr<frame> take_object::getFrontFrame()
 	return frame_buffer[0];
 
 }
-boost::shared_array<float>  take_object::getStdDevFrame(int N)
+boost::shared_array<float>  take_object::getStdDevFrame()
 {
-	return apply_std_dev_filter(frame_buffer, N);
+	return sdvf->apply_std_dev_filter(frame_buffer);
 }
 
