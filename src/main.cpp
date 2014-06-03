@@ -20,7 +20,7 @@ int main()
 
 	int i = 0;
 	int read_me = 250;
-	int samples = 50;
+	int samples = 500;
 	std::queue<uint16_t> pixel_hist;
 	uint16_t lastfc = 0;
 	boost::unique_lock< boost::mutex > lock(to.framebuffer_mutex); //Grab the lock so that ppl won't be writing as you read the frame. Shared lock because many readers, but one writer
@@ -54,6 +54,7 @@ int main()
 			//boost::shared_array <float> bpt = to.getStdDevData();
 			//std::cout << bpt[read_me] << std::endl;
 			//std::cout  << "\nstd_dev: " << bpt[read_me] <<   std::endl;
+			return 0;
 		}
 		//pixel_hist.push(value_targ);
 		//std::cout << value_targ << std::endl;

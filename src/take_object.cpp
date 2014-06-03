@@ -79,7 +79,7 @@ void take_object::pdv_init()
 			std_dev_data = sdvf->wait_std_dev_filter();
 
 
-			sdvf->start_std_dev_filter(frame_buffer);
+			sdvf->start_std_dev_filter();
 
 			//std_dev_data = boost::shared_array < float > (sdvf->wait_std_dev_filter()); //Use copy constructor
 		}

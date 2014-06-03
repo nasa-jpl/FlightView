@@ -42,7 +42,7 @@ class take_object {
 	unsigned int numbufs;
 	unsigned int frame_history_size;
 	unsigned int filter_refresh_rate;
-	unsigned long count;
+	uint64_t count;
 public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_period = 10);
 	virtual ~take_object();
