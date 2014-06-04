@@ -53,6 +53,7 @@ public:
 	boost::mutex framebuffer_mutex;
 	unsigned int height;
 	unsigned int width;
+	bool isChroma;
 	boost::shared_array<float> getStdDevData();
 private:
 	void pdv_init();

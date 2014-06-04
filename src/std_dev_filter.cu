@@ -33,6 +33,8 @@ __global__ void std_dev_filter_kernel(u_char * pic_d, float * picture_out_device
 	{
 
 		//Put the device global memory into shared memory (reduces amount of slow memory accesses we need to do), also take the sum for averaging
+
+		/*
 		for(int i = 0; i<N; i++)
 		{
 			current_val = pic_d[offset] | (pic_d[offset+1] << 8);
@@ -40,6 +42,7 @@ __global__ void std_dev_filter_kernel(u_char * pic_d, float * picture_out_device
 			offset += pic_size;
 			sum += current_val;
 		}
+		*/
 
 		mean = sum/N;
 		for(int i = 0; i<N; i++)
@@ -89,7 +92,9 @@ void std_dev_filter::update_GPU_buffer(boost::circular_buffer<boost::shared_ptr 
 	if(frame_buffer.size() == N) //If the frame buffer has been fully populated
 	{
 		if(++gpu_buffer_tail == N) //Increment and test for ring buffer overflow
-				gpu_buffer_tail = 0;
+		{
+			gpu_buffer_tail = 0;
+		}
 	}
 
 }

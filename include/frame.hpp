@@ -24,7 +24,7 @@ struct frame
 	u_char * raw_data;
 	u_char * image_data_ptr; //= raw_data + width*BYTES_PER_PIXEL; //To get where the data actually begins
 	//uint16_t ** image2d;
-	frame(u_char * data_in, int size, int ht, int wd);
+	frame(u_char * data_in, int size, int ht, int wd, bool isChroma);
 	virtual ~frame();
 
 	//To get this as a 2d array, use a reinterpret cast, not going use a union here.

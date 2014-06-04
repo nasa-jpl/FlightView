@@ -5,6 +5,7 @@
  *      Author: nlevy
  */
 
+#include "chroma_translate_filter.cuh"
 #include "take_object.hpp"
 #include <iostream>
 take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int frf)
@@ -42,11 +43,16 @@ void take_object::start()
 	}
 	//TODO: Sizing stuff
 	size = pdv_get_dmasize(pdv_p); //Not using this at the moment
+	isChroma = size > 481*640*BYTES_PER_PIXEL ? true : false;
+
 	width = pdv_get_width(pdv_p);
 
 	//Our version of height should not include the header size
-	height = pdv_get_height(pdv_p) - 1;
-
+	height = pdv_get_height(pdv_p);
+	if(!isChroma)
+	{
+		height = height - 1;
+	}
 
 	/*I realize im allocating a ring buffer here and I am using boost to make a totally different one as well.
 	 *It seems dumb to do this, but the pdv library has scary warning about making the ring buffer to big, so I decided not to risk it.
@@ -70,17 +76,19 @@ void take_object::pdv_init()
 			new_image_address = pdv_wait_image(pdv_p); //Once you get one frame
 
 		pdv_start_image(pdv_p); //Start another
+		//if chroma, translate new image
 
 		boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
 		append_to_frame_buffer(new_image_address);
 
 		if(count % filter_refresh_rate == 0)
 		{
+			/*
 			std_dev_data = sdvf->wait_std_dev_filter();
 
 
 			sdvf->start_std_dev_filter();
-
+		*/
 			//std_dev_data = boost::shared_array < float > (sdvf->wait_std_dev_filter()); //Use copy constructor
 		}
 
@@ -94,7 +102,7 @@ void take_object::pdv_init()
 }
 void take_object::append_to_frame_buffer(u_char * data_in)
 {
-	boost::shared_ptr<frame> frame_sp(new frame(data_in, size, height,width));
+	boost::shared_ptr<frame> frame_sp(new frame(data_in, size, height,width, isChroma));
 	frame_buffer.push_front(frame_sp);
 
 }
