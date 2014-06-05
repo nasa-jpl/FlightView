@@ -24,9 +24,10 @@ __global__ void chroma_filter_kernel(uint16_t * pic_d, uint16_t * pic_out_d)
 }
 uint16_t * chroma_translate_filter::apply_chroma_translate_filter(uint16_t * picture_in)
 {
+	/*
 	HANDLE_ERROR(cudaMemcpy(pic_in_host,picture_in, PIC_SIZE,cudaMemcpyHostToHost)); //If we stage ourselves it allows for cuda kernel concurrency
-	//HANDLE_ERROR(cudaMemcpyAsync(picture_device, pic_in_host, PIC_SIZE, cudaMemcpyHostToDevice, chroma_translate_stream));
-	HANDLE_ERROR(cudaMemcpy(picture_device, picture_in, PIC_SIZE, cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpyAsync(picture_device, pic_in_host, PIC_SIZE, cudaMemcpyHostToDevice, chroma_translate_stream));
+	//HANDLE_ERROR(cudaMemcpy(picture_device, picture_in, PIC_SIZE, cudaMemcpyHostToDevice));
 
 
 	dim3 blockDims(BLOCK_SIDE,BLOCK_SIDE,1);
@@ -54,7 +55,7 @@ uint16_t * chroma_translate_filter::apply_chroma_translate_filter(uint16_t * pic
 	}
 	*/
 
-	return picture_out;
+	return picture_in;
 }
 chroma_translate_filter::chroma_translate_filter()
 {

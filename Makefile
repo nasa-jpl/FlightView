@@ -36,8 +36,8 @@ OBJDIR = obj
 
 
 #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
-#SECOND NOTE: DO NOT ENABLE OPTIMIZATION FLAGS HERE!!! GCC WILL OPTIMIZE OUT THINGS NVCC NEEDS!
-CFLAGS     = -g
+#SECOND NOTE: ONLY BUILD WITH O1! Somehow, someway, O2 optimizes out things that nvcc needs and O0 has linker redefinition errors. #JankCity
+CFLAGS     = -g -O1
 
 CPPFLAGS = -std=c++11
 CPPFLAGS += $(CFLAGS)
@@ -46,7 +46,7 @@ NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -G -lineinfo -Xcompiler -rdynam
 NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= lib
-LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread
+LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lz -lcuda -lcudart
 AR_COMBINE_SCRIPT = combine_libs_script.ar
 STATIC_COMPILE_SYSTEM_LIBS = 1
 all : $(EXE) $(LIBOUT)
@@ -78,6 +78,6 @@ $(OBJDIR)/%.o : %.cpp
 
 #What to do to build cu files -> o files
 $(OBJDIR)/%.o : %.cu 
-	$(NVCC) $(CFLAGS) $(IDIR) -c -o $@ $<
+	$(NVCC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
 clean:
 	rm -rf $(OBJDIR) $(EXE) $(LIBOUT) thin_$(LIBOUT)

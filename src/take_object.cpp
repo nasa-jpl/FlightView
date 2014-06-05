@@ -88,10 +88,11 @@ void take_object::pdv_init()
 
 		if(isChroma)
 		{
-		new_image_address = ctf.apply_chroma_translate_filter(new_image_address);
+		//new_image_address = ctf.apply_chroma_translate_filter(new_image_address);
 		}
 		append_to_frame_buffer(new_image_address);
 
+		new_image_address[20] = 2;
 		if(count % filter_refresh_rate == 0)
 		{
 			/*

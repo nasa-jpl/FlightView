@@ -39,7 +39,7 @@ int main()
 		}
 		lastfc = frame->framecount;
 
-
+		std::cout << frame->image_data_ptr[20] << std::endl;
 		if(i > samples && i%10 == 0)
 		{
 			/*

@@ -9,7 +9,6 @@
 #define CHROMA_TRANSLATE_FILTER_H_
 #include "edtinc.h"
 #include <stdint.h>
-#include <cuda.h>
 #include <cuda_runtime_api.h>
 
 class chroma_translate_filter

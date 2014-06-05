@@ -1,6 +1,5 @@
 #include "std_dev_filter.cuh"
 #include "cuda_utils.cuh"
-#include <cudaProfiler.h>
 #include <cuda_profiler_api.h>
 #ifndef BYTES_PER_PIXEL
 #define BYTES_PER_PIXEL 2
@@ -118,7 +117,7 @@ void std_dev_filter::start_std_dev_filter()
 		HANDLE_ERROR(cudaMemcpyAsync(picture_out.get(),picture_out_device,pic_size,cudaMemcpyDeviceToHost,std_dev_stream));
 		//HANDLE_ERROR( cudaPeekAtLastError() );
 
-		cudaProfilerStop();
+		//cudaProfilerStop();
 
 		//return std_dev_stream;
 		//return result;
