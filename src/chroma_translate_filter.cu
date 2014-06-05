@@ -24,7 +24,6 @@ __global__ void chroma_filter_kernel(uint16_t * pic_d, uint16_t * pic_out_d)
 }
 uint16_t * chroma_translate_filter::apply_chroma_translate_filter(uint16_t * picture_in)
 {
-	/*
 	HANDLE_ERROR(cudaMemcpy(pic_in_host,picture_in, PIC_SIZE,cudaMemcpyHostToHost)); //If we stage ourselves it allows for cuda kernel concurrency
 	HANDLE_ERROR(cudaMemcpyAsync(picture_device, pic_in_host, PIC_SIZE, cudaMemcpyHostToDevice, chroma_translate_stream));
 	//HANDLE_ERROR(cudaMemcpy(picture_device, picture_in, PIC_SIZE, cudaMemcpyHostToDevice));
@@ -55,22 +54,21 @@ uint16_t * chroma_translate_filter::apply_chroma_translate_filter(uint16_t * pic
 	}
 	*/
 
-	return picture_in;
+	return picture_out;
 }
 chroma_translate_filter::chroma_translate_filter()
 {
 
+
 	picture_out = (uint16_t * )malloc(PIC_SIZE); //Create buffer for CPU memory output
-	//HANDLE_ERROR(cudaMallocHost((void **) &pic_in_host, PIC_SIZE, cudaHostAllocMapped));
-	//cudaHostGetDevicePointer(&mapped_var, var, 0);
+
 	HANDLE_ERROR(cudaMalloc( (void **)&picture_device, PIC_SIZE));
 	HANDLE_ERROR(cudaMalloc( (void **)&pic_out_d, PIC_SIZE));
+	HANDLE_ERROR(cudaMallocHost((void **) &pic_in_host, PIC_SIZE));
 
 	HANDLE_ERROR(cudaStreamCreate(&chroma_translate_stream));
-	HANDLE_ERROR(cudaHostAlloc( (void **) &pic_in_host, PIC_SIZE, cudaHostAllocDefault));
 
-	HANDLE_ERROR(cudaThreadSynchronize());
-	std::cout << "done alloc" << std::endl;
+	//std::cout << "done alloc" << std::endl;
 }
 chroma_translate_filter::~chroma_translate_filter()
 {

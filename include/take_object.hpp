@@ -44,7 +44,7 @@ class take_object {
 	unsigned int frame_history_size;
 	unsigned int filter_refresh_rate;
 	uint64_t count;
-	//chroma_translate_filter ctf;
+	chroma_translate_filter ctf;
 public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_period = 10);
 	virtual ~take_object();
