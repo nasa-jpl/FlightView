@@ -5,6 +5,8 @@ AR = ar
 LIBTOOL = libtool
 SOURCEDIR = src
 
+BUILD_FOR_DEBUG = yes #must be yes to enable
+
 EXE   = cuda_take
 LIBOUT = libcuda_take.a
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
@@ -39,7 +41,7 @@ CFLAGS     = -g -O2
 CPPFLAGS = -std=c++11
 CPPFLAGS += $(CFLAGS)
 
-NVCCFLAGS  = -arch=sm_20 -G -lineinfo
+NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -G -lineinfo -Xcompiler -rdynamic
 NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= lib

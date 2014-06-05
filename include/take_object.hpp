@@ -14,6 +14,7 @@
 #include <mutex>
 */
 //#include <boost/atomic.hpp> //Atomic isn't in the boost library till 1.5.4, debian wheezy has 1.4.9 :(
+#include <stdint.h>
 #include <boost/thread.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
@@ -24,8 +25,7 @@
 
 #include <boost/circular_buffer.hpp>
 #include "std_dev_filter.cuh"
-
-
+#include "chroma_translate_filter.cuh"
 
 #include "edtinc.h"
 #include "frame.hpp"
@@ -34,6 +34,7 @@ class take_object {
 	std_dev_filter * sdvf;
     boost::circular_buffer<boost::shared_ptr<frame> > frame_buffer;
 	boost::thread pdv_thread;
+	bool pdv_thread_run;
 	boost::shared_array<float> std_dev_data;
 
 	unsigned int size;
@@ -43,6 +44,7 @@ class take_object {
 	unsigned int frame_history_size;
 	unsigned int filter_refresh_rate;
 	uint64_t count;
+	chroma_translate_filter ctf;
 public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_period = 10);
 	virtual ~take_object();
@@ -57,7 +59,7 @@ public:
 	boost::shared_array<float> getStdDevData();
 private:
 	void pdv_init();
-	void append_to_frame_buffer(u_char *);
+	void append_to_frame_buffer(uint16_t *);
 
 };
 

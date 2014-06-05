@@ -23,11 +23,9 @@ int main()
 	int samples = 500;
 	std::queue<uint16_t> pixel_hist;
 	uint16_t lastfc = 0;
-	boost::unique_lock< boost::mutex > lock(to.framebuffer_mutex); //Grab the lock so that ppl won't be writing as you read the frame. Shared lock because many readers, but one writer
 	to.initFilters(samples);
 	while(1)
 	{
-		to.newFrameAvailable.wait(lock);
 		std::cout << i << std::endl;
 		boost::shared_ptr<frame> frame =to.getFrontFrame();
 		//lock.unlock(); //Once we've got a pointer to the frame, let lock go!
@@ -35,7 +33,7 @@ int main()
 		//std::cout<<to.height;
 		int value_targ = (frame->image_data_ptr[read_me*BYTES_PER_PIXEL+1] << 8 | frame->image_data_ptr[read_me]);
 
-		if(frame->framecount -1 != lastfc)
+		if(!to.isChroma && frame->framecount -1 != lastfc)
 		{
 			std::cerr << "WARN MISSED FRAME" << frame->framecount << " " << lastfc << std::endl;
 		}
@@ -50,7 +48,7 @@ int main()
 				std::cout << ' ' << pixel_hist.front() << ',';
 				pixel_hist.pop(); //Unlike every other language ever, this does not return a value.
 			}
-			*/
+			 */
 			//boost::shared_array <float> bpt = to.getStdDevData();
 			//std::cout << bpt[read_me] << std::endl;
 			//std::cout  << "\nstd_dev: " << bpt[read_me] <<   std::endl;
@@ -60,7 +58,6 @@ int main()
 		//std::cout << value_targ << std::endl;
 
 		i++;
-
 
 	}
 	return 0;

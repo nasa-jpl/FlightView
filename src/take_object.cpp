@@ -20,16 +20,18 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 take_object::~take_object()
 {
 	int dummy;
-	pdv_thread.interrupt();
+	//pdv_thread.interrupt();
+	pdv_thread_run = 0;
+	pdv_thread.join(); //Wait for thread to end
 	pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
 	pdv_close(pdv_p);
 	//Apparently if I use pdv_open, it implicitly calls malloc and therefore I should use free, not delete.
-	free(this->pdv_p);
+	//free(this->pdv_p);
 }
 
 void take_object::initFilters(int history_size)
 {
-sdvf=new std_dev_filter(width,height,history_size);
+	sdvf=new std_dev_filter(width,height,history_size);
 }
 void take_object::start()
 {
@@ -61,24 +63,33 @@ void take_object::start()
 	std::cout << "about to start threads" << std::endl;
 	pdv_multibuf(pdv_p,this->numbufs);
 	//The internet says that I need to pass a pointer to the threadable function, and a reference to the calling instance of take_object (this)
+	pdv_thread_run = 1;
 	pdv_thread = boost::thread(&take_object::pdv_init, this);
 }
 void take_object::pdv_init()
 {
-	u_char * new_image_address;
+
+	uint16_t * new_image_address;
 	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 	//sdvf->start_std_dev_filter(frame_buffer);
-	while(1)
+	while(pdv_thread_run == 1)
 	{
-		//boost::lock_guard<boost::mutex> lock(this->framebuffer_mutex);
-		{
-			boost::this_thread::disable_interruption di; //This ensures that the interruption will hit while we're not waitign for an image
-			new_image_address = pdv_wait_image(pdv_p); //Once you get one frame
+
+
+		new_image_address = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)); //We're never going to deal with u_char *, ever again.
+		//std::cout << "a good outcome" << std::endl;
 
 		pdv_start_image(pdv_p); //Start another
 		//if chroma, translate new image
+		//std::cout << "a gooder outcome" << std::endl;
 
 		boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
+		//std::cout << "a goodest outcome" << std::endl;
+
+		if(isChroma)
+		{
+		new_image_address = ctf.apply_chroma_translate_filter(new_image_address);
+		}
 		append_to_frame_buffer(new_image_address);
 
 		if(count % filter_refresh_rate == 0)
@@ -88,19 +99,19 @@ void take_object::pdv_init()
 
 
 			sdvf->start_std_dev_filter();
-		*/
+			 */
 			//std_dev_data = boost::shared_array < float > (sdvf->wait_std_dev_filter()); //Use copy constructor
 		}
 
 		count++;
 		lock.unlock();
 
-		}
+
 		newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
 
 	}
 }
-void take_object::append_to_frame_buffer(u_char * data_in)
+void take_object::append_to_frame_buffer(uint16_t * data_in)
 {
 	boost::shared_ptr<frame> frame_sp(new frame(data_in, size, height,width, isChroma));
 	frame_buffer.push_front(frame_sp);
@@ -108,6 +119,8 @@ void take_object::append_to_frame_buffer(u_char * data_in)
 }
 boost::shared_ptr<frame> take_object::getFrontFrame()
 {
+	boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
+	newFrameAvailable.wait(lock);
 	return frame_buffer[0];
 
 }

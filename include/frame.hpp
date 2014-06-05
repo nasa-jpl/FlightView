@@ -21,10 +21,10 @@ struct frame
 	unsigned int width;
 	uint16_t framecount;
 	uint64_t cmTime;
-	u_char * raw_data;
-	u_char * image_data_ptr; //= raw_data + width*BYTES_PER_PIXEL; //To get where the data actually begins
+	uint16_t * raw_data;
+	uint16_t * image_data_ptr; //= raw_data + width*BYTES_PER_PIXEL; //To get where the data actually begins
 	//uint16_t ** image2d;
-	frame(u_char * data_in, int size, int ht, int wd, bool isChroma);
+	frame(uint16_t * data_in, int size, int ht, int wd, bool isChroma);
 	virtual ~frame();
 
 	//To get this as a 2d array, use a reinterpret cast, not going use a union here.

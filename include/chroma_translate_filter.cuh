@@ -8,6 +8,20 @@
 #ifndef CHROMA_TRANSLATE_FILTER_H_
 #define CHROMA_TRANSLATE_FILTER_H_
 #include "edtinc.h"
-u_char * chroma_translate(u_char * in,int height, int width);
+#include <stdint.h>
+
+
+class chroma_translate_filter
+{
+public:
+	chroma_translate_filter();
+	virtual ~chroma_translate_filter();
+	uint16_t * apply_chroma_translate_filter(uint16_t * in);
+private:
+	uint16_t * picture_out;
+	uint16_t * picture_device;
+	uint16_t * pic_out_d;
+};
+
 
 #endif /* CHROMA_TRANSLATE_FILTER_H_ */
