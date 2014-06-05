@@ -2,14 +2,12 @@
 //#include <cuda.h>
 //#include <cuda_runtime_api.h>
 
-#ifndef BYTES_PER_PIXEL
-#define BYTES_PER_PIXEL 2
-#endif
+
 //This code largely inspired by http://madsravn.dk/posts/simple-image-processing-with-cuda/
 
 
 //Kernel code, this runs on the GPU (device)
-__global__ void pixel_dark_subtraction_filter(u_char * pic_d, u_char * mask_d, int width, int height)
+__global__ void pixel_dark_subtraction_filter(uint16_t * pic_d, uint16_t * mask_d, float int width, int height)
 {
 	int offset = blockIdx.x*blockDim.x +threadIdx.x; //This gives us how far we are into the u_char
 
@@ -17,8 +15,8 @@ __global__ void pixel_dark_subtraction_filter(u_char * pic_d, u_char * mask_d, i
 	{
 	//Each grayscale depth in the u_char * is represented by adjacent bytes in little endian order.
 	// For this filter, we don't need to know where we are in the 2D sense since we are only doing a map operation. For gathers or stencils we will need to work on this.
-	uint16_t current_value = pic_d[offset*BYTES_PER_PIXEL] | (pic_d[offset*BYTES_PER_PIXEL+1] << 8);
-	uint16_t mask_value = mask_d[offset*BYTES_PER_PIXEL] | (mask_d[offset*BYTES_PER_PIXEL+1] << 8);
+	uint16_t current_value = pic_d[offset];
+	uint16_t mask_value = mask_d[offset];
 
 	// Cuda does not check for underflow so we have to check here.
 	if(current_value - mask_value >= 0)

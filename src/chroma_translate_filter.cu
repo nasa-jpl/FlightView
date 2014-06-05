@@ -73,6 +73,8 @@ chroma_translate_filter::chroma_translate_filter()
 chroma_translate_filter::~chroma_translate_filter()
 {
 	HANDLE_ERROR(cudaStreamDestroy(chroma_translate_stream));
-	cudaFree(picture_device);
+	HANDLE_ERROR(cudaFree(picture_device));
+	HANDLE_ERROR(cudaFree(pic_out_d));
+	HANDLE_ERROR(cudaFree(pic_in_host));
 	free(picture_out);
 }
