@@ -36,7 +36,8 @@ OBJDIR = obj
 
 
 #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
-CFLAGS     = -g -O2
+#SECOND NOTE: DO NOT ENABLE OPTIMIZATION FLAGS HERE!!! GCC WILL OPTIMIZE OUT THINGS NVCC NEEDS!
+CFLAGS     = -g
 
 CPPFLAGS = -std=c++11
 CPPFLAGS += $(CFLAGS)
