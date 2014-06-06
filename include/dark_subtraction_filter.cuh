@@ -17,20 +17,28 @@
 class dark_subtraction_filter
 {
 public:
-	dark_subtraction_filter(int nWidth, int nHeight, int nN);
+	dark_subtraction_filter() {};//Useless default constructor
+	dark_subtraction_filter(int nWidth, int nHeight);
 	virtual ~dark_subtraction_filter();
-	void start_std_dev_filter(uint16_t * pic_in);
-	boost::shared_array< float > wait_std_dev_filter();
+	void update_dark_subtraction(uint16_t * pic_in);
+	boost::shared_array< float > wait_dark_subtraction();
+	void start_mask_collection();
+	uint32_t update_mask_collection(uint16_t * pic_in);
+	void finish_mask_collection();
 	cudaStream_t dark_subtraction_stream;
 private:
-	dark_subtraction_filter() {};//Private defauklt constructor
 	boost::shared_array<float> picture_out;
 	uint16_t width;
 	uint16_t height;
-	int pic_size;
-	uint16_t * picture_device;
-	uint16_t * mask_device;
+	uint32_t averaged_samples;
 
+	uint16_t * pic_in_host;
+	uint16_t * picture_device;
+	float * mask_device;
+	float * result_device;
+	float * pic_out_host;
+
+	cudaStream_t dsf_stream;
 };
 
 #endif /* DARK_SUBTRACTION_FILTER_CUH_ */

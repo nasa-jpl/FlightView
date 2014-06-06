@@ -16,6 +16,7 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 	this->filter_refresh_rate =frf;
 	this->frame_buffer = boost::circular_buffer<boost::shared_ptr<frame>>(fmsize); //Initialize the ring buffer of frames
 	this->count = 0;
+	this->mask_collection_running = false;
 }
 take_object::~take_object()
 {
@@ -77,6 +78,7 @@ void take_object::pdv_init()
 
 
 		new_image_address = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)); //We're never going to deal with u_char *, ever again.
+
 		//std::cout << "a good outcome" << std::endl;
 
 		pdv_start_image(pdv_p); //Start another
@@ -88,7 +90,11 @@ void take_object::pdv_init()
 
 		if(isChroma)
 		{
-		new_image_address = ctf.apply_chroma_translate_filter(new_image_address);
+			new_image_address = ctf.apply_chroma_translate_filter(new_image_address);
+		}
+		if(mask_collection_running)
+		{
+			dsf.update_mask_collection(new_image_address);
 		}
 		append_to_frame_buffer(new_image_address);
 
@@ -128,4 +134,18 @@ boost::shared_array<float>  take_object::getStdDevData()
 {
 	return std_dev_data;
 }
+boost::shared_array<float> take_object::getDarkSubtractedData()
+{
+	return dsf.wait_dark_subtraction();
+}
+void take_object::startCapturingDSFMask()
+{
+	dsf.start_mask_collection();
+	mask_collection_running = true;
 
+}
+void take_object::finishCapturingDSFMask()
+{
+	dsf.finish_mask_collection();
+	mask_collection_running = false;
+}

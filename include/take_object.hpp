@@ -26,7 +26,7 @@
 #include <boost/circular_buffer.hpp>
 #include "std_dev_filter.cuh"
 #include "chroma_translate_filter.cuh"
-
+#include "dark_subtraction_filter.cuh"
 #include "edtinc.h"
 #include "frame.hpp"
 class take_object {
@@ -35,6 +35,7 @@ class take_object {
     boost::circular_buffer<boost::shared_ptr<frame> > frame_buffer;
 	boost::thread pdv_thread;
 	bool pdv_thread_run;
+	bool mask_collection_running;
 	boost::shared_array<float> std_dev_data;
 
 	unsigned int size;
@@ -45,6 +46,7 @@ class take_object {
 	unsigned int filter_refresh_rate;
 	uint64_t count;
 	chroma_translate_filter ctf;
+	dark_subtraction_filter dsf;
 public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_period = 10);
 	virtual ~take_object();
@@ -57,6 +59,10 @@ public:
 	unsigned int width;
 	bool isChroma;
 	boost::shared_array<float> getStdDevData();
+	boost::shared_array<float> getDarkSubtractedData();
+	void startCapturingDSFMask();
+	void finishCapturingDSFMask();
+
 private:
 	void pdv_init();
 	void append_to_frame_buffer(uint16_t *);

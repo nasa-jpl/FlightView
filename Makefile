@@ -10,7 +10,7 @@ BUILD_FOR_DEBUG = yes #must be yes to enable
 EXE   = cuda_take
 LIBOUT = libcuda_take.a
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
-SOURCES = main.cpp constant_filter.cu dark_subtraction_filter.cu take_object.cpp frame.cpp std_dev_filter.cu chroma_translate_filter.cu
+SOURCES = main.cpp dark_subtraction_filter.cu take_object.cpp frame.cpp std_dev_filter.cu chroma_translate_filter.cu
 
 
 vpath %.c $(SOURCEDIR)

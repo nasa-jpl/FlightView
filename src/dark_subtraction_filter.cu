@@ -1,42 +1,129 @@
 #include "dark_subtraction_filter.cuh"
 //#include <cuda.h>
 //#include <cuda_runtime_api.h>
-
-
-//This code largely inspired by http://madsravn.dk/posts/simple-image-processing-with-cuda/
-
-
+#include "cuda_utils.cuh"
+#include <stdlib.h>
+#define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
+#define DSF_DEVICE_NUM 2
+#define BLOCK_SIDE 20
 //Kernel code, this runs on the GPU (device)
-__global__ void pixel_dark_subtraction_filter(uint16_t * pic_d, uint16_t * mask_d, float int width, int height)
+__global__ void apply_mask(uint16_t * pic_d, float * mask_d, float * result_d, uint16_t width, uint16_t height)
 {
-	int offset = blockIdx.x*blockDim.x +threadIdx.x; //This gives us how far we are into the u_char
-
-	if(offset < width*height) //Because we needed an interger grid size, we will have a few threads that don't correspond to a location in the image.
-	{
-	//Each grayscale depth in the u_char * is represented by adjacent bytes in little endian order.
-	// For this filter, we don't need to know where we are in the 2D sense since we are only doing a map operation. For gathers or stencils we will need to work on this.
-	uint16_t current_value = pic_d[offset];
-	uint16_t mask_value = mask_d[offset];
-
-	// Cuda does not check for underflow so we have to check here.
-	if(current_value - mask_value >= 0)
-	{
-	current_value -=mask_value;
-	}
-	else
-	{
-		current_value = 0;
-	}
-
-	pic_d[offset*BYTES_PER_PIXEL] =(u_char) current_value; //We want the LSB here
-	pic_d[offset*BYTES_PER_PIXEL + 1] =(u_char) (current_value >> 8); //We want the MSB here
-
-	}
-
-
+	unsigned short col = blockIdx.x*blockDim.x + threadIdx.x;
+	unsigned short row = blockIdx.y*blockDim.y + threadIdx.y;
+	unsigned short offset = col + row*width;
+	result_d[offset] = pic_d[offset] - mask_d[offset];
 
 }
-u_char * apply_dark_subtraction_filter(u_char * picture_in, u_char * dark_mask, int width, int height)
+__global__ void sum_mask(uint16_t * pic_d, float * mask_d,uint16_t width, uint16_t height)
+{
+	unsigned short col = blockIdx.x*blockDim.x + threadIdx.x;
+	unsigned short row = blockIdx.y*blockDim.y + threadIdx.y;
+	unsigned short offset = col + row*width;
+	mask_d[offset] = mask_d[offset] + pic_d[offset];
+
+}
+__global__ void avg_mask(float * mask_d, uint32_t num_samples, uint16_t width, uint16_t height)
+{
+	unsigned short col = blockIdx.x*blockDim.x + threadIdx.x;
+	unsigned short row = blockIdx.y*blockDim.y + threadIdx.y;
+	unsigned short offset = col + row*width;
+	mask_d[offset] = mask_d[offset]/num_samples;
+
+}
+
+void dark_subtraction_filter::start_mask_collection()
+{
+	averaged_samples = 0; //Synchronous
+	cudaMemsetAsync(mask_device,0,width*height*sizeof(uint16_t),dsf_stream); //Asynchronous
+}
+
+uint32_t dark_subtraction_filter::update_mask_collection(uint16_t * pic_in)
+{
+	// Synchronous
+	memcpy(pic_in_host,pic_in,width*height*sizeof(uint16_t));
+	averaged_samples++;
+
+	//Asynchronous
+	cudaMemcpyAsync(picture_device,pic_in_host,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,dsf_stream);
+	dim3 blockDims(BLOCK_SIDE,BLOCK_SIDE,1);
+	dim3 gridDims(width/BLOCK_SIDE, height/BLOCK_SIDE,1);
+	sum_mask<<< gridDims, blockDims,0,dsf_stream>>>(picture_device, mask_device,width,height);
+	return averaged_samples;
+}
+void dark_subtraction_filter::finish_mask_collection()
+{
+
+	dim3 blockDims(BLOCK_SIDE,BLOCK_SIDE,1);
+	dim3 gridDims(width/BLOCK_SIDE, height/BLOCK_SIDE,1);
+	avg_mask<<< gridDims, blockDims,0,dsf_stream>>>(mask_device, averaged_samples,width,height);
+}
+
+void dark_subtraction_filter::update_dark_subtraction(uint16_t * pic_in)
+{
+	//Synchronous
+	memcpy(pic_in_host,pic_in,width*height*sizeof(uint16_t));
+
+	//Asynchronous
+	cudaMemcpyAsync(picture_device,pic_in_host,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,dsf_stream);
+	dim3 blockDims(BLOCK_SIDE,BLOCK_SIDE,1);
+	dim3 gridDims(width/BLOCK_SIDE, height/BLOCK_SIDE,1);
+	apply_mask<<< gridDims, blockDims,0,dsf_stream>>>(picture_device, mask_device, result_device, width,height);
+	cudaMemcpyAsync(pic_out_host,result_device,width*height*sizeof(uint16_t),cudaMemcpyDeviceToHost,dsf_stream);
+
+}
+boost::shared_array< float > dark_subtraction_filter::wait_dark_subtraction()
+{
+	// Synchronous
+	cudaStreamSynchronize(dsf_stream);
+	memcpy(picture_out.get(),pic_out_host,width*height*sizeof(float));
+	return picture_out;
+}
+/*
+	dark_subtraction_filter() {};//Private defauklt constructor
+	boost::shared_array<float> picture_out;
+	uint16_t width;
+	uint16_t height;
+	int pic_size;
+	uint16_t * pic_in_host;
+	uint16_t * picture_device;
+	float * mask_device;
+ */
+
+dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)
+{
+
+	width=nWidth;
+	height=nHeight;
+
+	picture_out = boost::shared_array<float>(new float[width*height]);
+
+	//cudaThreadExit(); // clears all the runtime state for the current thread
+	//HANDLE_ERROR(cudaSetDevice(DSF_DEVICE_NUM)); // explicit set the current device for the other calls
+	HANDLE_ERROR(cudaMallocHost( (void **)&pic_in_host,width*height*sizeof(uint16_t)));
+	HANDLE_ERROR(cudaMallocHost( (void **)&pic_out_host,width*height*sizeof(float)));
+
+	HANDLE_ERROR(cudaMalloc( (void **)&picture_device, width*height*sizeof(uint16_t)));
+	HANDLE_ERROR(cudaMalloc( (void **)&mask_device, width*height*sizeof(float)));
+	HANDLE_ERROR(cudaMalloc( (void **)&result_device, width*height*sizeof(float)));
+
+
+	HANDLE_ERROR(cudaStreamCreate(&dsf_stream));
+
+	//std::cout << "done alloc" << std::endl;
+}
+dark_subtraction_filter::~dark_subtraction_filter()
+{
+	HANDLE_ERROR(cudaStreamDestroy(dsf_stream));
+	HANDLE_ERROR(cudaFree(picture_device));
+	HANDLE_ERROR(cudaFree(mask_device));
+	HANDLE_ERROR(cudaFree(result_device));
+	HANDLE_ERROR(cudaFreeHost(pic_in_host));
+	HANDLE_ERROR(cudaFreeHost(pic_out_host));
+
+}
+/*
+u_char * apply_dark_subtraction_filter(uint16_t * picture_in,int width, int height)
 {
 	int pic_size = width*height*BYTES_PER_PIXEL;
 
@@ -64,5 +151,5 @@ u_char * apply_dark_subtraction_filter(u_char * picture_in, u_char * dark_mask, 
 	cudaFree(picture_device);
 	return picture_out;
 }
-
+ */
 
