@@ -36,6 +36,7 @@ class take_object {
 	boost::thread pdv_thread;
 	bool pdv_thread_run;
 	bool mask_collection_running;
+	bool mask_collected;
 	boost::shared_array<float> std_dev_data;
 
 	unsigned int size;
@@ -46,7 +47,7 @@ class take_object {
 	unsigned int filter_refresh_rate;
 	uint64_t count;
 	chroma_translate_filter ctf;
-	dark_subtraction_filter dsf;
+	dark_subtraction_filter * dsf;
 public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_period = 10);
 	virtual ~take_object();

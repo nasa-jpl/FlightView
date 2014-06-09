@@ -17,7 +17,7 @@
 class dark_subtraction_filter
 {
 public:
-	dark_subtraction_filter() {};//Useless default constructor
+	dark_subtraction_filter() {};//Useless defauklt constructor
 	dark_subtraction_filter(int nWidth, int nHeight);
 	virtual ~dark_subtraction_filter();
 	void update_dark_subtraction(uint16_t * pic_in);

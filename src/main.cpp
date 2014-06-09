@@ -6,8 +6,25 @@
 #include <iostream>
 #include <string>
 #include <queue>
+#include "dark_subtraction_filter.cuh"
 using namespace std;
 #define INFINITE
+
+int mainno()
+{
+	int width = 1280;
+	int height = 720;
+	uint16_t fake[1280*720];
+	dark_subtraction_filter dsf(width,height);
+	dsf.update_mask_collection(fake);
+	fake[100000] = 2;
+	dsf.update_mask_collection(fake);
+	dsf.update_mask_collection(fake);
+	dsf.update_mask_collection(fake);
+
+
+	std::cout << " no segfault" << std::endl;
+}
 int main()
 {
 	take_object to;
@@ -20,45 +37,43 @@ int main()
 
 	int i = 0;
 	int read_me = 250;
-	int samples = 500;
+	int samples = 30;
+	int read_addr = 9300;
 	std::queue<uint16_t> pixel_hist;
 	uint16_t lastfc = 0;
-	to.initFilters(samples);
-	while(1)
-	{
-		std::cout << i << std::endl;
-		boost::shared_ptr<frame> frame =to.getFrontFrame();
-		//lock.unlock(); //Once we've got a pointer to the frame, let lock go!
-		//std::cout << "new frame availblable fc: " << frame->framecount << " timestamp: " << frame->cmTime << std::endl;
-		//std::cout<<to.height;
-		int value_targ = (frame->image_data_ptr[read_me*BYTES_PER_PIXEL+1] << 8 | frame->image_data_ptr[read_me]);
-
-		if(!to.isChroma && frame->framecount -1 != lastfc)
-		{
-			std::cerr << "WARN MISSED FRAME" << frame->framecount << " " << lastfc << std::endl;
-		}
-		lastfc = frame->framecount;
-
-		std::cout << frame->image_data_ptr[20] << std::endl;
-		if(i > samples && i%10 == 0)
-		{
-			/*
-			while(! pixel_hist.empty())
+	//to.initFilters(samples);
+	to.startCapturingDSFMask();
+			while(1)
 			{
-				std::cout << ' ' << pixel_hist.front() << ',';
-				pixel_hist.pop(); //Unlike every other language ever, this does not return a value.
+
+				//std::cout << "i is:"<<i << std::endl;
+				boost::shared_ptr<frame> frame =to.getFrontFrame(); //This blocks until a frame is available
+				if(!to.isChroma && frame->framecount -1 != lastfc)
+				{
+					std::cerr << "WARN MISSED FRAME" << frame->framecount << " " << lastfc << std::endl;
+				}
+				lastfc = frame->framecount;
+				if(i%(samples/10) == 0 && i <= samples)
+				{
+					std::cout << "i is:" << i << " value is:" <<frame->image_data_ptr[read_addr] << std::endl;
+				}
+
+
+				if(i%(samples/10) == 0 && i > samples)
+				{
+					//std::cout << frame->image_data_ptr[read_addr] << std::endl;
+
+					std::cout << frame->image_data_ptr[read_addr] << ", masked is: " << to.getDarkSubtractedData()[read_addr] << std::endl;
+				}
+
+				if(i == samples)
+				{
+					to.finishCapturingDSFMask();
+					std::cout << "mask collected" << std::endl;
+				}
+
+				i++;
+
 			}
-			 */
-			//boost::shared_array <float> bpt = to.getStdDevData();
-			//std::cout << bpt[read_me] << std::endl;
-			//std::cout  << "\nstd_dev: " << bpt[read_me] <<   std::endl;
-			return 0;
-		}
-		//pixel_hist.push(value_targ);
-		//std::cout << value_targ << std::endl;
-
-		i++;
-
-	}
 	return 0;
 }

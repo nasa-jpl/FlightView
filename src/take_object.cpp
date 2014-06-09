@@ -17,6 +17,8 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 	this->frame_buffer = boost::circular_buffer<boost::shared_ptr<frame>>(fmsize); //Initialize the ring buffer of frames
 	this->count = 0;
 	this->mask_collection_running = false;
+	this->mask_collected = false;
+
 }
 take_object::~take_object()
 {
@@ -52,7 +54,7 @@ void take_object::start()
 
 	//Our version of height should not include the header size
 	height = pdv_get_height(pdv_p);
-	if(!isChroma)
+	if(!isChroma) //This strips the header from the height on the 6604A
 	{
 		height = height - 1;
 	}
@@ -65,13 +67,15 @@ void take_object::start()
 	pdv_multibuf(pdv_p,this->numbufs);
 	//The internet says that I need to pass a pointer to the threadable function, and a reference to the calling instance of take_object (this)
 	pdv_thread_run = 1;
+	dsf = new dark_subtraction_filter(width,height);
+	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 	pdv_thread = boost::thread(&take_object::pdv_init, this);
 }
 void take_object::pdv_init()
 {
 
 	uint16_t * new_image_address;
-	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
+
 	//sdvf->start_std_dev_filter(frame_buffer);
 	while(pdv_thread_run == 1)
 	{
@@ -90,11 +94,15 @@ void take_object::pdv_init()
 
 		if(isChroma)
 		{
-			new_image_address = ctf.apply_chroma_translate_filter(new_image_address);
+			//new_image_address = ctf.apply_chroma_translate_filter(new_image_address);
 		}
 		if(mask_collection_running)
 		{
-			dsf.update_mask_collection(new_image_address);
+			dsf->update_mask_collection(new_image_address);
+		}
+		if(mask_collected)
+		{
+			dsf->update_dark_subtraction(new_image_address);
 		}
 		append_to_frame_buffer(new_image_address);
 
@@ -136,16 +144,17 @@ boost::shared_array<float>  take_object::getStdDevData()
 }
 boost::shared_array<float> take_object::getDarkSubtractedData()
 {
-	return dsf.wait_dark_subtraction();
+	return dsf->wait_dark_subtraction();
 }
 void take_object::startCapturingDSFMask()
 {
-	dsf.start_mask_collection();
+	dsf->start_mask_collection();
 	mask_collection_running = true;
 
 }
 void take_object::finishCapturingDSFMask()
 {
-	dsf.finish_mask_collection();
+	dsf->finish_mask_collection();
 	mask_collection_running = false;
+	mask_collected = true;
 }
