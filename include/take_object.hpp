@@ -35,8 +35,7 @@ class take_object {
     boost::circular_buffer<boost::shared_ptr<frame> > frame_buffer;
 	boost::thread pdv_thread;
 	bool pdv_thread_run;
-	bool mask_collection_running;
-	bool mask_collected;
+
 	boost::shared_array<float> std_dev_data;
 
 	unsigned int size;

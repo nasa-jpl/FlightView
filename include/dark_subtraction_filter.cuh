@@ -13,6 +13,8 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include <boost/shared_array.hpp>
+#define BLOCK_SIDE 1
+#define DSF_DEVICE_NUM 4
 
 class dark_subtraction_filter
 {
@@ -24,9 +26,12 @@ public:
 	boost::shared_array< float > wait_dark_subtraction();
 	void start_mask_collection();
 	uint32_t update_mask_collection(uint16_t * pic_in);
+	void update(uint16_t * pic_in);
+
 	void finish_mask_collection();
 	cudaStream_t dark_subtraction_stream;
 private:
+	bool mask_collected;
 	boost::shared_array<float> picture_out;
 	uint16_t width;
 	uint16_t height;
@@ -37,6 +42,8 @@ private:
 	float * mask_device;
 	float * result_device;
 	float * pic_out_host;
+	dim3 blockDims;
+	dim3 gridDims;
 
 	cudaStream_t dsf_stream;
 };
