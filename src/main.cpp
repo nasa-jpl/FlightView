@@ -62,29 +62,30 @@ int main()
 	while(1)
 	{
 
-		//std::cout << "i is:"<<i << std::endl;
 		boost::shared_ptr<frame> frame =to.getFrontFrame(); //This blocks until a frame is available
 		if(!to.isChroma && frame->framecount -1 != lastfc)
 		{
 			std::cerr << "WARN MISSED FRAME" << frame->framecount << " " << lastfc << std::endl;
 		}
 		lastfc = frame->framecount;
+		/*
 		if(i%(samples/10) == 0 && i <= samples)
 		{
 			std::cout << "i is:" << i << " value is:" <<frame->image_data_ptr[read_addr] << std::endl;
 		}
+*/
 
-
-		if(i%(samples/10) == 0 && i > samples)
+		if(i%(samples/10) == 0 && i != samples)
 		{
 			//std::cout << frame->image_data_ptr[read_addr] << std::endl;
 
-			std::cout << frame->image_data_ptr[read_addr] << ", masked is: " << fixed << setprecision(3) << to.getDarkSubtractedData()[read_addr] << std::endl;
+			std::cout << frame->image_data_ptr[read_addr] << ", masked is: " << fixed << setprecision(3) << frame->dsf_data[read_addr] << std::endl;
 		}
 
 		if(i == samples)
 		{
 			to.finishCapturingDSFMask();
+			std::cout << "mask_value" << to.getDarkSubtractedData()[read_addr] << std::endl;
 		}
 
 		i++;

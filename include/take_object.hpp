@@ -62,6 +62,7 @@ public:
 	boost::shared_array<float> getDarkSubtractedData();
 	void startCapturingDSFMask();
 	void finishCapturingDSFMask();
+	void loadDSFMask(const char * file_name);
 
 private:
 	void pdv_init();

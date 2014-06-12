@@ -96,9 +96,17 @@ void take_object::pdv_init()
 			new_image_address = ctf.apply_chroma_translate_filter(new_image_address);
 		}
 
-		dsf->update(new_image_address);
+		//dsf->update(new_image_address); //let's let this chug we'll we set up the rest of the frame
 
-		append_to_frame_buffer(new_image_address);
+		boost::shared_ptr<frame> frame_sp(new frame(new_image_address, size, height,width, isChroma));
+		frame_sp->dsf_data = dsf->wait_dark_subtraction(); //Add framebuffer[2] frames dark subtracted version (dsf lags by 2 frames)
+		if(frame_buffer.size() > 1)
+		{
+			dsf->update(frame_buffer[1]->image_data_ptr);
+		}
+		frame_buffer.push_front(frame_sp);
+
+		//append_to_frame_buffer(new_image_address);
 
 		if(count % filter_refresh_rate == 0)
 		{
@@ -121,9 +129,7 @@ void take_object::pdv_init()
 }
 void take_object::append_to_frame_buffer(uint16_t * data_in)
 {
-	boost::shared_ptr<frame> frame_sp(new frame(data_in, size, height,width, isChroma));
-	frame_buffer.push_front(frame_sp);
-
+	//Delete Me
 }
 boost::shared_ptr<frame> take_object::getFrontFrame()
 {
@@ -149,3 +155,31 @@ void take_object::finishCapturingDSFMask()
 {
 	dsf->finish_mask_collection();
 }
+void take_object::loadDSFMask(const char * file_name)
+{
+	boost::shared_array < float > mask_in(new float[width*height]);
+	FILE * pFile;
+	long size = 0;
+	pFile  = fopen(file_name, "rb");
+	if(pFile==NULL) std::cerr << "error opening raw file" << std::endl;
+	else
+	{
+		fseek (pFile, 0, SEEK_END);   // non-portable
+		size=ftell (pFile);
+		if(size != (width*height*sizeof(float)))
+		{
+			std::cerr << "error mask file does not match image size" << std::endl;
+			fclose (pFile);
+			return;
+		}
+		rewind(pFile);   // go back to beginning
+		fread(mask_in.get(),sizeof(float),width*height,pFile);
+		fclose (pFile);
+		std::cout << file_name << " read in "<< size << " bytes successfully " <<  std::endl;
+
+
+
+	}
+	dsf->load_mask(mask_in);
+}
+

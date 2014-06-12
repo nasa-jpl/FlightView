@@ -29,10 +29,12 @@ public:
 	void update(uint16_t * pic_in);
 
 	void finish_mask_collection();
-	cudaStream_t dark_subtraction_stream;
+	void load_mask(boost::shared_array < float >mask_arr);
+	boost::shared_array < float > get_mask();
 private:
 	bool mask_collected;
-	boost::shared_array<float> picture_out;
+	bool ready_to_subtract;
+	//boost::shared_array<float> picture_out;
 	uint16_t width;
 	uint16_t height;
 	uint32_t averaged_samples;
