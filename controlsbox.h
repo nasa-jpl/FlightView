@@ -7,13 +7,16 @@
 #include <QCheckBox>
 #include <QSlider>
 #include <QLineEdit>
-
+#include <QSpinBox>
+#include "boost/shared_array.hpp"
+const static int max = (1<<16)-1;
+const static int min = -1*max;
 class ControlsBox : public QGroupBox
 {
     Q_OBJECT
 public:
     explicit ControlsBox(QWidget *parent = 0);
-private:
+
     QWidget * CollectionButtonsBox;
     QWidget * ThresholdingSlidersBox;
     QWidget * SaveButtonsBox;
@@ -25,13 +28,14 @@ private:
     QPushButton * stop_display_button;
     QPushButton * collect_dark_frames_button;
     QPushButton * stop_dark_collection_button;
+    QPushButton * load_mask_from_file;
     QLabel * fps_label;
     QCheckBox *show_dark_subtracted_cbox;
     QSlider * ceiling_slider;
     QSlider * floor_slider;
 
-    QLineEdit * ceiling_edit;
-    QLineEdit * floor_edit;
+    QSpinBox * ceiling_edit;
+    QSpinBox * floor_edit;
 
     QPushButton * save_frame_button;
     QPushButton * save_dark_button;
@@ -46,8 +50,9 @@ private:
 
 
 signals:
-    
+    void mask_selected(const char * file_name);
 public slots:
+    void getMaskFile();
     
 
 };

@@ -1,5 +1,6 @@
 #include "frame_worker.h"
 #include <QDebug>
+#include <QCoreApplication>
 frameWorker::frameWorker(QObject *parent) :
     QObject(parent)
 {
@@ -16,27 +17,35 @@ void frameWorker::captureFrames()
     //to = new take_object(); //allocate inside slot so that it is owned by 2nd thread
     to.start();
     qDebug("starting capture");
-    boost::unique_lock<boost::mutex> lock(to.framebuffer_mutex);
-    qDebug( "created lock");
 
-    to.newFrameAvailable.wait(lock);
+
     while(1)
     {
-        to.newFrameAvailable.wait(lock);
-        //qDebug("new frame availblable fc: " + to.getFrontFrame()->framecount + " timestamp: " + to.getFrontFrame()->cmTime + "\n");
-        emit newFrameAvailable();
+        QCoreApplication::processEvents();
+        fr = to.getFrontFrame(); //This now blocks
+        emit newFrameAvailable(); //This onyl emits when there is a new frame
     }
 }
-
-frame * frameWorker::getFrame()
+void frameWorker::startCapturingDSFMask()
 {
-    return to.getFrontFrame().get();
+    qDebug() << "calling to start DSF cap";
+    to.startCapturingDSFMask();
+}
+void frameWorker::finishCapturingDSFMask()
+{
+    qDebug() << "calling to stop DSF cap";
+    to.finishCapturingDSFMask();
 }
 
-u_char * frameWorker::getFrameImagePtr()
+boost::shared_ptr < frame > frameWorker::getFrame()
+{
+    return fr;
+}
+
+uint16_t * frameWorker::getFrameImagePtr()
 {
     //return NULL;
-    return to.getFrontFrame().get()->image_data_ptr;
+    return fr->image_data_ptr;
 }
 
 unsigned int frameWorker::getHeight()
@@ -47,4 +56,12 @@ unsigned int frameWorker::getHeight()
 unsigned int frameWorker::getWidth()
 {
    return to.width;
+}
+boost::shared_array < float > frameWorker::getDSF()
+{
+    return fr->dsf_data;
+}
+void frameWorker::loadDSFMask(const char * file_name)
+{
+    to.loadDSFMask(file_name);
 }

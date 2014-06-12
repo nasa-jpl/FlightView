@@ -9,30 +9,34 @@
 #include <QTimer>
 #include <QPushButton>
 #include "frame_worker.h"
+#include "image_type.h"
 class frameview_widget : public QWidget
 {
     Q_OBJECT
-    QThread * workerThread;
-    frameWorker *fw;
     QVBoxLayout * layout ;
     QLabel * imageLabel;
     QLabel * fpsLabel;
     unsigned int fps;
     QTimer * fpstimer;
-    QPushButton * toggleGrayScaleButton;
     bool outputGrayScale;
+    frameWorker * fw;
+    image_t image_type;
+    float ceiling;
+    float floor;
+
 
 public:
-    explicit frameview_widget(QWidget *parent = 0);
+    explicit frameview_widget(frameWorker * fw,image_t image_type ,QWidget *parent = 0);
     QImage * image;
+    QPushButton * toggleGrayScaleButton;
 signals:
     void startCapturing();
 public slots:
     void handleNewFrame();
     void updateFPS();
     void toggleGrayScale();
-private:
-
+    void updateCeiling(int c);
+    void updateFloor(int f);
 };
 
 #endif // FRAMEVIEW_WIDGET_H

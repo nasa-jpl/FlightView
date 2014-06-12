@@ -8,15 +8,16 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/circular_buffer.hpp>
-#include <boost/thread/condition_variable.hpp>
+#include <boost/shared_ptr.hpp>
 class frameWorker : public QObject
 {
     Q_OBJECT
 public:
     explicit frameWorker(QObject *parent = 0);
     virtual ~frameWorker();
-    frame * getFrame();
-    u_char * getFrameImagePtr();
+    boost::shared_ptr< frame > getFrame();
+    uint16_t * getFrameImagePtr();
+    boost::shared_array< float > getDSF();
     unsigned int getHeight();
     unsigned int getWidth();
 signals:
@@ -24,8 +25,13 @@ signals:
 
 public slots:
     void captureFrames();
+    void startCapturingDSFMask();
+    void finishCapturingDSFMask();
+    void loadDSFMask(const char *);
 private:
     take_object to;
+    boost::shared_ptr< frame > fr;
+
 
 
 

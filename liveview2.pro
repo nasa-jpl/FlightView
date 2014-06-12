@@ -21,7 +21,8 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     frameview_widget.h \
     controlsbox.h\
-    frame_worker.h
+    frame_worker.h \
+    image_type.h
 
 BACKEND_HEADERS += edtinc.h \
     take_object.hpp\

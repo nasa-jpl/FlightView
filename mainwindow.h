@@ -13,14 +13,17 @@ public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
 private:
+    QThread * workerThread;
+    frameWorker *fw;
     QTabWidget * tabWidget;
     QWidget * mainwidget;
     ControlsBox * controlbox;
     frameview_widget * unfiltered_widget;
-    QWidget * filtered_widget;
+    frameview_widget * dsf_widget;
+    frameview_widget * std_dev_widget;
 public slots:
     void updateFPS(unsigned int fps);
-
+    void testslot();
 };
 
 #endif // MAINWINDOW_H
