@@ -3,6 +3,8 @@
 #include "chroma_translate_filter.cuh"
 #include "cuda_utils.cuh"
 #include <iostream>
+
+
 //MAKING ASSUMPTIONS BECAUSE CHROMA!
 #define WIDTH 1280
 #define HEIGHT 480
@@ -25,6 +27,7 @@ __global__ void chroma_filter_kernel(uint16_t * pic_d, uint16_t * pic_out_d)
 }
 uint16_t * chroma_translate_filter::apply_chroma_translate_filter(uint16_t * picture_in)
 {
+
 	HANDLE_ERROR(cudaSetDevice(CTF_DEVICE_NUM));
 	memcpy(pic_in_host,picture_in, PIC_SIZE); //If we stage ourselves it allows for cuda kernel concurrency
 	HANDLE_ERROR(cudaMemcpyAsync(picture_device, pic_in_host, PIC_SIZE, cudaMemcpyHostToDevice, chroma_translate_stream));

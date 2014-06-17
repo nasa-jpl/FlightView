@@ -17,28 +17,26 @@
 #include "cuda.h"
 #include "frame.hpp"
 #include "cuda_runtime.h"
+#define STD_DEV_DEVICE_NUM 5
 
-__global__ void std_dev_filter_kernel(u_char * pic_d, float * picture_out_device, uint16_t width, uint16_t height, uint16_t gpu_buffer_head, uint16_t gpu_buffer_tail, uint16_t N);
 class std_dev_filter
 {
 public:
-	std_dev_filter(int nWidth, int nHeight, int nN);
+	std_dev_filter(int nWidth, int nHeight);
 	virtual ~std_dev_filter();
-	void start_std_dev_filter();
+	void start_std_dev_filter(int N);
 	void update_GPU_buffer(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer);
 	boost::shared_array< float > wait_std_dev_filter();
 	cudaStream_t std_dev_stream;
 private:
 	std_dev_filter() {}//Private defauklt constructor
 	boost::shared_array<float> picture_out;
-	uint16_t width;
-	uint16_t height;
-	int pic_size;
-	uint16_t gpu_buffer_head;
-	uint16_t gpu_buffer_tail;
-	uint16_t N;
-	u_char * pictures_device;
-	u_char * current_picture_device;
+	int width;
+	int height;
+	int gpu_buffer_head;
+	int gpu_buffer_tail;
+	uint16_t * pictures_device;
+	uint16_t * current_picture_device;
 	float * picture_out_device;
 
 };

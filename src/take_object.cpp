@@ -30,10 +30,7 @@ take_object::~take_object()
 	//free(this->pdv_p);
 }
 
-void take_object::initFilters(int history_size)
-{
-	sdvf=new std_dev_filter(width,height,history_size);
-}
+
 void take_object::start()
 {
 	this->pdv_p = NULL;
@@ -67,6 +64,7 @@ void take_object::start()
 	//The internet says that I need to pass a pointer to the threadable function, and a reference to the calling instance of take_object (this)
 	pdv_thread_run = 1;
 	dsf = new dark_subtraction_filter(width,height);
+	sdvf = new std_dev_filter(width,height);
 	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 	pdv_thread = boost::thread(&take_object::pdv_init, this);
 }
@@ -76,6 +74,7 @@ void take_object::pdv_init()
 	uint16_t * new_image_address;
 
 	//sdvf->start_std_dev_filter(frame_buffer);
+	count = 0;
 	while(pdv_thread_run == 1)
 	{
 
@@ -100,37 +99,38 @@ void take_object::pdv_init()
 
 		boost::shared_ptr<frame> frame_sp(new frame(new_image_address, size, height,width, isChroma));
 		frame_sp->dsf_data = dsf->wait_dark_subtraction(); //Add framebuffer[2] frames dark subtracted version (dsf lags by 2 frames)
+		frame_buffer.push_front(frame_sp);
+
+
+		if(count % 10 == 0)
+		{
+			std_dev_data = sdvf->wait_std_dev_filter();
+		}
 		if(frame_buffer.size() > 1)
 		{
 			dsf->update(frame_buffer[1]->image_data_ptr);
+			sdvf->update_GPU_buffer(frame_buffer);
+			if(count % 10 == 0)
+			{
+				sdvf->start_std_dev_filter(400);
+			}
 		}
-		frame_buffer.push_front(frame_sp);
-
-		//append_to_frame_buffer(new_image_address);
-
-		if(count % filter_refresh_rate == 0)
-		{
-			/*
-			std_dev_data = sdvf->wait_std_dev_filter();
-
-
-			sdvf->start_std_dev_filter();
-			 */
-			//std_dev_data = boost::shared_array < float > (sdvf->wait_std_dev_filter()); //Use copy constructor
-		}
-
-		count++;
 		lock.unlock();
+				count++;
+						newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
 
 
-		newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
 
+
+		//std_dev_data = boost::shared_array < float > (sdvf->wait_std_dev_filter()); //Use copy constructor
 	}
+
+
+
+
 }
-void take_object::append_to_frame_buffer(uint16_t * data_in)
-{
-	//Delete Me
-}
+
+
 boost::shared_ptr<frame> take_object::getFrontFrame()
 {
 	boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame

@@ -31,7 +31,6 @@
 #include "frame.hpp"
 class take_object {
 	PdvDev * pdv_p;
-	std_dev_filter * sdvf;
     boost::circular_buffer<boost::shared_ptr<frame> > frame_buffer;
 	boost::thread pdv_thread;
 	bool pdv_thread_run;
@@ -47,11 +46,11 @@ class take_object {
 	uint64_t count;
 	chroma_translate_filter ctf;
 	dark_subtraction_filter * dsf;
+	std_dev_filter * sdvf;
 public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_period = 10);
 	virtual ~take_object();
 	void start();
-	void initFilters(int hs);
 	boost::shared_ptr<frame> getFrontFrame();
 	boost::condition_variable newFrameAvailable;
 	boost::mutex framebuffer_mutex;
@@ -59,6 +58,7 @@ public:
 	unsigned int width;
 	bool isChroma;
 	boost::shared_array<float> getStdDevData();
+
 	boost::shared_array<float> getDarkSubtractedData();
 	void startCapturingDSFMask();
 	void finishCapturingDSFMask();
@@ -66,7 +66,6 @@ public:
 
 private:
 	void pdv_init();
-	void append_to_frame_buffer(uint16_t *);
 
 };
 

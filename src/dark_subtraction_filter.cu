@@ -46,13 +46,12 @@ void dark_subtraction_filter::start_mask_collection()
 {
 	HANDLE_ERROR(cudaSetDevice(DSF_DEVICE_NUM));
 	mask_collected = false;
-	ready_to_subtract = false;
 	averaged_samples = 0; //Synchronous
 	HANDLE_ERROR(cudaPeekAtLastError());
 
 	floatMemset<<< gridDims, blockDims,0,dsf_stream>>>(mask_device, 0.0f,width,height);
 
-	HANDLE_ERROR(cudaMemcpyAsync(pic_out_host,mask_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,dsf_stream));
+	//HANDLE_ERROR(cudaMemcpyAsync(pic_out_host,mask_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,dsf_stream));
 
 	HANDLE_ERROR(cudaStreamSynchronize(dsf_stream));
 
@@ -99,7 +98,10 @@ void dark_subtraction_filter::update(uint16_t * pic_in)
 void dark_subtraction_filter::load_mask(boost::shared_array < float >mask_arr)
 {
 	HANDLE_ERROR(cudaSetDevice(DSF_DEVICE_NUM));
-	HANDLE_ERROR(cudaMemcpy(mask_device,mask_arr.get(),width*height*sizeof(float),cudaMemcpyHostToDevice));
+	memcpy(mask_in_host,mask_arr.get(),width*height*sizeof(float));
+	HANDLE_ERROR(cudaMemcpyAsync(mask_device,mask_in_host,width*height*sizeof(float),cudaMemcpyHostToDevice,dsf_stream));
+	HANDLE_ERROR(cudaStreamSynchronize(dsf_stream));
+
 	mask_collected = true;
 	std::cout << "mask loaded" << std::endl;
 }
@@ -164,7 +166,6 @@ dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)
 {
 	HANDLE_ERROR(cudaSetDevice(DSF_DEVICE_NUM));
 	mask_collected = false;
-	ready_to_subtract = false;
 	width=nWidth;
 	height=nHeight;
 	blockDims = dim3(BLOCK_SIDE,BLOCK_SIDE,1);
@@ -174,6 +175,8 @@ dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)
 	HANDLE_ERROR(cudaHostAlloc( (void **)&pic_in_host,width*height*sizeof(uint16_t),cudaHostAllocPortable)); //cudaHostAllocPortable??
 
 	HANDLE_ERROR(cudaHostAlloc( (void **)&pic_out_host,width*height*sizeof(float),cudaHostAllocPortable)); //cudaHostAllocPortable??
+
+	HANDLE_ERROR(cudaHostAlloc( (void **)&mask_in_host,width*height*sizeof(float),cudaHostAllocPortable)); //cudaHostAllocPortable??
 
 	HANDLE_ERROR(cudaMalloc( (void **)&picture_device, width*height*sizeof(uint16_t)));
 	HANDLE_ERROR(cudaMalloc( (void **)&mask_device, width*height*sizeof(float)));
