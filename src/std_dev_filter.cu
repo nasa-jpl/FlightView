@@ -8,13 +8,10 @@
 
 __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, int width, int height, int gpu_buffer_head, int N)
 {
-	//__shared__ uint16_t cached_block_data [THREADS_PER_BLOCK*MAX_N]; //Should equal 48000Bytes or 24000 uint_16s
-
-
 	int col = blockIdx.x*blockDim.x + threadIdx.x;
 	int row = blockIdx.y*blockDim.y + threadIdx.y;
-
 	int offset = col + row*width;
+
 	float sum = 0; //Really hoping all of these get put in registers
 	float sq_sum = 0;
 	float mean = 0;
@@ -40,17 +37,13 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 					printf("MAX_N: %i GPU_BUF_HEAD: %i i: %i",MAX_N, gpu_buffer_head, i);
 				}
 				value = *(pic_d + offset+(width*height*(MAX_N - (i-gpu_buffer_head))));
-				//value = 0;
 			}
-			//value = pic_d[index];
-
 			sum += value;
 			sq_sum += value * value;
 			if(offset == 100*width)
 			{
 				printf("value @ line 100: %i sum: %f sq_sum: %f \n",value,sum,sq_sum);
 			}
-			//printf("value %i\n",value);
 		}
 		mean = sum / N;
 		std_dev = sqrt(sq_sum / N - mean * mean);
@@ -85,10 +78,11 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 std_dev_filter::~std_dev_filter()
 {
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
-	//All the memory leaks!
 	HANDLE_ERROR(cudaFree(pictures_device)); //do not free current picture because it poitns to a location inside pictures_device
 	HANDLE_ERROR(cudaFree(picture_out_device));
 	HANDLE_ERROR(cudaFreeHost(picture_out_host));
+	HANDLE_ERROR(cudaFreeHost(picture_in_host));
+
 	HANDLE_ERROR(cudaStreamDestroy(std_dev_stream));
 }
 void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
@@ -97,13 +91,17 @@ void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
 	memcpy(picture_in_host, image_ptr,width*height*sizeof(uint16_t));
 	char *device_ptr = ((char *)(pictures_device)) + (gpu_buffer_head*width*height*sizeof(uint16_t));
-	HANDLE_ERROR(cudaMemcpy(device_ptr ,picture_in_host,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice)); 	//Incrementally copies data to device (as each frame comes in it gets copied
+
+	//Asynchronous Part
+	HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,picture_in_host,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
+	//Synchronous again
 	if(++gpu_buffer_head == MAX_N) //Increment and test for ring buffer overflow
 		gpu_buffer_head = 0; //If overflow, than start overwriting the front
 	if(currentN < MAX_N) //If the frame buffer has not been fully populated
 	{
 		currentN++; //Increment how much history is available
 	}
+	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //Turns out this does need to block :(
 
 
 }
@@ -113,32 +111,18 @@ void std_dev_filter::start_std_dev_filter(int N)
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
 	if(N < MAX_N && N<= currentN) //We can't calculate the std. dev farther back in time then we are keeping track.
 	{
-
-		//Create thread for each pixel
-		//dim3 blockDims(THREADS_PER_BLOCK,1,1);
 		dim3 blockDims(BLOCK_SIDE,BLOCK_SIDE,1);
-		//+1 to account for possible integer-division truncation
 		dim3 gridDims(width/blockDims.x, height/blockDims.y,1);
-		//std::cout << " kernelN" << kernelN << std::endl;
-		//	std_dev_filter_kernel <<<gridDims,blockDims,0,std_dev_stream>>> (pictures_device, picture_out_device, width, height, gpu_buffer_head, gpu_buffer_tail, N);
-		std_dev_filter_kernel <<<gridDims,blockDims>>> (pictures_device, picture_out_device, width, height, gpu_buffer_head, N);
 
-		HANDLE_ERROR( cudaPeekAtLastError() );
-		//HANDLE_ERROR(cudaMemcpyAsync(picture_out.get(),picture_out_device,width*height*sizeof(uint16_t),cudaMemcpyDeviceToHost,std_dev_stream));
-		//HANDLE_ERROR(cudaMemcpy(picture_out.get(),picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost));
-		HANDLE_ERROR(cudaMemcpy(picture_out_host,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost));
-
-		HANDLE_ERROR( cudaPeekAtLastError() );
-
-		//cudaProfilerStop();
-
-		//return std_dev_stream;
-		//return result;
-
+		//Asynchronous Part
+		std_dev_filter_kernel <<<gridDims,blockDims,0,std_dev_stream>>> (pictures_device, picture_out_device, width, height, gpu_buffer_head, N);
+		//HANDLE_ERROR( cudaPeekAtLastError() );
+		HANDLE_ERROR(cudaMemcpyAsync(picture_out_host,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream));
+		//HANDLE_ERROR( cudaPeekAtLastError() );
 	}
 	else
 	{
-		//std::cerr << "Couldn't take std. dev, N exceeded length of history or maximum alllowed N (" << MAX_N << ")" << std::endl;
+		std::cerr << "Couldn't take std. dev, N exceeded length of history or maximum alllowed N (" << MAX_N << ")" << std::endl;
 		std::fill_n(picture_out.get(),width*height,-1); //Fill with -1 to indicate fail
 	}
 
@@ -152,12 +136,10 @@ uint16_t * std_dev_filter::getEntireRingBuffer() //For testing only
 }
 boost::shared_array <float> std_dev_filter::wait_std_dev_filter()
 {
-
-	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
-	memcpy(picture_out.get(),picture_out_host,width*height*sizeof(float));
-
 	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //blocks until done
 	HANDLE_ERROR( cudaPeekAtLastError() );
+	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
+	memcpy(picture_out.get(),picture_out_host,width*height*sizeof(float));
 
 	return picture_out;
 }

@@ -19,20 +19,20 @@ void std_dev_test()
 	int width = 640;
 	int height = 480;
 	int area = width*height;
-	char * fname = "float_data.bin";
+	char * fname = "float_data2.bin";
 	uint16_t * a = new uint16_t[area];
 	uint16_t * b = new uint16_t[area];
 
 	for(int i = 0; i < area; i++)
 	{
-		a[i] = 10;
+		a[i] = 8000;
 		if(i < area/2)
 		{
-			b[i] = 30; //for first half of array std. dev is ~ 10
+			b[i] = i%16000; //for first half of array std. dev is ~ 10
 		}
 		else
 		{
-			b[i] = 10; //For second half of array std. dev = 0
+			b[i] = 8000; //For second half of array std. dev = 0
 		}
 	}
 	std_dev_filter * sdvf = new std_dev_filter(width,height);
@@ -57,9 +57,10 @@ void std_dev_test()
 	}
 	*/
 	cout << "result @ 100: " << result[1000] << " result @ 2area/3: " << result[2*area/3] << endl;
+	cout << "result @ 100: " << result[10020] << " result @ 2area/3: " << result[2*area/3] << endl;
 
 	ofstream myFile (fname, ios::out | ios::binary);
-	myFile.write ((char * )result.get(), height*width*sizeof(float));
+	myFile.write ((char*)result.get(), height*width*sizeof(float));
 	myFile.close();
 
 	char cmd[100];
