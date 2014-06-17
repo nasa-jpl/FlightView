@@ -25,7 +25,7 @@ public:
 	std_dev_filter(int nWidth, int nHeight);
 	virtual ~std_dev_filter();
 	void start_std_dev_filter(int N);
-	void update_GPU_buffer(boost::circular_buffer<boost::shared_ptr <frame> > frame_buffer);
+	void update_GPU_buffer(uint16_t * image_ptr);
 	boost::shared_array< float > wait_std_dev_filter();
 	cudaStream_t std_dev_stream;
 private:

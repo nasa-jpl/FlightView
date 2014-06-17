@@ -109,7 +109,7 @@ void take_object::pdv_init()
 		if(frame_buffer.size() > 1)
 		{
 			dsf->update(frame_buffer[1]->image_data_ptr);
-			sdvf->update_GPU_buffer(frame_buffer);
+			sdvf->update_GPU_buffer(frame_buffer[1]->image_data_ptr);
 			if(count % 10 == 0)
 			{
 				sdvf->start_std_dev_filter(400);
