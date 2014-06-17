@@ -28,7 +28,7 @@ void std_dev_test()
 		a[i] = 10;
 		if(i < area/2)
 		{
-			b[i] = 92; //for first half of array std. dev is ~ 10
+			b[i] = 30; //for first half of array std. dev is ~ 10
 		}
 		else
 		{
@@ -37,7 +37,7 @@ void std_dev_test()
 	}
 	std_dev_filter * sdvf = new std_dev_filter(width,height);
 	cout << "created sdvf obj" << endl;
-	for(int i = 0; i < 100; i++)
+	for(int i = 0; i < 1010; i++)
 	{
 		sdvf->update_GPU_buffer(a); //add 100 each of a and b array to std_dev buffer.
 		sdvf->update_GPU_buffer(b);
@@ -46,8 +46,17 @@ void std_dev_test()
 	sdvf->start_std_dev_filter(150);
 	cout << "waiting on std dev filter" << endl;
 	boost::shared_array < float > result = sdvf->wait_std_dev_filter();
-	cout << "result @ 100: " << result[1000] << " result @ 2area/3: " << result[2*area/3] << endl;
 
+/*
+	//For figuring out whether things are getting put on the GPU correctly.
+	uint16_t * pictures_on_device = sdvf->getEntireRingBuffer();
+	int frame_read_num = 3;
+	for(int offset = 0; offset < width*height; offset++)
+	{
+		result[offset] = (float) *(pictures_on_device + offset+(width*height*frame_read_num));
+	}
+	*/
+	cout << "result @ 100: " << result[1000] << " result @ 2area/3: " << result[2*area/3] << endl;
 
 	ofstream myFile (fname, ios::out | ios::binary);
 	myFile.write ((char * )result.get(), height*width*sizeof(float));
