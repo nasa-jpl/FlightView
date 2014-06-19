@@ -12,3 +12,6 @@
 #image files
 *.bmp
 *.raw
+
+#other stuff
+*.bin

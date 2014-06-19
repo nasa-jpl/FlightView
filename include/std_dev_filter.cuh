@@ -20,6 +20,7 @@
 static const int STD_DEV_DEVICE_NUM = 5;
 static const int MAX_N = 1000;
 static const int BLOCK_SIDE = 20;
+static const bool DEBUG = false;
 
 class std_dev_filter
 {

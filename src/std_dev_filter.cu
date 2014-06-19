@@ -17,44 +17,40 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 	float mean = 0;
 	float std_dev;
 	int value = 0;
-	if(offset < width*height) //Because we needed an interger grid size, we will have a few threads that don't correspond to a location in the image.
+
+	if(offset == 100*width && DEBUG)
 	{
-		if(offset == 100*width)
-		{
-			printf("sum: %f sq_sum: %f \n",sum,sq_sum);
-		}
-		for(int i = 0; i < N; ++i) {
-			//index = (gpu_buffer_head - i) < 0 ? (gpu_buffer_head + MAX_N - i)*width*height*sizeof(uint16_t) + offset : (gpu_buffer_head-i)*width*height*sizeof(uint16_t) + offset;
-			//index = (gpu_buffer_head-i)*width*height*sizeof(uint16_t) + offset;
-			if((gpu_buffer_head -i) >= 0)
-			{
-				value = *(pic_d + offset+(width*height*(gpu_buffer_head-i)));
-			}
-			else
-			{
-				if(offset == 100*width)
-				{
-					printf("MAX_N: %i GPU_BUF_HEAD: %i i: %i",MAX_N, gpu_buffer_head, i);
-				}
-				value = *(pic_d + offset+(width*height*(MAX_N - (i-gpu_buffer_head))));
-			}
-			sum += value;
-			sq_sum += value * value;
-			if(offset == 100*width)
-			{
-				printf("value @ line 100: %i sum: %f sq_sum: %f \n",value,sum,sq_sum);
-			}
-		}
-		mean = sum / N;
-		std_dev = sqrt(sq_sum / N - mean * mean);
-		if(offset == 100*width)
-		{
-			printf("mean: %f std_dev: %f @ line 100",mean, std_dev);
-		}
-		picture_out_device[offset] = std_dev;
+		printf("sum: %f sq_sum: %f \n",sum,sq_sum);
 	}
-
-
+	for(int i = 0; i < N; ++i) {
+		//index = (gpu_buffer_head - i) < 0 ? (gpu_buffer_head + MAX_N - i)*width*height*sizeof(uint16_t) + offset : (gpu_buffer_head-i)*width*height*sizeof(uint16_t) + offset;
+		//index = (gpu_buffer_head-i)*width*height*sizeof(uint16_t) + offset;
+		if((gpu_buffer_head -i) >= 0)
+		{
+			value = *(pic_d + offset+(width*height*(gpu_buffer_head-i)));
+		}
+		else
+		{
+			if(offset == 100*width && DEBUG)
+			{
+				printf("MAX_N: %i GPU_BUF_HEAD: %i i: %i",MAX_N, gpu_buffer_head, i);
+			}
+			value = *(pic_d + offset+(width*height*(MAX_N - (i-gpu_buffer_head))));
+		}
+		sum += value;
+		sq_sum += value * value;
+		if(offset == 100*width && DEBUG)
+		{
+			printf("value @ line 100: %i sum: %f sq_sum: %f \n",value,sum,sq_sum);
+		}
+	}
+	mean = sum / N;
+	std_dev = sqrt(sq_sum / N - mean * mean);
+	if(offset == 100*width && DEBUG)
+	{
+		printf("mean: %f std_dev: %f @ line 100",mean, std_dev);
+	}
+	picture_out_device[offset] = std_dev;
 
 }
 
@@ -89,11 +85,14 @@ void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
 {
 	//Synchronous Part
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
+	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //Turns out this does need to block :(
+
 	memcpy(picture_in_host, image_ptr,width*height*sizeof(uint16_t));
 	char *device_ptr = ((char *)(pictures_device)) + (gpu_buffer_head*width*height*sizeof(uint16_t));
 
 	//Asynchronous Part
 	HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,picture_in_host,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
+
 	//Synchronous again
 	if(++gpu_buffer_head == MAX_N) //Increment and test for ring buffer overflow
 		gpu_buffer_head = 0; //If overflow, than start overwriting the front
@@ -101,7 +100,6 @@ void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
 	{
 		currentN++; //Increment how much history is available
 	}
-	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //Turns out this does need to block :(
 
 
 }
@@ -136,9 +134,10 @@ uint16_t * std_dev_filter::getEntireRingBuffer() //For testing only
 }
 boost::shared_array <float> std_dev_filter::wait_std_dev_filter()
 {
+
+	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
 	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //blocks until done
 	HANDLE_ERROR( cudaPeekAtLastError() );
-	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
 	memcpy(picture_out.get(),picture_out_host,width*height*sizeof(float));
 
 	return picture_out;

@@ -19,7 +19,7 @@ void std_dev_test()
 	int width = 640;
 	int height = 480;
 	int area = width*height;
-	char * fname = "float_data2.bin";
+	const char * fname = "float_data2.bin";
 	uint16_t * a = new uint16_t[area];
 	uint16_t * b = new uint16_t[area];
 
@@ -70,9 +70,6 @@ void std_dev_test()
 //This method is used for testing bits and pieces of things w/o a sensor hooked up to the computer
 void dsf_test()
 {
-	int i = 0;
-	int read_me = 250;
-	int samples = 300;
 	int read_addr = 9300;
 	int width = 1280;
 	int height = 720;
@@ -108,7 +105,7 @@ void sensor_grab_test()
 
 
 	int i = 0;
-	int read_me = 250;
+	//int read_me = 250;
 	int samples = 300;
 	int read_addr = 9300;
 	std::queue<uint16_t> pixel_hist;
@@ -118,7 +115,6 @@ void sensor_grab_test()
 	to.startCapturingDSFMask();
 	while(1)
 	{
-
 		boost::shared_ptr<frame> frame =to.getFrontFrame(); //This blocks until a frame is available
 		if(!to.isChroma && frame->framecount -1 != lastfc)
 		{
@@ -131,28 +127,25 @@ void sensor_grab_test()
 			std::cout << "i is:" << i << " value is:" <<frame->image_data_ptr[read_addr] << std::endl;
 		}
 		 */
-
 		if(i%(samples/10) == 0 && i != samples)
 		{
 			//std::cout << frame->image_data_ptr[read_addr] << std::endl;
 
 			std::cout << frame->image_data_ptr[read_addr] << ", masked is: " << fixed << setprecision(3) << frame->dsf_data[read_addr] << std::endl;
 		}
-
 		if(i == samples)
 		{
 			to.finishCapturingDSFMask();
 			std::cout << "mask_value" << to.getDarkSubtractedData()[read_addr] << std::endl;
 		}
-
 		i++;
-
 	}
 }
 
 int main()
 {
-	std_dev_test();
+	sensor_grab_test();
+	//std_dev_test();
 	return 0;
 }
 

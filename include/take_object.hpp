@@ -15,6 +15,9 @@
 */
 //#include <boost/atomic.hpp> //Atomic isn't in the boost library till 1.5.4, debian wheezy has 1.4.9 :(
 #include <stdint.h>
+#include <stdio.h>
+#include <ostream>
+#include <string>
 #include <boost/thread.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
@@ -33,6 +36,7 @@ class take_object {
 	PdvDev * pdv_p;
     boost::circular_buffer<boost::shared_ptr<frame> > frame_buffer;
 	boost::thread pdv_thread;
+	boost::thread save_thread;
 	bool pdv_thread_run;
 
 	boost::shared_array<float> std_dev_data;
@@ -47,8 +51,16 @@ class take_object {
 	chroma_translate_filter ctf;
 	dark_subtraction_filter * dsf;
 	std_dev_filter * sdvf;
+
+	boost::shared_ptr <uint16_t> raw_save_ptr;
+	boost::shared_ptr <float> dsf_save_ptr;
+	boost::shared_ptr <float> std_dev_save_ptr;
+
+	FILE * raw_save_file;
+	FILE * dsf_save_file;
+	FILE * std_dev_save_file;
 public:
-	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_period = 10);
+	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_rate = 10);
 	virtual ~take_object();
 	void start();
 	boost::shared_ptr<frame> getFrontFrame();
@@ -63,6 +75,16 @@ public:
 	void startCapturingDSFMask();
 	void finishCapturingDSFMask();
 	void loadDSFMask(const char * file_name);
+	void startSavingRaws(const char * );
+	void stopSavingRaws();
+
+	void startSavingDSFs(const char * );
+	void stopSavingDSFs();
+
+	void startSavingSTD_DEVs(const char * );
+	void stopSavingSTD_DEVs();
+
+	void savingLoop();
 
 private:
 	void pdv_init();

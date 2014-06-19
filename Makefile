@@ -68,10 +68,10 @@ IDIR      = -Iinclude -IEDT_include
 #SECOND NOTE: ONLY BUILD WITH O1! Somehow, someway, O2 optimizes out things that nvcc needs and O0 has linker redefinition errors. #JankCity <- This has been fixed, but still a good idea
 CFLAGS     = -g -O1 #This is added to the compilation of every file, enables gdb debugging symbols (-g) and limited optimization (-O1)
 
-CPPFLAGS = -std=c++11 #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
+CPPFLAGS = -std=c++11 -Wall -Werror #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 CPPFLAGS += $(CFLAGS)
 
-NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -G -lineinfo -Xcompiler -rdynamic  #This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
+NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
 #(-G -lineinfo) are both to enable cuda-gdb debugging, -Xcompiler specifies arguments to get passed directly to g++ (which NVCC is built on), the internet said to do -rdynamic
 NVCCFLAGS += $(CFLAGS)
 

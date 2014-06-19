@@ -7,7 +7,6 @@
 
 #include "chroma_translate_filter.cuh"
 #include "take_object.hpp"
-#include <iostream>
 take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int frf)
 {
 	this->channel = channel_num;
@@ -67,6 +66,8 @@ void take_object::start()
 	sdvf = new std_dev_filter(width,height);
 	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 	pdv_thread = boost::thread(&take_object::pdv_init, this);
+	save_thread = boost::thread(&take_object::savingLoop, this);
+
 }
 void take_object::pdv_init()
 {
@@ -102,7 +103,7 @@ void take_object::pdv_init()
 		frame_buffer.push_front(frame_sp);
 
 
-		if(count % 10 == 0)
+		if(count % filter_refresh_rate == 0)
 		{
 			std_dev_data = sdvf->wait_std_dev_filter();
 		}
@@ -116,21 +117,31 @@ void take_object::pdv_init()
 			}
 		}
 		lock.unlock();
-				count++;
-						newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
+		count++;
+		newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
 
 
 
 
 		//std_dev_data = boost::shared_array < float > (sdvf->wait_std_dev_filter()); //Use copy constructor
 	}
-
-
-
-
 }
+void take_object::savingLoop()
+{
+	while(pdv_thread_run)
+	{
+		if(raw_save_ptr && raw_save_file != NULL) //Apparently this returns false if null, true otherwise
+		{
+			//	raw_save_file->write(raw_save_ptr.get(), width*height*sizeof(uint16_t));
+			if(width*height != fwrite(raw_save_ptr.get(), sizeof(uint16_t), width*height, raw_save_file))
+			{
+				printf("Writing raw has an error.");
+			}
+		}
 
 
+	}
+}
 boost::shared_ptr<frame> take_object::getFrontFrame()
 {
 	boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
@@ -155,11 +166,42 @@ void take_object::finishCapturingDSFMask()
 {
 	dsf->finish_mask_collection();
 }
+void take_object::startSavingRaws(const char * raw_file_name)
+{
+	if(raw_save_file != NULL)
+	{
+		stopSavingRaws();
+	}
+	raw_save_file = fopen(raw_file_name, "wb");
+}
+void take_object::stopSavingRaws()
+{
+	if(raw_save_file != NULL)
+	{
+		fclose(raw_save_file);
+	}
+}
+void take_object::startSavingDSFs(const char * dsf_file_name)
+{
+
+}
+void take_object::stopSavingDSFs()
+{
+
+}
+void take_object::startSavingSTD_DEVs(const char * std_dev_file_name)
+{
+
+}
+void take_object::stopSavingSTD_DEVs()
+{
+
+}
 void take_object::loadDSFMask(const char * file_name)
 {
 	boost::shared_array < float > mask_in(new float[width*height]);
 	FILE * pFile;
-	long size = 0;
+	unsigned long size = 0;
 	pFile  = fopen(file_name, "rb");
 	if(pFile==NULL) std::cerr << "error opening raw file" << std::endl;
 	else
@@ -182,4 +224,5 @@ void take_object::loadDSFMask(const char * file_name)
 	}
 	dsf->load_mask(mask_in);
 }
+
 
