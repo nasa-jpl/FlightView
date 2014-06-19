@@ -16,6 +16,13 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 	this->frame_buffer = boost::circular_buffer<boost::shared_ptr<frame>>(fmsize); //Initialize the ring buffer of frames
 	this->count = 0;
 
+	this->do_raw_save = false;
+	this->dsf_save_available = false;
+	this->std_dev_save_available = false;
+	raw_save_file = NULL;
+	dsf_save_file = NULL;
+	std_dev_save_file = NULL;
+
 }
 take_object::~take_object()
 {
@@ -107,6 +114,12 @@ void take_object::pdv_init()
 		{
 			std_dev_data = sdvf->wait_std_dev_filter();
 		}
+		//update saving thread
+		raw_save_ptr = frame_sp->raw_data;
+		//dsf_save_ptr = frame_sp->dsf_data;
+		//std_dev_save_ptr = std_dev_data;
+
+
 		if(frame_buffer.size() > 1)
 		{
 			dsf->update(frame_buffer[1]->image_data_ptr);
@@ -128,17 +141,25 @@ void take_object::pdv_init()
 }
 void take_object::savingLoop()
 {
+	printf("saving loop started!");
+	uint16_t * old_raw_save_ptr = NULL;
+	int true_height = (isChroma ? height : height+1);
 	while(pdv_thread_run)
 	{
-		if(raw_save_ptr && raw_save_file != NULL) //Apparently this returns false if null, true otherwise
+
+		if((old_raw_save_ptr != raw_save_ptr) && raw_save_file != NULL) //Apparently this returns false if null, true otherwise
 		{
-			//	raw_save_file->write(raw_save_ptr.get(), width*height*sizeof(uint16_t));
-			if(width*height != fwrite(raw_save_ptr.get(), sizeof(uint16_t), width*height, raw_save_file))
+			//boost::unique_lock<boost::mutex> lock(saving_mutex); //Lock for writing
+
+			if(width*true_height != fwrite(raw_save_ptr, sizeof(uint16_t), width*true_height, raw_save_file))
 			{
 				printf("Writing raw has an error.");
 			}
 		}
 
+		old_raw_save_ptr = raw_save_ptr; //Hoping this is an atomic operations
+
+		//printf("%i",*old_raw_save_ptr);
 
 	}
 }
@@ -168,17 +189,25 @@ void take_object::finishCapturingDSFMask()
 }
 void take_object::startSavingRaws(const char * raw_file_name)
 {
+	printf("Begin frame save! @ %s",raw_file_name);
 	if(raw_save_file != NULL)
 	{
 		stopSavingRaws();
 	}
 	raw_save_file = fopen(raw_file_name, "wb");
+	//do_raw_save = true;
 }
 void take_object::stopSavingRaws()
 {
+	printf("stop saving raws!");
+	//do_raw_save = false;
 	if(raw_save_file != NULL)
 	{
-		fclose(raw_save_file);
+		FILE * ptr_copy = raw_save_file;
+		raw_save_file = NULL;  //Since raw_save_file = NULL should be an atomic operation, this ensures that it won't save while we're calling fclose (boost locks were quite laggy here)
+
+
+		fclose(ptr_copy);
 	}
 }
 void take_object::startSavingDSFs(const char * dsf_file_name)

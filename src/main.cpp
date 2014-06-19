@@ -138,6 +138,14 @@ void sensor_grab_test()
 			to.finishCapturingDSFMask();
 			std::cout << "mask_value" << to.getDarkSubtractedData()[read_addr] << std::endl;
 		}
+		if(i == 200)
+		{
+			to.startSavingRaws("cuda_take_out.raw");
+		}
+		if(i == 888)
+		{
+			to.stopSavingRaws();
+		}
 		i++;
 	}
 }

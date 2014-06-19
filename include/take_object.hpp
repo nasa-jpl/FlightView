@@ -52,9 +52,13 @@ class take_object {
 	dark_subtraction_filter * dsf;
 	std_dev_filter * sdvf;
 
-	boost::shared_ptr <uint16_t> raw_save_ptr;
-	boost::shared_ptr <float> dsf_save_ptr;
-	boost::shared_ptr <float> std_dev_save_ptr;
+	bool do_raw_save;
+	bool dsf_save_available;
+	bool std_dev_save_available;
+
+	uint16_t * raw_save_ptr;
+	boost::shared_array < float > dsf_save_ptr;
+	boost::shared_array < float > std_dev_save_ptr;
 
 	FILE * raw_save_file;
 	FILE * dsf_save_file;
