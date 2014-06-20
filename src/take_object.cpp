@@ -16,24 +16,23 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 	this->frame_buffer = boost::circular_buffer<boost::shared_ptr<frame>>(fmsize); //Initialize the ring buffer of frames
 	this->count = 0;
 
+	this->std_dev_filter_N = 400;
+
 	this->do_raw_save = false;
 	this->dsf_save_available = false;
 	this->std_dev_save_available = false;
-	raw_save_file = NULL;
-	dsf_save_file = NULL;
-	std_dev_save_file = NULL;
+	this->raw_save_file = NULL;
+	this->dsf_save_file = NULL;
+	this->std_dev_save_file = NULL;
 
 }
 take_object::~take_object()
 {
 	int dummy;
-	//pdv_thread.interrupt();
 	pdv_thread_run = 0;
 	pdv_thread.join(); //Wait for thread to end
 	pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
 	pdv_close(pdv_p);
-	//Apparently if I use pdv_open, it implicitly calls malloc and therefore I should use free, not delete.
-	//free(this->pdv_p);
 }
 
 
@@ -85,58 +84,44 @@ void take_object::pdv_init()
 	count = 0;
 	while(pdv_thread_run == 1)
 	{
-
-
 		new_image_address = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)); //We're never going to deal with u_char *, ever again.
-
-		//std::cout << "a good outcome" << std::endl;
-
 		pdv_start_image(pdv_p); //Start another
-		//if chroma, translate new image
-		//std::cout << "a gooder outcome" << std::endl;
-
 		boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
-		//std::cout << "a goodest outcome" << std::endl;
-
 		if(isChroma)
 		{
 			new_image_address = ctf.apply_chroma_translate_filter(new_image_address);
 		}
-
-		//dsf->update(new_image_address); //let's let this chug we'll we set up the rest of the frame
-
 		boost::shared_ptr<frame> frame_sp(new frame(new_image_address, size, height,width, isChroma));
 		frame_sp->dsf_data = dsf->wait_dark_subtraction(); //Add framebuffer[2] frames dark subtracted version (dsf lags by 2 frames)
 		frame_buffer.push_front(frame_sp);
-
-
 		if(count % filter_refresh_rate == 0)
 		{
 			std_dev_data = sdvf->wait_std_dev_filter();
+			std_dev_save_ptr = std_dev_data;
+			std_dev_save_available = true;
 		}
 		//update saving thread
 		raw_save_ptr = frame_sp->raw_data;
-		//dsf_save_ptr = frame_sp->dsf_data;
-		//std_dev_save_ptr = std_dev_data;
-
-
 		if(frame_buffer.size() > 1)
 		{
 			dsf->update(frame_buffer[1]->image_data_ptr);
 			sdvf->update_GPU_buffer(frame_buffer[1]->image_data_ptr);
 			if(count % 10 == 0)
 			{
-				sdvf->start_std_dev_filter(400);
+				sdvf->start_std_dev_filter(std_dev_filter_N);
 			}
 		}
 		lock.unlock();
 		count++;
 		newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
-
-
-
-
-		//std_dev_data = boost::shared_array < float > (sdvf->wait_std_dev_filter()); //Use copy constructor
+		if(CHECK_FOR_MISSED_FRAMES_6604A && !isChroma && frame_buffer.size() >= 2)
+		{
+			if( frame_sp->framecount -1 != frame_buffer[1]->framecount)
+			{
+				std::cerr << "WARN MISSED FRAME" << frame_sp->framecount << " " << lastfc << std::endl;
+			}
+		}
+		lastfc = frame_sp->framecount;
 	}
 }
 void take_object::savingLoop()
@@ -153,14 +138,20 @@ void take_object::savingLoop()
 
 			if(width*true_height != fwrite(raw_save_ptr, sizeof(uint16_t), width*true_height, raw_save_file))
 			{
-				printf("Writing raw has an error.");
+				printf("Writing raw has an error.\n");
 			}
+			old_raw_save_ptr = raw_save_ptr; //Hoping this is an atomic operations
 		}
-
-		old_raw_save_ptr = raw_save_ptr; //Hoping this is an atomic operations
-
-		//printf("%i",*old_raw_save_ptr);
-
+		//TODO: Insert DSF saving code
+		if(std_dev_save_available && std_dev_save_file != NULL)
+		{
+			if(width*height != fwrite(std_dev_save_ptr.get(),sizeof(float),width*height,std_dev_save_file))
+			{
+				printf("Writing std_dev has an error.\n");
+				perror("");
+			}
+			std_dev_save_available = false;
+		}
 	}
 }
 boost::shared_ptr<frame> take_object::getFrontFrame()
@@ -220,11 +211,24 @@ void take_object::stopSavingDSFs()
 }
 void take_object::startSavingSTD_DEVs(const char * std_dev_file_name)
 {
-
+	printf("Begin std_dev save! @ %s",std_dev_file_name);
+	if(std_dev_save_file != NULL)
+	{
+		stopSavingSTD_DEVs();
+	}
+	std_dev_save_file = fopen(std_dev_file_name, "wb");
 }
 void take_object::stopSavingSTD_DEVs()
 {
+	printf("stop saving std_dev!");
+	//do_raw_save = false;
+	if(std_dev_save_file != NULL)
+	{
+		FILE * ptr_copy = std_dev_save_file;
+		std_dev_save_file = NULL;  //Since raw_save_file = NULL should be an atomic operation, this ensures that it won't save while we're calling fclose (boost locks were quite laggy here)
 
+		fclose(ptr_copy);
+	}
 }
 void take_object::loadDSFMask(const char * file_name)
 {
@@ -253,5 +257,8 @@ void take_object::loadDSFMask(const char * file_name)
 	}
 	dsf->load_mask(mask_in);
 }
-
+void take_object::setStdDev_N(int s)
+{
+	this->std_dev_filter_N = s;
+}
 

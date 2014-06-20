@@ -44,6 +44,5 @@ private:
 	float * picture_out_device;
 	float * picture_out_host;
 	uint16_t * picture_in_host;
-
 };
 #endif /* STD_DEV_FILTER_CUH_ */

@@ -32,6 +32,8 @@
 #include "dark_subtraction_filter.cuh"
 #include "edtinc.h"
 #include "frame.hpp"
+
+static const bool CHECK_FOR_MISSED_FRAMES_6604A = true;
 class take_object {
 	PdvDev * pdv_p;
     boost::circular_buffer<boost::shared_ptr<frame> > frame_buffer;
@@ -47,6 +49,9 @@ class take_object {
 	unsigned int numbufs;
 	unsigned int frame_history_size;
 	unsigned int filter_refresh_rate;
+
+	int std_dev_filter_N;
+	int lastfc;
 	uint64_t count;
 	chroma_translate_filter ctf;
 	dark_subtraction_filter * dsf;
@@ -59,10 +64,11 @@ class take_object {
 	uint16_t * raw_save_ptr;
 	boost::shared_array < float > dsf_save_ptr;
 	boost::shared_array < float > std_dev_save_ptr;
-
 	FILE * raw_save_file;
 	FILE * dsf_save_file;
 	FILE * std_dev_save_file;
+
+
 public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_rate = 10);
 	virtual ~take_object();
@@ -88,10 +94,12 @@ public:
 	void startSavingSTD_DEVs(const char * );
 	void stopSavingSTD_DEVs();
 
-	void savingLoop();
 
+	void setStdDev_N(int s);
 private:
 	void pdv_init();
+	void savingLoop();
+
 
 };
 

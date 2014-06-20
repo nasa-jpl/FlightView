@@ -2,17 +2,13 @@
 #include "cuda_utils.cuh"
 #include <cuda_profiler_api.h>
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
-
-
-
-
 __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, int width, int height, int gpu_buffer_head, int N)
 {
 	int col = blockIdx.x*blockDim.x + threadIdx.x;
 	int row = blockIdx.y*blockDim.y + threadIdx.y;
 	int offset = col + row*width;
 
-	float sum = 0; //Really hoping all of these get put in registers
+	float sum = 0; //Should be put in registers
 	float sq_sum = 0;
 	float mean = 0;
 	float std_dev;
@@ -23,18 +19,12 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 		printf("sum: %f sq_sum: %f \n",sum,sq_sum);
 	}
 	for(int i = 0; i < N; ++i) {
-		//index = (gpu_buffer_head - i) < 0 ? (gpu_buffer_head + MAX_N - i)*width*height*sizeof(uint16_t) + offset : (gpu_buffer_head-i)*width*height*sizeof(uint16_t) + offset;
-		//index = (gpu_buffer_head-i)*width*height*sizeof(uint16_t) + offset;
 		if((gpu_buffer_head -i) >= 0)
 		{
 			value = *(pic_d + offset+(width*height*(gpu_buffer_head-i)));
 		}
 		else
 		{
-			if(offset == 100*width && DEBUG)
-			{
-				printf("MAX_N: %i GPU_BUF_HEAD: %i i: %i",MAX_N, gpu_buffer_head, i);
-			}
 			value = *(pic_d + offset+(width*height*(MAX_N - (i-gpu_buffer_head))));
 		}
 		sum += value;
@@ -56,7 +46,6 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 
 std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 {
-
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
 	width = nWidth; //Making the assumption that all frames in a frame buffer are the same size
 	height = nHeight;
@@ -64,7 +53,6 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 	currentN = 0;
 	picture_out= boost::shared_array < float >(new float[width*height]);
 	HANDLE_ERROR(cudaStreamCreate(&std_dev_stream));
-	//std::cout << "threads per block" << THREADS_PER_BLOCK << std::endl;
 	HANDLE_ERROR(cudaMalloc( (void **)&pictures_device, width*height*sizeof(uint16_t)*MAX_N)); //Allocate a huge amount of memory on the GPU (N times the size of each frame stored as a u_char)
 	HANDLE_ERROR(cudaMalloc( (void **)&picture_out_device, width*height*sizeof(float))); //Allocate memory on GPU for reduce target
 	HANDLE_ERROR(cudaMallocHost( (void **)&picture_out_host, width*height*sizeof(float))); //Allocate memory on GPU for reduce target
@@ -78,14 +66,13 @@ std_dev_filter::~std_dev_filter()
 	HANDLE_ERROR(cudaFree(picture_out_device));
 	HANDLE_ERROR(cudaFreeHost(picture_out_host));
 	HANDLE_ERROR(cudaFreeHost(picture_in_host));
-
 	HANDLE_ERROR(cudaStreamDestroy(std_dev_stream));
 }
 void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
 {
 	//Synchronous Part
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
-	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //Turns out this does need to block :(
+	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //Turns out this does need to block :( FIX ME!!!!!
 
 	memcpy(picture_in_host, image_ptr,width*height*sizeof(uint16_t));
 	char *device_ptr = ((char *)(pictures_device)) + (gpu_buffer_head*width*height*sizeof(uint16_t));
@@ -114,9 +101,7 @@ void std_dev_filter::start_std_dev_filter(int N)
 
 		//Asynchronous Part
 		std_dev_filter_kernel <<<gridDims,blockDims,0,std_dev_stream>>> (pictures_device, picture_out_device, width, height, gpu_buffer_head, N);
-		//HANDLE_ERROR( cudaPeekAtLastError() );
 		HANDLE_ERROR(cudaMemcpyAsync(picture_out_host,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream));
-		//HANDLE_ERROR( cudaPeekAtLastError() );
 	}
 	else
 	{
@@ -142,5 +127,3 @@ boost::shared_array <float> std_dev_filter::wait_std_dev_filter()
 
 	return picture_out;
 }
-
-

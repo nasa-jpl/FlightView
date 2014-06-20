@@ -107,20 +107,22 @@ void sensor_grab_test()
 	int i = 0;
 	//int read_me = 250;
 	int samples = 300;
+
+	int start_saves = 1100;
+
+	int end_saves = 3100;
+
+	int std_dev_mem = 999;
 	int read_addr = 9300;
 	std::queue<uint16_t> pixel_hist;
-	uint16_t lastfc = 0;
 	//to.initFilters(samples);
 	std::cout << "isChroma? " << to.isChroma << std::endl;
+	to.setStdDev_N(std_dev_mem);
 	to.startCapturingDSFMask();
 	while(1)
 	{
 		boost::shared_ptr<frame> frame =to.getFrontFrame(); //This blocks until a frame is available
-		if(!to.isChroma && frame->framecount -1 != lastfc)
-		{
-			std::cerr << "WARN MISSED FRAME" << frame->framecount << " " << lastfc << std::endl;
-		}
-		lastfc = frame->framecount;
+
 		/*
 		if(i%(samples/10) == 0 && i <= samples)
 		{
@@ -138,13 +140,15 @@ void sensor_grab_test()
 			to.finishCapturingDSFMask();
 			std::cout << "mask_value" << to.getDarkSubtractedData()[read_addr] << std::endl;
 		}
-		if(i == 200)
+		if(i == start_saves)
 		{
-			to.startSavingRaws("cuda_take_out.raw");
+			to.startSavingRaws("cuda_take_out_1000sd.raw");
+			to.startSavingSTD_DEVs("cuda_devs_f32_1000sd.raw");
 		}
-		if(i == 888)
+		if(i == end_saves)
 		{
 			to.stopSavingRaws();
+			to.stopSavingSTD_DEVs();
 		}
 		i++;
 	}
