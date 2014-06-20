@@ -42,7 +42,7 @@ public:
 
     QPushButton * save_frames_button;
     QPushButton * stop_saving_frames_button;
-    QLineEdit * frames_save_num_edit;
+    QSpinBox * frames_save_num_edit;
     QLineEdit * filename_edit;
     QPushButton * set_filename_button;
 
@@ -51,8 +51,10 @@ public:
 
 signals:
     void mask_selected(const char * file_name);
+    void startSaving(const char * fname);
 public slots:
     void getMaskFile();
+    void save_button_slot();
     
 
 };

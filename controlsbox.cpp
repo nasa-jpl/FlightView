@@ -25,10 +25,10 @@ ControlsBox::ControlsBox(QWidget *parent) :
         fps_label = new QLabel("Warning: no data recieved");
 
         //First Row
-        collections_layout->addWidget(run_collect_button,1,1);
-        collections_layout->addWidget(run_display_button,1,2);
-        collections_layout->addWidget(stop_collect_button,1,3);
-        collections_layout->addWidget(stop_display_button,1,4);
+        collections_layout->addWidget(run_display_button,1,1,1,2);
+        //collections_layout->addWidget(run_display_button,1,2);
+        collections_layout->addWidget(stop_display_button,1,3,1,2);
+        //collections_layout->addWidget(stop_display_button,1,4);
 
         //Second Row
         collections_layout->addWidget(collect_dark_frames_button,2,1,1,2);
@@ -53,10 +53,13 @@ ControlsBox::ControlsBox(QWidget *parent) :
     ceiling_edit = new QSpinBox();
     ceiling_edit->setMaximum(max);
     ceiling_edit->setMinimum(min);
+    ceiling_edit->setButtonSymbols(QAbstractSpinBox::NoButtons);
 
     floor_edit = new QSpinBox();
     floor_edit->setMaximum(max);
     floor_edit->setMinimum(min);
+    floor_edit->setButtonSymbols(QAbstractSpinBox::NoButtons);
+
 
     //First Row
     sliders_layout->addWidget(show_dark_subtracted_cbox,1,1,1,1);
@@ -80,7 +83,8 @@ ControlsBox::ControlsBox(QWidget *parent) :
 
     save_frames_button = new QPushButton("Save Frames");
     stop_saving_frames_button = new QPushButton("Stop Saving");
-    frames_save_num_edit = new QLineEdit();
+    frames_save_num_edit = new QSpinBox();
+    frames_save_num_edit->setButtonSymbols(QAbstractSpinBox::NoButtons);
     filename_edit = new QLineEdit();
     set_filename_button = new QPushButton();
 
@@ -122,6 +126,7 @@ ControlsBox::ControlsBox(QWidget *parent) :
     connect(this->floor_slider,SIGNAL(valueChanged(int)),this->floor_edit,SLOT(setValue(int)));
 
     connect(this->load_mask_from_file,SIGNAL(clicked()),this,SLOT(getMaskFile()));
+    connect(this->save_frames_button,SIGNAL(clicked()),this,SLOT(save_button_slot()));
 
 }
 void ControlsBox::getMaskFile()
@@ -136,4 +141,9 @@ void ControlsBox::getMaskFile()
     std::string utf8_text = fileName.toUtf8().constData();
     emit mask_selected(utf8_text.c_str());
 
+}
+
+void ControlsBox::save_button_slot()
+{
+    emit startSaving(filename_edit->text().toLocal8Bit().data());
 }

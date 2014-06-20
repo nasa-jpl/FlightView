@@ -50,18 +50,50 @@ uint16_t * frameWorker::getFrameImagePtr()
 
 unsigned int frameWorker::getHeight()
 {
-   return to.height;
+    return to.height;
 }
 
 unsigned int frameWorker::getWidth()
 {
-   return to.width;
+    return to.width;
 }
 boost::shared_array < float > frameWorker::getDSF()
 {
     return fr->dsf_data;
 }
+boost::shared_array < float > frameWorker::getStdDevData()
+{
+    return to.getStdDevData();
+}
 void frameWorker::loadDSFMask(const char * file_name)
 {
     to.loadDSFMask(file_name);
+}
+
+
+void frameWorker::startSavingRawData(const char * name)
+{
+    qDebug() << "inside frame worker ssr!";
+    to.startSavingRaws(name);
+}
+
+void frameWorker::stopSavingRawData()
+{
+    to.stopSavingRaws();
+}
+void frameWorker::startSavingDSFData(const char * name)
+{
+
+}
+void frameWorker::stopSavingDSFData()
+{
+
+}
+void frameWorker::startSavingStd_DevData(const char * name)
+{
+
+}
+void frameWorker::stopSavingStd_DevData()
+{
+
 }

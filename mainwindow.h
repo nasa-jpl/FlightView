@@ -24,6 +24,9 @@ private:
 public slots:
     void updateFPS(unsigned int fps);
     void testslot();
+    void createBackend();
+    void destroyBackend();
+    void connectAndStartBackend();
 };
 
 #endif // MAINWINDOW_H

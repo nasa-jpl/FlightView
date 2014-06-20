@@ -18,6 +18,8 @@ public:
     boost::shared_ptr< frame > getFrame();
     uint16_t * getFrameImagePtr();
     boost::shared_array< float > getDSF();
+    boost::shared_array< float > getStdDevData();
+
     unsigned int getHeight();
     unsigned int getWidth();
 signals:
@@ -28,6 +30,15 @@ public slots:
     void startCapturingDSFMask();
     void finishCapturingDSFMask();
     void loadDSFMask(const char *);
+
+    void startSavingRawData(const char *name);
+    void stopSavingRawData();
+
+    void startSavingDSFData(const char *name);
+    void stopSavingDSFData();
+
+    void startSavingStd_DevData(const char *name);
+    void stopSavingStd_DevData();
 private:
     take_object to;
     boost::shared_ptr< frame > fr;
