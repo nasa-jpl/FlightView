@@ -47,6 +47,11 @@ uint16_t * frameWorker::getFrameImagePtr()
     //return NULL;
     return fr->image_data_ptr;
 }
+uint16_t * frameWorker::getRawImagePtr()
+{
+    //return NULL;
+    return fr->raw_data;
+}
 
 unsigned int frameWorker::getHeight()
 {
@@ -96,4 +101,8 @@ void frameWorker::startSavingStd_DevData(const char * name)
 void frameWorker::stopSavingStd_DevData()
 {
 
+}
+bool frameWorker::isChroma()
+{
+    return to.isChroma;
 }

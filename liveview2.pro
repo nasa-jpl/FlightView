@@ -6,7 +6,7 @@
 
 QT       += core gui
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 TARGET = liveview2
 TEMPLATE = app
@@ -22,7 +22,8 @@ HEADERS  += mainwindow.h \
     frameview_widget.h \
     controlsbox.h\
     frame_worker.h \
-    image_type.h
+    image_type.h \
+    qcustomplot.h
 
 BACKEND_HEADERS += edtinc.h \
     take_object.hpp\
@@ -39,6 +40,21 @@ OTHER_FILES += \
 RESOURCES += \
     images.qrc
 #RC_FILE = liveview2.rc
+
+
+# Tell the qcustomplot header that it will be used as library:
+DEFINES += QCUSTOMPLOT_USE_LIBRARY
+
+# Link with debug version of qcustomplot if compiling in debug mode, else with release library:
+CONFIG(debug, release|debug) {
+  win32:QCPLIB = qcustomplotd1
+  else: QCPLIB = qcustomplotd
+} else {
+  win32:QCPLIB = qcustomplot1
+  else: QCPLIB = qcustomplot
+}
+LIBS += -L$$PWD/lib/ -l$$QCPLIB
+
 
 unix:!macx:!symbian: LIBS += -L$$PWD/../../cuda_take/ -lcuda_take -lboost_thread -lcudart
 INCLUDEPATH += $$PWD/../../cuda_take/include\

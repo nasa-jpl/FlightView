@@ -17,11 +17,15 @@ public:
     virtual ~frameWorker();
     boost::shared_ptr< frame > getFrame();
     uint16_t * getFrameImagePtr();
+    uint16_t * getRawImagePtr();
+
     boost::shared_array< float > getDSF();
     boost::shared_array< float > getStdDevData();
 
     unsigned int getHeight();
     unsigned int getWidth();
+
+    bool isChroma();
 signals:
     void newFrameAvailable();
 
@@ -39,6 +43,7 @@ public slots:
 
     void startSavingStd_DevData(const char *name);
     void stopSavingStd_DevData();
+
 private:
     take_object to;
     boost::shared_ptr< frame > fr;

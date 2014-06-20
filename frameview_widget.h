@@ -10,20 +10,26 @@
 #include <QPushButton>
 #include "frame_worker.h"
 #include "image_type.h"
+#include "qcustomplot.h"
 class frameview_widget : public QWidget
 {
     Q_OBJECT
     QVBoxLayout * layout ;
-    QLabel * imageLabel;
+    QCustomPlot * qcp;
+    QCPColorMap * colorMap;
+    QCPColorMapData * colorMapData;
+    QCPColorScale * colorScale;
     QLabel * fpsLabel;
     unsigned int fps;
     QTimer * fpstimer;
     bool outputGrayScale;
     frameWorker * fw;
     image_t image_type;
-    float ceiling;
-    float floor;
 
+    double ceiling;
+    double floor;
+    int frHeight;
+    int frWidth;
 
 public:
     explicit frameview_widget(frameWorker * fw,image_t image_type ,QWidget *parent = 0);
@@ -37,6 +43,8 @@ public slots:
     void toggleGrayScale();
     void updateCeiling(int c);
     void updateFloor(int f);
+    void colorMapScrolledY(const QCPRange &newRange);
+    void colorMapScrolledX(const QCPRange &newRange);
 };
 
 #endif // FRAMEVIEW_WIDGET_H

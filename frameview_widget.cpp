@@ -4,10 +4,18 @@
 #include <QDebug>
 #include <QtGlobal>
 #include <QRect>
+#include <QApplication>
+#include <QMainWindow>
+#include <iostream>
+#include <fstream>
+#include <stdint.h>
+#include "qcustomplot.h"
 frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     QWidget(parent)
 {
 
+    int start_width = 640; //Corresponds to "key"
+    int start_height = 481; //Corresponds to "value"
 
     this->fw = fw;
     this->image_type = image_type;
@@ -16,10 +24,43 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     layout = new QVBoxLayout();
     toggleGrayScaleButton = new QPushButton("Toggle grayscale output");
     outputGrayScale = true;
-    imageLabel = new QLabel();
+    qcp = new QCustomPlot(this);
+
+    qcp->setInteractions(QCP::iRangeDrag|QCP::iRangeZoom);
+    qcp->axisRect()->setupFullAxesBox(true);
+    qcp->xAxis->setLabel("x");
+    qcp->yAxis->setLabel("y");
+
+    colorMap = new QCPColorMap(qcp->xAxis,qcp->yAxis);
+    colorMapData = NULL;
+    qcp->addPlottable(colorMap);
+
+
+   // colorScale = new QCPColorScale(qcp);
+    //qcp->plotLayout()->addElement(0, 1, colorScale); // add it to the right of the main axis rect
+
+   // colorScale->setType(QCPAxis::atRight);
+
+    //colorMap->setColorScale(colorScale);
+    colorMap->data()->setValueRange(QCPRange(0,start_height));
+    colorMap->data()->setKeyRange(QCPRange(0,start_width));
+    //colorScale->axis()->setLabel("kabel");
+    //colorScale->setDataRange(QCPRange(floor,ceiling));
+    colorMap->setDataRange(QCPRange(0,10000));
+    colorMap->setGradient(QCPColorGradient::gpJet);
+    colorMap->setInterpolate(false);
+
+    QCPMarginGroup *marginGroup = new QCPMarginGroup(qcp);
+    qcp->axisRect()->setMarginGroup(QCP::msBottom|QCP::msTop,marginGroup);
+    //colorScale->setMarginGroup(QCP::msBottom|QCP::msTop,marginGroup);
+
+    qcp->rescaleAxes();
     //   imageLabel->setGeometry(pictureRect);
     //   imageLabel->setPixmap(picturePixmap);
-    layout->addWidget(imageLabel);
+
+
+
+    layout->addWidget(qcp);
     fpsLabel = new QLabel("FPS");
     layout->addWidget(fpsLabel);
     layout->addWidget(toggleGrayScaleButton);
@@ -31,94 +72,69 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     fpstimer = new QTimer(this);
     connect(fpstimer, SIGNAL(timeout()), this, SLOT(updateFPS()));
     fpstimer->start(1000);
+
+    connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
+    connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
+
     //emit startCapturing(); //This sends a message to the frame worker to start capturing (in different thread)
     //fw->captureFrames();
 
 }
+
+
 void frameview_widget::handleNewFrame()
 {
+    if(colorMapData == NULL) //This cannot be in the constructor because we do not know the height yet.
+    {
+        frHeight = fw->getHeight();
+        frWidth = fw->getWidth();
+        if(!fw->isChroma() && image_type == BASE)
+        {
+            frHeight += 1;
+        }
 
+       colorMapData = new QCPColorMapData(frWidth,frHeight,QCPRange(0,frWidth),QCPRange(0,frHeight));
+       colorMap->setData(colorMapData);
+    }
     if(fps%4 == 0 && !this->isHidden())
     {
 
-
-        int height = fw->getHeight();
-        int width = fw->getWidth();
-        QImage temp(width, height, QImage::Format_RGB32);
-
         if(image_type == BASE)
         {
-            uint16_t * local_image_ptr =  fw->getFrameImagePtr();
-            if(outputGrayScale)
+            //qDebug() << "starting redraw";
+            uint16_t * local_image_ptr = fw->getRawImagePtr();
+            for(int col = 0; col < frWidth; col++)
             {
-                QRgb value;
-                for(int y = 0; y < height; y++)
+                for(int row = 0; row < frHeight; row++)
                 {
-                    for(int x = 0; x < width; x++)
-                    {
 
-                        value = ((uint8_t) (local_image_ptr[x+width*y] >> 8)) * 0x000101010; //Evil bithack found @ http://stackoverflow.com/questions/835753/convert-grayscale-value-to-rgb-representation
-                        temp.setPixel(x,y,value);
-                    }
+                    colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+
                 }
             }
-            else
-            {
-                temp = QImage(reinterpret_cast <uint8_t *>(fw->getFrameImagePtr()), width, height, QImage::Format_RGB16);
-            }
+
         }
         else if(image_type == DSF)
         {
             float slope = 255.0f/(ceiling - floor);
             boost::shared_array< float > local_image_ptr = fw->getDSF();
-            for(int y = 0; y < height; y++)
-            {
-                for(int x = 0; x < width; x++)
-                {
 
-                    uint8_t mag;
-                    //value = ((uint8_t) (local_image_ptr[x+width*y]+10.0f)/divisor) * 0x000101010; //Evil bithack found @ http://stackoverflow.com/questions/835753/convert-grayscale-value-to-rgb-representation
-                    //value = local_image_ptr[x+width*y] > 0 ? ((uint8_t) local_image_ptr[x+width*y]) * 0x000101010 : ((uint8_t) -1.0f*local_image_ptr[x+width*y]) * 0x000101010 ; //If its greater than 0, use its mag, otherwise use it's abs mag in 1 channel
-                    //value = local_image_ptr[x+width*y] > 0 ? ((uint8_t) local_image_ptr[x+width*y]) * 0x000101010 : 0 ; //If its greater than 0, use its mag, otherwise use it's abs mag in 1 channel
-                    mag = local_image_ptr[x+width*y] > floor ? (local_image_ptr[x+width*y] < ceiling ?  (local_image_ptr[x+width*y] - floor)*slope : 255) : 0;
-                    QRgb value = mag * 0x00101010;
-                    if(qrand() % 1000000 == 0 && DEBUG) //one in a 100000 chance
-                    {
-                        qDebug() << "@ x=" << x << " y=" << y << " pix val is d"<< local_image_ptr[x+width*y] << " mag is: " << mag << " float val is: " << local_image_ptr[x+width*y] << " value is: R=" << ((value & 0x00011000) >> 4) << "G=" << ((value & 0x00001100) >> 2) << "B=" << (value & 0x00000011) << " slope: " << slope ;
-                    }
-                    temp.setPixel(x,y,value);
-                    //local_image_ptr++; //increment to get to next pixel, skip the little endian LSB
-                }
-            }
         }
         else if(image_type == STD_DEV)
         {
             float slope = 255.0f/(ceiling - floor);
             boost::shared_array< float > local_image_ptr = fw->getStdDevData();
-            for(int y = 0; y < height; y++)
-            {
-                for(int x = 0; x < width; x++)
-                {
-
-                    uint8_t mag;
-                    //value = ((uint8_t) (local_image_ptr[x+width*y]+10.0f)/divisor) * 0x000101010; //Evil bithack found @ http://stackoverflow.com/questions/835753/convert-grayscale-value-to-rgb-representation
-                    //value = local_image_ptr[x+width*y] > 0 ? ((uint8_t) local_image_ptr[x+width*y]) * 0x000101010 : ((uint8_t) -1.0f*local_image_ptr[x+width*y]) * 0x000101010 ; //If its greater than 0, use its mag, otherwise use it's abs mag in 1 channel
-                    //value = local_image_ptr[x+width*y] > 0 ? ((uint8_t) local_image_ptr[x+width*y]) * 0x000101010 : 0 ; //If its greater than 0, use its mag, otherwise use it's abs mag in 1 channel
-                    mag = local_image_ptr[x+width*y] > floor ? (local_image_ptr[x+width*y] < ceiling ?  (local_image_ptr[x+width*y] - floor)*slope : 255) : 0;
-                    QRgb value = mag * 0x00101010;
-                    if(qrand() % 1000000 == 0  && DEBUG) //one in a 100000 chance
-                    {
-                        qDebug() << "@ x=" << x << " y=" << y << " pix val is d"<< local_image_ptr[x+width*y] << " mag is: " << mag << " float val is: " << local_image_ptr[x+width*y] << " value is: R=" << ((value & 0x00011000) >> 4) << "G=" << ((value & 0x00001100) >> 2) << "B=" << (value & 0x00000011) << " slope: " << slope ;
-                    }
-                    temp.setPixel(x,y,value);
-                    //local_image_ptr++; //increment to get to next pixel, skip the little endian LSB
-                }
-            }
         }
-        imageLabel->setPixmap(QPixmap::fromImage(temp));
+
+       colorMap->rescaleDataRange();
+        //colorMap->rescaleAxes();
+       // colorMap->setDataRange(QCPRange(floor,ceiling));
+        qcp->replot();
+        //colorMap->setDataRange(QCPRange(floor,ceiling));
 
     }
     fps++;
+
 }
 void frameview_widget::updateFPS()
 {
@@ -133,12 +149,64 @@ void frameview_widget::toggleGrayScale()
 }
 void frameview_widget::updateCeiling(int c)
 {
-    this->ceiling = (float)c;
-    qDebug() << "ceiling updated";
+    this->ceiling = (double)c;
+    //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
+    qDebug() << "ceiling updated" << ceiling;
 }
 void frameview_widget::updateFloor(int f)
 {
-    this->floor = (float)f;
-    qDebug() << "floor updated";
+    this->floor = (double)f;
+    //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
 
+    qDebug() << "floor updated" << floor;
+
+}
+void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
+{
+    QCPRange boundedRange = newRange;
+    double lowerRangeBound = 0;
+    double upperRangeBound = frHeight;
+    if (boundedRange.size() > upperRangeBound-lowerRangeBound)
+    {
+      boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+    } else
+    {
+      double oldSize = boundedRange.size();
+      if (boundedRange.lower < lowerRangeBound)
+      {
+        boundedRange.lower = lowerRangeBound;
+        boundedRange.upper = lowerRangeBound+oldSize;
+      }
+      if (boundedRange.upper > upperRangeBound)
+      {
+        boundedRange.lower = upperRangeBound-oldSize;
+        boundedRange.upper = upperRangeBound;
+      }
+    }
+    qcp->yAxis->setRange(boundedRange);
+}
+
+void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
+{
+    QCPRange boundedRange = newRange;
+    double lowerRangeBound = 0;
+    double upperRangeBound = frWidth;
+    if (boundedRange.size() > upperRangeBound-lowerRangeBound)
+    {
+      boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+    } else
+    {
+      double oldSize = boundedRange.size();
+      if (boundedRange.lower < lowerRangeBound)
+      {
+        boundedRange.lower = lowerRangeBound;
+        boundedRange.upper = lowerRangeBound+oldSize;
+      }
+      if (boundedRange.upper > upperRangeBound)
+      {
+        boundedRange.lower = upperRangeBound-oldSize;
+        boundedRange.upper = upperRangeBound;
+      }
+    }
+    qcp->xAxis->setRange(boundedRange);
 }

@@ -40,7 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //connect(controlbox->collect_dark_frames_button,SIGNAL(clicked()),this,SLOT(testslot()));
     connect(controlbox->run_display_button, SIGNAL(clicked()), this, SLOT(connectAndStartBackend()));
-    connect(controlbox->stop_display_button, SIGNAL(clicked()), this, SLOT(destroy10Backend()));
+    connect(controlbox->stop_display_button, SIGNAL(clicked()), this, SLOT(destroyBackend()));
 
 
 }
