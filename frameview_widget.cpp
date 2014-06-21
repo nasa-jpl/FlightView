@@ -25,7 +25,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     toggleGrayScaleButton = new QPushButton("Toggle grayscale output");
     outputGrayScale = true;
     qcp = new QCustomPlot(this);
-
+    //qcp->setGeometry(QRect());
     qcp->setInteractions(QCP::iRangeDrag|QCP::iRangeZoom);
     qcp->axisRect()->setupFullAxesBox(true);
     qcp->xAxis->setLabel("x");
@@ -60,10 +60,10 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
 
 
 
-    layout->addWidget(qcp);
+    layout->addWidget(qcp,8);
     fpsLabel = new QLabel("FPS");
-    layout->addWidget(fpsLabel);
-    layout->addWidget(toggleGrayScaleButton);
+    layout->addWidget(fpsLabel,1);
+    layout->addWidget(toggleGrayScaleButton,1);
     this->setLayout(layout);
 
 
