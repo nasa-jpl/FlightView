@@ -13,6 +13,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     //Create tabs
     tabWidget = new QTabWidget;
+
+    //NOTE: Care should be taken to ensure that tabbed widgets are ordered by the value of their image_type enum
+    //signals/slots (currentChanged) make use of this relation
     unfiltered_widget = new frameview_widget(fw, BASE);
     dsf_widget = new frameview_widget(fw, DSF);
     std_dev_widget = new frameview_widget(fw, STD_DEV);
@@ -25,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
     layout->addWidget(tabWidget,3);
     //Create controls box
 
-    controlbox = new ControlsBox();
+    controlbox = new ControlsBox(tabWidget);
     layout->addWidget(controlbox,1);
 
 
@@ -42,14 +45,15 @@ MainWindow::MainWindow(QWidget *parent)
     connect(controlbox->run_display_button, SIGNAL(clicked()), this, SLOT(connectAndStartBackend()));
     connect(controlbox->stop_display_button, SIGNAL(clicked()), this, SLOT(destroyBackend()));
 
-
+    connect(tabWidget,SIGNAL(currentChanged(int)),controlbox,SLOT(tabChangedSlot(int)));
+    controlbox->tabChangedSlot(0);
 }
 
 void MainWindow::createBackend()
 {
     workerThread = new QThread();
     fw = new frameWorker();
-
+    //workerThread->launchWorker(fw);
     fw->moveToThread(workerThread);
 
 
@@ -68,37 +72,32 @@ void MainWindow::connectAndStartBackend()
 
     connect(unfiltered_widget->toggleGrayScaleButton,SIGNAL(clicked()),unfiltered_widget,SLOT(toggleGrayScale()));
 
-    connect(controlbox->ceiling_slider, SIGNAL(valueChanged(int)), dsf_widget, SLOT(updateCeiling(int)));
-    connect(controlbox->floor_slider, SIGNAL(valueChanged(int)), dsf_widget, SLOT(updateFloor(int)));
+
 
     //connect(controlbox->save_frames_button,SIGNAL(clicked()),fw,SLOT(startSavingRawData(const char*)));
     //connect(controlbox->save_frames_button,SIGNAL(clicked()),fw,SLOT(startSavingDSFData(const char*)));
     //connect(controlbox->save_frames_button,SIGNAL(clicked()),fw,SLOT(startSavingSTD_DEVData(const char*)));
     connect(controlbox, SIGNAL(startSaving(const char*)),fw,SLOT(startSavingRawData(const char*)));
     connect(controlbox->stop_saving_frames_button,SIGNAL(clicked()),fw,SLOT(stopSavingRawData()));
+
+
     //start worker Thread
     workerThread->start();
-
 }
 
 void MainWindow::destroyBackend()
 {
     qDebug() << "attempting to stop backend";
-    disconnect(fw,SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
-    disconnect(fw,SIGNAL(newFrameAvailable()), dsf_widget, SLOT(handleNewFrame()));
-    disconnect(fw,SIGNAL(newFrameAvailable()), std_dev_widget, SLOT(handleNewFrame()));
-    disconnect(controlbox->collect_dark_frames_button,SIGNAL(clicked()),fw,SLOT(startCapturingDSFMask()));
-    disconnect(controlbox->stop_dark_collection_button,SIGNAL(clicked()),fw,SLOT(finishCapturingDSFMask()));
-    disconnect(controlbox,SIGNAL(mask_selected(const char *)),fw,SLOT(loadDSFMask(const char *)));
+
     delete fw;
     delete workerThread;
 }
 
 MainWindow::~MainWindow()
 {
-
+    destroyBackend();
 }
-void MainWindow::testslot()
+void MainWindow::testslot(int val)
 {
     qDebug() << "test slot hit";
 }

@@ -21,9 +21,10 @@ private:
     frameview_widget * unfiltered_widget;
     frameview_widget * dsf_widget;
     frameview_widget * std_dev_widget;
+
 public slots:
     void updateFPS(unsigned int fps);
-    void testslot();
+    void testslot(int val);
     void createBackend();
     void destroyBackend();
     void connectAndStartBackend();

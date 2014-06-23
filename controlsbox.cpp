@@ -3,11 +3,12 @@
 #include <QVBoxLayout>
 #include <QGridLayout>
 #include <QFileDialog>
-ControlsBox::ControlsBox(QWidget *parent) :
+ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     QGroupBox(parent)
 {
     QHBoxLayout * controls_layout =new QHBoxLayout;
-
+    cur_frameview=NULL;
+    qtw = tw;
     //Collection Buttons
 
         CollectionButtonsBox =new QWidget();
@@ -92,6 +93,7 @@ ControlsBox::ControlsBox(QWidget *parent) :
     QGridLayout * save_layout = new QGridLayout();
     QGroupBox * single_save_box = new QGroupBox();
     QVBoxLayout * single_save_layout = new QVBoxLayout;
+#include "frameview_widget.h"
 
     single_save_layout->addWidget(new QLabel("Single Save"));
     single_save_layout->addWidget(save_frame_button);
@@ -146,4 +148,21 @@ void ControlsBox::getMaskFile()
 void ControlsBox::save_button_slot()
 {
     emit startSaving(filename_edit->text().toLocal8Bit().data());
+}
+void ControlsBox::tabChangedSlot(int index)
+{
+    if(cur_frameview != NULL)
+   {
+        disconnect(ceiling_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateCeiling(int)));
+     disconnect(floor_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateFloor(int)));
+    }
+    qDebug() << index;
+   // qDebug() << qtw->count();
+   cur_frameview = (frameview_widget * )qtw->widget(index);
+
+    this->ceiling_edit->setValue(cur_frameview->getCeiling());
+    this->floor_edit->setValue(cur_frameview->getFloor());
+    connect(ceiling_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateCeiling(int)));
+    connect(floor_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateFloor(int)));
+
 }

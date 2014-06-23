@@ -8,6 +8,9 @@
 #include <QSlider>
 #include <QLineEdit>
 #include <QSpinBox>
+#include <QTabWidget>
+#include "frameview_widget.h"
+
 #include "boost/shared_array.hpp"
 const static int max = (1<<16)-1;
 const static int min = -1*max;
@@ -15,7 +18,7 @@ class ControlsBox : public QGroupBox
 {
     Q_OBJECT
 public:
-    explicit ControlsBox(QWidget *parent = 0);
+    explicit ControlsBox(QTabWidget * tw, QWidget *parent = 0);
 
     QWidget * CollectionButtonsBox;
     QWidget * ThresholdingSlidersBox;
@@ -46,8 +49,9 @@ public:
     QLineEdit * filename_edit;
     QPushButton * set_filename_button;
 
-
-
+private:
+    QTabWidget *qtw;
+    frameview_widget * cur_frameview;
 
 signals:
     void mask_selected(const char * file_name);
@@ -55,7 +59,8 @@ signals:
 public slots:
     void getMaskFile();
     void save_button_slot();
-    
+    void tabChangedSlot(int index);
+
 
 };
 

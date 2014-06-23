@@ -16,7 +16,8 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     frameview_widget.cpp \
     controlsbox.cpp \
-    frame_worker.cpp
+    frame_worker.cpp \
+    qcustomplot.cpp
 
 HEADERS  += mainwindow.h \
     frameview_widget.h \
@@ -41,19 +42,19 @@ RESOURCES += \
     images.qrc
 #RC_FILE = liveview2.rc
 
-
+#NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff
 # Tell the qcustomplot header that it will be used as library:
-DEFINES += QCUSTOMPLOT_USE_LIBRARY
+#DEFINES += QCUSTOMPLOT_USE_LIBRARY
 
 # Link with debug version of qcustomplot if compiling in debug mode, else with release library:
-CONFIG(debug, release|debug) {
-  win32:QCPLIB = qcustomplotd1
-  else: QCPLIB = qcustomplotd
-} else {
-  win32:QCPLIB = qcustomplot1
-  else: QCPLIB = qcustomplot
-}
-LIBS += -L$$PWD/lib/ -l$$QCPLIB
+#CONFIG(debug, release|debug) {
+#  win32:QCPLIB = qcustomplotd1
+#  else: QCPLIB = qcustomplotd
+#} else {
+#  win32:QCPLIB = qcustomplot1
+#  else: QCPLIB = qcustomplot
+#}
+#LIBS += -L$$PWD/lib/ -l$$QCPLIB
 
 
 unix:!macx:!symbian: LIBS += -L$$PWD/../../cuda_take/ -lcuda_take -lboost_thread -lcudart
