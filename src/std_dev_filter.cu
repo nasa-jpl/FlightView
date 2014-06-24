@@ -2,12 +2,18 @@
 #include "cuda_utils.cuh"
 #include <cuda_profiler_api.h>
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
+#define DO_HISTOGRAM
+
+#ifdef DO_HISTOGRAM
+__global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, float * histogram_bins, int * histogram_out, int width, int height, int gpu_buffer_head, int N)
+#else
 __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, int width, int height, int gpu_buffer_head, int N)
+#endif
 {
 	int col = blockIdx.x*blockDim.x + threadIdx.x;
 	int row = blockIdx.y*blockDim.y + threadIdx.y;
 	int offset = col + row*width;
-
+	int c = 0;
 	float sum = 0; //Should be put in registers
 	float sq_sum = 0;
 	float mean = 0;
@@ -42,8 +48,15 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 	}
 	picture_out_device[offset] = std_dev;
 
+#ifdef DO_HISTOGRAM
+	//__syncthreads(); //Is this necessary?
+	while(c < NUMBER_OF_BINS)
+	{
+		c++;
+	}
+	atomicAdd(&histogram_out[c], 1);
+#endif
 }
-
 std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 {
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
@@ -68,6 +81,7 @@ std_dev_filter::~std_dev_filter()
 	HANDLE_ERROR(cudaFreeHost(picture_in_host));
 	HANDLE_ERROR(cudaStreamDestroy(std_dev_stream));
 }
+
 void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
 {
 	//Synchronous Part
@@ -93,6 +107,9 @@ void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
 void std_dev_filter::start_std_dev_filter(int N)
 {
 
+	//Start thread for doing histogram
+	//histogram_thread = boost::thread(&std_dev_filter::doHistogram, this);
+
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
 	if(N < MAX_N && N<= currentN) //We can't calculate the std. dev farther back in time then we are keeping track.
 	{
@@ -100,13 +117,17 @@ void std_dev_filter::start_std_dev_filter(int N)
 		dim3 gridDims(width/blockDims.x, height/blockDims.y,1);
 
 		//Asynchronous Part
+#ifdef DO_HISTOGRAM
+		std_dev_filter_kernel <<<gridDims,blockDims,0,std_dev_stream>>> (pictures_device, picture_out_device, histogram_bins, histogram_out_host, width, height, gpu_buffer_head, N);
+#else
 		std_dev_filter_kernel <<<gridDims,blockDims,0,std_dev_stream>>> (pictures_device, picture_out_device, width, height, gpu_buffer_head, N);
+#endif
 		HANDLE_ERROR(cudaMemcpyAsync(picture_out_host,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream));
 	}
 	else
 	{
 		std::cerr << "Couldn't take std. dev, N exceeded length of history or maximum alllowed N (" << MAX_N << ")" << std::endl;
-		std::fill_n(picture_out.get(),width*height,-1); //Fill with -1 to indicate fail
+		//std::fill_n(picture_out.get(),width*height,-1); //Fill with -1 to indicate fail
 	}
 
 }
@@ -126,4 +147,23 @@ boost::shared_array <float> std_dev_filter::wait_std_dev_filter()
 	memcpy(picture_out.get(),picture_out_host,width*height*sizeof(float));
 
 	return picture_out;
+}
+void std_dev_filter::doHistogram()
+{
+	for(int i = 0; i < width*height; i++)
+	{
+		int c = 0;
+		//for(int c = 0; c < NUMBER_OF_BINS; c++)
+		while(picture_out[i] > histogram_bins[c])
+		{
+			c++;
+		}
+		hist_data[c]++;
+	}
+}
+
+boost::shared_array <int> std_dev_filter::wait_std_dev_histogram()
+{
+	histogram_thread.join();
+	return hist_data;
 }

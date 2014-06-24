@@ -13,6 +13,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/shared_array.hpp>
+
 #include "edtinc.h"
 #include "cuda.h"
 #include "frame.hpp"
@@ -21,7 +22,7 @@ static const int STD_DEV_DEVICE_NUM = 5;
 static const int MAX_N = 1000;
 static const int BLOCK_SIDE = 20;
 static const bool DEBUG = false;
-
+static const int NUMBER_OF_BINS = 1024;
 class std_dev_filter
 {
 public:
@@ -30,11 +31,17 @@ public:
 	void start_std_dev_filter(int N);
 	void update_GPU_buffer(uint16_t * image_ptr);
 	boost::shared_array< float > wait_std_dev_filter();
+	boost::shared_array< int > wait_std_dev_histogram();
+
 	uint16_t * getEntireRingBuffer(); //For testing only
 	cudaStream_t std_dev_stream;
 private:
 	std_dev_filter() {}//Private defauklt constructor
+	void doHistogram();
+
+	boost::thread histogram_thread;
 	boost::shared_array<float> picture_out;
+	boost::shared_array<int> hist_data;
 	int width;
 	int height;
 	int gpu_buffer_head;
@@ -43,6 +50,10 @@ private:
 	uint16_t * current_picture_device;
 	float * picture_out_device;
 	float * picture_out_host;
+	float histogram_bins[NUMBER_OF_BINS];
+	float * histogram_bins_device;
+
+	int * histogram_out_host;
 	uint16_t * picture_in_host;
 };
 #endif /* STD_DEV_FILTER_CUH_ */
