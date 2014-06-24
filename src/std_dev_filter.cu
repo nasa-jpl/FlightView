@@ -5,11 +5,14 @@
 #define DO_HISTOGRAM
 
 #ifdef DO_HISTOGRAM
-__global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, float * histogram_bins, int * histogram_out, int width, int height, int gpu_buffer_head, int N)
+__global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, float * histogram_bins, uint32_t * histogram_out, int width, int height, int gpu_buffer_head, int N)
 #else
 __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, int width, int height, int gpu_buffer_head, int N)
 #endif
 {
+#ifdef DO_HISTOGRAM
+	 __shared__ int block_histogram[NUMBER_OF_BINS];
+#endif
 	int col = blockIdx.x*blockDim.x + threadIdx.x;
 	int row = blockIdx.y*blockDim.y + threadIdx.y;
 	int offset = col + row*width;
@@ -49,13 +52,34 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 	picture_out_device[offset] = std_dev;
 
 #ifdef DO_HISTOGRAM
-	//__syncthreads(); //Is this necessary?
-	while(c < NUMBER_OF_BINS)
+	//__syncthreads(); //unnecessary?
+
+	if(offset == 100*width && DEBUG)
+	{
+		for(int i = 0; i < NUMBER_OF_BINS;i++)
+		{
+			printf("%f ,", histogram_bins[i]);
+		}
+		printf("\n");
+
+	}
+	while(std_dev > histogram_bins[c])
 	{
 		c++;
 	}
-	atomicAdd(&histogram_out[c], 1);
+	atomicAdd(&block_histogram[c], 1); //calculate sub histogram for each block
+	__syncthreads();
+
+	if(threadIdx.x == 0 && threadIdx.y == 0) //Only need to do this once per block
+	{
+		for(c=0; c < NUMBER_OF_BINS; c++)
+		{
+			atomicAdd(&histogram_out[c],block_histogram[c]);
+		}
+	}
+
 #endif
+
 }
 std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 {
@@ -68,9 +92,32 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 	HANDLE_ERROR(cudaStreamCreate(&std_dev_stream));
 	HANDLE_ERROR(cudaMalloc( (void **)&pictures_device, width*height*sizeof(uint16_t)*MAX_N)); //Allocate a huge amount of memory on the GPU (N times the size of each frame stored as a u_char)
 	HANDLE_ERROR(cudaMalloc( (void **)&picture_out_device, width*height*sizeof(float))); //Allocate memory on GPU for reduce target
+
+
 	HANDLE_ERROR(cudaMallocHost( (void **)&picture_out_host, width*height*sizeof(float))); //Allocate memory on GPU for reduce target
 	HANDLE_ERROR(cudaMallocHost( (void **)&picture_in_host, width*height*sizeof(uint16_t))); //Allocate memory on GPU for reduce target
 
+#ifdef DO_HISTOGRAM
+	HANDLE_ERROR(cudaMalloc( (void **)&histogram_out_device, NUMBER_OF_BINS*sizeof(uint32_t)));
+	HANDLE_ERROR(cudaMalloc( (void **)&histogram_bins_device, NUMBER_OF_BINS*sizeof(float)));
+
+	HANDLE_ERROR(cudaMallocHost( (void **)&histogram_out_host, NUMBER_OF_BINS*sizeof(uint32_t)));
+	HANDLE_ERROR(cudaMallocHost((void **)&histogram_bins,NUMBER_OF_BINS*sizeof(float)));
+	hist_data = boost::shared_array < uint32_t >(new uint32_t[NUMBER_OF_BINS]);
+
+	//Calculate linear bins
+	//float increment = (UINT16_MAX - 0)/NUMBER_OF_BINS;
+	float max = 100; //(1<<16);
+	float increment = (max - 0)/(NUMBER_OF_BINS-1);
+
+	histogram_bins[0] = increment;
+	for(int i = 1; i < NUMBER_OF_BINS-1; i++)
+	{
+		histogram_bins[i] = histogram_bins[i-1] + increment;
+	}
+	histogram_bins[NUMBER_OF_BINS-1] = (1<<16);
+	HANDLE_ERROR(cudaMemcpyAsync(histogram_bins_device ,histogram_bins,NUMBER_OF_BINS*sizeof(float),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
+#endif
 }
 std_dev_filter::~std_dev_filter()
 {
@@ -79,6 +126,14 @@ std_dev_filter::~std_dev_filter()
 	HANDLE_ERROR(cudaFree(picture_out_device));
 	HANDLE_ERROR(cudaFreeHost(picture_out_host));
 	HANDLE_ERROR(cudaFreeHost(picture_in_host));
+
+#ifdef DO_HISTOGRAM
+	HANDLE_ERROR(cudaFree(histogram_out_device));
+	HANDLE_ERROR(cudaFree(histogram_bins_device));
+
+	HANDLE_ERROR(cudaFreeHost(histogram_out_host));
+	HANDLE_ERROR(cudaFreeHost(histogram_bins));
+#endif
 	HANDLE_ERROR(cudaStreamDestroy(std_dev_stream));
 }
 
@@ -118,7 +173,12 @@ void std_dev_filter::start_std_dev_filter(int N)
 
 		//Asynchronous Part
 #ifdef DO_HISTOGRAM
-		std_dev_filter_kernel <<<gridDims,blockDims,0,std_dev_stream>>> (pictures_device, picture_out_device, histogram_bins, histogram_out_host, width, height, gpu_buffer_head, N);
+		HANDLE_ERROR(cudaMemsetAsync(histogram_out_device,0,NUMBER_OF_BINS*sizeof(uint32_t),std_dev_stream));
+		std_dev_filter_kernel <<<gridDims,blockDims,0,std_dev_stream>>> (pictures_device, picture_out_device, histogram_bins_device, histogram_out_device, width, height, gpu_buffer_head, N);
+		//__global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, float * histogram_bins, uint32_t * histogram_out, int width, int height, int gpu_buffer_head, int N)
+		HANDLE_ERROR( cudaPeekAtLastError() );
+
+		HANDLE_ERROR(cudaMemcpyAsync(histogram_out_host,histogram_out_device,NUMBER_OF_BINS*sizeof(uint32_t),cudaMemcpyDeviceToHost,std_dev_stream));
 #else
 		std_dev_filter_kernel <<<gridDims,blockDims,0,std_dev_stream>>> (pictures_device, picture_out_device, width, height, gpu_buffer_head, N);
 #endif
@@ -148,22 +208,13 @@ boost::shared_array <float> std_dev_filter::wait_std_dev_filter()
 
 	return picture_out;
 }
-void std_dev_filter::doHistogram()
-{
-	for(int i = 0; i < width*height; i++)
-	{
-		int c = 0;
-		//for(int c = 0; c < NUMBER_OF_BINS; c++)
-		while(picture_out[i] > histogram_bins[c])
-		{
-			c++;
-		}
-		hist_data[c]++;
-	}
-}
 
-boost::shared_array <int> std_dev_filter::wait_std_dev_histogram()
+boost::shared_array <uint32_t> std_dev_filter::wait_std_dev_histogram()
 {
-	histogram_thread.join();
+	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
+	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //blocks until done
+	HANDLE_ERROR( cudaPeekAtLastError() );
+	memcpy(hist_data.get(),histogram_out_host,NUMBER_OF_BINS*sizeof(uint32_t));
+
 	return hist_data;
 }

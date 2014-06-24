@@ -112,7 +112,7 @@ void sensor_grab_test()
 
 	int end_saves = 3100;
 
-	int std_dev_mem = 999;
+	int std_dev_mem = 300;
 	int read_addr = 9300;
 	std::queue<uint16_t> pixel_hist;
 	//to.initFilters(samples);

@@ -31,17 +31,15 @@ public:
 	void start_std_dev_filter(int N);
 	void update_GPU_buffer(uint16_t * image_ptr);
 	boost::shared_array< float > wait_std_dev_filter();
-	boost::shared_array< int > wait_std_dev_histogram();
+	boost::shared_array< uint32_t > wait_std_dev_histogram();
 
 	uint16_t * getEntireRingBuffer(); //For testing only
 	cudaStream_t std_dev_stream;
 private:
 	std_dev_filter() {}//Private defauklt constructor
-	void doHistogram();
 
-	boost::thread histogram_thread;
 	boost::shared_array<float> picture_out;
-	boost::shared_array<int> hist_data;
+	boost::shared_array<uint32_t> hist_data;
 	int width;
 	int height;
 	int gpu_buffer_head;
@@ -53,7 +51,9 @@ private:
 	float histogram_bins[NUMBER_OF_BINS];
 	float * histogram_bins_device;
 
-	int * histogram_out_host;
+	uint32_t * histogram_out_host;
+	uint32_t * histogram_out_device;
+
 	uint16_t * picture_in_host;
 };
 #endif /* STD_DEV_FILTER_CUH_ */
