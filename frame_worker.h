@@ -21,7 +21,8 @@ public:
 
     boost::shared_array< float > getDSF();
     boost::shared_array< float > getStdDevData();
-
+    boost::shared_array<uint32_t> getHistogramData();
+    std::vector<float> *getHistogramBins();
     unsigned int getHeight();
     unsigned int getWidth();
 

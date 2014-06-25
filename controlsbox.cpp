@@ -11,35 +11,35 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     qtw = tw;
     //Collection Buttons
 
-        CollectionButtonsBox =new QWidget();
-        QGridLayout * collections_layout = new QGridLayout();
+    CollectionButtonsBox =new QWidget();
+    QGridLayout * collections_layout = new QGridLayout();
 
-        run_collect_button = new QPushButton("Run Collect");
-        run_display_button = new QPushButton("Run Display");
-        stop_collect_button = new QPushButton("Stop Collect");
-        stop_display_button = new QPushButton("Stop Display");
+    run_collect_button = new QPushButton("Run Collect");
+    run_display_button = new QPushButton("Run Display");
+    stop_collect_button = new QPushButton("Stop Collect");
+    stop_display_button = new QPushButton("Stop Display");
 
-        collect_dark_frames_button = new QPushButton("Collect Dark Frames");
-        stop_dark_collection_button = new QPushButton("Stop Dark Collection");
+    collect_dark_frames_button = new QPushButton("Collect Dark Frames");
+    stop_dark_collection_button = new QPushButton("Stop Dark Collection");
 
-        load_mask_from_file = new QPushButton("Load Mask From File");
-        fps_label = new QLabel("Warning: no data recieved");
+    load_mask_from_file = new QPushButton("Load Mask From File");
+    fps_label = new QLabel("Warning: no data recieved");
 
-        //First Row
-        collections_layout->addWidget(run_display_button,1,1,1,2);
-        //collections_layout->addWidget(run_display_button,1,2);
-        collections_layout->addWidget(stop_display_button,1,3,1,2);
-        //collections_layout->addWidget(stop_display_button,1,4);
+    //First Row
+    collections_layout->addWidget(run_display_button,1,1,1,2);
+    //collections_layout->addWidget(run_display_button,1,2);
+    collections_layout->addWidget(stop_display_button,1,3,1,2);
+    //collections_layout->addWidget(stop_display_button,1,4);
 
-        //Second Row
-        collections_layout->addWidget(collect_dark_frames_button,2,1,1,2);
-        collections_layout->addWidget(stop_dark_collection_button,2,3,1,1);
-        collections_layout->addWidget(load_mask_from_file,2,4,1,1);
+    //Second Row
+    collections_layout->addWidget(collect_dark_frames_button,2,1,1,2);
+    collections_layout->addWidget(stop_dark_collection_button,2,3,1,1);
+    collections_layout->addWidget(load_mask_from_file,2,4,1,1);
 
-        //Third Row
-        collections_layout->addWidget(fps_label,3,1,1,4);
+    //Third Row
+    collections_layout->addWidget(fps_label,3,1,1,4);
 
-        CollectionButtonsBox->setLayout(collections_layout);
+    CollectionButtonsBox->setLayout(collections_layout);
 
     //Slider Thresholding Buttons
     ThresholdingSlidersBox = new QWidget();
@@ -134,8 +134,8 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
 void ControlsBox::getMaskFile()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Select mask file"),
-                                                     "",
-                                                     tr("Files (*.raw)"));
+                                                    "",
+                                                    tr("Files (*.raw)"));
     if(fileName.isEmpty())
     {
         return;
@@ -151,18 +151,19 @@ void ControlsBox::save_button_slot()
 }
 void ControlsBox::tabChangedSlot(int index)
 {
+    frameview_widget * fvw = qobject_cast<frameview_widget*>(qtw->widget(index));
     if(cur_frameview != NULL)
-   {
+    {
         disconnect(ceiling_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateCeiling(int)));
-     disconnect(floor_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateFloor(int)));
+        disconnect(floor_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateFloor(int)));
     }
-    qDebug() << index;
-   // qDebug() << qtw->count();
-   cur_frameview = (frameview_widget * )qtw->widget(index);
+    cur_frameview = fvw; //Gets set to null if not frameview widget
 
-    this->ceiling_edit->setValue(cur_frameview->getCeiling());
-    this->floor_edit->setValue(cur_frameview->getFloor());
-    connect(ceiling_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateCeiling(int)));
-    connect(floor_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateFloor(int)));
-
+    if(cur_frameview != NULL)
+    {
+        this->ceiling_edit->setValue(cur_frameview->getCeiling());
+        this->floor_edit->setValue(cur_frameview->getFloor());
+        connect(ceiling_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateCeiling(int)));
+        connect(floor_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateFloor(int)));
+    }
 }

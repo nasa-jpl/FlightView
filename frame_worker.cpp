@@ -64,12 +64,21 @@ unsigned int frameWorker::getWidth()
 }
 boost::shared_array < float > frameWorker::getDSF()
 {
-    return fr->dsf_data;
+    return to.getDarkSubtractedData();
 }
 boost::shared_array < float > frameWorker::getStdDevData()
 {
     return to.getStdDevData();
 }
+boost::shared_array < uint32_t > frameWorker::getHistogramData()
+{
+    return to.getHistogramData();
+}
+std::vector<float> *frameWorker::getHistogramBins()
+{
+    return to.getHistogramBins();
+}
+
 void frameWorker::loadDSFMask(const char * file_name)
 {
     to.loadDSFMask(file_name);

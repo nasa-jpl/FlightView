@@ -38,9 +38,8 @@ void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewF
 
     QSizePolicy qsp(QSizePolicy::Preferred,QSizePolicy::Preferred);
          qsp.setHeightForWidth(true);
-         qsp.setHeightForWidth(true);
     qcp->setSizePolicy(qsp);
-    //qcp->setGeometry(QRect());
+    qcp->heightForWidth(200);
     qcp->setInteractions(QCP::iRangeDrag|QCP::iRangeZoom);
     qcp->axisRect()->setupFullAxesBox(true);
     qcp->xAxis->setLabel("x");
@@ -148,13 +147,6 @@ void frameview_widget::handleNewFrame()
                 }
             }
         }
-
-       //colorMap->rescaleDataRange();
-        //colorMap->rescaleAxes();
-
-        //colorMap->setDataRange(QCPRange(0,count*10));
-
-      // colorMap->setDataRange(QCPRange(floor,ceiling));
         colorScale->setDataRange(QCPRange(floor,ceiling));
         qcp->replot();
 

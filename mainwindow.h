@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "controlsbox.h"
 #include "frameview_widget.h"
+#include "histogram_widget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -21,7 +22,7 @@ private:
     frameview_widget * unfiltered_widget;
     frameview_widget * dsf_widget;
     frameview_widget * std_dev_widget;
-
+    histogram_widget * hist_widget;
 public slots:
     void updateFPS(unsigned int fps);
     void testslot(int val);

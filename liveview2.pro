@@ -17,14 +17,16 @@ SOURCES += main.cpp\
     frameview_widget.cpp \
     controlsbox.cpp \
     frame_worker.cpp \
-    qcustomplot.cpp
+    qcustomplot.cpp \
+    histogram_widget.cpp
 
 HEADERS  += mainwindow.h \
     frameview_widget.h \
     controlsbox.h\
     frame_worker.h \
     image_type.h \
-    qcustomplot.h
+    qcustomplot.h \
+    histogram_widget.h
 
 BACKEND_HEADERS += edtinc.h \
     take_object.hpp\

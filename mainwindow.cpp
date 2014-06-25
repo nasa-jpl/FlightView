@@ -19,11 +19,11 @@ MainWindow::MainWindow(QWidget *parent)
     unfiltered_widget = new frameview_widget(fw, BASE);
     dsf_widget = new frameview_widget(fw, DSF);
     std_dev_widget = new frameview_widget(fw, STD_DEV);
-
+    hist_widget = new histogram_widget(fw,STD_DEV);
     tabWidget->addTab(unfiltered_widget, QString("Live View"));
     tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
     tabWidget->addTab(std_dev_widget, QString("Std. Deviation"));
-
+    tabWidget->addTab(hist_widget,QString("Histogram View"));
 
     layout->addWidget(tabWidget,3);
     //Create controls box
@@ -66,6 +66,7 @@ void MainWindow::connectAndStartBackend()
     connect(fw,SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()), dsf_widget, SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()), std_dev_widget, SLOT(handleNewFrame()));
+    connect(fw,SIGNAL(newFrameAvailable()),hist_widget,SLOT(handleNewFrame()));
     connect(controlbox->collect_dark_frames_button,SIGNAL(clicked()),fw,SLOT(startCapturingDSFMask()));
     connect(controlbox->stop_dark_collection_button,SIGNAL(clicked()),fw,SLOT(finishCapturingDSFMask()));
     connect(controlbox,SIGNAL(mask_selected(const char *)),fw,SLOT(loadDSFMask(const char *)));
