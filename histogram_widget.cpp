@@ -51,10 +51,13 @@ void histogram_widget::handleNewFrame()
     if(fps%10==0 && !this->isHidden())
     {
         //boost::shared_array <uint32_t> hist_shad = fw->getHistogramData();
+        double sum = 0;
         for(int i = 0; i < histo_data.size();i++)
         {
             histo_data[i] = (double)fw->getHistogramData()[i];
+            sum+= histo_data[i];
         }
+        qDebug() << "sum " << sum;
         //qDebug() << histo_data;
         //qDebug() << histo_bins;
         // histogram->

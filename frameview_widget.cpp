@@ -14,19 +14,27 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     QWidget(parent)
 {
 
-    int start_width = 640; //Corresponds to "key"
-    int start_height = 481; //Corresponds to "value"
 
     this->fw = fw;
     this->image_type = image_type;
     this->ceiling = 10000;
     this->floor = 0;
     count=0;
-    layout = new QVBoxLayout();
-    toggleGrayScaleButton = new QPushButton("Toggle grayscale output");
+    toggleGrayScaleButton.setText("Toggle grayscale output");
     outputGrayScale = true;
     qcp = NULL;
 
+}
+frameview_widget::~frameview_widget()
+{
+    if(qcp != NULL)
+    {
+        disconnect(this,SLOT(handleNewFrame()),fw,SIGNAL(newFrameAvailable()));
+        delete colorScale;
+        delete colorMapData;
+        delete colorMap;
+        delete qcp;
+    }
 }
 
 void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewFrame?
@@ -78,18 +86,18 @@ void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewF
 
 
 
-    layout->addWidget(qcp,8);
-    fpsLabel = new QLabel("FPS");
-    layout->addWidget(fpsLabel,1);
-    layout->addWidget(toggleGrayScaleButton,1);
-    this->setLayout(layout);
+    layout.addWidget(qcp,8);
+    fpsLabel.setText("FPS");
+    layout.addWidget(&fpsLabel,1);
+    layout.addWidget(&toggleGrayScaleButton,1);
+    this->setLayout(&layout);
 
 
     qDebug() << "emitting capture signal, starting timer";
     fps = 0;
-    fpstimer = new QTimer(this);
-    connect(fpstimer, SIGNAL(timeout()), this, SLOT(updateFPS()));
-    fpstimer->start(1000);
+   // fpstimer = new QTimer(this);
+    connect(&fpstimer, SIGNAL(timeout()), this, SLOT(updateFPS()));
+    fpstimer.start(1000);
 
     connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
    connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
@@ -157,7 +165,7 @@ void frameview_widget::handleNewFrame()
 }
 void frameview_widget::updateFPS()
 {
-    fpsLabel->setText(QString("fps: %1").arg(fps));
+    fpsLabel.setText(QString("fps: %1").arg(fps));
     fps = 0;
 }
 void frameview_widget::toggleGrayScale()

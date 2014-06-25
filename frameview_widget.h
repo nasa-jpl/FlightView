@@ -16,14 +16,14 @@ class frameview_widget : public QWidget
 {
     Q_OBJECT
     QMutex mMutex;
-    QVBoxLayout * layout ;
+    QVBoxLayout layout ;
     QCustomPlot * qcp;
     QCPColorMap * colorMap;
     QCPColorMapData * colorMapData;
     QCPColorScale * colorScale;
-    QLabel * fpsLabel;
+    QLabel fpsLabel;
     unsigned int fps;
-    QTimer * fpstimer;
+    QTimer fpstimer;
     bool outputGrayScale;
     frameWorker * fw;
     image_t image_type;
@@ -35,8 +35,8 @@ class frameview_widget : public QWidget
     int count;
 public:
     explicit frameview_widget(frameWorker * fw,image_t image_type ,QWidget *parent = 0);
-    QImage * image;
-    QPushButton * toggleGrayScaleButton;
+    ~frameview_widget();
+    QPushButton toggleGrayScaleButton;
     double getCeiling();
     double getFloor();
 private:

@@ -42,8 +42,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     //connect(controlbox->collect_dark_frames_button,SIGNAL(clicked()),this,SLOT(testslot()));
-    connect(controlbox->run_display_button, SIGNAL(clicked()), this, SLOT(connectAndStartBackend()));
-    connect(controlbox->stop_display_button, SIGNAL(clicked()), this, SLOT(destroyBackend()));
+    connect(&controlbox->run_display_button, SIGNAL(clicked()), this, SLOT(connectAndStartBackend()));
+    connect(&controlbox->stop_display_button, SIGNAL(clicked()), this, SLOT(destroyBackend()));
 
     connect(tabWidget,SIGNAL(currentChanged(int)),controlbox,SLOT(tabChangedSlot(int)));
     controlbox->tabChangedSlot(0);
@@ -67,11 +67,10 @@ void MainWindow::connectAndStartBackend()
     connect(fw,SIGNAL(newFrameAvailable()), dsf_widget, SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()), std_dev_widget, SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()),hist_widget,SLOT(handleNewFrame()));
-    connect(controlbox->collect_dark_frames_button,SIGNAL(clicked()),fw,SLOT(startCapturingDSFMask()));
-    connect(controlbox->stop_dark_collection_button,SIGNAL(clicked()),fw,SLOT(finishCapturingDSFMask()));
+    connect(&controlbox->collect_dark_frames_button,SIGNAL(clicked()),fw,SLOT(startCapturingDSFMask()));
+    connect(&controlbox->stop_dark_collection_button,SIGNAL(clicked()),fw,SLOT(finishCapturingDSFMask()));
     connect(controlbox,SIGNAL(mask_selected(const char *)),fw,SLOT(loadDSFMask(const char *)));
 
-    connect(unfiltered_widget->toggleGrayScaleButton,SIGNAL(clicked()),unfiltered_widget,SLOT(toggleGrayScale()));
 
 
 
@@ -79,7 +78,7 @@ void MainWindow::connectAndStartBackend()
     //connect(controlbox->save_frames_button,SIGNAL(clicked()),fw,SLOT(startSavingDSFData(const char*)));
     //connect(controlbox->save_frames_button,SIGNAL(clicked()),fw,SLOT(startSavingSTD_DEVData(const char*)));
     connect(controlbox, SIGNAL(startSaving(const char*)),fw,SLOT(startSavingRawData(const char*)));
-    connect(controlbox->stop_saving_frames_button,SIGNAL(clicked()),fw,SLOT(stopSavingRawData()));
+    connect(&controlbox->stop_saving_frames_button,SIGNAL(clicked()),fw,SLOT(stopSavingRawData()));
 
 
     //start worker Thread
