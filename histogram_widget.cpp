@@ -33,8 +33,8 @@ void histogram_widget::initQCPStuff()
     }
     histo_data = QVector<double>(histo_bins.size());
 
-    qcp->xAxis->setAutoTicks(false);
-    qcp->xAxis->setTickStep(1);
+    qcp->xAxis->setAutoTicks(true);
+    qcp->xAxis->setAutoTickCount(10);
     qcp->xAxis->setTickVector(histo_bins);
     histogram->valueAxis()->setRangeUpper(100000000.0d);
     histogram->keyAxis()->setRangeUpper(100.0d);
