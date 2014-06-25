@@ -123,17 +123,11 @@ void sensor_grab_test()
 	{
 		boost::shared_ptr<frame> frame =to.getFrontFrame(); //This blocks until a frame is available
 
-		/*
-		if(i%(samples/10) == 0 && i <= samples)
-		{
-			std::cout << "i is:" << i << " value is:" <<frame->image_data_ptr[read_addr] << std::endl;
-		}
-		 */
 		if(i%(samples/10) == 0 && i != samples)
 		{
 			//std::cout << frame->image_data_ptr[read_addr] << std::endl;
 
-			std::cout << frame->image_data_ptr[read_addr] << ", masked is: " << fixed << setprecision(3) << frame->dsf_data[read_addr] << std::endl;
+			std::cout << frame->image_data_ptr[read_addr] << ", masked is: " << fixed << setprecision(3) << to.getDarkSubtractedData()[read_addr] << std::endl;
 		}
 		if(i == samples)
 		{
@@ -153,10 +147,19 @@ void sensor_grab_test()
 		i++;
 	}
 }
-
+void simple_sensor_grab()
+{
+	take_object to;
+	to.start();
+	cout << "ruunning to" << std::endl;
+	while(1)
+	{
+		usleep(1000);
+	}
+}
 int main()
 {
-	sensor_grab_test();
+	simple_sensor_grab();
 	//std_dev_test();
 	return 0;
 }

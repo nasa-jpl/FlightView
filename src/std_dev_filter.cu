@@ -1,6 +1,7 @@
 #include "std_dev_filter.cuh"
 #include "cuda_utils.cuh"
 #include <cuda_profiler_api.h>
+#include <math.h>
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
 #define DO_HISTOGRAM
 
@@ -11,7 +12,7 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 #endif
 {
 #ifdef DO_HISTOGRAM
-	 __shared__ int block_histogram[NUMBER_OF_BINS];
+	__shared__ int block_histogram[NUMBER_OF_BINS];
 #endif
 	int col = blockIdx.x*blockDim.x + threadIdx.x;
 	int row = blockIdx.y*blockDim.y + threadIdx.y;
@@ -53,7 +54,14 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 
 #ifdef DO_HISTOGRAM
 	//__syncthreads(); //unnecessary?
-
+	int blockArea = blockDim.x*blockDim.y;
+	for(int shm_offset = 0; shm_offset < NUMBER_OF_BINS; shm_offset+=blockArea)
+	{
+		if(shm_offset + threadIdx.y * blockDim.x + threadIdx.x < NUMBER_OF_BINS)
+		{
+			block_histogram[shm_offset + threadIdx.y * blockDim.x + threadIdx.x] = 0; //Zero shared mem initially.
+		}
+	}
 	if(offset == 100*width && DEBUG)
 	{
 		for(int i = 0; i < NUMBER_OF_BINS;i++)
@@ -63,12 +71,25 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 		printf("\n");
 
 	}
-	while(std_dev > histogram_bins[c])
+	while(std_dev > histogram_bins[c] && c < (NUMBER_OF_BINS-1))
 	{
 		c++;
 	}
+	__syncthreads();
 	atomicAdd(&block_histogram[c], 1); //calculate sub histogram for each block
 	__syncthreads();
+
+	if(DEBUG && blockIdx.x == 0 && blockIdx.y == 0 && threadIdx.x == 0 && threadIdx.y==0)
+	{
+		sum = 0;
+		printf("threads per block %i \n", blockDim.x *blockDim.y);
+		for(int i = 0; i < NUMBER_OF_BINS; i++)
+		{
+			sum += block_histogram[i];
+			printf("%i ",block_histogram[i]);
+		}
+		printf("\n %f",sum);
+	}
 
 	if(threadIdx.x == 0 && threadIdx.y == 0) //Only need to do this once per block
 	{
@@ -105,17 +126,18 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 	HANDLE_ERROR(cudaMallocHost((void **)&histogram_bins,NUMBER_OF_BINS*sizeof(float)));
 	hist_data = boost::shared_array < uint32_t >(new uint32_t[NUMBER_OF_BINS]);
 
-	//Calculate linear bins
+	//Calculate logarithmic bins
 	//float increment = (UINT16_MAX - 0)/NUMBER_OF_BINS;
-	float max = 100; //(1<<16);
-	float increment = (max - 0)/(NUMBER_OF_BINS-1);
-
-	histogram_bins[0] = increment;
-	for(int i = 1; i < NUMBER_OF_BINS-1; i++)
+	float max = log((1<<16)); //ln(2^16)+.1
+	float increment = (max - 0)/(NUMBER_OF_BINS);
+	float acc = 0;
+	for(int i = 0; i < NUMBER_OF_BINS; i++)
 	{
-		histogram_bins[i] = histogram_bins[i-1] + increment;
+		histogram_bins[i] = exp(acc)-1;
+		acc+=increment;
+		printf("%f, ",histogram_bins[i]);
 	}
-	histogram_bins[NUMBER_OF_BINS-1] = (1<<16);
+	printf("\ncreated logarithmic bins\n");
 	HANDLE_ERROR(cudaMemcpyAsync(histogram_bins_device ,histogram_bins,NUMBER_OF_BINS*sizeof(float),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
 #endif
 }
@@ -186,7 +208,7 @@ void std_dev_filter::start_std_dev_filter(int N)
 	}
 	else
 	{
-		std::cerr << "Couldn't take std. dev, N exceeded length of history or maximum alllowed N (" << MAX_N << ")" << std::endl;
+		std::cerr << "Couldn't take std. dev, N (" << N << " ) exceeded length of history (" <<currentN << ") or maximum alllowed N (" << MAX_N << ")" << std::endl;
 		//std::fill_n(picture_out.get(),width*height,-1); //Fill with -1 to indicate fail
 	}
 
@@ -217,4 +239,14 @@ boost::shared_array <uint32_t> std_dev_filter::wait_std_dev_histogram()
 	memcpy(hist_data.get(),histogram_out_host,NUMBER_OF_BINS*sizeof(uint32_t));
 
 	return hist_data;
+}
+std::vector <float> * std_dev_filter::getHistogramBins()
+{
+
+	shb.assign(histogram_bins,histogram_bins+NUMBER_OF_BINS);
+	return &shb;
+}
+bool std_dev_filter::outputReady()
+{
+	return !(currentN < MAX_N);
 }

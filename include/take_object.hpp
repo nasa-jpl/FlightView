@@ -42,6 +42,9 @@ class take_object {
 	bool pdv_thread_run;
 
 	boost::shared_array<float> std_dev_data;
+	boost::shared_array<float> dark_subtraction_data;
+	boost::shared_array <uint32_t> std_dev_histogram_data;
+
 
 	unsigned int size;
 
@@ -82,9 +85,15 @@ public:
 	boost::shared_array<float> getStdDevData();
 
 	boost::shared_array<float> getDarkSubtractedData();
+	boost::shared_array<uint32_t>getHistogramData();
+	std::vector<float> * getHistogramBins();
+	bool std_dev_ready();
+
 	void startCapturingDSFMask();
 	void finishCapturingDSFMask();
 	void loadDSFMask(const char * file_name);
+
+
 	void startSavingRaws(const char * );
 	void stopSavingRaws();
 

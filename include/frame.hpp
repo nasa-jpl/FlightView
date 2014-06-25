@@ -25,7 +25,7 @@ struct frame
 	uint16_t * raw_data;
 	uint16_t * image_data_ptr; //= raw_data + width*BYTES_PER_PIXEL; //To get where the data actually begins
 	//uint16_t ** image2d;
-	boost::shared_array < float > dsf_data;
+	//boost::shared_array < float > dsf_data;
 	frame(uint16_t * data_in, int size, int ht, int wd, bool isChroma);
 	virtual ~frame();
 

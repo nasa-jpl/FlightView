@@ -86,17 +86,18 @@ void take_object::pdv_init()
 	{
 		new_image_address = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)); //We're never going to deal with u_char *, ever again.
 		pdv_start_image(pdv_p); //Start another
-		boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
 		if(isChroma)
 		{
 			new_image_address = ctf.apply_chroma_translate_filter(new_image_address);
 		}
+		boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
 		boost::shared_ptr<frame> frame_sp(new frame(new_image_address, size, height,width, isChroma));
-		frame_sp->dsf_data = dsf->wait_dark_subtraction(); //Add framebuffer[2] frames dark subtracted version (dsf lags by 2 frames)
+		dark_subtraction_data = dsf->wait_dark_subtraction(); //Add framebuffer[2] frames dark subtracted version (dsf lags by 2 frames)
 		frame_buffer.push_front(frame_sp);
 		if(count % filter_refresh_rate == 0)
 		{
 			std_dev_data = sdvf->wait_std_dev_filter();
+			std_dev_histogram_data = sdvf->wait_std_dev_histogram();
 			std_dev_save_ptr = std_dev_data;
 			std_dev_save_available = true;
 		}
@@ -167,7 +168,8 @@ boost::shared_array<float>  take_object::getStdDevData()
 }
 boost::shared_array<float> take_object::getDarkSubtractedData()
 {
-	return dsf->wait_dark_subtraction();
+	return dark_subtraction_data;
+	//return dsf->wait_dark_subtraction();
 }
 void take_object::startCapturingDSFMask()
 {
@@ -261,4 +263,16 @@ void take_object::setStdDev_N(int s)
 {
 	this->std_dev_filter_N = s;
 }
+boost::shared_array<uint32_t> take_object::getHistogramData()
+{
+	return std_dev_histogram_data;
+}
 
+std::vector<float> * take_object::getHistogramBins()
+{
+	return sdvf->getHistogramBins();
+}
+bool take_object::std_dev_ready()
+{
+	return sdvf->outputReady();
+}

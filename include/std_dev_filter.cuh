@@ -13,6 +13,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/shared_array.hpp>
+#include <vector>
 
 #include "edtinc.h"
 #include "cuda.h"
@@ -30,9 +31,10 @@ public:
 	virtual ~std_dev_filter();
 	void start_std_dev_filter(int N);
 	void update_GPU_buffer(uint16_t * image_ptr);
+	bool outputReady();
 	boost::shared_array< float > wait_std_dev_filter();
 	boost::shared_array< uint32_t > wait_std_dev_histogram();
-
+	std::vector<float> * getHistogramBins();
 	uint16_t * getEntireRingBuffer(); //For testing only
 	cudaStream_t std_dev_stream;
 private:
@@ -40,8 +42,10 @@ private:
 
 	boost::shared_array<float> picture_out;
 	boost::shared_array<uint32_t> hist_data;
+	std::vector <float> shb;
 	int width;
 	int height;
+	int lastN;
 	int gpu_buffer_head;
 	int currentN;
 	uint16_t * pictures_device;
