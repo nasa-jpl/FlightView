@@ -121,13 +121,12 @@ void sensor_grab_test()
 	to.startCapturingDSFMask();
 	while(1)
 	{
-		boost::shared_ptr<frame> frame =to.getFrontFrame(); //This blocks until a frame is available
-
+		to.waitRawPtr();
 		if(i%(samples/10) == 0 && i != samples)
 		{
 			//std::cout << frame->image_data_ptr[read_addr] << std::endl;
 
-			std::cout << frame->image_data_ptr[read_addr] << ", masked is: " << fixed << setprecision(3) << to.getDarkSubtractedData()[read_addr] << std::endl;
+			std::cout << to.getRawPtr()[read_addr] << ", masked is: " << fixed << setprecision(3) << to.getDarkSubtractedData()[read_addr] << std::endl;
 		}
 		if(i == samples)
 		{
@@ -155,11 +154,14 @@ void simple_sensor_grab()
 	while(1)
 	{
 		usleep(1000);
+		to.waitRawPtr();
+		cout << " got raw ptw" << endl;
 	}
 }
 int main()
 {
-	simple_sensor_grab();
+	sensor_grab_test();
+	//simple_sensor_grab();
 	//std_dev_test();
 	return 0;
 }

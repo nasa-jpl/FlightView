@@ -17,7 +17,6 @@
 
 #include "edtinc.h"
 #include "cuda.h"
-#include "frame.hpp"
 #include "cuda_runtime.h"
 static const int STD_DEV_DEVICE_NUM = 5;
 static const int MAX_N = 1000;

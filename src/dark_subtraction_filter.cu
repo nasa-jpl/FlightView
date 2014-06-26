@@ -64,9 +64,10 @@ void dark_subtraction_filter::finish_mask_collection()
 
 	avg_mask<<< gridDims, blockDims,0,dsf_stream>>>(mask_device, (float)averaged_samples,width,height);
 	mask_collected = true;
-	HANDLE_ERROR(cudaMemcpyAsync(pic_out_host,mask_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,dsf_stream));
+	//HANDLE_ERROR(cudaMemcpyAsync(pic_out_host,mask_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,dsf_stream));
 
 	HANDLE_ERROR(cudaStreamSynchronize(dsf_stream));
+
 	std::cout << "mask collected: " << std::endl;
 	//std::cout << "#samples: " << averaged_samples << std::endl;
 	//std::cout << "maskvalue is: " << pic_out_host[9300] << std::endl;
@@ -75,16 +76,6 @@ void dark_subtraction_filter::finish_mask_collection()
 }
 void dark_subtraction_filter::update(uint16_t * pic_in)
 {
-	//HANDLE_ERROR(cudaSetDevice(DSF_DEVICE_NUM));
-	//HANDLE_ERROR(cudaStreamSynchronize(dsf_stream));
-	/*
-	if(mask_collected && !ready_to_subtract)
-	{
-		ready_to_subtract = true;
-	}
-
-	else if(mask_collected && ready_to_subtract)
-	*/
 	if(mask_collected)
 	{
 		update_dark_subtraction(pic_in);
@@ -198,34 +189,5 @@ dark_subtraction_filter::~dark_subtraction_filter()
 	HANDLE_ERROR(cudaFreeHost(pic_out_host));
 
 }
-/*
-u_char * apply_dark_subtraction_filter(uint16_t * picture_in,int width, int height)
-{
-	int pic_size = width*height*BYTES_PER_PIXEL;
 
-	//u_char * picture_in; //Device (GPU) copy of picture in.
-	u_char * picture_out = (u_char * )malloc(pic_size); //Create buffer for CPU memory output
-
-	u_char * picture_device;
-	u_char * dark_mask_device;
-
-	cudaMalloc( (void **)&picture_device, pic_size);
-	cudaMalloc( (void **)&dark_mask_device, pic_size);
-
-
-	cudaMemcpy(picture_device, picture_in, pic_size, cudaMemcpyHostToDevice);
-	cudaMemcpy(dark_mask_device, dark_mask, pic_size, cudaMemcpyHostToDevice);
-
-	//dim3 blockDims(block_length,block_length,1);
-	dim3 blockDims(512,1,1);
-	dim3 gridDims(ceil((float)width*height/blockDims.x),1,1);
-
-
-	pixel_dark_subtraction_filter<<<gridDims,blockDims>>>(picture_device, dark_mask_device, width, height);
-	cudaMemcpy(picture_out,picture_device,pic_size,cudaMemcpyDeviceToHost);
-
-	cudaFree(picture_device);
-	return picture_out;
-}
- */
 

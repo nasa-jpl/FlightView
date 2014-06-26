@@ -31,16 +31,17 @@
 #include "chroma_translate_filter.cuh"
 #include "dark_subtraction_filter.cuh"
 #include "edtinc.h"
-#include "frame.hpp"
 
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = true;
 class take_object {
 	PdvDev * pdv_p;
-    boost::circular_buffer<boost::shared_ptr<frame> > frame_buffer;
 	boost::thread pdv_thread;
 	boost::thread save_thread;
 	bool pdv_thread_run;
 
+	bool newFrameAvailable;
+	uint16_t * raw_data_ptr;
+	uint16_t * image_data_ptr;
 	boost::shared_array<float> std_dev_data;
 	boost::shared_array<float> dark_subtraction_data;
 	boost::shared_array <uint32_t> std_dev_histogram_data;
@@ -76,9 +77,11 @@ public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_rate = 10);
 	virtual ~take_object();
 	void start();
-	boost::shared_ptr<frame> getFrontFrame();
-	boost::condition_variable newFrameAvailable;
-	boost::mutex framebuffer_mutex;
+	uint16_t * getImagePtr();
+	uint16_t * getRawPtr();
+	uint16_t * waitRawPtr();
+
+	boost::shared_mutex data_mutex;
 	unsigned int height;
 	unsigned int width;
 	bool isChroma;

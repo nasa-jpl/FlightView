@@ -13,7 +13,6 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 	this->numbufs = number_of_buffers;
 	this->frame_history_size = fmsize;
 	this->filter_refresh_rate =frf;
-	this->frame_buffer = boost::circular_buffer<boost::shared_ptr<frame>>(fmsize); //Initialize the ring buffer of frames
 	this->count = 0;
 
 	this->std_dev_filter_N = 400;
@@ -24,6 +23,8 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 	this->raw_save_file = NULL;
 	this->dsf_save_file = NULL;
 	this->std_dev_save_file = NULL;
+	newFrameAvailable = false;
+
 
 }
 take_object::~take_object()
@@ -48,7 +49,7 @@ void take_object::start()
 	}
 	//TODO: Sizing stuff
 	size = pdv_get_dmasize(pdv_p); //Not using this at the moment
-	isChroma = size > 481*640*BYTES_PER_PIXEL ? true : false;
+	isChroma = size > 481*640*sizeof(uint16_t) ? true : false;
 
 	width = pdv_get_width(pdv_p);
 
@@ -59,7 +60,8 @@ void take_object::start()
 	{
 		height = height - 1;
 	}
-
+	this->dark_subtraction_data = boost::shared_array < float >(new float[width*height]);
+	this->std_dev_data = boost::shared_array < float >(new float[width*height]);
 	/*I realize im allocating a ring buffer here and I am using boost to make a totally different one as well.
 	 *It seems dumb to do this, but the pdv library has scary warning about making the ring buffer to big, so I decided not to risk it.
 	 *
@@ -78,22 +80,29 @@ void take_object::start()
 void take_object::pdv_init()
 {
 
-	uint16_t * new_image_address;
-
+	raw_data_ptr = new uint16_t[width*height];
+	//uint16_t * image_data_ptr;
+	uint16_t framecount = 1;
+	uint16_t last_framecount = 0;
 	//sdvf->start_std_dev_filter(frame_buffer);
 	count = 0;
+
 	while(pdv_thread_run == 1)
 	{
-		new_image_address = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)); //We're never going to deal with u_char *, ever again.
+		//new_image_address = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)); //We're never going to deal with u_char *, ever again.
+		memcpy(raw_data_ptr,reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)),width*height*sizeof(uint16_t));
 		pdv_start_image(pdv_p); //Start another
+		boost::unique_lock<boost::shared_mutex> exclusive_lock(data_mutex);
 		if(isChroma)
 		{
-			new_image_address = ctf.apply_chroma_translate_filter(new_image_address);
+			raw_data_ptr = ctf.apply_chroma_translate_filter(raw_data_ptr);
+			image_data_ptr = raw_data_ptr;
 		}
-		boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
-		boost::shared_ptr<frame> frame_sp(new frame(new_image_address, size, height,width, isChroma));
+		else
+		{
+			image_data_ptr = raw_data_ptr + width;
+		}
 		dark_subtraction_data = dsf->wait_dark_subtraction(); //Add framebuffer[2] frames dark subtracted version (dsf lags by 2 frames)
-		frame_buffer.push_front(frame_sp);
 		if(count % filter_refresh_rate == 0)
 		{
 			std_dev_data = sdvf->wait_std_dev_filter();
@@ -102,27 +111,29 @@ void take_object::pdv_init()
 			std_dev_save_available = true;
 		}
 		//update saving thread
-		raw_save_ptr = frame_sp->raw_data;
-		if(frame_buffer.size() > 1)
-		{
-			dsf->update(frame_buffer[1]->image_data_ptr);
-			sdvf->update_GPU_buffer(frame_buffer[1]->image_data_ptr);
+		raw_save_ptr = raw_data_ptr;
+
+			dsf->update( image_data_ptr);
+			sdvf->update_GPU_buffer( image_data_ptr);
 			if(count % 10 == 0)
 			{
 				sdvf->start_std_dev_filter(std_dev_filter_N);
 			}
-		}
-		lock.unlock();
+
 		count++;
-		newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
-		if(CHECK_FOR_MISSED_FRAMES_6604A && !isChroma && frame_buffer.size() >= 2)
+		newFrameAvailable = true;
+		exclusive_lock.unlock();
+
+		//newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
+		framecount = *(raw_data_ptr + 160);
+		if(CHECK_FOR_MISSED_FRAMES_6604A && !isChroma)
 		{
-			if( frame_sp->framecount -1 != frame_buffer[1]->framecount)
+			if( framecount -1 != last_framecount)
 			{
-				std::cerr << "WARN MISSED FRAME" << frame_sp->framecount << " " << lastfc << std::endl;
+				std::cerr << "WARN MISSED FRAME" << framecount << " " << lastfc << std::endl;
 			}
 		}
-		lastfc = frame_sp->framecount;
+		last_framecount = framecount;
 	}
 }
 void take_object::savingLoop()
@@ -155,21 +166,46 @@ void take_object::savingLoop()
 		}
 	}
 }
-boost::shared_ptr<frame> take_object::getFrontFrame()
+uint16_t * take_object::getImagePtr()
 {
-	boost::unique_lock< boost::mutex > lock(framebuffer_mutex); //Grab the lock so that ppl won't be reading as you try to write the frame
-	newFrameAvailable.wait(lock);
-	return frame_buffer[0];
+	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
+	return image_data_ptr;
+
+}
+uint16_t * take_object::getRawPtr()
+{
+	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
+	return raw_data_ptr;
+}
+
+uint16_t * take_object::waitRawPtr()
+{
+	//boost::unique_lock< boost::shared_mutex > wait_for_new_write_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
+	while(!newFrameAvailable)
+	{
+		usleep(500);
+		//printf("new frame unavailable");
+	}
+	newFrameAvailable = false;
+
+	return raw_data_ptr;
 
 }
 boost::shared_array<float>  take_object::getStdDevData()
 {
+	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
 	return std_dev_data;
 }
 boost::shared_array<float> take_object::getDarkSubtractedData()
 {
+	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
 	return dark_subtraction_data;
 	//return dsf->wait_dark_subtraction();
+}
+boost::shared_array<uint32_t> take_object::getHistogramData()
+{
+	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
+	return std_dev_histogram_data;
 }
 void take_object::startCapturingDSFMask()
 {
@@ -263,10 +299,7 @@ void take_object::setStdDev_N(int s)
 {
 	this->std_dev_filter_N = s;
 }
-boost::shared_array<uint32_t> take_object::getHistogramData()
-{
-	return std_dev_histogram_data;
-}
+
 
 std::vector<float> * take_object::getHistogramBins()
 {
