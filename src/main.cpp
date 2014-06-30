@@ -45,8 +45,8 @@ void std_dev_test()
 	cout << "update buffer called 200x" << endl;
 	sdvf->start_std_dev_filter(150);
 	cout << "waiting on std dev filter" << endl;
-	boost::shared_array < float > result = sdvf->wait_std_dev_filter();
-
+	//boost::shared_array < float > result = sdvf->wait_std_dev_filter();
+	float * result = sdvf->wait_std_dev_filter();
 	/*
 	//For figuring out whether things are getting put on the GPU correctly.
 	uint16_t * pictures_on_device = sdvf->getEntireRingBuffer();
@@ -60,7 +60,7 @@ void std_dev_test()
 	cout << "result @ 100: " << result[10020] << " result @ 2area/3: " << result[2*area/3] << endl;
 
 	ofstream myFile (fname, ios::out | ios::binary);
-	myFile.write ((char*)result.get(), height*width*sizeof(float));
+	myFile.write ((char*)result, height*width*sizeof(float));
 	myFile.close();
 
 	char cmd[100];
@@ -125,11 +125,11 @@ void sensor_grab_test()
 		if(i%(samples/10) == 0 && i != samples)
 		{
 			//std::cout << frame->image_data_ptr[read_addr] << std::endl;
+			std::cout<< ", masked is: " << fixed << setprecision(3) << to.getDarkSubtractedData()[read_addr] << std::endl;
 
-			std::cout << to.getRawPtr()[read_addr] << std::endl;
+			//std::cout << to.getRawPtr()[read_addr] << std::endl;
 			if(i>samples)
 			{
-				//std::cout<< ", masked is: " << fixed << setprecision(3) << to.getDarkSubtractedData()[read_addr] << std::endl;
 			}
 		}
 		if(i == samples)

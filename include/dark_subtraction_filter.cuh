@@ -12,7 +12,6 @@
 #include "edtinc.h"
 #include "cuda.h"
 #include "cuda_runtime.h"
-#include <boost/shared_array.hpp>
 #define BLOCK_SIDE 20
 #define DSF_DEVICE_NUM 4
 
@@ -23,17 +22,17 @@ public:
 	dark_subtraction_filter(int nWidth, int nHeight);
 	virtual ~dark_subtraction_filter();
 	void update_dark_subtraction(uint16_t * pic_in);
-	boost::shared_array< float > wait_dark_subtraction();
+	float * wait_dark_subtraction();
 	void start_mask_collection();
 	uint32_t update_mask_collection(uint16_t * pic_in);
 	void update(uint16_t * pic_in);
 
 	void finish_mask_collection();
-	void load_mask(boost::shared_array < float >mask_arr);
-	boost::shared_array < float > get_mask();
+	void load_mask(float * mask_arr);
+	float * get_mask();
 private:
 	bool mask_collected;
-	boost::shared_array<float> picture_out;
+	//boost::shared_array<float> picture_out;
 	uint16_t width;
 	uint16_t height;
 	uint32_t averaged_samples;

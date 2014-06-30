@@ -24,6 +24,7 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 	this->dsf_save_file = NULL;
 	this->std_dev_save_file = NULL;
 	newFrameAvailable = false;
+	dsfMaskCollected = false;
 
 
 }
@@ -60,6 +61,14 @@ void take_object::start()
 	{
 		frHeight = dataHeight - 1;
 	}
+	raw_data_buffer = new uint16_t[frWidth*dataHeight];
+	image_data_buffer = new uint16_t[frWidth*frHeight];
+
+	dark_subtraction_data = new float[frWidth*frHeight];
+	dark_subtraction_buffer = new float[frWidth*frHeight];
+	std_dev_buffer = new float[frWidth*frHeight];
+	std_dev_histogram_buffer = new uint32_t[NUMBER_OF_BINS];
+
 	//this->dark_subtraction_data = boost::shared_array < float >(new float[frWidth*frHeight]);
 	//this->std_dev_data = boost::shared_array < float >(new float[frWidth*frHeight]);
 	/*I realize im allocating a ring buffer here and I am using boost to make a totally different one as well.
@@ -102,7 +111,10 @@ void take_object::pdv_init()
 		{
 			image_data_ptr = raw_data_ptr + frWidth;
 		}
-		dark_subtraction_data = dsf->wait_dark_subtraction(); //Add framebuffer[2] frames dark subtracted version (dsf lags by 2 frames)
+		if(dsfMaskCollected)
+		{
+			dark_subtraction_data = dsf->wait_dark_subtraction(); //Add framebuffer[2] frames dark subtracted version (dsf lags by 2 frames)
+		}
 		if(count % filter_refresh_rate == 0)
 		{
 			std_dev_data = sdvf->wait_std_dev_filter();
@@ -115,7 +127,7 @@ void take_object::pdv_init()
 
 			dsf->update( image_data_ptr);
 			sdvf->update_GPU_buffer( image_data_ptr);
-			if(count % 10 == 0)
+			if(count % filter_refresh_rate == 0)
 			{
 				sdvf->start_std_dev_filter(std_dev_filter_N);
 			}
@@ -156,7 +168,7 @@ void take_object::savingLoop()
 		//TODO: Insert DSF saving code
 		if(std_dev_save_available && std_dev_save_file != NULL)
 		{
-			if(frWidth*frHeight != fwrite(std_dev_save_ptr.get(),sizeof(float),frWidth*frHeight,std_dev_save_file))
+			if(frWidth*frHeight != fwrite(std_dev_save_ptr,sizeof(float),frWidth*frHeight,std_dev_save_file))
 			{
 				printf("Writing std_dev has an error.\n");
 				perror("");
@@ -168,13 +180,13 @@ void take_object::savingLoop()
 uint16_t * take_object::getImagePtr()
 {
 	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	return image_data_ptr;
+	return image_data_buffer;
 
 }
 uint16_t * take_object::getRawPtr()
 {
 	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	return raw_data_ptr;
+	return raw_data_buffer;
 }
 
 uint16_t * take_object::waitRawPtr()
@@ -185,35 +197,45 @@ uint16_t * take_object::waitRawPtr()
 		usleep(500);
 		//printf("new frame unavailable");
 	}
+	memcpy(raw_data_buffer,raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
+	memcpy(image_data_buffer,image_data_ptr,frWidth*frHeight*sizeof(uint16_t));
 	newFrameAvailable = false;
 
-	return raw_data_ptr;
+	return raw_data_buffer;
 
 }
-boost::shared_array<float>  take_object::getStdDevData()
+float *  take_object::getStdDevData()
 {
 	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	return std_dev_data;
+	memcpy(std_dev_buffer,std_dev_data,frWidth*frHeight*sizeof(float));
+
+	return std_dev_buffer;
 }
-boost::shared_array<float> take_object::getDarkSubtractedData()
+float * take_object::getDarkSubtractedData()
 {
 	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	return dark_subtraction_data;
+	memcpy(dark_subtraction_buffer,dark_subtraction_data,frWidth*frHeight*sizeof(float));
+
+	return dark_subtraction_buffer;
 	//return dsf->wait_dark_subtraction();
 }
-boost::shared_array<uint32_t> take_object::getHistogramData()
+uint32_t * take_object::getHistogramData()
 {
 	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	return std_dev_histogram_data;
+	memcpy(std_dev_histogram_buffer,std_dev_histogram_data,NUMBER_OF_BINS*sizeof(uint32_t));
+
+	return std_dev_histogram_buffer;
 }
 void take_object::startCapturingDSFMask()
 {
+	dsfMaskCollected = false;
 	dsf->start_mask_collection();
 
 }
 void take_object::finishCapturingDSFMask()
 {
 	dsf->finish_mask_collection();
+	dsfMaskCollected = true;
 }
 void take_object::startSavingRaws(const char * raw_file_name)
 {
@@ -269,7 +291,8 @@ void take_object::stopSavingSTD_DEVs()
 }
 void take_object::loadDSFMask(const char * file_name)
 {
-	boost::shared_array < float > mask_in(new float[frWidth*frHeight]);
+	//boost::shared_array < float > mask_in(new float[frWidth*frHeight]);
+	float * mask_in = new float[frWidth*frHeight];
 	FILE * pFile;
 	unsigned long size = 0;
 	pFile  = fopen(file_name, "rb");
@@ -285,7 +308,7 @@ void take_object::loadDSFMask(const char * file_name)
 			return;
 		}
 		rewind(pFile);   // go back to beginning
-		fread(mask_in.get(),sizeof(float),frWidth*frHeight,pFile);
+		fread(mask_in,sizeof(float),frWidth*frHeight,pFile);
 		fclose (pFile);
 		std::cout << file_name << " read in "<< size << " bytes successfully " <<  std::endl;
 

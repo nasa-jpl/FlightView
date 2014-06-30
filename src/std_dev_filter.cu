@@ -2,6 +2,7 @@
 #include "cuda_utils.cuh"
 #include <cuda_profiler_api.h>
 #include <math.h>
+#include <iostream>
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
 #define DO_HISTOGRAM
 
@@ -109,7 +110,6 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 	height = nHeight;
 	gpu_buffer_head = 0;
 	currentN = 0;
-	picture_out= boost::shared_array < float >(new float[width*height]);
 	HANDLE_ERROR(cudaStreamCreate(&std_dev_stream));
 	HANDLE_ERROR(cudaMalloc( (void **)&pictures_device, width*height*sizeof(uint16_t)*MAX_N)); //Allocate a huge amount of memory on the GPU (N times the size of each frame stored as a u_char)
 	HANDLE_ERROR(cudaMalloc( (void **)&picture_out_device, width*height*sizeof(float))); //Allocate memory on GPU for reduce target
@@ -124,7 +124,6 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 
 	HANDLE_ERROR(cudaMallocHost( (void **)&histogram_out_host, NUMBER_OF_BINS*sizeof(uint32_t)));
 	HANDLE_ERROR(cudaMallocHost((void **)&histogram_bins,NUMBER_OF_BINS*sizeof(float)));
-	hist_data = boost::shared_array < uint32_t >(new uint32_t[NUMBER_OF_BINS]);
 
 	//Calculate logarithmic bins
 	//float increment = (UINT16_MAX - 0)/NUMBER_OF_BINS;
@@ -184,6 +183,7 @@ void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
 void std_dev_filter::start_std_dev_filter(int N)
 {
 
+	lastN = N;
 	//Start thread for doing histogram
 	//histogram_thread = boost::thread(&std_dev_filter::doHistogram, this);
 
@@ -220,25 +220,23 @@ uint16_t * std_dev_filter::getEntireRingBuffer() //For testing only
 	HANDLE_ERROR(cudaMemcpy(out,pictures_device,width*height*sizeof(uint16_t)*MAX_N,cudaMemcpyDeviceToHost));
 	return out;
 }
-boost::shared_array <float> std_dev_filter::wait_std_dev_filter()
+float * std_dev_filter::wait_std_dev_filter()
 {
 
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
 	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //blocks until done
 	HANDLE_ERROR( cudaPeekAtLastError() );
-	memcpy(picture_out.get(),picture_out_host,width*height*sizeof(float));
 
-	return picture_out;
+	return picture_out_host;
 }
 
-boost::shared_array <uint32_t> std_dev_filter::wait_std_dev_histogram()
+uint32_t * std_dev_filter::wait_std_dev_histogram()
 {
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
 	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //blocks until done
 	HANDLE_ERROR( cudaPeekAtLastError() );
-	memcpy(hist_data.get(),histogram_out_host,NUMBER_OF_BINS*sizeof(uint32_t));
 
-	return hist_data;
+	return histogram_out_host;
 }
 std::vector <float> * std_dev_filter::getHistogramBins()
 {
@@ -248,5 +246,5 @@ std::vector <float> * std_dev_filter::getHistogramBins()
 }
 bool std_dev_filter::outputReady()
 {
-	return !(currentN < MAX_N);
+	return !(currentN < lastN);
 }

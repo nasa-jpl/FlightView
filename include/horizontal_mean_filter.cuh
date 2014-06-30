@@ -1,23 +1,18 @@
-/*
- * horizontalmeanfilter.cuh
- *
- *  Created on: Jun 30, 2014
- *      Author: nlevy
- */
+#include <stdint.h>
 
 #ifndef HORIZONTALMEANFILTER_CUH_
 #define HORIZONTALMEANFILTER_CUH_
-#define BLOCK_SIDE 20
-#define HMF_DEVICE_NUM 1
-#include <boost/shared_array.hpp>
+const static int MF_DEVICE_NUM = 1;
+const static int THREADS_PER_BLOCK = 512;
 class horizontal_mean_filter {
 public:
-	horizontal_mean_filter();
-	horizontal_mean_filter(int nWidth; int nHeight);
+	horizontal_mean_filter() {};
+	horizontal_mean_filter(int nWidth, int nHeight);
+
 	virtual ~horizontal_mean_filter();
 
 	void start_horizontal_mean(uint16_t * pic_in);
-	boost::shared_array < float > wait_horizontal_mean();
+	float * wait_horizontal_mean();
 
 private:
 	int width;
@@ -34,7 +29,7 @@ private:
 
 	cudaStream_t horizontal_stream;
 
-	boost::shared_array<float> result_out;
+	//boost::shared_array<float> result_out;
 
 };
 

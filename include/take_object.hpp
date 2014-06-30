@@ -19,14 +19,8 @@
 #include <ostream>
 #include <string>
 #include <boost/thread.hpp>
-#include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 
-
-#include <boost/shared_ptr.hpp>
-#include <boost/shared_array.hpp>
-
-#include <boost/circular_buffer.hpp>
 #include "std_dev_filter.cuh"
 #include "chroma_translate_filter.cuh"
 #include "dark_subtraction_filter.cuh"
@@ -42,9 +36,19 @@ class take_object {
 	bool newFrameAvailable;
 	uint16_t * raw_data_ptr;
 	uint16_t * image_data_ptr;
-	boost::shared_array<float> std_dev_data;
-	boost::shared_array<float> dark_subtraction_data;
-	boost::shared_array <uint32_t> std_dev_histogram_data;
+
+	float * std_dev_data;
+	float * dark_subtraction_data;
+	uint32_t * std_dev_histogram_data;
+
+	uint16_t * raw_data_buffer;
+	uint16_t * image_data_buffer;
+	float * std_dev_buffer;
+	float * dark_subtraction_buffer;
+	uint32_t * std_dev_histogram_buffer;
+	//boost::shared_array<float> std_dev_data;
+	//boost::shared_array<float> dark_subtraction_data;
+	//boost::shared_array <uint32_t> std_dev_histogram_data;
 
 
 	unsigned int size;
@@ -66,8 +70,8 @@ class take_object {
 	bool std_dev_save_available;
 
 	uint16_t * raw_save_ptr;
-	boost::shared_array < float > dsf_save_ptr;
-	boost::shared_array < float > std_dev_save_ptr;
+	float * dsf_save_ptr;
+	float * std_dev_save_ptr;
 	FILE * raw_save_file;
 	FILE * dsf_save_file;
 	FILE * std_dev_save_file;
@@ -87,10 +91,11 @@ public:
 	unsigned int frHeight;
 	unsigned int frWidth;
 	bool isChroma;
-	boost::shared_array<float> getStdDevData();
+	bool dsfMaskCollected;
+	float * getStdDevData();
 
-	boost::shared_array<float> getDarkSubtractedData();
-	boost::shared_array<uint32_t>getHistogramData();
+	float * getDarkSubtractedData();
+	uint32_t * getHistogramData();
 	std::vector<float> * getHistogramBins();
 	bool std_dev_ready();
 

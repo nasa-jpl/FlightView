@@ -4,7 +4,7 @@
 //#include <cuda_runtime_api.h>
 #include "cuda_utils.cuh"
 #include <stdlib.h>
-
+#include <iostream>
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
 //Kernel code, this runs on the GPU (device)
 __global__ void apply_mask(uint16_t * pic_d, float * mask_d, float * result_d, uint16_t width, uint16_t height)
@@ -86,22 +86,22 @@ void dark_subtraction_filter::update(uint16_t * pic_in)
 	}
 }
 
-void dark_subtraction_filter::load_mask(boost::shared_array < float >mask_arr)
+void dark_subtraction_filter::load_mask(float * mask_arr)
 {
 	HANDLE_ERROR(cudaSetDevice(DSF_DEVICE_NUM));
-	memcpy(mask_in_host,mask_arr.get(),width*height*sizeof(float));
+	memcpy(mask_in_host,mask_arr,width*height*sizeof(float));
 	HANDLE_ERROR(cudaMemcpyAsync(mask_device,mask_in_host,width*height*sizeof(float),cudaMemcpyHostToDevice,dsf_stream));
 	HANDLE_ERROR(cudaStreamSynchronize(dsf_stream));
 
 	mask_collected = true;
 	std::cout << "mask loaded" << std::endl;
 }
-boost::shared_array < float > dark_subtraction_filter::get_mask()
+float * dark_subtraction_filter::get_mask()
 {
-	boost::shared_array < float > mask_out(new float[width*height]);
+	float *  mask_out = new float[width*height];
 
 	HANDLE_ERROR(cudaSetDevice(DSF_DEVICE_NUM));
-	HANDLE_ERROR(cudaMemcpy(mask_out.get(),mask_device,width*height*sizeof(float),cudaMemcpyDeviceToHost));
+	HANDLE_ERROR(cudaMemcpy(mask_out,mask_device,width*height*sizeof(float),cudaMemcpyDeviceToHost));
 	std::cout << "mask in CPU mem" << std::endl;
 	return mask_out;
 
@@ -138,7 +138,7 @@ uint32_t dark_subtraction_filter::update_mask_collection(uint16_t * pic_in)
 
 	return averaged_samples;
 }
-boost::shared_array< float > dark_subtraction_filter::wait_dark_subtraction()
+float * dark_subtraction_filter::wait_dark_subtraction()
 {
 
 	//boost::shared_array < float > zeros(new float[width*height]);
@@ -150,16 +150,14 @@ boost::shared_array< float > dark_subtraction_filter::wait_dark_subtraction()
 		HANDLE_ERROR(cudaStreamSynchronize(dsf_stream));
 		HANDLE_ERROR( cudaPeekAtLastError() );
 
-		memcpy(picture_out.get(),pic_out_host,width*height*sizeof(float));
 		//return picture_out;
 	}
 	//return zeros;
-	return picture_out;
+	return pic_out_host;
 }
 
 dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)
 {
-	picture_out= boost::shared_array < float >(new float[width*height]);
 
 
 	HANDLE_ERROR(cudaSetDevice(DSF_DEVICE_NUM));
@@ -170,11 +168,11 @@ dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)
 	gridDims = dim3(width/BLOCK_SIDE, height/BLOCK_SIDE,1);
 	//picture_out = boost::shared_array<float>(new float[width*height]);
 	HANDLE_ERROR(cudaStreamCreate(&dsf_stream));
-	HANDLE_ERROR(cudaHostAlloc( (void **)&pic_in_host,width*height*sizeof(uint16_t),cudaHostAllocPortable)); //cudaHostAllocPortable??
+	HANDLE_ERROR(cudaMallocHost( (void **)&pic_in_host,width*height*sizeof(uint16_t))); //cudaHostAllocPortable??
 
-	HANDLE_ERROR(cudaHostAlloc( (void **)&pic_out_host,width*height*sizeof(float),cudaHostAllocPortable)); //cudaHostAllocPortable??
+	HANDLE_ERROR(cudaMallocHost( (void **)&pic_out_host,width*height*sizeof(float))); //cudaHostAllocPortable??
 
-	HANDLE_ERROR(cudaHostAlloc( (void **)&mask_in_host,width*height*sizeof(float),cudaHostAllocPortable)); //cudaHostAllocPortable??
+	HANDLE_ERROR(cudaMallocHost( (void **)&mask_in_host,width*height*sizeof(float))); //cudaHostAllocPortable??
 
 	HANDLE_ERROR(cudaMalloc( (void **)&picture_device, width*height*sizeof(uint16_t)));
 	HANDLE_ERROR(cudaMalloc( (void **)&mask_device, width*height*sizeof(float)));

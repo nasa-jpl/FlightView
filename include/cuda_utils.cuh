@@ -4,7 +4,7 @@
  *  Created on: Jun 2, 2014
  *      Author: nlevy
  */
-
+#include <stdio.h>
 #ifndef CUDA_UTILS_CUH_
 #define CUDA_UTILS_CUH_
 //From CUDA by Example
