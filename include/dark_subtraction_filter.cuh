@@ -33,7 +33,7 @@ public:
 	boost::shared_array < float > get_mask();
 private:
 	bool mask_collected;
-	//boost::shared_array<float> picture_out;
+	boost::shared_array<float> picture_out;
 	uint16_t width;
 	uint16_t height;
 	uint32_t averaged_samples;

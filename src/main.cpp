@@ -47,7 +47,7 @@ void std_dev_test()
 	cout << "waiting on std dev filter" << endl;
 	boost::shared_array < float > result = sdvf->wait_std_dev_filter();
 
-/*
+	/*
 	//For figuring out whether things are getting put on the GPU correctly.
 	uint16_t * pictures_on_device = sdvf->getEntireRingBuffer();
 	int frame_read_num = 3;
@@ -55,7 +55,7 @@ void std_dev_test()
 	{
 		result[offset] = (float) *(pictures_on_device + offset+(width*height*frame_read_num));
 	}
-	*/
+	 */
 	cout << "result @ 100: " << result[1000] << " result @ 2area/3: " << result[2*area/3] << endl;
 	cout << "result @ 100: " << result[10020] << " result @ 2area/3: " << result[2*area/3] << endl;
 
@@ -126,12 +126,16 @@ void sensor_grab_test()
 		{
 			//std::cout << frame->image_data_ptr[read_addr] << std::endl;
 
-			std::cout << to.getRawPtr()[read_addr] << ", masked is: " << fixed << setprecision(3) << to.getDarkSubtractedData()[read_addr] << std::endl;
+			std::cout << to.getRawPtr()[read_addr] << std::endl;
+			if(i>samples)
+			{
+				//std::cout<< ", masked is: " << fixed << setprecision(3) << to.getDarkSubtractedData()[read_addr] << std::endl;
+			}
 		}
 		if(i == samples)
 		{
 			to.finishCapturingDSFMask();
-			std::cout << "mask_value" << to.getDarkSubtractedData()[read_addr] << std::endl;
+			//std::cout << "mask_value" << to.getDarkSubtractedData()[read_addr] << std::endl;
 		}
 		if(i == start_saves)
 		{

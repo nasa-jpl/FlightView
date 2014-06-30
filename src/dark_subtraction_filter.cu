@@ -140,21 +140,28 @@ uint32_t dark_subtraction_filter::update_mask_collection(uint16_t * pic_in)
 }
 boost::shared_array< float > dark_subtraction_filter::wait_dark_subtraction()
 {
-	boost::shared_array <float> picture_out(new float[width*height]); //Mayhaps I don't need to worry about deallocation because shared_array
 
+	//boost::shared_array < float > zeros(new float[width*height]);
 	if(mask_collected)
 	{
 		HANDLE_ERROR(cudaSetDevice(DSF_DEVICE_NUM));
 
 		// Synchronous
 		HANDLE_ERROR(cudaStreamSynchronize(dsf_stream));
+		HANDLE_ERROR( cudaPeekAtLastError() );
+
 		memcpy(picture_out.get(),pic_out_host,width*height*sizeof(float));
+		//return picture_out;
 	}
+	//return zeros;
 	return picture_out;
 }
 
 dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)
 {
+	picture_out= boost::shared_array < float >(new float[width*height]);
+
+
 	HANDLE_ERROR(cudaSetDevice(DSF_DEVICE_NUM));
 	mask_collected = false;
 	width=nWidth;
@@ -187,7 +194,6 @@ dark_subtraction_filter::~dark_subtraction_filter()
 	HANDLE_ERROR(cudaFree(result_device));
 	HANDLE_ERROR(cudaFreeHost(pic_in_host));
 	HANDLE_ERROR(cudaFreeHost(pic_out_host));
-
 }
 
 

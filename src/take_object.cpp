@@ -51,17 +51,17 @@ void take_object::start()
 	size = pdv_get_dmasize(pdv_p); //Not using this at the moment
 	isChroma = size > 481*640*sizeof(uint16_t) ? true : false;
 
-	width = pdv_get_width(pdv_p);
+	frWidth = pdv_get_width(pdv_p);
 
 	//Our version of height should not include the header size
-	height = pdv_get_height(pdv_p);
+	dataHeight = pdv_get_height(pdv_p);
 
 	if(!isChroma) //This strips the header from the height on the 6604A
 	{
-		height = height - 1;
+		frHeight = dataHeight - 1;
 	}
-	this->dark_subtraction_data = boost::shared_array < float >(new float[width*height]);
-	this->std_dev_data = boost::shared_array < float >(new float[width*height]);
+	//this->dark_subtraction_data = boost::shared_array < float >(new float[frWidth*frHeight]);
+	//this->std_dev_data = boost::shared_array < float >(new float[frWidth*frHeight]);
 	/*I realize im allocating a ring buffer here and I am using boost to make a totally different one as well.
 	 *It seems dumb to do this, but the pdv library has scary warning about making the ring buffer to big, so I decided not to risk it.
 	 *
@@ -70,8 +70,8 @@ void take_object::start()
 	pdv_multibuf(pdv_p,this->numbufs);
 	//The internet says that I need to pass a pointer to the threadable function, and a reference to the calling instance of take_object (this)
 	pdv_thread_run = 1;
-	dsf = new dark_subtraction_filter(width,height);
-	sdvf = new std_dev_filter(width,height);
+	dsf = new dark_subtraction_filter(frWidth,frHeight);
+	sdvf = new std_dev_filter(frWidth,frHeight);
 	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 	pdv_thread = boost::thread(&take_object::pdv_init, this);
 	save_thread = boost::thread(&take_object::savingLoop, this);
@@ -80,7 +80,7 @@ void take_object::start()
 void take_object::pdv_init()
 {
 
-	raw_data_ptr = new uint16_t[width*height];
+	raw_data_ptr = new uint16_t[frWidth*dataHeight];
 	//uint16_t * image_data_ptr;
 	uint16_t framecount = 1;
 	uint16_t last_framecount = 0;
@@ -90,7 +90,7 @@ void take_object::pdv_init()
 	while(pdv_thread_run == 1)
 	{
 		//new_image_address = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)); //We're never going to deal with u_char *, ever again.
-		memcpy(raw_data_ptr,reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)),width*height*sizeof(uint16_t));
+		memcpy(raw_data_ptr,reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)),frWidth*dataHeight*sizeof(uint16_t));
 		pdv_start_image(pdv_p); //Start another
 		boost::unique_lock<boost::shared_mutex> exclusive_lock(data_mutex);
 		if(isChroma)
@@ -100,7 +100,7 @@ void take_object::pdv_init()
 		}
 		else
 		{
-			image_data_ptr = raw_data_ptr + width;
+			image_data_ptr = raw_data_ptr + frWidth;
 		}
 		dark_subtraction_data = dsf->wait_dark_subtraction(); //Add framebuffer[2] frames dark subtracted version (dsf lags by 2 frames)
 		if(count % filter_refresh_rate == 0)
@@ -140,7 +140,6 @@ void take_object::savingLoop()
 {
 	printf("saving loop started!");
 	uint16_t * old_raw_save_ptr = NULL;
-	int true_height = (isChroma ? height : height+1);
 	while(pdv_thread_run)
 	{
 
@@ -148,7 +147,7 @@ void take_object::savingLoop()
 		{
 			//boost::unique_lock<boost::mutex> lock(saving_mutex); //Lock for writing
 
-			if(width*true_height != fwrite(raw_save_ptr, sizeof(uint16_t), width*true_height, raw_save_file))
+			if(frWidth*dataHeight != fwrite(raw_save_ptr, sizeof(uint16_t), frWidth*dataHeight, raw_save_file))
 			{
 				printf("Writing raw has an error.\n");
 			}
@@ -157,7 +156,7 @@ void take_object::savingLoop()
 		//TODO: Insert DSF saving code
 		if(std_dev_save_available && std_dev_save_file != NULL)
 		{
-			if(width*height != fwrite(std_dev_save_ptr.get(),sizeof(float),width*height,std_dev_save_file))
+			if(frWidth*frHeight != fwrite(std_dev_save_ptr.get(),sizeof(float),frWidth*frHeight,std_dev_save_file))
 			{
 				printf("Writing std_dev has an error.\n");
 				perror("");
@@ -270,7 +269,7 @@ void take_object::stopSavingSTD_DEVs()
 }
 void take_object::loadDSFMask(const char * file_name)
 {
-	boost::shared_array < float > mask_in(new float[width*height]);
+	boost::shared_array < float > mask_in(new float[frWidth*frHeight]);
 	FILE * pFile;
 	unsigned long size = 0;
 	pFile  = fopen(file_name, "rb");
@@ -279,14 +278,14 @@ void take_object::loadDSFMask(const char * file_name)
 	{
 		fseek (pFile, 0, SEEK_END);   // non-portable
 		size=ftell (pFile);
-		if(size != (width*height*sizeof(float)))
+		if(size != (frWidth*frHeight*sizeof(float)))
 		{
 			std::cerr << "error mask file does not match image size" << std::endl;
 			fclose (pFile);
 			return;
 		}
 		rewind(pFile);   // go back to beginning
-		fread(mask_in.get(),sizeof(float),width*height,pFile);
+		fread(mask_in.get(),sizeof(float),frWidth*frHeight,pFile);
 		fclose (pFile);
 		std::cout << file_name << " read in "<< size << " bytes successfully " <<  std::endl;
 

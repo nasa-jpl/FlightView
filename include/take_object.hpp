@@ -82,8 +82,10 @@ public:
 	uint16_t * waitRawPtr();
 
 	boost::shared_mutex data_mutex;
-	unsigned int height;
-	unsigned int width;
+
+	unsigned int dataHeight;
+	unsigned int frHeight;
+	unsigned int frWidth;
 	bool isChroma;
 	boost::shared_array<float> getStdDevData();
 
