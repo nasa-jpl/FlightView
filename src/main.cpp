@@ -126,7 +126,7 @@ void sensor_grab_test()
 		{
 			//std::cout << frame->image_data_ptr[read_addr] << std::endl;
 			std::cout<< ", masked is: " << fixed << setprecision(3) << to.getDarkSubtractedData()[read_addr] << std::endl;
-
+			printf("horiz_mean %f\n",to.getHorizontalMean()[to.frWidth-1]);
 			//std::cout << to.getRawPtr()[read_addr] << std::endl;
 			if(i>samples)
 			{

@@ -24,6 +24,7 @@
 #include "std_dev_filter.cuh"
 #include "chroma_translate_filter.cuh"
 #include "dark_subtraction_filter.cuh"
+#include "mean_filter.hpp"
 #include "edtinc.h"
 
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = true;
@@ -41,14 +42,16 @@ class take_object {
 	float * dark_subtraction_data;
 	uint32_t * std_dev_histogram_data;
 
+	float * horizontal_mean_data;
+	float * vertical_mean_data;
+
 	uint16_t * raw_data_buffer;
 	uint16_t * image_data_buffer;
 	float * std_dev_buffer;
 	float * dark_subtraction_buffer;
 	uint32_t * std_dev_histogram_buffer;
-	//boost::shared_array<float> std_dev_data;
-	//boost::shared_array<float> dark_subtraction_data;
-	//boost::shared_array <uint32_t> std_dev_histogram_data;
+	float * horizontal_mean_buffer;
+	float * vertical_mean_buffer;
 
 
 	unsigned int size;
@@ -64,6 +67,7 @@ class take_object {
 	chroma_translate_filter ctf;
 	dark_subtraction_filter * dsf;
 	std_dev_filter * sdvf;
+	mean_filter * mf;
 
 	bool do_raw_save;
 	bool dsf_save_available;
@@ -97,6 +101,9 @@ public:
 	float * getDarkSubtractedData();
 	uint32_t * getHistogramData();
 	std::vector<float> * getHistogramBins();
+
+	float * getHorizontalMean();
+	float * getVerticalMean();
 	bool std_dev_ready();
 
 	void startCapturingDSFMask();

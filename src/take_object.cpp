@@ -64,6 +64,9 @@ void take_object::start()
 	raw_data_buffer = new uint16_t[frWidth*dataHeight];
 	image_data_buffer = new uint16_t[frWidth*frHeight];
 
+	vertical_mean_buffer = new float[frHeight];
+	horizontal_mean_buffer = new float[frWidth];
+
 	dark_subtraction_data = new float[frWidth*frHeight];
 	dark_subtraction_buffer = new float[frWidth*frHeight];
 	std_dev_buffer = new float[frWidth*frHeight];
@@ -81,6 +84,7 @@ void take_object::start()
 	pdv_thread_run = 1;
 	dsf = new dark_subtraction_filter(frWidth,frHeight);
 	sdvf = new std_dev_filter(frWidth,frHeight);
+	mf = new mean_filter(frWidth,frHeight);
 	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 	pdv_thread = boost::thread(&take_object::pdv_init, this);
 	save_thread = boost::thread(&take_object::savingLoop, this);
@@ -111,10 +115,14 @@ void take_object::pdv_init()
 		{
 			image_data_ptr = raw_data_ptr + frWidth;
 		}
+		mf->start_mean(image_data_ptr);
+
+
 		if(dsfMaskCollected)
 		{
 			dark_subtraction_data = dsf->wait_dark_subtraction(); //Add framebuffer[2] frames dark subtracted version (dsf lags by 2 frames)
 		}
+
 		if(count % filter_refresh_rate == 0)
 		{
 			std_dev_data = sdvf->wait_std_dev_filter();
@@ -122,15 +130,19 @@ void take_object::pdv_init()
 			std_dev_save_ptr = std_dev_data;
 			std_dev_save_available = true;
 		}
+
 		//update saving thread
 		raw_save_ptr = raw_data_ptr;
 
-			dsf->update( image_data_ptr);
-			sdvf->update_GPU_buffer( image_data_ptr);
-			if(count % filter_refresh_rate == 0)
-			{
-				sdvf->start_std_dev_filter(std_dev_filter_N);
-			}
+
+		dsf->update( image_data_ptr);
+		sdvf->update_GPU_buffer( image_data_ptr);
+		if(count % filter_refresh_rate == 0)
+		{
+			sdvf->start_std_dev_filter(std_dev_filter_N);
+		}
+		horizontal_mean_data = mf->wait_horizontal_mean();
+		vertical_mean_data = mf->wait_vertical_mean();
 
 		count++;
 		newFrameAvailable = true;
@@ -218,6 +230,21 @@ float * take_object::getDarkSubtractedData()
 
 	return dark_subtraction_buffer;
 	//return dsf->wait_dark_subtraction();
+}
+
+float* take_object::getHorizontalMean()
+{
+	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
+	memcpy(horizontal_mean_buffer,horizontal_mean_data,frWidth*sizeof(float));
+
+	return horizontal_mean_buffer;
+}
+float* take_object::getVerticalMean()
+{
+	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
+	memcpy(vertical_mean_buffer,vertical_mean_data,frHeight*sizeof(float));
+
+	return vertical_mean_buffer;
 }
 uint32_t * take_object::getHistogramData()
 {

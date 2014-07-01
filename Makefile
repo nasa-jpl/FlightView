@@ -24,7 +24,7 @@ LIBOUT = libcuda_take.a
 
 ######################################
 #Here we specify what source files are needed for the program/library, and we create virtual paths so that we don't have to refer to the source directory all the time
-SOURCES = main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter.cu chroma_translate_filter.cu horizontal_mean_filter.cu
+SOURCES = main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter.cu chroma_translate_filter.cu mean_filter.cu
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 
 
