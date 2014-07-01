@@ -45,7 +45,7 @@ void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewF
     qcp = new QCustomPlot(this);
 
     QSizePolicy qsp(QSizePolicy::Preferred,QSizePolicy::Preferred);
-         qsp.setHeightForWidth(true);
+    qsp.setHeightForWidth(true);
     qcp->setSizePolicy(qsp);
     qcp->heightForWidth(200);
     qcp->setInteractions(QCP::iRangeDrag|QCP::iRangeZoom);
@@ -83,24 +83,23 @@ void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewF
     qcp->rescaleAxes();
     //   imageLabel->setGeometry(pictureRect);
     //   imageLabel->setPixmap(picturePixmap);
-
+    qcp->axisRect()->setBackgroundScaled(false);
 
 
     layout.addWidget(qcp,8);
     fpsLabel.setText("FPS");
     layout.addWidget(&fpsLabel,1);
-    layout.addWidget(&toggleGrayScaleButton,1);
+    //layout.addWidget(&toggleGrayScaleButton,1);
     this->setLayout(&layout);
-
 
     qDebug() << "emitting capture signal, starting timer";
     fps = 0;
-   // fpstimer = new QTimer(this);
+    // fpstimer = new QTimer(this);
     connect(&fpstimer, SIGNAL(timeout()), this, SLOT(updateFPS()));
     fpstimer.start(1000);
 
     connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
-   connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
+    connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
     connect(colorMap,SIGNAL(dataRangeChanged(QCPRange)),this,SLOT(colorMapDataRangeChanged(QCPRange)));
     //emit startCapturing(); //This sends a message to the frame worker to start capturing (in different thread)
     //fw->captureFrames();
@@ -113,6 +112,7 @@ void frameview_widget::handleNewFrame()
         initQCPStuff();
         colorMapData = new QCPColorMapData(frWidth,frHeight,QCPRange(0,frWidth),QCPRange(0,frHeight));
         colorMap->setData(colorMapData);
+        qDebug() << " height " << frHeight << " width " << frWidth;
     }
 
 
@@ -122,7 +122,9 @@ void frameview_widget::handleNewFrame()
         if(image_type == BASE)
         {
             //qDebug() << "starting redraw";
-            uint16_t * local_image_ptr = fw->getRawImagePtr();
+            uint16_t * local_image_ptr = fw->getImagePtr();
+            //uint16_t * local_image_ptr = fw->getRawPtr();
+
             for(int col = 0; col < frWidth; col++)
             {
                 for(int row = 0; row < frHeight; row++)
@@ -134,19 +136,21 @@ void frameview_widget::handleNewFrame()
         }
         else if(image_type == DSF)
         {
-            boost::shared_array< float > local_image_ptr = fw->getDSF();
+            float * local_image_ptr = fw->getDSF();
+           // qDebug() << "dsf mask collected " << fw->dsfMaskCollected();
+            qDebug() << *(local_image_ptr+100);
             for(int col = 0; col < frWidth; col++)
             {
                 for(int row = 0; row < frHeight; row++)
                 {
-                    colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
                 }
             }
 
         }
         else if(image_type == STD_DEV)
         {
-            boost::shared_array< float > local_image_ptr = fw->getStdDevData();
+            float * local_image_ptr = fw->getStdDevData();
             for(int col = 0; col < frWidth; col++)
             {
                 for(int row = 0; row < frHeight; row++)
@@ -179,16 +183,12 @@ void frameview_widget::updateCeiling(int c)
     QMutexLocker ml(&mMutex);
     ceiling = (double)c;
     //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
-
-    qDebug() << "ceiling updated" << this->ceiling;
 }
 void frameview_widget::updateFloor(int f)
 {
     QMutexLocker ml(&mMutex);
     floor = (double)f;
     //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
-    qDebug() << "floor updated" << this->floor;
-
 }
 void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
 {
@@ -197,20 +197,20 @@ void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
     double upperRangeBound = frHeight;
     if (boundedRange.size() > upperRangeBound-lowerRangeBound)
     {
-      boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+        boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
     } else
     {
-      double oldSize = boundedRange.size();
-      if (boundedRange.lower < lowerRangeBound)
-      {
-        boundedRange.lower = lowerRangeBound;
-        boundedRange.upper = lowerRangeBound+oldSize;
-      }
-      if (boundedRange.upper > upperRangeBound)
-      {
-        boundedRange.lower = upperRangeBound-oldSize;
-        boundedRange.upper = upperRangeBound;
-      }
+        double oldSize = boundedRange.size();
+        if (boundedRange.lower < lowerRangeBound)
+        {
+            boundedRange.lower = lowerRangeBound;
+            boundedRange.upper = lowerRangeBound+oldSize;
+        }
+        if (boundedRange.upper > upperRangeBound)
+        {
+            boundedRange.lower = upperRangeBound-oldSize;
+            boundedRange.upper = upperRangeBound;
+        }
     }
     qcp->yAxis->setRange(boundedRange);
 }
@@ -222,20 +222,20 @@ void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
     double upperRangeBound = frWidth;
     if (boundedRange.size() > upperRangeBound-lowerRangeBound)
     {
-      boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+        boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
     } else
     {
-      double oldSize = boundedRange.size();
-      if (boundedRange.lower < lowerRangeBound)
-      {
-        boundedRange.lower = lowerRangeBound;
-        boundedRange.upper = lowerRangeBound+oldSize;
-      }
-      if (boundedRange.upper > upperRangeBound)
-      {
-        boundedRange.lower = upperRangeBound-oldSize;
-        boundedRange.upper = upperRangeBound;
-      }
+        double oldSize = boundedRange.size();
+        if (boundedRange.lower < lowerRangeBound)
+        {
+            boundedRange.lower = lowerRangeBound;
+            boundedRange.upper = lowerRangeBound+oldSize;
+        }
+        if (boundedRange.upper > upperRangeBound)
+        {
+            boundedRange.lower = upperRangeBound-oldSize;
+            boundedRange.upper = upperRangeBound;
+        }
     }
     qcp->xAxis->setRange(boundedRange);
 }

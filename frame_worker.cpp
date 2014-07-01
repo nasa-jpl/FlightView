@@ -22,8 +22,13 @@ void frameWorker::captureFrames()
     while(1)
     {
         QCoreApplication::processEvents();
-        fr = to.getFrontFrame(); //This now blocks
+        //fr = to.getRawData(); //This now blocks
+        to.waitRawPtr(); //Wait for new data to come in
         emit newFrameAvailable(); //This onyl emits when there is a new frame
+        if(to.std_dev_ready())
+        {
+            emit std_dev_ready();
+        }
     }
 }
 void frameWorker::startCapturingDSFMask()
@@ -37,46 +42,52 @@ void frameWorker::finishCapturingDSFMask()
     to.finishCapturingDSFMask();
 }
 
-boost::shared_ptr < frame > frameWorker::getFrame()
-{
-    return fr;
-}
 
-uint16_t * frameWorker::getFrameImagePtr()
+
+uint16_t * frameWorker::getImagePtr()
 {
     //return NULL;
-    return fr->image_data_ptr;
+    return to.getImagePtr();
 }
-uint16_t * frameWorker::getRawImagePtr()
+uint16_t * frameWorker::getRawPtr()
 {
     //return NULL;
-    return fr->raw_data;
+    return to.getRawPtr();
 }
 
 unsigned int frameWorker::getHeight()
 {
-    return to.height;
+    return to.frHeight;
 }
 
 unsigned int frameWorker::getWidth()
 {
-    return to.width;
+    return to.frWidth;
 }
-boost::shared_array < float > frameWorker::getDSF()
+float * frameWorker::getDSF()
 {
     return to.getDarkSubtractedData();
 }
-boost::shared_array < float > frameWorker::getStdDevData()
+
+float * frameWorker::getStdDevData()
 {
     return to.getStdDevData();
 }
-boost::shared_array < uint32_t > frameWorker::getHistogramData()
+uint32_t * frameWorker::getHistogramData()
 {
     return to.getHistogramData();
 }
 std::vector<float> *frameWorker::getHistogramBins()
 {
     return to.getHistogramBins();
+}
+float * frameWorker::getHorizontalMean()
+{
+    return to.getHorizontalMean();
+}
+float * frameWorker::getVerticalMean()
+{
+    return to.getVerticalMean();
 }
 
 void frameWorker::loadDSFMask(const char * file_name)
@@ -111,7 +122,16 @@ void frameWorker::stopSavingStd_DevData()
 {
 
 }
+bool frameWorker::dsfMaskCollected()
+{
+    return to.dsfMaskCollected;
+}
+
 bool frameWorker::isChroma()
 {
     return to.isChroma;
+}
+void frameWorker::setStdDev_N(int newN)
+{
+    to.setStdDev_N(newN);
 }

@@ -18,7 +18,8 @@ SOURCES += main.cpp\
     controlsbox.cpp \
     frame_worker.cpp \
     qcustomplot.cpp \
-    histogram_widget.cpp
+    histogram_widget.cpp \
+    mean_profile_widget.cpp
 
 HEADERS  += mainwindow.h \
     frameview_widget.h \
@@ -26,7 +27,8 @@ HEADERS  += mainwindow.h \
     frame_worker.h \
     image_type.h \
     qcustomplot.h \
-    histogram_widget.h
+    histogram_widget.h \
+    mean_profile_widget.h
 
 BACKEND_HEADERS += edtinc.h \
     take_object.hpp\

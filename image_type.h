@@ -1,5 +1,5 @@
 #ifndef IMAGE_TYPE_H
 #define IMAGE_TYPE_H
 
-enum image_t {BASE,DSF,STD_DEV};
+enum image_t {BASE,DSF,STD_DEV,STD_DEV_HISTOGRAM,VERTICAL_MEAN,HORIZONTAL_MEAN};
 #endif // IMAGE_TYPE_H

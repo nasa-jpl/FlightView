@@ -24,51 +24,70 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     fps_label.setText("Warning: no data recieved");
 
     //First Row
-    collections_layout.addWidget(&run_display_button,1,1,1,2);
+    collections_layout.addWidget(&run_display_button,1,1,1,1);
     //collections_layout->addWidget(&run_display_button,1,2);
-    collections_layout.addWidget(&stop_display_button,1,3,1,2);
+    collections_layout.addWidget(&stop_display_button,1,2,1,1);
     //collections_layout->addWidget(&stop_display_button,1,4);
 
     //Second Row
-    collections_layout.addWidget(&collect_dark_frames_button,2,1,1,2);
-    collections_layout.addWidget(&stop_dark_collection_button,2,3,1,1);
-    collections_layout.addWidget(&load_mask_from_file,2,4,1,1);
+    collections_layout.addWidget(&collect_dark_frames_button,2,1,1,1);
+    collections_layout.addWidget(&stop_dark_collection_button,2,2,1,1);
+    collections_layout.addWidget(&load_mask_from_file,3,2,1,1);
 
     //Third Row
-    collections_layout.addWidget(&fps_label,3,1,1,4);
+    collections_layout.addWidget(&fps_label,3,1,1,1);
 
     CollectionButtonsBox.setLayout(&collections_layout);
 
     //Slider Thresholding Buttons
     //QGridLayout * sliders_layout = new QGridLayout();
-    show_dark_subtracted_cbox.setText("Show Dark Subtracted");
+    std_dev_N_slider.setOrientation(Qt::Horizontal);
+    std_dev_N_slider.setMinimum(1);
+    std_dev_N_slider.setMaximum(MAX_N-1);
+    std_dev_N_slider.setValue(std_dev_N_slider.maximum());
+
+
     ceiling_slider.setOrientation(Qt::Horizontal);
-    ceiling_slider.setMaximum(max);
-    ceiling_slider.setMinimum(min);
+    ceiling_slider.setMaximum(BIG_MAX);
+    ceiling_slider.setMinimum(BIG_MIN);
+
     floor_slider.setOrientation(Qt::Horizontal);
-    floor_slider.setMaximum(max);
-    floor_slider.setMinimum(min);
-    ceiling_edit.setMaximum(max);
-    ceiling_edit.setMinimum(min);
+    floor_slider.setMaximum(BIG_MAX);
+    floor_slider.setMinimum(BIG_MIN);
+
+    std_dev_N_edit.setMinimum(1);
+    std_dev_N_edit.setMaximum(MAX_N-1);
+    std_dev_N_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
+    std_dev_N_edit.setValue(std_dev_N_edit.maximum());
+
+    ceiling_edit.setMaximum(BIG_MAX);
+    ceiling_edit.setMinimum(BIG_MIN);
     ceiling_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
 
-    floor_edit.setMaximum(max);
-    floor_edit.setMinimum(min);
+    floor_edit.setMaximum(BIG_MAX);
+    floor_edit.setMinimum(BIG_MIN);
     floor_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
 
+    low_increment_cbox.setText("Slider Low Increment?");
+    ceiling_slider.setTickInterval(BIG_TICK);
+    floor_slider.setTickInterval(BIG_TICK);
 
     //First Row
-    sliders_layout.addWidget(&show_dark_subtracted_cbox,1,1,1,1);
-
+    sliders_layout.addWidget(new QLabel("Std. Dev. N:"),1,1,1,1);
+    sliders_layout.addWidget(&std_dev_N_slider,1,2,1,7);
+    sliders_layout.addWidget(&std_dev_N_edit,1,10,1,1);
     //Second Row
-    sliders_layout.addWidget(new QLabel("Ceiling:"),2,1,1,1);
-    sliders_layout.addWidget(&ceiling_slider,2,2,1,3);
-    sliders_layout.addWidget(&ceiling_edit,2,5,1,1);
+    sliders_layout.addWidget(&low_increment_cbox,2,1,1,1);
 
     //Third Row
-    sliders_layout.addWidget(new QLabel("Window:"),3,1,1,1);
-    sliders_layout.addWidget(&floor_slider,3,2,1,3);
-    sliders_layout.addWidget(&floor_edit,3,5,1,1);
+    sliders_layout.addWidget(new QLabel("Ceiling:"),3,1,1,1);
+    sliders_layout.addWidget(&ceiling_slider,3,2,1,7);
+    sliders_layout.addWidget(&ceiling_edit,3,10,1,1);
+
+    //Fourth Row
+    sliders_layout.addWidget(new QLabel("Floor:"),4,1,1,1);
+    sliders_layout.addWidget(&floor_slider,4,2,1,7);
+    sliders_layout.addWidget(&floor_edit,4,10,1,1);
     ThresholdingSlidersBox.setLayout(&sliders_layout);
 
     //Save Buttons
@@ -107,11 +126,14 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     save_layout.addWidget(&filename_edit,3,3,1,1);
     SaveButtonsBox.setLayout(&save_layout);
 
-    controls_layout.addWidget(&CollectionButtonsBox);
-    controls_layout.addWidget(&ThresholdingSlidersBox);
-    controls_layout.addWidget(&SaveButtonsBox);
+    controls_layout.addWidget(&CollectionButtonsBox,2);
+    controls_layout.addWidget(&ThresholdingSlidersBox,3);
+    controls_layout.addWidget(&SaveButtonsBox,2);
     this->setLayout(&controls_layout);
     this->setMaximumHeight(150);
+
+    connect(&std_dev_N_edit,SIGNAL(valueChanged(int)),&std_dev_N_slider,SLOT(setValue(int)));
+    connect(&std_dev_N_slider,SIGNAL(valueChanged(int)),&std_dev_N_edit,SLOT(setValue(int)));
 
     connect(&ceiling_edit,SIGNAL(valueChanged(int)),&ceiling_slider,SLOT(setValue(int)));
     connect(&ceiling_slider,SIGNAL(valueChanged(int)),&ceiling_edit,SLOT(setValue(int)));
@@ -122,6 +144,7 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     connect(&load_mask_from_file,SIGNAL(clicked()),this,SLOT(getMaskFile()));
     connect(&save_frames_button,SIGNAL(clicked()),this,SLOT(save_button_slot()));
 
+    connect(&low_increment_cbox,SIGNAL(toggled(bool)),this,SLOT(increment_slot(bool)));
 }
 void ControlsBox::getMaskFile()
 {
@@ -135,6 +158,27 @@ void ControlsBox::getMaskFile()
     std::string utf8_text = fileName.toUtf8().constData();
     emit mask_selected(utf8_text.c_str());
 
+}
+void ControlsBox::increment_slot(bool t)
+{
+    if(t)
+    {
+        ceiling_slider.setTickInterval(LIL_TICK);
+        floor_slider.setTickInterval(LIL_TICK);
+        ceiling_slider.setMaximum(LIL_MAX);
+        ceiling_slider.setMinimum(LIL_MIN);
+        floor_slider.setMaximum(LIL_MAX);
+        floor_slider.setMinimum(LIL_MIN);
+    }
+    else
+    {
+        ceiling_slider.setTickInterval(BIG_TICK);
+        floor_slider.setTickInterval(BIG_TICK);
+        ceiling_slider.setMaximum(BIG_MAX);
+        ceiling_slider.setMinimum(BIG_MIN);
+        floor_slider.setMaximum(BIG_MAX);
+        floor_slider.setMinimum(BIG_MIN);
+    }
 }
 
 void ControlsBox::save_button_slot()

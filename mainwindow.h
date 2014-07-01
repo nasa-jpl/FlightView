@@ -5,6 +5,7 @@
 #include "controlsbox.h"
 #include "frameview_widget.h"
 #include "histogram_widget.h"
+#include "mean_profile_widget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -23,12 +24,16 @@ private:
     frameview_widget * dsf_widget;
     frameview_widget * std_dev_widget;
     histogram_widget * hist_widget;
+
+    mean_profile_widget * vert_widget;
+    mean_profile_widget * horiz_widget;
 public slots:
     void updateFPS(unsigned int fps);
     void testslot(int val);
     void createBackend();
     void destroyBackend();
     void connectAndStartBackend();
+    void enableStdDevTabs();
 };
 
 #endif // MAINWINDOW_H

@@ -19,11 +19,21 @@ MainWindow::MainWindow(QWidget *parent)
     unfiltered_widget = new frameview_widget(fw, BASE);
     dsf_widget = new frameview_widget(fw, DSF);
     std_dev_widget = new frameview_widget(fw, STD_DEV);
-    hist_widget = new histogram_widget(fw,STD_DEV);
+    hist_widget = new histogram_widget(fw,STD_DEV_HISTOGRAM);
+
+    vert_widget = new mean_profile_widget(fw,VERTICAL_MEAN);
+    horiz_widget = new mean_profile_widget(fw,HORIZONTAL_MEAN);
+
+
     tabWidget->addTab(unfiltered_widget, QString("Live View"));
     tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
     tabWidget->addTab(std_dev_widget, QString("Std. Deviation"));
     tabWidget->addTab(hist_widget,QString("Histogram View"));
+    tabWidget->addTab(vert_widget,QString("Vertical Mean Profile"));
+    tabWidget->addTab(horiz_widget,QString("Horizontal Mean Profile"));
+
+    tabWidget->setTabEnabled(2,false);
+    tabWidget->setTabEnabled(3,false);
 
     layout->addWidget(tabWidget,3);
     //Create controls box
@@ -67,6 +77,11 @@ void MainWindow::connectAndStartBackend()
     connect(fw,SIGNAL(newFrameAvailable()), dsf_widget, SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()), std_dev_widget, SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()),hist_widget,SLOT(handleNewFrame()));
+    connect(fw,SIGNAL(newFrameAvailable()),vert_widget,SLOT(handleNewFrame()));
+    connect(fw,SIGNAL(newFrameAvailable()),horiz_widget,SLOT(handleNewFrame()));
+
+
+
     connect(&controlbox->collect_dark_frames_button,SIGNAL(clicked()),fw,SLOT(startCapturingDSFMask()));
     connect(&controlbox->stop_dark_collection_button,SIGNAL(clicked()),fw,SLOT(finishCapturingDSFMask()));
     connect(controlbox,SIGNAL(mask_selected(const char *)),fw,SLOT(loadDSFMask(const char *)));
@@ -80,6 +95,8 @@ void MainWindow::connectAndStartBackend()
     connect(controlbox, SIGNAL(startSaving(const char*)),fw,SLOT(startSavingRawData(const char*)));
     connect(&controlbox->stop_saving_frames_button,SIGNAL(clicked()),fw,SLOT(stopSavingRawData()));
 
+    connect(&controlbox->std_dev_N_slider,SIGNAL(valueChanged(int)),fw,SLOT(setStdDev_N(int)));
+    connect(fw,SIGNAL(std_dev_ready()),this,SLOT(enableStdDevTabs()));
 
     //start worker Thread
     workerThread->start();
@@ -105,4 +122,13 @@ void MainWindow::testslot(int val)
 void MainWindow::updateFPS(unsigned int fps)
 {
     //controlbox->fps_label->setText();
+}
+void MainWindow::enableStdDevTabs()
+{
+
+    qDebug() << "enabling std. dev. tabs";
+    tabWidget->setTabEnabled(2,true);
+    tabWidget->setTabEnabled(3,true);
+    disconnect(fw,SIGNAL(std_dev_ready()),this,SLOT(enableStdDevTabs()));
+
 }

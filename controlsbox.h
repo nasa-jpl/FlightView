@@ -10,10 +10,18 @@
 #include <QSpinBox>
 #include <QTabWidget>
 #include "frameview_widget.h"
+#include <stdint.h>
 
 #include "boost/shared_array.hpp"
-const static int max = (1<<16)-1;
-const static int min = -1*max;
+const static int BIG_MAX = (1<<16)-1;
+//const static int BIG_MAX = UINT16_MAX; //Only C++11 :(
+
+const static int BIG_MIN = -1*BIG_MAX;
+
+const static int LIL_MAX = 2000;
+const static int LIL_MIN = -2000;
+const static int BIG_TICK = 400;
+const static int LIL_TICK = 1;
 class ControlsBox : public QGroupBox
 {
     Q_OBJECT
@@ -39,10 +47,13 @@ public:
     QPushButton stop_dark_collection_button;
     QPushButton load_mask_from_file;
     QLabel fps_label;
-    QCheckBox show_dark_subtracted_cbox;
+
+    QCheckBox low_increment_cbox;
+    QSlider std_dev_N_slider;
     QSlider ceiling_slider;
     QSlider floor_slider;
 
+    QSpinBox std_dev_N_edit;
     QSpinBox ceiling_edit;
     QSpinBox floor_edit;
 
@@ -66,6 +77,7 @@ public slots:
     void getMaskFile();
     void save_button_slot();
     void tabChangedSlot(int index);
+    void increment_slot(bool t);
 
 
 };

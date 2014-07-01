@@ -39,8 +39,10 @@ void histogram_widget::initQCPStuff()
 
     histogram->keyAxis()->setRangeUpper(histo_bins[histo_bins.size()-1]);
     histogram->keyAxis()->setScaleType(QCPAxis::stLogarithmic);
+    histogram->keyAxis()->setNumberFormat("b");
     histogram->keyAxis()->setScaleLogBase(2);
     histogram->keyAxis()->setAutoTicks(true);
+    //histogram->keyAxis()->setTickLabelType(QCPAxis::12);
     histogram->keyAxis()->setAutoTickCount(10);
     histogram->keyAxis()->setRangeUpper(10);
 
@@ -50,7 +52,7 @@ void histogram_widget::initQCPStuff()
     //qcp->xAxis->setTickVector(histo_bins);
     //histogram->keyAxis()->setSca
 
-    histogram->setWidth(.033);
+    histogram->setWidth(.034); //This value was derived experimentally...
     //    /qcp->xAxis->setRange(QCPRange(0.0d,100.0d));
     qvbl.addWidget(qcp);
     this->setLayout(&qvbl);
@@ -143,4 +145,6 @@ void histogram_widget::histogramScrolledX(const QCPRange &newRange)
         }
     }
     histogram->keyAxis()->setRange(boundedRange);
+    //histogram->keyAxis()->setAutoTickCount(10);
+
 }
