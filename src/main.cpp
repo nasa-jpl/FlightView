@@ -8,6 +8,7 @@
 #include <queue>
 #include "dark_subtraction_filter.cuh"
 #include "std_dev_filter.cuh"
+//#include "fft.hpp"
 #include <fstream>
 using namespace std;
 
@@ -116,7 +117,6 @@ void sensor_grab_test()
 	int read_addr = 9300;
 	std::queue<uint16_t> pixel_hist;
 	//to.initFilters(samples);
-	std::cout << "isChroma? " << to.isChroma << std::endl;
 	to.setStdDev_N(std_dev_mem);
 	to.startCapturingDSFMask();
 	while(1)
@@ -162,8 +162,23 @@ void simple_sensor_grab()
 		cout << " got raw ptw" << endl;
 	}
 }
+void fft_test()
+{
+	fft myFFT;
+	float * data_in = new float[1024];
+	FILE * f = fopen("fake_fourier_in.bin","rb");
+	fread(data_in,sizeof(float),1024,f);
+	fclose(f);
+	data_in = myFFT.doRealFFT(data_in,1024,0);
+	FILE * fw = fopen("rfft_out.bin","wb");
+	fwrite(data_in,sizeof(float),512,fw);
+	fclose(fw);
+	printf("fft calculated\n");
+
+}
 int main()
 {
+	//fft_test();
 	sensor_grab_test();
 	//simple_sensor_grab();
 	//std_dev_test();

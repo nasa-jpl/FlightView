@@ -7,6 +7,7 @@
 
 #include "chroma_translate_filter.cuh"
 #include "take_object.hpp"
+#include "fft.hpp"
 take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int frf)
 {
 	this->channel = channel_num;
@@ -50,14 +51,20 @@ void take_object::start()
 	}
 	//TODO: Sizing stuff
 	size = pdv_get_dmasize(pdv_p); //Not using this at the moment
-	isChroma = size > 481*640*sizeof(uint16_t) ? true : false;
+
+	switch(size)
+	{
+	case 481*640: cam_type = CL_6604A; break;
+	default: cam_type = CL_6604B; break;
+	}
+	printf("frame period:%i\n", pdv_get_frame_period(pdv_p));
 
 	frWidth = pdv_get_width(pdv_p);
 
 	//Our version of height should not include the header size
 	dataHeight = pdv_get_height(pdv_p);
 
-	if(!isChroma) //This strips the header from the height on the 6604A
+	if(cam_type == CL_6604A) //This strips the header from the height on the 6604A
 	{
 		frHeight = dataHeight - 1;
 	}
@@ -66,7 +73,7 @@ void take_object::start()
 
 	vertical_mean_buffer = new float[frHeight];
 	horizontal_mean_buffer = new float[frWidth];
-
+	fftReal_mean_data = new float[MEAN_BUFFER_LENGTH];
 	dark_subtraction_data = new float[frWidth*frHeight];
 	dark_subtraction_buffer = new float[frWidth*frHeight];
 	std_dev_buffer = new float[frWidth*frHeight];
@@ -106,7 +113,7 @@ void take_object::pdv_init()
 		memcpy(raw_data_ptr,reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)),frWidth*dataHeight*sizeof(uint16_t));
 		pdv_start_image(pdv_p); //Start another
 		boost::unique_lock<boost::shared_mutex> exclusive_lock(data_mutex);
-		if(isChroma)
+		if(cam_type == CL_6604B)
 		{
 			raw_data_ptr = ctf.apply_chroma_translate_filter(raw_data_ptr);
 			image_data_ptr = raw_data_ptr;
@@ -143,14 +150,14 @@ void take_object::pdv_init()
 		}
 		horizontal_mean_data = mf->wait_horizontal_mean();
 		vertical_mean_data = mf->wait_vertical_mean();
-
+		//fftReal_mean_data = mf->wait_mean_fft();
 		count++;
 		newFrameAvailable = true;
 		exclusive_lock.unlock();
 
 		//newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
 		framecount = *(raw_data_ptr + 160);
-		if(CHECK_FOR_MISSED_FRAMES_6604A && !isChroma)
+		if(CHECK_FOR_MISSED_FRAMES_6604A && cam_type == CL_6604A)
 		{
 			if( framecount -1 != last_framecount)
 			{
@@ -245,6 +252,13 @@ float* take_object::getVerticalMean()
 	memcpy(vertical_mean_buffer,vertical_mean_data,frHeight*sizeof(float));
 
 	return vertical_mean_buffer;
+}
+float* take_object::getRealFFTSquared()
+{
+	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
+	memcpy(fftReal_mean_buffer,fftReal_mean_data,512*sizeof(float));
+
+	return fftReal_mean_buffer;
 }
 uint32_t * take_object::getHistogramData()
 {
@@ -358,3 +372,4 @@ bool take_object::std_dev_ready()
 {
 	return sdvf->outputReady();
 }
+

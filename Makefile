@@ -24,7 +24,7 @@ LIBOUT = libcuda_take.a
 
 ######################################
 #Here we specify what source files are needed for the program/library, and we create virtual paths so that we don't have to refer to the source directory all the time
-SOURCES = main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter.cu chroma_translate_filter.cu mean_filter.cu
+SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter.cu chroma_translate_filter.cu mean_filter.cu
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 
 
@@ -67,6 +67,8 @@ IDIR      = -Iinclude -IEDT_include
 
 #SECOND NOTE: ONLY BUILD WITH O1! Somehow, someway, O2 optimizes out things that nvcc needs and O0 has linker redefinition errors. #JankCity <- This has been fixed, but still a good idea
 CFLAGS     = -g -O1 #This is added to the compilation of every file, enables gdb debugging symbols (-g) and limited optimization (-O1)
+CONLYFLAGS = -std=c99
+CONLYFLAGS += $(CFLAGS)
 
 CPPFLAGS = -std=c++11 -Wall -Werror #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 CPPFLAGS += $(CFLAGS)
@@ -104,7 +106,7 @@ obj:
 	
 #what to do to build c files -> o files
 $(OBJDIR)/%.o : %.c
-	$(CC) $(CFLAGS) $(IDIR) -c -o $@ $<
+	$(CC) $(CONLYFLAGS) $(IDIR) -c -o $@ $<
 
 #what to do to build cpp files -> o files
 $(OBJDIR)/%.o : %.cpp

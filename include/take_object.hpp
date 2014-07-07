@@ -26,6 +26,7 @@
 #include "dark_subtraction_filter.cuh"
 #include "mean_filter.hpp"
 #include "edtinc.h"
+#include "camera_types.h"
 
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = true;
 class take_object {
@@ -44,6 +45,7 @@ class take_object {
 
 	float * horizontal_mean_data;
 	float * vertical_mean_data;
+	float * fftReal_mean_data;
 
 	uint16_t * raw_data_buffer;
 	uint16_t * image_data_buffer;
@@ -52,6 +54,8 @@ class take_object {
 	uint32_t * std_dev_histogram_buffer;
 	float * horizontal_mean_buffer;
 	float * vertical_mean_buffer;
+	float * fftReal_mean_buffer;
+
 
 
 	unsigned int size;
@@ -94,7 +98,7 @@ public:
 	unsigned int dataHeight;
 	unsigned int frHeight;
 	unsigned int frWidth;
-	bool isChroma;
+
 	bool dsfMaskCollected;
 	float * getStdDevData();
 
@@ -104,6 +108,7 @@ public:
 
 	float * getHorizontalMean();
 	float * getVerticalMean();
+	float * getRealFFTSquared();
 	bool std_dev_ready();
 
 	void startCapturingDSFMask();
@@ -122,6 +127,8 @@ public:
 
 
 	void setStdDev_N(int s);
+
+	camera_t cam_type;
 private:
 	void pdv_init();
 	void savingLoop();
