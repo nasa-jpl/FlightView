@@ -55,10 +55,10 @@ void mean_filter::calculate_means()
 	}
 	frame_mean/=width;
 
-	//mean_ring_buffer[mean_ring_buffer_head] = frame_mean;
+	mean_ring_buffer[mean_ring_buffer_head] = frame_mean;
 	if(frame_count > MEAN_BUFFER_LENGTH)
 	{
-		//fft_real_result = myFFT.doRealFFT(mean_ring_buffer,MEAN_BUFFER_LENGTH, mean_ring_buffer_head);
+		fft_real_result = myFFT.doRealFFT(mean_ring_buffer,MEAN_BUFFER_LENGTH, mean_ring_buffer_head);
 	}
 	if(++mean_ring_buffer_head >= MEAN_BUFFER_LENGTH)
 	{

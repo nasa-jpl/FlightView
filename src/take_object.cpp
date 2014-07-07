@@ -54,7 +54,8 @@ void take_object::start()
 
 	switch(size)
 	{
-	case 481*640: cam_type = CL_6604A; break;
+
+	case 481*640*sizeof(uint16_t): cam_type = CL_6604A; break;
 	default: cam_type = CL_6604B; break;
 	}
 	printf("frame period:%i\n", pdv_get_frame_period(pdv_p));
@@ -64,6 +65,7 @@ void take_object::start()
 	//Our version of height should not include the header size
 	dataHeight = pdv_get_height(pdv_p);
 
+	printf("cam type: %u", cam_type);
 	if(cam_type == CL_6604A) //This strips the header from the height on the 6604A
 	{
 		frHeight = dataHeight - 1;
@@ -150,7 +152,7 @@ void take_object::pdv_init()
 		}
 		horizontal_mean_data = mf->wait_horizontal_mean();
 		vertical_mean_data = mf->wait_vertical_mean();
-		//fftReal_mean_data = mf->wait_mean_fft();
+		fftReal_mean_data = mf->wait_mean_fft();
 		count++;
 		newFrameAvailable = true;
 		exclusive_lock.unlock();
