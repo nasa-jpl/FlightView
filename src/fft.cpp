@@ -58,7 +58,7 @@ float * fft::doRealFFT(float * real_arr, unsigned int len, unsigned int ring_hea
 	//realFFT[len/2] = (float) std::real(CFFT[len/2]);
 	for(unsigned int i = 0; i < len/2; i++)
 	{
-		realFFT[i] = std::pow(std::real(CFFT[i]),2);
+		realFFT[i] = std::abs(CFFT[i]);
 	}
 
 	return realFFT;
