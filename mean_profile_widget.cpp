@@ -16,8 +16,8 @@ mean_profile_widget::~mean_profile_widget()
 
 void mean_profile_widget::initQCPStuff()
 {
-    frHeight = fw->getHeight();
-    frWidth = fw->getWidth();
+    frHeight = fw->getFrameHeight();
+    frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
     //qcp->setInteractions(QCP::iRangeDrag|QCP::iRangeZoom);
 

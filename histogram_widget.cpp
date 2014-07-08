@@ -14,8 +14,8 @@ histogram_widget::~histogram_widget()
 }
 void histogram_widget::initQCPStuff()
 {
-    frHeight = fw->getHeight();
-    frWidth = fw->getWidth();
+    frHeight = fw->getFrameHeight();
+    frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
     histogram = new QCPBars(qcp->xAxis, qcp->yAxis);
     qcp->setInteractions(QCP::iRangeDrag|QCP::iRangeZoom);
@@ -86,18 +86,9 @@ void histogram_widget::handleNewFrame()
     if(fps%10==0 && !this->isHidden())
     {
         update_histo_data();
-        //boost::shared_array <uint32_t> hist_shad = fw->getHistogramData();
 
-        //qDebug() << "sum " << sum << "targt " << frWidth*frHeight;
-        //qDebug() << histo_data;
-        //qDebug() << histo_bins;
-        // histogram->
         histogram->setData(histo_bins,histo_data);
-        //histogram->keyAxis()->setRangeUpper(100.0d);
-        //histogram->keyAxis()->setRangeLower(0.0d);
-        //histogram->valueAxis()->setRangeLower(0.0d);
-        //histogram->valueAxis()->setRangeUpper(frWidth*frHeight);
-        //histogram->valueAxis()->rescale(true);
+
 
 
         qcp->replot();

@@ -6,6 +6,7 @@
 #include "frameview_widget.h"
 #include "histogram_widget.h"
 #include "mean_profile_widget.h"
+#include "fft_widget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -25,8 +26,10 @@ private:
     frameview_widget * std_dev_widget;
     histogram_widget * hist_widget;
 
+
     mean_profile_widget * vert_widget;
     mean_profile_widget * horiz_widget;
+    fft_widget * fft_mean_widget;
 public slots:
     void updateFPS(unsigned int fps);
     void testslot(int val);

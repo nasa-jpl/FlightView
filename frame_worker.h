@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QThread>
+#include <QVector>
 #include "take_object.hpp"
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
@@ -24,13 +25,20 @@ public:
 
     float * getVerticalMean();
     float * getHorizontalMean();
+    float * getRealFFTSquared();
+
     uint32_t * getHistogramData();
     std::vector<float> *getHistogramBins();
-    unsigned int getHeight();
-    unsigned int getWidth();
+    unsigned int getFrameHeight();
+    unsigned int getDataHeight();
+    unsigned int getFrameWidth();
+
     bool dsfMaskCollected();
 
-    bool isChroma();
+    camera_t camera_type();
+
+    QVector<double> *histo_data;
+    QVector<double> rfft_data_vec;
 signals:
     void newFrameAvailable();
     void std_dev_ready();
@@ -53,6 +61,9 @@ public slots:
 
 private:
     take_object to;
+
+    float * rfft_data;
+    void updateFFTVector();
 
 
 

@@ -5,7 +5,6 @@ frameWorker::frameWorker(QObject *parent) :
     QObject(parent)
 {
 
-
 }
 frameWorker::~frameWorker()
 {
@@ -17,17 +16,18 @@ void frameWorker::captureFrames()
     //to = new take_object(); //allocate inside slot so that it is owned by 2nd thread
     to.start();
     qDebug("starting capture");
-
-
+    rfft_data_vec = QVector<double>(MEAN_BUFFER_LENGTH/2);
+    rfft_data = new float[MEAN_BUFFER_LENGTH/2]; //This seemingly should not need to exist
     while(1)
     {
-        QCoreApplication::processEvents();
+        //QCoreApplication::processEvents();
         //fr = to.getRawData(); //This now blocks
         to.waitRawPtr(); //Wait for new data to come in
+        updateFFTVector();
         emit newFrameAvailable(); //This onyl emits when there is a new frame
-        if(to.std_dev_ready())
+        //if(to.std_dev_ready())
         {
-            emit std_dev_ready();
+         //   emit std_dev_ready();
         }
     }
 }
@@ -55,12 +55,16 @@ uint16_t * frameWorker::getRawPtr()
     return to.getRawPtr();
 }
 
-unsigned int frameWorker::getHeight()
+unsigned int frameWorker::getFrameHeight()
 {
     return to.frHeight;
 }
+unsigned int frameWorker::getDataHeight()
+{
+    return to.dataHeight;
+}
 
-unsigned int frameWorker::getWidth()
+unsigned int frameWorker::getFrameWidth()
 {
     return to.frWidth;
 }
@@ -127,11 +131,19 @@ bool frameWorker::dsfMaskCollected()
     return to.dsfMaskCollected;
 }
 
-bool frameWorker::isChroma()
+camera_t frameWorker::camera_type()
 {
-    return to.isChroma;
+    return to.cam_type;
 }
 void frameWorker::setStdDev_N(int newN)
 {
     to.setStdDev_N(newN);
+}
+void frameWorker::updateFFTVector() //This would make more sense in fft_widget, but it cannot run in the gui thread.
+{
+    rfft_data = to.getRealFFTMagnitude();
+    for(unsigned int i = 0; i < MEAN_BUFFER_LENGTH/2; i++)
+    {
+        rfft_data_vec[i] =rfft_data[i];
+    }
 }

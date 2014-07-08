@@ -40,8 +40,8 @@ frameview_widget::~frameview_widget()
 void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewFrame?
 {
 
-    frHeight = fw->getHeight();
-    frWidth = fw->getWidth();
+    frHeight = fw->getFrameHeight();
+    frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
 
     QSizePolicy qsp(QSizePolicy::Preferred,QSizePolicy::Preferred);

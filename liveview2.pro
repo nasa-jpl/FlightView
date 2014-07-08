@@ -19,7 +19,8 @@ SOURCES += main.cpp\
     frame_worker.cpp \
     qcustomplot.cpp \
     histogram_widget.cpp \
-    mean_profile_widget.cpp
+    mean_profile_widget.cpp \
+    fft_widget.cpp
 
 HEADERS  += mainwindow.h \
     frameview_widget.h \
@@ -28,11 +29,12 @@ HEADERS  += mainwindow.h \
     image_type.h \
     qcustomplot.h \
     histogram_widget.h \
-    mean_profile_widget.h
+    mean_profile_widget.h \
+    fft_widget.h
 
 BACKEND_HEADERS += edtinc.h \
     take_object.hpp\
-    frame.hpp
+    camera_types.h
 
 
 HEADERS += BACKEND_HEADERS
@@ -44,6 +46,8 @@ OTHER_FILES += \
 
 RESOURCES += \
     images.qrc
+
+QMAKE_CXXFLAGS += -std=c++11
 #RC_FILE = liveview2.rc
 
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff

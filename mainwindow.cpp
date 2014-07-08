@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     vert_widget = new mean_profile_widget(fw,VERTICAL_MEAN);
     horiz_widget = new mean_profile_widget(fw,HORIZONTAL_MEAN);
-
+    fft_mean_widget = new fft_widget(fw,FFT_MEAN);
 
     tabWidget->addTab(unfiltered_widget, QString("Live View"));
     tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
@@ -31,6 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
     tabWidget->addTab(hist_widget,QString("Histogram View"));
     tabWidget->addTab(vert_widget,QString("Vertical Mean Profile"));
     tabWidget->addTab(horiz_widget,QString("Horizontal Mean Profile"));
+    tabWidget->addTab(fft_mean_widget,QString("FFT of Plane Mean"));
 
     tabWidget->setTabEnabled(2,false);
     tabWidget->setTabEnabled(3,false);
@@ -76,9 +77,10 @@ void MainWindow::connectAndStartBackend()
     connect(fw,SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()), dsf_widget, SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()), std_dev_widget, SLOT(handleNewFrame()));
-    connect(fw,SIGNAL(newFrameAvailable()),hist_widget,SLOT(handleNewFrame()));
+    //connect(fw,SIGNAL(newFrameAvailable()),hist_widget,SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()),vert_widget,SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()),horiz_widget,SLOT(handleNewFrame()));
+    connect(fw,SIGNAL(newFrameAvailable()),fft_mean_widget,SLOT(handleNewFrame()));
 
 
 
