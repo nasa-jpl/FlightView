@@ -10,6 +10,7 @@
 #include <QSpinBox>
 #include <QTabWidget>
 #include <QButtonGroup>
+#include <QFileDialog>
 #include "frameview_widget.h"
 #include <stdint.h>
 
@@ -47,6 +48,7 @@ public:
     QPushButton collect_dark_frames_button;
     QPushButton stop_dark_collection_button;
     QPushButton load_mask_from_file;
+    QPushButton select_save_location;
     QLabel fps_label;
 
     QCheckBox low_increment_cbox;
@@ -83,6 +85,7 @@ public slots:
 
     void tabChangedSlot(int index);
     void increment_slot(bool t);
+    void showSaveDialog();
 
 
 };

@@ -23,6 +23,8 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     load_mask_from_file.setText("Load Mask From File");
     fps_label.setText("Warning: no data recieved");
 
+    select_save_location.setText("Select save location");
+    frames_save_num_edit.setMaximum(100000);
     //First Row
     collections_layout.addWidget(&run_display_button,1,1,1,1);
     //collections_layout->addWidget(&run_display_button,1,2);
@@ -92,10 +94,11 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
 
     //Save Buttons
 
-    save_finite_button.setText("Save Number of Frames");
+    save_finite_button.setText("Save Frames");
 
     start_saving_frames_button.setText("Start Saving");
     stop_saving_frames_button.setText("Stop Saving");
+    stop_saving_frames_button.setEnabled(false);
 
     //save_button_group.addButton(&start_saving_frames_button);
     //save_button_group.addButton(&stop_saving_frames_button);
@@ -108,18 +111,19 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     QGroupBox * single_save_box = new QGroupBox();
     QVBoxLayout * single_save_layout = new QVBoxLayout;
     */
-
-
+    //Column 1
+    save_layout.addWidget(&select_save_location,1,1,1,1);
+    save_layout.addWidget(new QLabel("Frames to save:"),2,1,1,1);
+    save_layout.addWidget(new QLabel("Filename:"),3,1,1,1);
 
     //Column 2
-    save_layout.addWidget(&start_saving_frames_button,1,2,1,1);
-    save_layout.addWidget(new QLabel("Frames to save:"),2,2,1,1);
-    save_layout.addWidget(new QLabel("Filename:"),3,2,1,1);
-
+    //save_layout.addWidget(&start_saving_frames_button,1,2,1,1);
+    save_layout.addWidget(&save_finite_button,1,2,1,1);
+    save_layout.addWidget(&frames_save_num_edit,2,2,1,1);
+    save_layout.addWidget(&filename_edit,3,2,1,1);
     //Column 3
     save_layout.addWidget(&stop_saving_frames_button,1,3,1,1);
-    save_layout.addWidget(&frames_save_num_edit,2,3,1,1);
-    save_layout.addWidget(&filename_edit,3,3,1,1);
+
     SaveButtonsBox.setLayout(&save_layout);
 
     controls_layout.addWidget(&CollectionButtonsBox,2);
@@ -138,16 +142,27 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     connect(&floor_slider,SIGNAL(valueChanged(int)),&floor_edit,SLOT(setValue(int)));
 
     connect(&load_mask_from_file,SIGNAL(clicked()),this,SLOT(getMaskFile()));
-    connect(&start_saving_frames_button,SIGNAL(clicked()),this,SLOT(save_button_slot()));
 
     connect(&low_increment_cbox,SIGNAL(toggled(bool)),this,SLOT(increment_slot(bool)));
 
     connect(&save_finite_button,SIGNAL(clicked()),this,SLOT(save_finite_button_slot()));
-    connect(&start_saving_frames_button,SIGNAL(clicked()),this,SLOT(start_continous_button_slot()));
+    //connect(&start_saving_frames_button,SIGNAL(clicked()),this,SLOT(start_continous_button_slot()));
     connect(&stop_saving_frames_button,SIGNAL(clicked()),this,SLOT(stop_continous_button_slot()));
 
 
+    connect(&select_save_location,SIGNAL(clicked()),this,SLOT(showSaveDialog()));
 }
+void ControlsBox::showSaveDialog()
+{
+    //QFileDialog save_location_dialog;
+    //save_location_dialog.getSaveFileName()
+    QString dialog_file_name = QFileDialog::getSaveFileName(this,tr("Save frames as raw"),filename_edit.text(),tr("Raw (*.raw *.bin *.hsi *.img)"));
+    if(!dialog_file_name.isEmpty())
+    {
+        filename_edit.setText(dialog_file_name);
+    }
+}
+
 void ControlsBox::getMaskFile()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Select mask file"),
@@ -190,6 +205,8 @@ void ControlsBox::save_continous_button_slot()
 
     start_saving_frames_button.setEnabled(false);
     save_finite_button.setEnabled(false);
+    QString label = QString("Recording raws to %1").arg(filename_edit.text());
+    fps_label.setText(label);
 
 }
 void ControlsBox::stop_continous_button_slot()
