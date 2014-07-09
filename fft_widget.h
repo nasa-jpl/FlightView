@@ -24,7 +24,6 @@ public:
     explicit fft_widget(frameWorker *fw, image_t image_type,QWidget *parent = 0);
     ~fft_widget();
 private:
-    void updateFFTData();
     void initQCPStuff();
 
 signals:

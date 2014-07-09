@@ -33,7 +33,6 @@ void histogram_widget::initQCPStuff()
         histo_bins[i]  = copy_bins[i];
     }
     double bar_width = copy_bins[3]-copy_bins[2]; //Probably not the best way to get the bar width, but w/e
-    histo_data = QVector<double>(histo_bins.size());
 
 
 
@@ -44,10 +43,9 @@ void histogram_widget::initQCPStuff()
     histogram->keyAxis()->setAutoTicks(true);
     //histogram->keyAxis()->setTickLabelType(QCPAxis::12);
     histogram->keyAxis()->setAutoTickCount(10);
-    histogram->keyAxis()->setRangeUpper(10);
+    //histogram->keyAxis()->setRangeUpper(10);
 
-    update_histo_data();
-    histogram->valueAxis()->setRange(QCPRange(0,dataMax));
+    histogram->valueAxis()->setRange(QCPRange(0,fw->histoDataMax));
 
     //qcp->xAxis->setTickVector(histo_bins);
     //histogram->keyAxis()->setSca
@@ -62,20 +60,7 @@ void histogram_widget::initQCPStuff()
     connect(histogram->valueAxis(),SIGNAL(rangeChanged(QCPRange)),this,SLOT(histogramScrolledY(QCPRange)));
 
 }
-void histogram_widget::update_histo_data()
-{
-    QMutexLocker ml(&maxMux);
-    dataMax = 0;
-    for(int i = 0; i < histo_data.size();i++)
-    {
-        histo_data[i] = (double)fw->getHistogramData()[i];
-        if(dataMax < histo_data[i])
-        {
-            dataMax = histo_data[i];
-        }
-    }
-    ml.unlock();
-}
+
 
 void histogram_widget::handleNewFrame()
 {
@@ -85,11 +70,11 @@ void histogram_widget::handleNewFrame()
     }
     if(fps%10==0 && !this->isHidden())
     {
-        update_histo_data();
 
-        histogram->setData(histo_bins,histo_data);
+        QMutexLocker ml(&fw->vector_mutex);
 
-
+        histogram->setData(histo_bins,fw->histo_data_vec);
+    ml.unlock();
 
         qcp->replot();
     }
@@ -100,10 +85,8 @@ void histogram_widget::histogramScrolledY(const QCPRange &newRange)
 {
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
-    QMutexLocker ml(&maxMux);
 
-    double upperRangeBound = dataMax*1.3;
-    ml.unlock();
+    double upperRangeBound = fw->histoDataMax*1.3;
 
     boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
 

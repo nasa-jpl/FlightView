@@ -92,31 +92,27 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
 
     //Save Buttons
 
-    save_frame_button.setText("Save Frame");
-    save_dark_button.setText("Save Dark");
+    save_finite_button.setText("Save Number of Frames");
 
-    save_frames_button.setText("Save Frames");
+    start_saving_frames_button.setText("Start Saving");
     stop_saving_frames_button.setText("Stop Saving");
-    frames_save_num_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
 
-/*
+    //save_button_group.addButton(&start_saving_frames_button);
+    //save_button_group.addButton(&stop_saving_frames_button);
+    //stop_saving_frames_button.setEnabled(false);
+    // save_button_group.setExclusive(true);
+    frames_save_num_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
+    frames_save_num_edit.setMinimum(1);
+    /*
     QGridLayout * save_layout = new QGridLayout();
     QGroupBox * single_save_box = new QGroupBox();
     QVBoxLayout * single_save_layout = new QVBoxLayout;
     */
 
 
-    single_save_layout.addWidget(new QLabel("Single Save"));
-    single_save_layout.addWidget(&save_frame_button);
-    single_save_layout.addWidget(&save_dark_button);
-
-    single_save_box.setLayout(&single_save_layout);
-
-
-    save_layout.addWidget(&single_save_box,1,1,3,1);
 
     //Column 2
-    save_layout.addWidget(&save_frames_button,1,2,1,1);
+    save_layout.addWidget(&start_saving_frames_button,1,2,1,1);
     save_layout.addWidget(new QLabel("Frames to save:"),2,2,1,1);
     save_layout.addWidget(new QLabel("Filename:"),3,2,1,1);
 
@@ -142,9 +138,15 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     connect(&floor_slider,SIGNAL(valueChanged(int)),&floor_edit,SLOT(setValue(int)));
 
     connect(&load_mask_from_file,SIGNAL(clicked()),this,SLOT(getMaskFile()));
-    connect(&save_frames_button,SIGNAL(clicked()),this,SLOT(save_button_slot()));
+    connect(&start_saving_frames_button,SIGNAL(clicked()),this,SLOT(save_button_slot()));
 
     connect(&low_increment_cbox,SIGNAL(toggled(bool)),this,SLOT(increment_slot(bool)));
+
+    connect(&save_finite_button,SIGNAL(clicked()),this,SLOT(save_finite_button_slot()));
+    connect(&start_saving_frames_button,SIGNAL(clicked()),this,SLOT(start_continous_button_slot()));
+    connect(&stop_saving_frames_button,SIGNAL(clicked()),this,SLOT(stop_continous_button_slot()));
+
+
 }
 void ControlsBox::getMaskFile()
 {
@@ -181,10 +183,34 @@ void ControlsBox::increment_slot(bool t)
     }
 }
 
-void ControlsBox::save_button_slot()
+void ControlsBox::save_continous_button_slot()
 {
-    emit startSaving(filename_edit.text().toLocal8Bit().data());
+    emit startSavingContinous(filename_edit.text().toLocal8Bit().data());
+    stop_saving_frames_button.setEnabled(true);
+
+    start_saving_frames_button.setEnabled(false);
+    save_finite_button.setEnabled(false);
+
 }
+void ControlsBox::stop_continous_button_slot()
+{
+    emit stopSaving();
+
+    stop_saving_frames_button.setEnabled(false);
+    start_saving_frames_button.setEnabled(true);
+    save_finite_button.setEnabled(true);
+}
+void ControlsBox::save_finite_button_slot()
+{
+    emit startSavingFinite(filename_edit.text().toLocal8Bit().data(),frames_save_num_edit.value());
+    stop_saving_frames_button.setEnabled(true);
+    start_saving_frames_button.setEnabled(false);
+    save_finite_button.setEnabled(false);
+
+
+
+}
+
 void ControlsBox::tabChangedSlot(int index)
 {
     frameview_widget * fvw = qobject_cast<frameview_widget*>(qtw->widget(index));

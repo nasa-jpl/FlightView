@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QThread>
+#include <QMutex>
 #include <QVector>
 #include "take_object.hpp"
 #include <boost/thread.hpp>
@@ -16,7 +17,6 @@ class frameWorker : public QObject
 public:
     explicit frameWorker(QObject *parent = 0);
     virtual ~frameWorker();
-
     uint16_t * getImagePtr();
     uint16_t * getRawPtr();
 
@@ -37,7 +37,10 @@ public:
 
     camera_t camera_type();
 
-    QVector<double> *histo_data;
+    double histoDataMax;
+
+    QMutex vector_mutex;
+    QVector<double> histo_data_vec;
     QVector<double> rfft_data_vec;
 signals:
     void newFrameAvailable();
@@ -63,7 +66,10 @@ private:
     take_object to;
 
     float * rfft_data;
+    uint32_t * histo_data;
     void updateFFTVector();
+    void updateHistogramVector();
+
 
 
 

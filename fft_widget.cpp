@@ -34,10 +34,7 @@ void fft_widget::initQCPStuff()
     qvbl.addWidget(&zero_const_box);
     this->setLayout(&qvbl);
 }
-void fft_widget::updateFFTData()
-{
 
-}
 
 void fft_widget::handleNewFrame()
 
@@ -48,12 +45,19 @@ void fft_widget::handleNewFrame()
     }
     if(fps%4==0 && !this->isHidden())
     {
+        QMutexLocker ml(&fw->vector_mutex);
+        //printf("const term in vec:%f\n",fw->rfft_data_vec[0]);
+
         if(zero_const_box.isChecked())
         {
             fw->rfft_data_vec[0]=0;
         }
+
         fft_bars->setData(freq_bins,fw->rfft_data_vec);
+        ml.unlock();
+
         fft_bars->rescaleAxes();
+
         qcp->replot();
     }
 }

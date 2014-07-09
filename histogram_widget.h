@@ -11,16 +11,13 @@
 class histogram_widget : public QWidget
 {
     Q_OBJECT
-    QMutex maxMux;
     QVBoxLayout qvbl;
     QCustomPlot * qcp;
     QCPBars *histogram;
     int frHeight;
     int frWidth;
     int fps;
-    double dataMax;
     QVector<double> histo_bins;
-    QVector<double> histo_data;
 
     frameWorker * fw;
 public:

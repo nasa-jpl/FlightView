@@ -77,7 +77,7 @@ void MainWindow::connectAndStartBackend()
     connect(fw,SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()), dsf_widget, SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()), std_dev_widget, SLOT(handleNewFrame()));
-    //connect(fw,SIGNAL(newFrameAvailable()),hist_widget,SLOT(handleNewFrame()));
+    connect(fw,SIGNAL(newFrameAvailable()),hist_widget,SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()),vert_widget,SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()),horiz_widget,SLOT(handleNewFrame()));
     connect(fw,SIGNAL(newFrameAvailable()),fft_mean_widget,SLOT(handleNewFrame()));
@@ -100,6 +100,8 @@ void MainWindow::connectAndStartBackend()
     connect(&controlbox->std_dev_N_slider,SIGNAL(valueChanged(int)),fw,SLOT(setStdDev_N(int)));
     connect(fw,SIGNAL(std_dev_ready()),this,SLOT(enableStdDevTabs()));
 
+    controlbox->fps_label.setText("Running");
+    controlbox->fps_label.setStyleSheet("{color: green;}");
     //start worker Thread
     workerThread->start();
 }

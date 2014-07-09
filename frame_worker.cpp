@@ -1,6 +1,7 @@
 #include "frame_worker.h"
 #include <QDebug>
 #include <QCoreApplication>
+#include <QMutexLocker>
 frameWorker::frameWorker(QObject *parent) :
     QObject(parent)
 {
@@ -17,17 +18,23 @@ void frameWorker::captureFrames()
     to.start();
     qDebug("starting capture");
     rfft_data_vec = QVector<double>(MEAN_BUFFER_LENGTH/2);
-    rfft_data = new float[MEAN_BUFFER_LENGTH/2]; //This seemingly should not need to exist
+    histo_data_vec = QVector<double>(NUMBER_OF_BINS);
+
+    rfft_data = new float[MEAN_BUFFER_LENGTH/2]; //This seemingly should not need to exist, the memory is allocated in the backend...
     while(1)
     {
-        //QCoreApplication::processEvents();
+        QCoreApplication::processEvents();
         //fr = to.getRawData(); //This now blocks
+
         to.waitRawPtr(); //Wait for new data to come in
+        QMutexLocker ml(&vector_mutex);
         updateFFTVector();
+        updateHistogramVector();
+        ml.unlock();
         emit newFrameAvailable(); //This onyl emits when there is a new frame
-        //if(to.std_dev_ready())
+        if(to.std_dev_ready())
         {
-         //   emit std_dev_ready();
+            emit std_dev_ready();
         }
     }
 }
@@ -141,9 +148,31 @@ void frameWorker::setStdDev_N(int newN)
 }
 void frameWorker::updateFFTVector() //This would make more sense in fft_widget, but it cannot run in the gui thread.
 {
+    double max = 0;
     rfft_data = to.getRealFFTMagnitude();
     for(unsigned int i = 0; i < MEAN_BUFFER_LENGTH/2; i++)
     {
         rfft_data_vec[i] =rfft_data[i];
+        if(i!=0 && rfft_data[i] > max)
+        {
+            max = rfft_data[i];
+        }
     }
+    //printf("%f max freq bins nonconst\n",max);
+    //printf("const term in arr:%f in vec:%f\n",rfft_data[0],rfft_data_vec[0]);
+
+}
+void frameWorker::updateHistogramVector()
+{
+    histo_data = to.getHistogramData();
+    histoDataMax = 0;
+    for(int i = 0; i < histo_data_vec.size();i++)
+    {
+        histo_data_vec[i] = (double)histo_data[i];
+        if(histoDataMax < histo_data_vec[i])
+        {
+            histoDataMax = histo_data_vec[i];
+        }
+    }
+    //printf("hist datamax %f\n",histoDataMax);
 }

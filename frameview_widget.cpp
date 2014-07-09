@@ -138,7 +138,6 @@ void frameview_widget::handleNewFrame()
         {
             float * local_image_ptr = fw->getDSF();
            // qDebug() << "dsf mask collected " << fw->dsfMaskCollected();
-            qDebug() << *(local_image_ptr+100);
             for(int col = 0; col < frWidth; col++)
             {
                 for(int row = 0; row < frHeight; row++)

@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QSpinBox>
 #include <QTabWidget>
+#include <QButtonGroup>
 #include "frameview_widget.h"
 #include <stdint.h>
 
@@ -32,8 +33,8 @@ public:
     QGridLayout collections_layout;
     QGridLayout sliders_layout;
     QGridLayout save_layout;
-    QGroupBox single_save_box;
-    QVBoxLayout single_save_layout;
+    QGroupBox save_continous_box;
+    QVBoxLayout save_continous_layout;
     QWidget CollectionButtonsBox;
     QWidget ThresholdingSlidersBox;
     QWidget SaveButtonsBox;
@@ -57,10 +58,8 @@ public:
     QSpinBox ceiling_edit;
     QSpinBox floor_edit;
 
-    QPushButton save_frame_button;
-    QPushButton save_dark_button;
-
-    QPushButton save_frames_button;
+    QPushButton save_finite_button;
+    QPushButton start_saving_frames_button;
     QPushButton stop_saving_frames_button;
     QSpinBox frames_save_num_edit;
     QLineEdit filename_edit;
@@ -72,10 +71,16 @@ private:
 
 signals:
     void mask_selected(const char * file_name);
-    void startSaving(const char * fname);
+    void startSavingContinous(const char * fname);
+    void startSavingFinite(const char * fname,unsigned int length);
+
+    void stopSaving();
 public slots:
     void getMaskFile();
-    void save_button_slot();
+    void save_continous_button_slot();
+    void stop_continous_button_slot();
+    void save_finite_button_slot();
+
     void tabChangedSlot(int index);
     void increment_slot(bool t);
 
