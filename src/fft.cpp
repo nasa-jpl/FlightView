@@ -53,13 +53,19 @@ void fft::bitReverseOrder(std::complex<float> * arr, unsigned int len) //Overloa
 float * fft::doRealFFT(float * real_arr, unsigned int len, unsigned int ring_head)
 {
 	CFFT  =  doFFT(real_arr,  len,  ring_head);
-
+	double max = 0;
 
 	//realFFT[len/2] = (float) std::real(CFFT[len/2]);
 	for(unsigned int i = 0; i < len/2; i++)
 	{
 		realFFT[i] = std::abs(CFFT[i]);
+		if(realFFT[i] > max && i !=0)
+		{
+			max = realFFT[i];
+		}
 	}
+	//printf("max nonconst in fft:%f\n",max);
+
 
 	return realFFT;
 }

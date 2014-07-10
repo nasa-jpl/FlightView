@@ -155,11 +155,13 @@ void simple_sensor_grab()
 	take_object to;
 	to.start();
 	cout << "ruunning to" << std::endl;
+	long u = 0;
 	while(1)
 	{
 		usleep(1000);
 		to.waitRawPtr();
-		cout << " got raw ptw" << endl;
+		if(++u%100 == 0)
+			cout << " got raw ptw" << endl;
 	}
 }
 void fft_test()
@@ -179,8 +181,8 @@ void fft_test()
 int main()
 {
 	//fft_test();
-	sensor_grab_test();
-	//simple_sensor_grab();
+	//sensor_grab_test();
+	simple_sensor_grab();
 	//std_dev_test();
 	return 0;
 }

@@ -12,8 +12,9 @@
 #include "edtinc.h"
 #include "cuda.h"
 #include "cuda_runtime.h"
+#include "cuda_utils.cuh"
 #define BLOCK_SIDE 20
-#define DSF_DEVICE_NUM 4
+static const int DSF_DEVICE_NUM=(3 % getDeviceCount());
 
 class dark_subtraction_filter
 {

@@ -108,7 +108,7 @@ public:
 
 	float * getHorizontalMean();
 	float * getVerticalMean();
-	float * getRealFFTSquared();
+	float * getRealFFTMagnitude();
 	bool std_dev_ready();
 
 	void startCapturingDSFMask();

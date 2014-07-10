@@ -10,7 +10,9 @@
 #include "edtinc.h"
 #include <stdint.h>
 #include <cuda_runtime_api.h>
+#include "cuda_utils.cuh"
 
+static const int CTF_DEVICE_NUM = (2 % getDeviceCount());
 class chroma_translate_filter
 {
 public:

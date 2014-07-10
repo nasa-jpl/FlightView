@@ -34,6 +34,7 @@ take_object::~take_object()
 	int dummy;
 	pdv_thread_run = 0;
 	pdv_thread.join(); //Wait for thread to end
+	save_thread.join();
 	pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
 	pdv_close(pdv_p);
 }
@@ -75,7 +76,9 @@ void take_object::start()
 
 	vertical_mean_buffer = new float[frHeight];
 	horizontal_mean_buffer = new float[frWidth];
-	fftReal_mean_data = new float[MEAN_BUFFER_LENGTH];
+	fftReal_mean_data = new float[MEAN_BUFFER_LENGTH/2];
+	fftReal_mean_buffer = new float[MEAN_BUFFER_LENGTH/2];
+
 	dark_subtraction_data = new float[frWidth*frHeight];
 	dark_subtraction_buffer = new float[frWidth*frHeight];
 	std_dev_buffer = new float[frWidth*frHeight];
@@ -96,7 +99,7 @@ void take_object::start()
 	mf = new mean_filter(frWidth,frHeight);
 	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 	pdv_thread = boost::thread(&take_object::pdv_init, this);
-	save_thread = boost::thread(&take_object::savingLoop, this);
+	//save_thread = boost::thread(&take_object::savingLoop, this);
 
 }
 void take_object::pdv_init()
@@ -255,10 +258,10 @@ float* take_object::getVerticalMean()
 
 	return vertical_mean_buffer;
 }
-float* take_object::getRealFFTSquared()
+float* take_object::getRealFFTMagnitude()
 {
 	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	memcpy(fftReal_mean_buffer,fftReal_mean_data,512*sizeof(float));
+	memcpy(fftReal_mean_buffer,fftReal_mean_data,MEAN_BUFFER_LENGTH/2*sizeof(float));
 
 	return fftReal_mean_buffer;
 }

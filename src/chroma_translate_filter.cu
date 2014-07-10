@@ -10,7 +10,6 @@
 #define HEIGHT 480
 #define BLOCK_SIDE 20
 #define PIC_SIZE WIDTH*HEIGHT*2
-#define CTF_DEVICE_NUM 2
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
 
 __global__ void chroma_filter_kernel(uint16_t * pic_d, uint16_t * pic_out_d)

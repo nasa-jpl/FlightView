@@ -15,7 +15,9 @@
 #include "edtinc.h"
 #include "cuda.h"
 #include "cuda_runtime.h"
-static const int STD_DEV_DEVICE_NUM = 5;
+#include "cuda_utils.cuh"
+
+static const int STD_DEV_DEVICE_NUM = (1 % getDeviceCount());
 static const int MAX_N = 1000;
 static const int BLOCK_SIDE = 20;
 static const bool DEBUG = false;
