@@ -19,38 +19,47 @@ void frameWorker::captureFrames()
     qDebug("starting capture");
     rfft_data_vec = QVector<double>(MEAN_BUFFER_LENGTH/2);
     histo_data_vec = QVector<double>(NUMBER_OF_BINS);
-    to.waitRawPtr(); //Wait for new data to come in
+    to.waitForReadLock(); //Wait for new data to come in
     frHeight = to.getFrameHeight();
     frWidth = to.getFrameWidth();
     dataHeight = to.getDataHeight();
+    to.releaseReadLock();
 
-    raw_data = new float[frWidth*dataHeight];
-    image_data = new float[frWidth*frHeight];
+    raw_data = new uint16_t[frWidth*dataHeight];
+    image_data = new uint16_t[frWidth*frHeight];
     rfft_data = new float[MEAN_BUFFER_LENGTH/2]; //This seemingly should not need to exist, the memory is allocated in the backend...
     while(1)
     {
         QCoreApplication::processEvents();
         //fr = to.getRawData(); //This now blocks
 
-        to.waitForLock(); //Wait for new data to come in
-        QMutexLocker ml(&vector_mutex);
-        updateFFTVector();
-        updateHistogramVector();
-        memcpy(raw_data,to.getRawPtr(),dataHeight*frWidth*sizeof(uint16_t));
-        memcpy(image_data,to.getImagePtr(),frHeight*frWidth*sizeof(uint16_t));
-
-        ml.unlock();
-        to.releaseLock();
-        emit newFrameAvailable(); //This onyl emits when there is a new frame
-        if(to.std_dev_ready())
+        if(to.frame_list.size() > 3)
         {
-            emit std_dev_ready();
-        }
+            if(curFrame != NULL)
+            {
+                delete curFrame; //This is how we're goign to garbage collect all the old frames
+            }
+            curFrame = to.frame_list.pop_back();
 
-        if(old_save_framenum != to.save_framenum)
-        {
-            old_save_framenum = to.save_framenum;
-            emit savingFrameNumChanged(to.save_framenum);
+            QMutexLocker ml(&vector_mutex);
+            updateFFTVector();
+            updateHistogramVector();
+            memcpy(raw_data,to.getRawPtr(),dataHeight*frWidth*sizeof(uint16_t));
+            memcpy(image_data,to.getImagePtr(),frHeight*frWidth*sizeof(uint16_t));
+
+            ml.unlock();
+            to.releaseReadLock();
+            emit newFrameAvailable(); //This onyl emits when there is a new frame
+            if(to.std_dev_ready())
+            {
+                emit std_dev_ready();
+            }
+
+            if(old_save_framenum != to.save_framenum)
+            {
+                old_save_framenum = to.save_framenum;
+                emit savingFrameNumChanged(to.save_framenum);
+            }
         }
     }
 }
@@ -61,12 +70,12 @@ unsigned int frameWorker::getFrameHeight()
 
 unsigned int frameWorker::getFrameWidth()
 {
-
+    return frWidth;
 }
 
 unsigned int frameWorker::getDataHeight()
 {
-
+    return dataHeight;
 }
 
 void frameWorker::startCapturingDSFMask()
@@ -85,51 +94,40 @@ void frameWorker::finishCapturingDSFMask()
 uint16_t * frameWorker::getImagePtr()
 {
     //return NULL;
-    return to.getImagePtr();
+    return image_data;
 }
 uint16_t * frameWorker::getRawPtr()
 {
     //return NULL;
-    return to.getRawPtr();
+    return raw_data;
 }
 
-unsigned int frameWorker::getFrameHeight()
-{
-    return to.frHeight;
-}
-unsigned int frameWorker::getDataHeight()
-{
-    return to.dataHeight;
-}
 
-unsigned int frameWorker::getFrameWidth()
-{
-    return to.frWidth;
-}
 float * frameWorker::getDSF()
 {
-    return to.getDarkSubtractedData();
+    return dsf_data;
 }
 
 float * frameWorker::getStdDevData()
 {
-    return to.getStdDevData();
+    return std_dev_data;
 }
 uint32_t * frameWorker::getHistogramData()
 {
-    return to.getHistogramData();
+    return histogram_data;
 }
 std::vector<float> *frameWorker::getHistogramBins()
 {
-    return to.getHistogramBins();
+    return NULL;
+    //return histogram_bins;
 }
 float * frameWorker::getHorizontalMean()
 {
-    return to.getHorizontalMean();
+    return horiz_mean;
 }
 float * frameWorker::getVerticalMean()
 {
-    return to.getVerticalMean();
+    return vert_mean;
 }
 
 void frameWorker::loadDSFMask(QString file_name)

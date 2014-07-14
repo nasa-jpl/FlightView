@@ -17,17 +17,9 @@ class frameWorker : public QObject
 public:
     explicit frameWorker(QObject *parent = 0);
     virtual ~frameWorker();
-    uint16_t * getImagePtr();
-    uint16_t * getRawPtr();
 
-    float * getDSF();
-    float * getStdDevData();
+    frame_c * curFrame = NULL;
 
-    float * getVerticalMean();
-    float * getHorizontalMean();
-    float * getRealFFTSquared();
-
-    uint32_t * getHistogramData();
     std::vector<float> *getHistogramBins();
     unsigned int getFrameHeight();
     unsigned int getDataHeight();
@@ -59,9 +51,7 @@ public slots:
 
 
     void setStdDev_N(int newN);
-    unsigned int getFrameHeight();
-    unsigned int getFrameWidth();
-    unsigned int getDataHeight();
+
 private:
     take_object to;
 
@@ -74,11 +64,8 @@ private:
     unsigned int frWidth;
     unsigned int dataHeight;
 
-    float * raw_data;
-    float * image_data;
-    float * dsf_data;
-    float * std_dev_data;
-
+;
+    float * histogram_bins;
 
 
 };
