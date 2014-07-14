@@ -47,14 +47,6 @@ class take_object {
 	float * vertical_mean_data;
 	float * fftReal_mean_data;
 
-	uint16_t * raw_data_buffer;
-	uint16_t * image_data_buffer;
-	float * std_dev_buffer;
-	float * dark_subtraction_buffer;
-	uint32_t * std_dev_histogram_buffer;
-	float * horizontal_mean_buffer;
-	float * vertical_mean_buffer;
-	float * fftReal_mean_buffer;
 
 
 
@@ -83,20 +75,24 @@ class take_object {
 	FILE * raw_save_file;
 
 	u_char * dumb_ptr;
-
+	unsigned int dataHeight;
+	unsigned int frHeight;
+	unsigned int frWidth;
 public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_rate = 10);
 	virtual ~take_object();
 	void start();
 	uint16_t * getImagePtr();
 	uint16_t * getRawPtr();
-	uint16_t * waitRawPtr();
+	void waitForReadLock();
+	void releaseReadLock();
 
-	boost::shared_mutex data_mutex;
+	unsigned int getDataHeight();
+	unsigned int getFrameHeight();
+	unsigned int getFrameWidth();
+	boost::mutex data_mutex;
+	boost::unique_lock<boost::mutex> * read_lock;
 
-	unsigned int dataHeight;
-	unsigned int frHeight;
-	unsigned int frWidth;
 
 	bool dsfMaskCollected;
 	float * getStdDevData();

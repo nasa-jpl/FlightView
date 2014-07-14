@@ -76,18 +76,11 @@ void take_object::start()
 	printf("cam type: %u. Width: %u Height %u frame height %u \n", cam_type, frWidth, dataHeight, frHeight);
 
 	raw_data_ptr = new uint16_t[frWidth*dataHeight];
-	raw_data_buffer = new uint16_t[frWidth*dataHeight];
-	image_data_buffer = new uint16_t[frWidth*frHeight];
 
-	vertical_mean_buffer = new float[frHeight];
-	horizontal_mean_buffer = new float[frWidth];
 	fftReal_mean_data = new float[MEAN_BUFFER_LENGTH/2];
-	fftReal_mean_buffer = new float[MEAN_BUFFER_LENGTH/2];
 
 	dark_subtraction_data = new float[frWidth*frHeight];
-	dark_subtraction_buffer = new float[frWidth*frHeight];
-	std_dev_buffer = new float[frWidth*frHeight];
-	std_dev_histogram_buffer = new uint32_t[NUMBER_OF_BINS];
+	read_lock = new boost::unique_lock<boost::mutex>(data_mutex,boost::defer_lock);
 
 	//this->dark_subtraction_data = boost::shared_array < float >(new float[frWidth*frHeight]);
 	//this->std_dev_data = boost::shared_array < float >(new float[frWidth*frHeight]);
@@ -119,18 +112,13 @@ void take_object::pdv_loop()
 
 	while(pdv_thread_run == 1)
 	{
-		//new_image_address = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)); //We're never going to deal with u_char *, ever again.
+		//printf("pdv thread\n");
 		memcpy(raw_data_ptr,pdv_wait_image(pdv_p),frWidth*dataHeight*sizeof(uint16_t));
 		//raw_data_ptr = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p));
-		boost::unique_lock<boost::shared_mutex> exclusive_lock(data_mutex);
+		boost::unique_lock<boost::mutex> exclusive_lock(data_mutex);
 		if(cam_type == CL_6604B)
 		{
-			//printf("dumb ptr @ 100,100, %u\n",dumb_ptr[(frHeight-100)*frWidth + 100] | (dumb_ptr[(frHeight-101)*frWidth + 101] << 8));
-
-			//printf("rdp b4 remap @ 100,100, %u\n",raw_data_ptr[(frHeight-100)*frWidth + 100]);
-
 			raw_data_ptr = ctf.apply_chroma_translate_filter(raw_data_ptr);
-			//printf("rdp @ 100,100, %u\n",raw_data_ptr[(frHeight-100)*frWidth + 100]);
 
 			image_data_ptr = raw_data_ptr;
 		}
@@ -183,6 +171,10 @@ void take_object::pdv_loop()
 			}
 		}
 		last_framecount = framecount;
+		//while(newFrameAvailable)
+		{
+			; //do nothing
+		}
 	}
 }
 void take_object::savingLoop()
@@ -199,7 +191,7 @@ void take_object::savingLoop()
 		if(raw_save_file != NULL) //Apparently this returns false if null, true otherwise
 		{
 			//boost::unique_lock<boost::mutex> lock(saving_mutex); //Lock for writing
-			boost::shared_lock<boost::shared_mutex> lock(data_mutex);
+			//boost::shared_lock<boost::shared_mutex> lock(data_mutex);
 			if(frWidth*dataHeight != fwrite(raw_save_ptr, sizeof(uint16_t), frWidth*dataHeight, raw_save_file))
 			{
 				printf("Writing raw has an error.\n");
@@ -207,7 +199,7 @@ void take_object::savingLoop()
 			//old_raw_save_ptr = raw_save_ptr; //Hoping this is an atomic operations
 			saveFrameAvailable = false;
 			save_framenum--;
-			lock.unlock();
+			//lock.unlock();
 			if(save_framenum == 0)
 			{
 				stopSavingRaws();
@@ -236,75 +228,124 @@ void take_object::doSave()
 }
 uint16_t * take_object::getImagePtr()
 {
-	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
+	while(!read_lock->owns_lock())
+	{
+		; //DO NOTHING IF NOT LOCKED!
+	}
 	return image_data_ptr;
 
 }
 uint16_t * take_object::getRawPtr()
 {
-	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	//return raw_data_buffer;
+	while(!read_lock->owns_lock())
+	{
+		; //DO NOTHING IF NOT LOCKED!
+	}
 	return raw_data_ptr;
 }
 
-uint16_t * take_object::waitRawPtr()
+void take_object::waitForReadLock()
 {
 	//boost::unique_lock< boost::shared_mutex > wait_for_new_write_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	while(!newFrameAvailable)
+	//printf("wait thread\n");
+
+	while(1) //No matter if we have the lock or not, spin.
 	{
 		usleep(500);
 		//printf("new frame unavailable");
+		if(newFrameAvailable)
+		{
+			if(!read_lock->owns_lock())
+			{
+				read_lock->try_lock(); //Spin until we have the lock
+				if(read_lock->owns_lock())
+				{
+					newFrameAvailable = false;
+					//printf("nfa\n");
+					break;
+				}
+			}
+		}
+
+
 	}
-	memcpy(raw_data_buffer,raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
-	memcpy(image_data_buffer,image_data_ptr,frWidth*frHeight*sizeof(uint16_t));
-	newFrameAvailable = false;
-
-	return raw_data_buffer;
-
+}
+void take_object::releaseReadLock()
+{
+	read_lock->unlock();
+}
+unsigned int take_object::getFrameHeight()
+{
+	while(!read_lock->owns_lock())
+	{
+		; //DO NOTHING IF NOT LOCKED!
+	}
+	return frHeight;
+}
+unsigned int take_object::getFrameWidth()
+{
+	while(!read_lock->owns_lock())
+	{
+		; //DO NOTHING IF NOT LOCKED!
+	}
+	return frWidth;
+}
+unsigned int take_object::getDataHeight()
+{
+	while(!read_lock->owns_lock())
+	{
+		; //DO NOTHING IF NOT LOCKED!
+	}
+	return dataHeight;
 }
 float *  take_object::getStdDevData()
 {
-	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	memcpy(std_dev_buffer,std_dev_data,frWidth*frHeight*sizeof(float));
-
-	return std_dev_buffer;
+	while(!read_lock->owns_lock())
+	{
+		; //DO NOTHING IF NOT LOCKED!
+	}
+	return std_dev_data;
 }
 float * take_object::getDarkSubtractedData()
 {
-	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	memcpy(dark_subtraction_buffer,dark_subtraction_data,frWidth*frHeight*sizeof(float));
-
-	return dark_subtraction_buffer;
-	//return dsf->wait_dark_subtraction();
+	while(!read_lock->owns_lock())
+	{
+		; //DO NOTHING IF NOT LOCKED!
+	}
+	return dark_subtraction_data;
 }
 
 float* take_object::getHorizontalMean()
 {
-	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	memcpy(horizontal_mean_buffer,horizontal_mean_data,frWidth*sizeof(float));
-
-	return horizontal_mean_buffer;
+	while(!read_lock->owns_lock())
+	{
+		; //DO NOTHING IF NOT LOCKED!
+	}
+	return horizontal_mean_data;
 }
 float* take_object::getVerticalMean()
 {
-	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	memcpy(vertical_mean_buffer,vertical_mean_data,frHeight*sizeof(float));
-
-	return vertical_mean_buffer;
+	while(!read_lock->owns_lock())
+	{
+		; //DO NOTHING IF NOT LOCKED!
+	}
+	return vertical_mean_data;
 }
 float* take_object::getRealFFTMagnitude()
 {
-	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	memcpy(fftReal_mean_buffer,fftReal_mean_data,MEAN_BUFFER_LENGTH/2*sizeof(float));
-
-	return fftReal_mean_buffer;
+	while(!read_lock->owns_lock())
+	{
+		; //DO NOTHING IF NOT LOCKED!
+	}
+	return fftReal_mean_data;
 }
 uint32_t * take_object::getHistogramData()
 {
-	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	memcpy(std_dev_histogram_buffer,std_dev_histogram_data,NUMBER_OF_BINS*sizeof(uint32_t));
-
-	return std_dev_histogram_buffer;
+	while(!read_lock->owns_lock())
+	{
+		; //DO NOTHING IF NOT LOCKED!
+	}
+	return std_dev_histogram_data;
 }
 void take_object::startCapturingDSFMask()
 {

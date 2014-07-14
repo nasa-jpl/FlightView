@@ -121,12 +121,12 @@ void sensor_grab_test()
 	to.startCapturingDSFMask();
 	while(1)
 	{
-		to.waitRawPtr();
+		//to.waitRawPtr();
 		if(i%(samples/10) == 0 && i != samples)
 		{
 			//std::cout << frame->image_data_ptr[read_addr] << std::endl;
 			std::cout<< ", masked is: " << fixed << setprecision(3) << to.getDarkSubtractedData()[read_addr] << std::endl;
-			printf("horiz_mean %f\n",to.getHorizontalMean()[to.frWidth-1]);
+			//printf("horiz_mean %f\n",to.getHorizontalMean()[to.frWidth-1]);
 			//std::cout << to.getRawPtr()[read_addr] << std::endl;
 			if(i>samples)
 			{
@@ -157,14 +157,12 @@ void simple_sensor_grab()
 	while(1)
 	{
 		usleep(500);
-		to.waitRawPtr();
+		to.waitForReadLock();
 		if(++u%100 == 0)
 			cout << " got raw ptw" << endl;
-		if(u==100)
-		{
-			to.startSavingRaws(std::string("/mnt/nfs/maxwell/NGIS_DATA/noah_recording_test/one_hundred_thousand_att3.raw"),100000);
-		}
-		printf("svfn %u\n",to.save_framenum);
+
+		to.releaseReadLock();
+
 	}
 }
 void fft_test()
