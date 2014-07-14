@@ -41,6 +41,7 @@ void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewF
 {
 
     frHeight = fw->getFrameHeight();
+    qDebug() << "fw frame height " << fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
 
@@ -66,7 +67,9 @@ void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewF
     colorScale->setType(QCPAxis::atRight);
 
     colorMap->setColorScale(colorScale);
-    colorMap->data()->setValueRange(QCPRange(0,frHeight));
+    //colorMap->data()->setValueRange(QCPRange(0,frHeight));
+    colorMap->data()->setValueRange(QCPRange(frHeight,0));
+
     colorMap->data()->setKeyRange(QCPRange(0,frWidth));
     //colorScale->axis()->setLabel("kabel");
     //QCPRange * drange = new QCPRange(0.0d,10000.0d);
@@ -129,6 +132,10 @@ void frameview_widget::handleNewFrame()
             {
                 for(int row = 0; row < frHeight; row++)
                 {
+                    if(row == 100 && col == 100)
+                    {
+                        qDebug() << "frVal @ 100,100" << local_image_ptr[(frHeight-row)*frWidth + col];
+                    }
                     colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
                 }
             }

@@ -42,26 +42,26 @@ public:
     QMutex vector_mutex;
     QVector<double> histo_data_vec;
     QVector<double> rfft_data_vec;
+
+    unsigned int old_save_framenum;
 signals:
     void newFrameAvailable();
     void std_dev_ready();
+    void savingFrameNumChanged(unsigned int n);
 public slots:
     void captureFrames();
     void startCapturingDSFMask();
     void finishCapturingDSFMask();
-    void loadDSFMask(const char *);
+    void loadDSFMask(QString);
 
-    void startSavingRawData(const char *name);
+    void startSavingRawData(unsigned int framenum,QString name);
     void stopSavingRawData();
 
-    void startSavingDSFData(const char *name);
-    void stopSavingDSFData();
-
-    void startSavingStd_DevData(const char *name);
-    void stopSavingStd_DevData();
 
     void setStdDev_N(int newN);
-
+    unsigned int getFrameHeight();
+    unsigned int getFrameWidth();
+    unsigned int getDataHeight();
 private:
     take_object to;
 
@@ -70,7 +70,14 @@ private:
     void updateFFTVector();
     void updateHistogramVector();
 
+    unsigned int frHeight;
+    unsigned int frWidth;
+    unsigned int dataHeight;
 
+    float * raw_data;
+    float * image_data;
+    float * dsf_data;
+    float * std_dev_data;
 
 
 

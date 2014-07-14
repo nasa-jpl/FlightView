@@ -119,8 +119,8 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     //Column 2
     //save_layout.addWidget(&start_saving_frames_button,1,2,1,1);
     save_layout.addWidget(&save_finite_button,1,2,1,1);
-    save_layout.addWidget(&frames_save_num_edit,2,2,1,1);
-    save_layout.addWidget(&filename_edit,3,2,1,1);
+    save_layout.addWidget(&frames_save_num_edit,2,2,1,2);
+    save_layout.addWidget(&filename_edit,3,2,1,2);
     //Column 3
     save_layout.addWidget(&stop_saving_frames_button,1,3,1,1);
 
@@ -205,6 +205,7 @@ void ControlsBox::save_continous_button_slot()
 
     start_saving_frames_button.setEnabled(false);
     save_finite_button.setEnabled(false);
+    frames_save_num_edit.setEnabled(false);
     QString label = QString("Recording raws to %1").arg(filename_edit.text());
     fps_label.setText(label);
 
@@ -216,13 +217,34 @@ void ControlsBox::stop_continous_button_slot()
     stop_saving_frames_button.setEnabled(false);
     start_saving_frames_button.setEnabled(true);
     save_finite_button.setEnabled(true);
+    frames_save_num_edit.setEnabled(true);
+    fps_label.setText("Running");
+
 }
+void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
+{
+
+    if(n == 0)
+    {
+        stop_saving_frames_button.setEnabled(false);
+        start_saving_frames_button.setEnabled(true);
+        save_finite_button.setEnabled(true);
+        frames_save_num_edit.setEnabled(true);
+        fps_label.setText("Running");
+    }
+    frames_save_num_edit.setValue(n);
+}
+
 void ControlsBox::save_finite_button_slot()
 {
-    emit startSavingFinite(filename_edit.text().toLocal8Bit().data(),frames_save_num_edit.value());
+    qDebug() << "fname: " << filename_edit.text();
+    emit startSavingFinite(frames_save_num_edit.value(),filename_edit.text());
     stop_saving_frames_button.setEnabled(true);
     start_saving_frames_button.setEnabled(false);
     save_finite_button.setEnabled(false);
+    frames_save_num_edit.setEnabled(false);
+    QString label = QString("Recording raws to %1").arg(filename_edit.text());
+    fps_label.setText(label);
 
 
 

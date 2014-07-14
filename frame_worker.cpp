@@ -19,25 +19,56 @@ void frameWorker::captureFrames()
     qDebug("starting capture");
     rfft_data_vec = QVector<double>(MEAN_BUFFER_LENGTH/2);
     histo_data_vec = QVector<double>(NUMBER_OF_BINS);
+    to.waitRawPtr(); //Wait for new data to come in
+    frHeight = to.getFrameHeight();
+    frWidth = to.getFrameWidth();
+    dataHeight = to.getDataHeight();
 
+    raw_data = new float[frWidth*dataHeight];
+    image_data = new float[frWidth*frHeight];
     rfft_data = new float[MEAN_BUFFER_LENGTH/2]; //This seemingly should not need to exist, the memory is allocated in the backend...
     while(1)
     {
         QCoreApplication::processEvents();
         //fr = to.getRawData(); //This now blocks
 
-        to.waitRawPtr(); //Wait for new data to come in
+        to.waitForLock(); //Wait for new data to come in
         QMutexLocker ml(&vector_mutex);
         updateFFTVector();
         updateHistogramVector();
+        memcpy(raw_data,to.getRawPtr(),dataHeight*frWidth*sizeof(uint16_t));
+        memcpy(image_data,to.getImagePtr(),frHeight*frWidth*sizeof(uint16_t));
+
         ml.unlock();
+        to.releaseLock();
         emit newFrameAvailable(); //This onyl emits when there is a new frame
         if(to.std_dev_ready())
         {
             emit std_dev_ready();
         }
+
+        if(old_save_framenum != to.save_framenum)
+        {
+            old_save_framenum = to.save_framenum;
+            emit savingFrameNumChanged(to.save_framenum);
+        }
     }
 }
+unsigned int frameWorker::getFrameHeight()
+{
+    return frHeight;
+}
+
+unsigned int frameWorker::getFrameWidth()
+{
+
+}
+
+unsigned int frameWorker::getDataHeight()
+{
+
+}
+
 void frameWorker::startCapturingDSFMask()
 {
     qDebug() << "calling to start DSF cap";
@@ -101,38 +132,24 @@ float * frameWorker::getVerticalMean()
     return to.getVerticalMean();
 }
 
-void frameWorker::loadDSFMask(const char * file_name)
+void frameWorker::loadDSFMask(QString file_name)
 {
-    to.loadDSFMask(file_name);
+    to.loadDSFMask(file_name.toUtf8().constData());
 }
 
 
-void frameWorker::startSavingRawData(const char * name)
+void frameWorker::startSavingRawData(unsigned int framenum, QString name)
 {
-    qDebug() << "inside frame worker ssr!";
-    to.startSavingRaws(name);
+    qDebug() << "Start Saving! @" << name;
+
+    to.startSavingRaws(name.toUtf8().constData(),framenum);
 }
 
 void frameWorker::stopSavingRawData()
 {
     to.stopSavingRaws();
 }
-void frameWorker::startSavingDSFData(const char * name)
-{
 
-}
-void frameWorker::stopSavingDSFData()
-{
-
-}
-void frameWorker::startSavingStd_DevData(const char * name)
-{
-
-}
-void frameWorker::stopSavingStd_DevData()
-{
-
-}
 bool frameWorker::dsfMaskCollected()
 {
     return to.dsfMaskCollected;

@@ -75,12 +75,12 @@ void MainWindow::connectAndStartBackend()
     connect(workerThread,SIGNAL(started()), fw, SLOT(captureFrames()));
 
     connect(fw,SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
-    connect(fw,SIGNAL(newFrameAvailable()), dsf_widget, SLOT(handleNewFrame()));
-    connect(fw,SIGNAL(newFrameAvailable()), std_dev_widget, SLOT(handleNewFrame()));
-    connect(fw,SIGNAL(newFrameAvailable()),hist_widget,SLOT(handleNewFrame()));
-    connect(fw,SIGNAL(newFrameAvailable()),vert_widget,SLOT(handleNewFrame()));
-    connect(fw,SIGNAL(newFrameAvailable()),horiz_widget,SLOT(handleNewFrame()));
-    connect(fw,SIGNAL(newFrameAvailable()),fft_mean_widget,SLOT(handleNewFrame()));
+    //connect(fw,SIGNAL(newFrameAvailable()), dsf_widget, SLOT(handleNewFrame()));
+    //connect(fw,SIGNAL(newFrameAvailable()), std_dev_widget, SLOT(handleNewFrame()));
+    //connect(fw,SIGNAL(newFrameAvailable()),hist_widget,SLOT(handleNewFrame()));
+    //connect(fw,SIGNAL(newFrameAvailable()),vert_widget,SLOT(handleNewFrame()));
+    //connect(fw,SIGNAL(newFrameAvailable()),horiz_widget,SLOT(handleNewFrame()));
+    //connect(fw,SIGNAL(newFrameAvailable()),fft_mean_widget,SLOT(handleNewFrame()));
 
 
 
@@ -89,17 +89,14 @@ void MainWindow::connectAndStartBackend()
     connect(controlbox,SIGNAL(mask_selected(const char *)),fw,SLOT(loadDSFMask(const char *)));
 
 
-
-
-    //connect(controlbox->save_frames_button,SIGNAL(clicked()),fw,SLOT(startSavingRawData(const char*)));
-    //connect(controlbox->save_frames_button,SIGNAL(clicked()),fw,SLOT(startSavingDSFData(const char*)));
-    //connect(controlbox->save_frames_button,SIGNAL(clicked()),fw,SLOT(startSavingSTD_DEVData(const char*)));
-    connect(controlbox, SIGNAL(startSaving(const char*)),fw,SLOT(startSavingRawData(const char*)));
-    connect(&controlbox->stop_saving_frames_button,SIGNAL(clicked()),fw,SLOT(stopSavingRawData()));
+    connect(controlbox,SIGNAL(startSavingFinite(unsigned int,QString)),fw,SLOT(startSavingRawData(unsigned int,QString)));
+    connect(controlbox,SIGNAL(stopSaving()),fw,SLOT(stopSavingRawData()));
 
     connect(&controlbox->std_dev_N_slider,SIGNAL(valueChanged(int)),fw,SLOT(setStdDev_N(int)));
     connect(fw,SIGNAL(std_dev_ready()),this,SLOT(enableStdDevTabs()));
 
+    connect(fw,SIGNAL(savingFrameNumChanged(unsigned int)),controlbox,SLOT(updateSaveFrameNum_slot(unsigned int)));
+    //connect(fw,SIGNAL(savingFrameNumChanged(uint)),&controlbox,SLOT(updateSaveFrameNum_slot(uint)));
     controlbox->fps_label.setText("Running");
     controlbox->fps_label.setStyleSheet("{color: green;}");
     //start worker Thread

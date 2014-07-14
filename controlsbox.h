@@ -74,7 +74,7 @@ private:
 signals:
     void mask_selected(const char * file_name);
     void startSavingContinous(const char * fname);
-    void startSavingFinite(const char * fname,unsigned int length);
+    void startSavingFinite(unsigned int length, QString fname);
 
     void stopSaving();
 public slots:
@@ -86,6 +86,7 @@ public slots:
     void tabChangedSlot(int index);
     void increment_slot(bool t);
     void showSaveDialog();
+    void updateSaveFrameNum_slot(unsigned int n);
 
 
 };
