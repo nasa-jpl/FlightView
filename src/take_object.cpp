@@ -113,9 +113,10 @@ void take_object::pdv_loop()
 	while(pdv_thread_run == 1)
 	{
 		//printf("pdv thread\n");
-		memcpy(raw_data_ptr,pdv_wait_image(pdv_p),frWidth*dataHeight*sizeof(uint16_t));
 		//raw_data_ptr = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p));
 		boost::unique_lock<boost::mutex> exclusive_lock(data_mutex);
+		memcpy(raw_data_ptr,pdv_wait_image(pdv_p),frWidth*dataHeight*sizeof(uint16_t));
+
 		if(cam_type == CL_6604B)
 		{
 			raw_data_ptr = ctf.apply_chroma_translate_filter(raw_data_ptr);

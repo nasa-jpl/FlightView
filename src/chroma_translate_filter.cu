@@ -48,7 +48,7 @@ chroma_translate_filter::chroma_translate_filter()
 	HANDLE_ERROR(cudaSetDevice(CTF_DEVICE_NUM));
 
 
-	picture_out = (uint16_t * )malloc(PIC_SIZE); //Create buffer for CPU memory output
+	picture_out = new uint16_t[PIC_SIZE]; //Create buffer for CPU memory output
 
 	HANDLE_ERROR(cudaMalloc( (void **)&picture_device, PIC_SIZE));
 	HANDLE_ERROR(cudaMalloc( (void **)&pic_out_d, PIC_SIZE));
@@ -61,7 +61,7 @@ chroma_translate_filter::chroma_translate_filter()
 chroma_translate_filter::~chroma_translate_filter()
 {
 	HANDLE_ERROR(cudaSetDevice(CTF_DEVICE_NUM));
-
+	delete picture_out;
 	HANDLE_ERROR(cudaStreamDestroy(chroma_translate_stream));
 	HANDLE_ERROR(cudaFree(picture_device));
 	HANDLE_ERROR(cudaFree(pic_out_d));
