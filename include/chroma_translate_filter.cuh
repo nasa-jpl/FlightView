@@ -13,6 +13,10 @@
 #include "cuda_utils.cuh"
 
 static const int CTF_DEVICE_NUM = (2 % getDeviceCount());
+static const int WIDTH = 1280;
+static const int  HEIGHT = 480;
+static const int  CTF_BLOCK_SIDE = 20;
+static const int  PIC_SIZE = WIDTH*HEIGHT*sizeof(uint16_t);
 class chroma_translate_filter
 {
 public:

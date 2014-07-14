@@ -8,6 +8,7 @@
 #include "chroma_translate_filter.cuh"
 #include "take_object.hpp"
 #include "fft.hpp"
+const static int NUMBER_OF_FRAMES_TO_BUFFER = 100;
 take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int frf)
 {
 	this->channel = channel_num;
@@ -19,11 +20,9 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 	this->std_dev_filter_N = 400;
 
 	this->do_raw_save = false;
-	this->dsf_save_available = false;
-	this->std_dev_save_available = false;
+
 	this->raw_save_file = NULL;
-	this->dsf_save_file = NULL;
-	this->std_dev_save_file = NULL;
+
 	newFrameAvailable = false;
 	dsfMaskCollected = false;
 
@@ -66,11 +65,17 @@ void take_object::start()
 	//Our version of height should not include the header size
 	dataHeight = pdv_get_height(pdv_p);
 
-	printf("cam type: %u", cam_type);
 	if(cam_type == CL_6604A) //This strips the header from the height on the 6604A
 	{
 		frHeight = dataHeight - 1;
 	}
+	else
+	{
+		frHeight = dataHeight;
+	}
+	printf("cam type: %u. Width: %u Height %u frame height %u \n", cam_type, frWidth, dataHeight, frHeight);
+
+	raw_data_ptr = new uint16_t[frWidth*dataHeight];
 	raw_data_buffer = new uint16_t[frWidth*dataHeight];
 	image_data_buffer = new uint16_t[frWidth*frHeight];
 
@@ -97,15 +102,15 @@ void take_object::start()
 	dsf = new dark_subtraction_filter(frWidth,frHeight);
 	sdvf = new std_dev_filter(frWidth,frHeight);
 	mf = new mean_filter(frWidth,frHeight);
+	//numbufs = 16;
 	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
-	pdv_thread = boost::thread(&take_object::pdv_init, this);
+	pdv_thread = boost::thread(&take_object::pdv_loop, this);
 	//save_thread = boost::thread(&take_object::savingLoop, this);
 
 }
-void take_object::pdv_init()
+void take_object::pdv_loop()
 {
 
-	raw_data_ptr = new uint16_t[frWidth*dataHeight];
 	//uint16_t * image_data_ptr;
 	uint16_t framecount = 1;
 	uint16_t last_framecount = 0;
@@ -115,12 +120,18 @@ void take_object::pdv_init()
 	while(pdv_thread_run == 1)
 	{
 		//new_image_address = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)); //We're never going to deal with u_char *, ever again.
-		memcpy(raw_data_ptr,reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p)),frWidth*dataHeight*sizeof(uint16_t));
-		pdv_start_image(pdv_p); //Start another
+		memcpy(raw_data_ptr,pdv_wait_image(pdv_p),frWidth*dataHeight*sizeof(uint16_t));
+		//raw_data_ptr = reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p));
 		boost::unique_lock<boost::shared_mutex> exclusive_lock(data_mutex);
 		if(cam_type == CL_6604B)
 		{
+			//printf("dumb ptr @ 100,100, %u\n",dumb_ptr[(frHeight-100)*frWidth + 100] | (dumb_ptr[(frHeight-101)*frWidth + 101] << 8));
+
+			//printf("rdp b4 remap @ 100,100, %u\n",raw_data_ptr[(frHeight-100)*frWidth + 100]);
+
 			raw_data_ptr = ctf.apply_chroma_translate_filter(raw_data_ptr);
+			//printf("rdp @ 100,100, %u\n",raw_data_ptr[(frHeight-100)*frWidth + 100]);
+
 			image_data_ptr = raw_data_ptr;
 		}
 		else
@@ -139,8 +150,7 @@ void take_object::pdv_init()
 		{
 			std_dev_data = sdvf->wait_std_dev_filter();
 			std_dev_histogram_data = sdvf->wait_std_dev_histogram();
-			std_dev_save_ptr = std_dev_data;
-			std_dev_save_available = true;
+
 		}
 
 		//update saving thread
@@ -148,7 +158,7 @@ void take_object::pdv_init()
 
 
 		dsf->update( image_data_ptr);
-		sdvf->update_GPU_buffer( image_data_ptr);
+		//sdvf->update_GPU_buffer( image_data_ptr);
 		if(count % filter_refresh_rate == 0)
 		{
 			sdvf->start_std_dev_filter(std_dev_filter_N);
@@ -158,7 +168,10 @@ void take_object::pdv_init()
 		fftReal_mean_data = mf->wait_mean_fft();
 		count++;
 		newFrameAvailable = true;
+		saveFrameAvailable = true;
+		doSave();
 		exclusive_lock.unlock();
+		pdv_start_image(pdv_p); //Start another
 
 		//newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
 		framecount = *(raw_data_ptr + 160);
@@ -174,43 +187,64 @@ void take_object::pdv_init()
 }
 void take_object::savingLoop()
 {
+
 	printf("saving loop started!");
-	uint16_t * old_raw_save_ptr = NULL;
 	while(pdv_thread_run)
 	{
 
-		if((old_raw_save_ptr != raw_save_ptr) && raw_save_file != NULL) //Apparently this returns false if null, true otherwise
+		while(!saveFrameAvailable)
+		{
+			usleep(500);
+		}
+		if(raw_save_file != NULL) //Apparently this returns false if null, true otherwise
 		{
 			//boost::unique_lock<boost::mutex> lock(saving_mutex); //Lock for writing
-
+			boost::shared_lock<boost::shared_mutex> lock(data_mutex);
 			if(frWidth*dataHeight != fwrite(raw_save_ptr, sizeof(uint16_t), frWidth*dataHeight, raw_save_file))
 			{
 				printf("Writing raw has an error.\n");
 			}
-			old_raw_save_ptr = raw_save_ptr; //Hoping this is an atomic operations
-		}
-		//TODO: Insert DSF saving code
-		if(std_dev_save_available && std_dev_save_file != NULL)
-		{
-			if(frWidth*frHeight != fwrite(std_dev_save_ptr,sizeof(float),frWidth*frHeight,std_dev_save_file))
+			//old_raw_save_ptr = raw_save_ptr; //Hoping this is an atomic operations
+			saveFrameAvailable = false;
+			save_framenum--;
+			lock.unlock();
+			if(save_framenum == 0)
 			{
-				printf("Writing std_dev has an error.\n");
-				perror("");
+				stopSavingRaws();
 			}
-			std_dev_save_available = false;
+		}
+
+	}
+
+}
+void take_object::doSave()
+{
+	if(raw_save_file != NULL) //Apparently this returns false if null, true otherwise
+	{
+		if(frWidth*dataHeight != fwrite(raw_save_ptr, sizeof(uint16_t), frWidth*dataHeight, raw_save_file))
+		{
+			printf("Writing raw has an error.\n");
+		}
+		//old_raw_save_ptr = raw_save_ptr; //Hoping this is an atomic operations
+		saveFrameAvailable = false;
+		save_framenum--;
+		if(save_framenum == 0)
+		{
+			stopSavingRaws();
 		}
 	}
 }
 uint16_t * take_object::getImagePtr()
 {
 	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	return image_data_buffer;
+	return image_data_ptr;
 
 }
 uint16_t * take_object::getRawPtr()
 {
 	boost::shared_lock< boost::shared_mutex > read_lock(data_mutex); //Grab the lock so that we won't write a new frame while trying to read
-	return raw_data_buffer;
+	//return raw_data_buffer;
+	return raw_data_ptr;
 }
 
 uint16_t * take_object::waitRawPtr()
@@ -283,14 +317,19 @@ void take_object::finishCapturingDSFMask()
 	dsf->finish_mask_collection();
 	dsfMaskCollected = true;
 }
-void take_object::startSavingRaws(const char * raw_file_name)
+void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames_to_save)
 {
-	printf("Begin frame save! @ %s",raw_file_name);
+	save_framenum = frames_to_save;
+	save_count = 0;
+	printf("Begin frame save! @ %s", raw_file_name.c_str());
 	if(raw_save_file != NULL)
 	{
 		stopSavingRaws();
 	}
-	raw_save_file = fopen(raw_file_name, "wb");
+	raw_save_file = fopen(raw_file_name.c_str(), "wb");
+
+	setvbuf(raw_save_file,NULL,_IOFBF,NUMBER_OF_FRAMES_TO_BUFFER*size);
+
 	//do_raw_save = true;
 }
 void take_object::stopSavingRaws()
@@ -301,47 +340,17 @@ void take_object::stopSavingRaws()
 	{
 		FILE * ptr_copy = raw_save_file;
 		raw_save_file = NULL;  //Since raw_save_file = NULL should be an atomic operation, this ensures that it won't save while we're calling fclose (boost locks were quite laggy here)
-
-
 		fclose(ptr_copy);
 	}
 }
-void take_object::startSavingDSFs(const char * dsf_file_name)
-{
 
-}
-void take_object::stopSavingDSFs()
-{
-
-}
-void take_object::startSavingSTD_DEVs(const char * std_dev_file_name)
-{
-	printf("Begin std_dev save! @ %s",std_dev_file_name);
-	if(std_dev_save_file != NULL)
-	{
-		stopSavingSTD_DEVs();
-	}
-	std_dev_save_file = fopen(std_dev_file_name, "wb");
-}
-void take_object::stopSavingSTD_DEVs()
-{
-	printf("stop saving std_dev!");
-	//do_raw_save = false;
-	if(std_dev_save_file != NULL)
-	{
-		FILE * ptr_copy = std_dev_save_file;
-		std_dev_save_file = NULL;  //Since raw_save_file = NULL should be an atomic operation, this ensures that it won't save while we're calling fclose (boost locks were quite laggy here)
-
-		fclose(ptr_copy);
-	}
-}
-void take_object::loadDSFMask(const char * file_name)
+void take_object::loadDSFMask(std::string file_name)
 {
 	//boost::shared_array < float > mask_in(new float[frWidth*frHeight]);
 	float * mask_in = new float[frWidth*frHeight];
 	FILE * pFile;
 	unsigned long size = 0;
-	pFile  = fopen(file_name, "rb");
+	pFile  = fopen(file_name.c_str(), "rb");
 	if(pFile==NULL) std::cerr << "error opening raw file" << std::endl;
 	else
 	{

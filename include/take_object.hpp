@@ -73,17 +73,16 @@ class take_object {
 	std_dev_filter * sdvf;
 	mean_filter * mf;
 
+	unsigned int save_count;
 	bool do_raw_save;
-	bool dsf_save_available;
-	bool std_dev_save_available;
+
+	bool saveFrameAvailable;
 
 	uint16_t * raw_save_ptr;
-	float * dsf_save_ptr;
-	float * std_dev_save_ptr;
-	FILE * raw_save_file;
-	FILE * dsf_save_file;
-	FILE * std_dev_save_file;
 
+	FILE * raw_save_file;
+
+	u_char * dumb_ptr;
 
 public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_rate = 10);
@@ -113,24 +112,20 @@ public:
 
 	void startCapturingDSFMask();
 	void finishCapturingDSFMask();
-	void loadDSFMask(const char * file_name);
+	void loadDSFMask(std::string file_name);
 
 
-	void startSavingRaws(const char * );
+	void startSavingRaws(std::string, unsigned int );
 	void stopSavingRaws();
-
-	void startSavingDSFs(const char * );
-	void stopSavingDSFs();
-
-	void startSavingSTD_DEVs(const char * );
-	void stopSavingSTD_DEVs();
-
 
 	void setStdDev_N(int s);
 
+	void doSave();
 	camera_t cam_type;
+	unsigned int save_framenum;
+
 private:
-	void pdv_init();
+	void pdv_loop();
 	void savingLoop();
 
 

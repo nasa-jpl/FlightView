@@ -134,7 +134,7 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 	{
 		histogram_bins[i] = exp(acc)-1;
 		acc+=increment;
-		printf("%f, ",histogram_bins[i]);
+		//printf("%f, ",histogram_bins[i]);
 	}
 	printf("\ncreated logarithmic bins\n");
 	HANDLE_ERROR(cudaMemcpyAsync(histogram_bins_device ,histogram_bins,NUMBER_OF_BINS*sizeof(float),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
@@ -208,7 +208,7 @@ void std_dev_filter::start_std_dev_filter(int N)
 	}
 	else
 	{
-		std::cerr << "Couldn't take std. dev, N (" << N << " ) exceeded length of history (" <<currentN << ") or maximum alllowed N (" << MAX_N << ")" << std::endl;
+		//std::cerr << "Couldn't take std. dev, N (" << N << " ) exceeded length of history (" <<currentN << ") or maximum alllowed N (" << MAX_N << ")" << std::endl;
 		//std::fill_n(picture_out.get(),width*height,-1); //Fill with -1 to indicate fail
 	}
 

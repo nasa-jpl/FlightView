@@ -139,13 +139,11 @@ void sensor_grab_test()
 		}
 		if(i == start_saves)
 		{
-			to.startSavingRaws("cuda_take_out_1000sd.raw");
-			to.startSavingSTD_DEVs("cuda_devs_f32_1000sd.raw");
+			to.startSavingRaws("cuda_take_out_1000sd.raw", 10000);
 		}
 		if(i == end_saves)
 		{
 			to.stopSavingRaws();
-			to.stopSavingSTD_DEVs();
 		}
 		i++;
 	}
@@ -158,10 +156,15 @@ void simple_sensor_grab()
 	long u = 0;
 	while(1)
 	{
-		usleep(1000);
+		usleep(500);
 		to.waitRawPtr();
 		if(++u%100 == 0)
 			cout << " got raw ptw" << endl;
+		if(u==100)
+		{
+			to.startSavingRaws(std::string("/mnt/nfs/maxwell/NGIS_DATA/noah_recording_test/one_hundred_thousand_att3.raw"),100000);
+		}
+		printf("svfn %u\n",to.save_framenum);
 	}
 }
 void fft_test()
@@ -178,8 +181,24 @@ void fft_test()
 	printf("fft calculated\n");
 
 }
+void simple_pdv_test()
+{
+	PdvDev * pdv_p = pdv_open_channel(EDT_INTERFACE,0,0);
+	pdv_start_images(pdv_p,64);
+	//unsigned int height = pdv_get_height(pdv_p);
+	unsigned int width = pdv_get_width(pdv_p);
+	uint16_t * ptr;
+	while(1)
+	{
+		ptr =reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p));
+		printf("@ 100 100 %u", ptr[width*100 + 100]);
+	}
+
+
+}
 int main()
 {
+	//simple_pdv_test();
 	//fft_test();
 	//sensor_grab_test();
 	simple_sensor_grab();
