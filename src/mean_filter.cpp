@@ -5,11 +5,8 @@ mean_filter::mean_filter(int nWidth, int nHeight)
 {
 	width = nWidth;
 	height = nHeight;
-	vert = new float[height];
-	horiz = new float[width];
-	picture_in = new uint16_t[width*height];
+
 	mean_ring_buffer = new float[MEAN_BUFFER_LENGTH];
-	fft_real_result = new float[MEAN_BUFFER_LENGTH/2];
 	mean_ring_buffer_head = 0;
 	frame_count = 0;
 }
@@ -18,9 +15,12 @@ mean_filter::~mean_filter()
 {
 
 }
-void mean_filter::start_mean(uint16_t * pic_in)
+void mean_filter::start_mean(uint16_t * pic_in, float * vert_out, float * horiz_out, float * fft_out)
 {
-	memcpy(picture_in,pic_in,width*height*sizeof(uint16_t));
+	vert = vert_out;
+	horiz = horiz_out;
+	fft_real_result = fft_out;
+	picture_in = pic_in;
 	mean_thread = boost::thread(&mean_filter::calculate_means, this);
 
 }
@@ -67,18 +67,7 @@ void mean_filter::calculate_means()
 	frame_count++;
 }
 
-float * mean_filter::wait_horizontal_mean()
+void mean_filter::wait_mean()
 {
 	mean_thread.join();
-	return horiz;
-}
-float * mean_filter::wait_vertical_mean()
-{
-	mean_thread.join();
-	return vert;
-}
-float * mean_filter::wait_mean_fft()
-{
-	mean_thread.join();
-	return fft_real_result;
 }

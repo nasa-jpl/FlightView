@@ -29,32 +29,32 @@
 #include "camera_types.h"
 
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = true;
+const static int NUMBER_OF_FRAMES_TO_BUFFER = 100;
+
+const static int MAX_WIDTH = 1280;
+const static int MAX_HEIGHT = 480;
+const static int MAX_SIZE = MAX_WIDTH*MAX_HEIGHT;
+
+
+typedef struct frame_container_t{
+	uint16_t raw_data_ptr[MAX_SIZE];
+	uint16_t * image_data_ptr;
+	float dark_subtracted_data[MAX_SIZE];
+	float std_dev_data[MAX_SIZE];
+	uint32_t std_dev_histogram[NUMBER_OF_BINS];
+	float vertical_mean_profile[MAX_HEIGHT];
+	float horizontal_mean_profile[MAX_WIDTH];
+	float fftMagnitude[MEAN_BUFFER_LENGTH/2];
+}frame_c;
+
 class take_object {
 	PdvDev * pdv_p;
 	boost::thread pdv_thread;
-	boost::thread save_thread;
-	bool pdv_thread_run;
-
-	bool newFrameAvailable;
-	uint16_t * raw_data_ptr;
-	uint16_t * image_data_ptr;
-
-	float * std_dev_data;
-	float * dark_subtraction_data;
-	uint32_t * std_dev_histogram_data;
-
-	float * horizontal_mean_data;
-	float * vertical_mean_data;
-	float * fftReal_mean_data;
-
-
-
 
 	unsigned int size;
 
 	unsigned int channel;
 	unsigned int numbufs;
-	unsigned int frame_history_size;
 	unsigned int filter_refresh_rate;
 
 	int std_dev_filter_N;
@@ -78,6 +78,9 @@ class take_object {
 	unsigned int dataHeight;
 	unsigned int frHeight;
 	unsigned int frWidth;
+	frame_c * curFrame;
+	int pdv_thread_run = 0;
+
 public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_rate = 10);
 	virtual ~take_object();
@@ -119,11 +122,10 @@ public:
 	void doSave();
 	camera_t cam_type;
 	unsigned int save_framenum;
+	std::list<frame_c *> frame_list;
 
 private:
 	void pdv_loop();
-	void savingLoop();
-
 
 };
 

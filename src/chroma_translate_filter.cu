@@ -21,7 +21,7 @@ __global__ void chroma_filter_kernel(uint16_t * pic_d, uint16_t * pic_out_d)
 	pic_out_d[c+width_eigth*i + r*WIDTH] = (0xFFFF - pic_d[c*8+i + r*WIDTH]);
 
 }
-uint16_t * chroma_translate_filter::apply_chroma_translate_filter(uint16_t * picture_in)
+uint16_t * chroma_translate_filter::apply_chroma_translate_filter(uint16_t * picture_in, uint16_t * picture_out)
 {
 
 	HANDLE_ERROR(cudaSetDevice(CTF_DEVICE_NUM));
@@ -36,7 +36,7 @@ uint16_t * chroma_translate_filter::apply_chroma_translate_filter(uint16_t * pic
 	chroma_filter_kernel<<<gridDims,blockDims,0>>>(picture_device, pic_out_d);
 	HANDLE_ERROR(cudaMemcpy(picture_out,pic_out_d,PIC_SIZE,cudaMemcpyDeviceToHost));
 	//HANDLE_ERROR(cudaStreamSynchronize(chroma_translate_stream)); //blocks until done
-	HANDLE_ERROR(cudaDeviceSynchronize());
+	//HANDLE_ERROR(cudaDeviceSynchronize());
 	HANDLE_ERROR( cudaPeekAtLastError() );
 
 
@@ -47,24 +47,16 @@ chroma_translate_filter::chroma_translate_filter()
 	printf("ctf initialized\n");
 	HANDLE_ERROR(cudaSetDevice(CTF_DEVICE_NUM));
 
-
-	picture_out = new uint16_t[PIC_SIZE]; //Create buffer for CPU memory output
-
 	HANDLE_ERROR(cudaMalloc( (void **)&picture_device, PIC_SIZE));
 	HANDLE_ERROR(cudaMalloc( (void **)&pic_out_d, PIC_SIZE));
 	HANDLE_ERROR(cudaMallocHost((void **) &pic_in_host, PIC_SIZE));
-
-	HANDLE_ERROR(cudaStreamCreate(&chroma_translate_stream));
 
 	//std::cout << "done alloc" << std::endl;
 }
 chroma_translate_filter::~chroma_translate_filter()
 {
 	HANDLE_ERROR(cudaSetDevice(CTF_DEVICE_NUM));
-	delete picture_out;
-	HANDLE_ERROR(cudaStreamDestroy(chroma_translate_stream));
 	HANDLE_ERROR(cudaFree(picture_device));
 	HANDLE_ERROR(cudaFree(pic_out_d));
 	HANDLE_ERROR(cudaFreeHost(pic_in_host));
-	free(picture_out);
 }

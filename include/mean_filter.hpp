@@ -12,12 +12,10 @@ public:
 
 	virtual ~mean_filter();
 
-	void start_mean(uint16_t * pic_in);
+	void start_mean(uint16_t * pic_in, float * vert_out, float * horiz_out, float * fft_out);
 
 	void calculate_means();
-	float * wait_horizontal_mean();
-	float * wait_vertical_mean();
-	float * wait_mean_fft();
+	void wait_mean();
 	fft myFFT;
 
 private:

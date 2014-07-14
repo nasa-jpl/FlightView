@@ -180,9 +180,10 @@ void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
 
 
 }
-void std_dev_filter::start_std_dev_filter(int N)
+void std_dev_filter::start_std_dev_filter(int N, float * std_dev_out, uint32_t * std_dev_histogram)
 {
-
+	std_dev_result = std_dev_out;
+	histogram_out = std_dev_histogram;
 	lastN = N;
 	//Start thread for doing histogram
 	//histogram_thread = boost::thread(&std_dev_filter::doHistogram, this);
@@ -200,11 +201,11 @@ void std_dev_filter::start_std_dev_filter(int N)
 		//__global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, float * histogram_bins, uint32_t * histogram_out, int width, int height, int gpu_buffer_head, int N)
 		HANDLE_ERROR( cudaPeekAtLastError() );
 
-		HANDLE_ERROR(cudaMemcpyAsync(histogram_out_host,histogram_out_device,NUMBER_OF_BINS*sizeof(uint32_t),cudaMemcpyDeviceToHost,std_dev_stream));
+		HANDLE_ERROR(cudaMemcpyAsync(histogram_out,histogram_out_device,NUMBER_OF_BINS*sizeof(uint32_t),cudaMemcpyDeviceToHost,std_dev_stream));
 #else
 		std_dev_filter_kernel <<<gridDims,blockDims,0,std_dev_stream>>> (pictures_device, picture_out_device, width, height, gpu_buffer_head, N);
 #endif
-		HANDLE_ERROR(cudaMemcpyAsync(picture_out_host,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream));
+		HANDLE_ERROR(cudaMemcpyAsync(std_dev_result,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream));
 	}
 	else
 	{
@@ -220,23 +221,11 @@ uint16_t * std_dev_filter::getEntireRingBuffer() //For testing only
 	HANDLE_ERROR(cudaMemcpy(out,pictures_device,width*height*sizeof(uint16_t)*MAX_N,cudaMemcpyDeviceToHost));
 	return out;
 }
-float * std_dev_filter::wait_std_dev_filter()
-{
-
-	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
-	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //blocks until done
-	HANDLE_ERROR( cudaPeekAtLastError() );
-
-	return picture_out_host;
-}
-
-uint32_t * std_dev_filter::wait_std_dev_histogram()
+void std_dev_filter::wait_std_dev()
 {
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
-	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //blocks until done
-	HANDLE_ERROR( cudaPeekAtLastError() );
-
-	return histogram_out_host;
+	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream));
+	HANDLE_ERROR(cudaPeekAtLastError());
 }
 std::vector <float> * std_dev_filter::getHistogramBins()
 {

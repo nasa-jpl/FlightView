@@ -74,11 +74,11 @@ void dark_subtraction_filter::finish_mask_collection()
 
 
 }
-void dark_subtraction_filter::update(uint16_t * pic_in)
+void dark_subtraction_filter::update(uint16_t * pic_in, float * pic_out)
 {
 	if(mask_collected)
 	{
-		update_dark_subtraction(pic_in);
+		update_dark_subtraction(pic_in, pic_out);
 	}
 	else
 	{
@@ -107,7 +107,7 @@ float * dark_subtraction_filter::get_mask()
 
 
 }
-void dark_subtraction_filter::update_dark_subtraction(uint16_t * pic_in)
+void dark_subtraction_filter::update_dark_subtraction(uint16_t * pic_in, float * pic_out)
 {
 	HANDLE_ERROR(cudaSetDevice(DSF_DEVICE_NUM));
 
@@ -118,7 +118,9 @@ void dark_subtraction_filter::update_dark_subtraction(uint16_t * pic_in)
 	HANDLE_ERROR(cudaMemcpyAsync(picture_device,pic_in_host,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,dsf_stream));
 
 	apply_mask<<< gridDims, blockDims,0,dsf_stream>>>(picture_device, mask_device, result_device, width,height);
-	HANDLE_ERROR(cudaMemcpyAsync(pic_out_host,result_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,dsf_stream));
+	//HANDLE_ERROR(cudaMemcpyAsync(pic_out_host,result_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,dsf_stream));
+	HANDLE_ERROR(cudaMemcpyAsync(pic_out,result_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,dsf_stream));
+
 }
 
 uint32_t dark_subtraction_filter::update_mask_collection(uint16_t * pic_in)

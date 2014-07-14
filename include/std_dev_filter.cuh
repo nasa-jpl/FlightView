@@ -27,8 +27,9 @@ class std_dev_filter
 public:
 	std_dev_filter(int nWidth, int nHeight);
 	virtual ~std_dev_filter();
-	void start_std_dev_filter(int N);
+	void start_std_dev_filter(int N, float * std_dev_out, uint32_t * std_dev_histogram);
 	void update_GPU_buffer(uint16_t * image_ptr);
+	void wait_std_dev();
 	bool outputReady();
 	float * wait_std_dev_filter();
 	uint32_t * wait_std_dev_histogram();
@@ -57,5 +58,8 @@ private:
 	uint32_t * histogram_out_device;
 
 	uint16_t * picture_in_host;
+
+	float * std_dev_result;
+	uint32_t * histogram_out;
 };
 #endif /* STD_DEV_FILTER_CUH_ */
