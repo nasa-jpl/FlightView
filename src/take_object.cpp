@@ -83,21 +83,27 @@ void take_object::pdv_loop() //Producer Thread
 	uint16_t last_framecount = 0;
 	count = 0;
 
+	u_char * wait_ptr;
+
 	while(pdv_thread_run == 1)
 	{
+		//curFrame = std::shared_ptr<frame_c>(new frame_c());
 		curFrame = new frame_c();
+		wait_ptr = pdv_wait_image(pdv_p);
+		memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
 
-		memcpy(curFrame->raw_data_ptr,pdv_wait_image(pdv_p),frWidth*dataHeight*sizeof(uint16_t));
 		if(cam_type == CL_6604B)
 		{
 			ctf.apply_chroma_translate_filter(curFrame->raw_data_ptr, curFrame->raw_data_ptr);
 			curFrame->image_data_ptr = curFrame->raw_data_ptr;
 		}
+
 		else
 		{
 			curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
 		}
-		mf->start_mean(curFrame->image_data_ptr,curFrame->vertical_mean_profile,curFrame->horizontal_mean_profile,curFrame->fftMagnitude);
+
+		//mf->start_mean(curFrame->image_data_ptr,curFrame->vertical_mean_profile,curFrame->horizontal_mean_profile,curFrame->fftMagnitude);
 		dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
 		sdvf->start_std_dev_filter(std_dev_filter_N,curFrame->std_dev_data,curFrame->std_dev_histogram);
 
@@ -108,7 +114,7 @@ void take_object::pdv_loop() //Producer Thread
 		frame_list.push_front(curFrame);
 		count++;
 		saveFrameAvailable = true;
-		doSave();
+		//doSave();
 		pdv_start_image(pdv_p); //Start another
 
 		//newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.

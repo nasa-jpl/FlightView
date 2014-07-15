@@ -18,6 +18,8 @@
 #include <stdio.h>
 #include <ostream>
 #include <string>
+#include <memory>
+#include <atomic>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -35,7 +37,6 @@ const static int MAX_WIDTH = 1280;
 const static int MAX_HEIGHT = 480;
 const static int MAX_SIZE = MAX_WIDTH*MAX_HEIGHT;
 
-
 typedef struct frame_container_t{
 	uint16_t raw_data_ptr[MAX_SIZE];
 	uint16_t * image_data_ptr;
@@ -45,6 +46,7 @@ typedef struct frame_container_t{
 	float vertical_mean_profile[MAX_HEIGHT];
 	float horizontal_mean_profile[MAX_WIDTH];
 	float fftMagnitude[MEAN_BUFFER_LENGTH/2];
+	std::int_least8_t delete_counter = 1; //NOTE!! It is incredibly critical that this number is equal to the number of frameview_widgets that are drawing + the number of mean profiles, too many and memory will leak; too few and invalid data will be displayed.
 }frame_c;
 
 class take_object {
@@ -78,7 +80,9 @@ class take_object {
 	unsigned int dataHeight;
 	unsigned int frHeight;
 	unsigned int frWidth;
-	frame_c * curFrame;
+	//frame_c * curFrame;
+	//std::shared_ptr<frame_c> curFrame;
+	frame_c* curFrame;
 	int pdv_thread_run = 0;
 
 public:
@@ -122,7 +126,8 @@ public:
 	void doSave();
 	camera_t cam_type;
 	unsigned int save_framenum;
-	std::list<frame_c *> frame_list;
+	//std::list<std::shared_ptr<frame_c> > frame_list;
+	std::list<frame_c * > frame_list;
 
 private:
 	void pdv_loop();
