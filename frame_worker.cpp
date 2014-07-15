@@ -19,37 +19,31 @@ void frameWorker::captureFrames()
     qDebug("starting capture");
     rfft_data_vec = QVector<double>(MEAN_BUFFER_LENGTH/2);
     histo_data_vec = QVector<double>(NUMBER_OF_BINS);
-    to.waitForReadLock(); //Wait for new data to come in
+
     frHeight = to.getFrameHeight();
     frWidth = to.getFrameWidth();
     dataHeight = to.getDataHeight();
-    to.releaseReadLock();
 
-    raw_data = new uint16_t[frWidth*dataHeight];
-    image_data = new uint16_t[frWidth*frHeight];
-    rfft_data = new float[MEAN_BUFFER_LENGTH/2]; //This seemingly should not need to exist, the memory is allocated in the backend...
+
     while(1)
     {
         QCoreApplication::processEvents();
         //fr = to.getRawData(); //This now blocks
-
+        usleep(500); //So that CPU utilization is not 100%
         if(to.frame_list.size() > 3)
         {
-            if(curFrame != NULL)
-            {
-                delete curFrame; //This is how we're goign to garbage collect all the old frames
-            }
-            curFrame = to.frame_list.pop_back();
+           // qDebug() << "on frame ?" << to.frame_list.size();
+            curFrame = to.frame_list.back();
+            to.frame_list.pop_back();
 
             QMutexLocker ml(&vector_mutex);
             updateFFTVector();
             updateHistogramVector();
-            memcpy(raw_data,to.getRawPtr(),dataHeight*frWidth*sizeof(uint16_t));
-            memcpy(image_data,to.getImagePtr(),frHeight*frWidth*sizeof(uint16_t));
+            //memcpy(raw_data,to.getRawPtr(),dataHeight*frWidth*sizeof(uint16_t));
+            //memcpy(image_data,to.getImagePtr(),frHeight*frWidth*sizeof(uint16_t));
 
             ml.unlock();
-            to.releaseReadLock();
-            emit newFrameAvailable(); //This onyl emits when there is a new frame
+            emit newFrameAvailable(curFrame); //This onyl emits when there is a new frame
             if(to.std_dev_ready())
             {
                 emit std_dev_ready();
@@ -60,6 +54,7 @@ void frameWorker::captureFrames()
                 old_save_framenum = to.save_framenum;
                 emit savingFrameNumChanged(to.save_framenum);
             }
+
         }
     }
 }
@@ -91,43 +86,11 @@ void frameWorker::finishCapturingDSFMask()
 
 
 
-uint16_t * frameWorker::getImagePtr()
-{
-    //return NULL;
-    return image_data;
-}
-uint16_t * frameWorker::getRawPtr()
-{
-    //return NULL;
-    return raw_data;
-}
 
-
-float * frameWorker::getDSF()
-{
-    return dsf_data;
-}
-
-float * frameWorker::getStdDevData()
-{
-    return std_dev_data;
-}
-uint32_t * frameWorker::getHistogramData()
-{
-    return histogram_data;
-}
 std::vector<float> *frameWorker::getHistogramBins()
 {
     return NULL;
     //return histogram_bins;
-}
-float * frameWorker::getHorizontalMean()
-{
-    return horiz_mean;
-}
-float * frameWorker::getVerticalMean()
-{
-    return vert_mean;
 }
 
 void frameWorker::loadDSFMask(QString file_name)
@@ -164,13 +127,12 @@ void frameWorker::setStdDev_N(int newN)
 void frameWorker::updateFFTVector() //This would make more sense in fft_widget, but it cannot run in the gui thread.
 {
     double max = 0;
-    rfft_data = to.getRealFFTMagnitude();
     for(unsigned int i = 0; i < MEAN_BUFFER_LENGTH/2; i++)
     {
-        rfft_data_vec[i] =rfft_data[i];
-        if(i!=0 && rfft_data[i] > max)
+        rfft_data_vec[i] = curFrame->fftMagnitude[i];
+        if(i!=0 && curFrame->fftMagnitude[i] > max)
         {
-            max = rfft_data[i];
+            max = curFrame->fftMagnitude[i];
         }
     }
     //printf("%f max freq bins nonconst\n",max);
@@ -179,11 +141,11 @@ void frameWorker::updateFFTVector() //This would make more sense in fft_widget, 
 }
 void frameWorker::updateHistogramVector()
 {
-    histo_data = to.getHistogramData();
+
     histoDataMax = 0;
     for(int i = 0; i < histo_data_vec.size();i++)
     {
-        histo_data_vec[i] = (double)histo_data[i];
+        histo_data_vec[i] = (double)curFrame->std_dev_histogram[i];
         if(histoDataMax < histo_data_vec[i])
         {
             histoDataMax = histo_data_vec[i];

@@ -107,7 +107,7 @@ void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewF
     //emit startCapturing(); //This sends a message to the frame worker to start capturing (in different thread)
     //fw->captureFrames();
 }
-void frameview_widget::handleNewFrame()
+void frameview_widget::handleNewFrame(frame_c * frame)
 {
     if(qcp==NULL)
     {
@@ -119,31 +119,25 @@ void frameview_widget::handleNewFrame()
     }
 
 
-    if(fps%4 == 0 && !this->isHidden())
+    if(count%4 == 0 && !this->isHidden())
     {
         //qDebug() << image_type;
         if(image_type == BASE)
         {
             //qDebug() << "starting redraw";
-            uint16_t * local_image_ptr = fw->getImagePtr();
+            uint16_t * local_image_ptr = frame->image_data_ptr;
             //uint16_t * local_image_ptr = fw->getRawPtr();
-
             for(int col = 0; col < frWidth; col++)
             {
                 for(int row = 0; row < frHeight; row++)
                 {
-                    if(row == 100 && col == 100)
-                    {
-                        qDebug() << "frVal @ 100,100" << local_image_ptr[(frHeight-row)*frWidth + col];
-                    }
                     colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
                 }
             }
-
         }
         else if(image_type == DSF)
         {
-            float * local_image_ptr = fw->getDSF();
+            float * local_image_ptr = frame->dark_subtracted_data;
            // qDebug() << "dsf mask collected " << fw->dsfMaskCollected();
             for(int col = 0; col < frWidth; col++)
             {
@@ -156,7 +150,7 @@ void frameview_widget::handleNewFrame()
         }
         else if(image_type == STD_DEV)
         {
-            float * local_image_ptr = fw->getStdDevData();
+            float * local_image_ptr = frame->std_dev_data;
             for(int col = 0; col < frWidth; col++)
             {
                 for(int row = 0; row < frHeight; row++)
@@ -169,14 +163,20 @@ void frameview_widget::handleNewFrame()
         qcp->replot();
 
     }
-    fps++;
+    qDebug() << "dc" << frame->delete_counter;
+    if((--frame->delete_counter) == 0)
+    {
+        qDebug() << "deleting frame";
+        delete frame;
+    }
     count++;
 
 }
 void frameview_widget::updateFPS()
 {
-    fpsLabel.setText(QString("fps: %1").arg(fps));
-    fps = 0;
+    seconds_elapsed++;
+    fps = count/(double)seconds_elapsed;
+    fpsLabel.setText(QString("avg fps: %1").arg(fps));
 }
 void frameview_widget::toggleGrayScale()
 {

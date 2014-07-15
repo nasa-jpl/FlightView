@@ -2,12 +2,13 @@
 #include <QDebug>
 #include "mainwindow.h"
 #include "image_type.h"
+#include <memory>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-
+    qRegisterMetaType<frame_c*>("frame_c*");
     createBackend();
-    this->resize(1324,830);
+    this->resize(1440,900);
     mainwidget = new QWidget();
     QVBoxLayout *layout = new QVBoxLayout;
 
@@ -74,9 +75,9 @@ void MainWindow::connectAndStartBackend()
 {
     connect(workerThread,SIGNAL(started()), fw, SLOT(captureFrames()));
 
-    connect(fw,SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
-    //connect(fw,SIGNAL(newFrameAvailable()), dsf_widget, SLOT(handleNewFrame()));
-    //connect(fw,SIGNAL(newFrameAvailable()), std_dev_widget, SLOT(handleNewFrame()));
+    connect(fw,SIGNAL(newFrameAvailable(frame_c *)), unfiltered_widget, SLOT(handleNewFrame(frame_c *)));
+    connect(fw,SIGNAL(newFrameAvailable()), dsf_widget, SLOT(handleNewFrame()));
+    connect(fw,SIGNAL(newFrameAvailable()), std_dev_widget, SLOT(handleNewFrame()));
     //connect(fw,SIGNAL(newFrameAvailable()),hist_widget,SLOT(handleNewFrame()));
     //connect(fw,SIGNAL(newFrameAvailable()),vert_widget,SLOT(handleNewFrame()));
     //connect(fw,SIGNAL(newFrameAvailable()),horiz_widget,SLOT(handleNewFrame()));

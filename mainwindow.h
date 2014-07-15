@@ -7,11 +7,13 @@
 #include "histogram_widget.h"
 #include "mean_profile_widget.h"
 #include "fft_widget.h"
+#include "frame_c_meta.h"
+
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-    
+
 public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();

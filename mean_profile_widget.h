@@ -3,6 +3,8 @@
 
 #include <QWidget>
 #include <QVBoxLayout>
+#include <atomic>
+
 #include "qcustomplot.h"
 #include "frame_worker.h"
 #include "image_type.h"
@@ -30,7 +32,7 @@ private:
 signals:
     
 public slots:
-    void handleNewFrame();
+    void handleNewFrame(frame_c *frame);
 };
 
 #endif // MEAN_PROFILE_WIDGET_H

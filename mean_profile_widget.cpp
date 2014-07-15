@@ -61,7 +61,7 @@ void mean_profile_widget::initQCPStuff()
 }
 
 
-void mean_profile_widget::handleNewFrame()
+void mean_profile_widget::handleNewFrame(frame_c * frame)
 {
     if(qcp==NULL)
     {
@@ -72,7 +72,7 @@ void mean_profile_widget::handleNewFrame()
     {
         if(itype == VERTICAL_MEAN)
         {
-            float * local_image_ptr = fw->getVerticalMean();
+            float * local_image_ptr = frame->vertical_mean_profile;
             for(int r=0;r<frHeight;r++) //Y Axis is reversed
             {
                 y[frHeight-r-1] = (double) local_image_ptr[r];
@@ -80,7 +80,7 @@ void mean_profile_widget::handleNewFrame()
         }
         if(itype == HORIZONTAL_MEAN)
         {
-            float * local_image_ptr = fw->getHorizontalMean();
+            float * local_image_ptr = frame->horizontal_mean_profile;
             for(int c=0;c<frWidth;c++)
             {
                 y[c] = (double) local_image_ptr[c];
@@ -92,6 +92,10 @@ void mean_profile_widget::handleNewFrame()
        qcp->graph(0)->setData(x,y);
         //qcp->graph(0)->rescaleAxes();
         qcp->replot();
+        if(--frame->delete_counter <= 0)
+        {
+            delete frame;
+        }
 
     }
     fps++;

@@ -6,19 +6,16 @@
 #include <QMutex>
 #include <QVector>
 #include "take_object.hpp"
-#include <boost/thread.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/locks.hpp>
-#include <boost/circular_buffer.hpp>
-#include <boost/shared_ptr.hpp>
+#include "frame_c_meta.h"
+#include <memory>
+
 class frameWorker : public QObject
 {
     Q_OBJECT
 public:
+
     explicit frameWorker(QObject *parent = 0);
     virtual ~frameWorker();
-
-    frame_c * curFrame = NULL;
 
     std::vector<float> *getHistogramBins();
     unsigned int getFrameHeight();
@@ -37,7 +34,7 @@ public:
 
     unsigned int old_save_framenum;
 signals:
-    void newFrameAvailable();
+    void newFrameAvailable(frame_c *);
     void std_dev_ready();
     void savingFrameNumChanged(unsigned int n);
 public slots:
@@ -54,9 +51,7 @@ public slots:
 
 private:
     take_object to;
-
-    float * rfft_data;
-    uint32_t * histo_data;
+    //std::list
     void updateFFTVector();
     void updateHistogramVector();
 
@@ -64,10 +59,11 @@ private:
     unsigned int frWidth;
     unsigned int dataHeight;
 
-;
+
     float * histogram_bins;
-
-
+    //std::shared_ptr<frame_c> curFrame;
+    frame_c * curFrame;
 };
+
 
 #endif // FRAME_WORKER_H

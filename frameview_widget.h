@@ -9,6 +9,9 @@
 #include <QTimer>
 #include <QPushButton>
 #include <QMutex>
+#include <atomic>
+#include "frame_c_meta.h"
+
 #include "frame_worker.h"
 #include "image_type.h"
 #include "qcustomplot.h"
@@ -22,7 +25,8 @@ class frameview_widget : public QWidget
     QCPColorMapData * colorMapData;
     QCPColorScale * colorScale;
     QLabel fpsLabel;
-    unsigned int fps;
+    double fps;
+    unsigned long seconds_elapsed = 0;
     QTimer fpstimer;
     bool outputGrayScale;
     frameWorker * fw;
@@ -44,7 +48,7 @@ private:
 signals:
     void startCapturing();
 public slots:
-    void handleNewFrame();
+    void handleNewFrame(frame_c *);
     void updateFPS();
     void toggleGrayScale();
     void updateCeiling(int c);

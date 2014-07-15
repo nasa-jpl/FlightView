@@ -30,7 +30,8 @@ HEADERS  += mainwindow.h \
     qcustomplot.h \
     histogram_widget.h \
     mean_profile_widget.h \
-    fft_widget.h
+    fft_widget.h \
+    frame_c_meta.h
 
 BACKEND_HEADERS += edtinc.h \
     take_object.hpp\
