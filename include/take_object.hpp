@@ -29,25 +29,15 @@
 #include "mean_filter.hpp"
 #include "edtinc.h"
 #include "camera_types.h"
+#include "frame_c.hpp"
+
 
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = true;
 const static int NUMBER_OF_FRAMES_TO_BUFFER = 100;
 
-const static int MAX_WIDTH = 1280;
-const static int MAX_HEIGHT = 480;
-const static int MAX_SIZE = MAX_WIDTH*MAX_HEIGHT;
 
-typedef struct frame_container_t{
-	uint16_t raw_data_ptr[MAX_SIZE];
-	uint16_t * image_data_ptr;
-	float dark_subtracted_data[MAX_SIZE];
-	float std_dev_data[MAX_SIZE];
-	uint32_t std_dev_histogram[NUMBER_OF_BINS];
-	float vertical_mean_profile[MAX_HEIGHT];
-	float horizontal_mean_profile[MAX_WIDTH];
-	float fftMagnitude[MEAN_BUFFER_LENGTH/2];
-	std::int_least8_t delete_counter = 1; //NOTE!! It is incredibly critical that this number is equal to the number of frameview_widgets that are drawing + the number of mean profiles, too many and memory will leak; too few and invalid data will be displayed.
-}frame_c;
+
+
 
 class take_object {
 	PdvDev * pdv_p;

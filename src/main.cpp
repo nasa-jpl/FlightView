@@ -19,10 +19,12 @@ void simple_sensor_grab()
 	take_object to;
 	to.start();
 	cout << "ruunning to" << std::endl;
+	unsigned long last_framelist_size = 0;
 	while(1)
 	{
 		usleep(1000000);
-		printf("frame list size %lu\n",to.frame_list.size());
+		printf("frame list size %lu, delta %lu\n",to.frame_list.size(),to.frame_list.size() - last_framelist_size);
+		last_framelist_size = to.frame_list.size();
 
 	}
 }
@@ -33,7 +35,7 @@ void fft_test()
 	FILE * f = fopen("fake_fourier_in.bin","rb");
 	fread(data_in,sizeof(float),1024,f);
 	fclose(f);
-	data_in = myFFT.doRealFFT(data_in,1024,0);
+	//data_in = myFFT.doRealFFT(data_in,1024,0);
 	FILE * fw = fopen("rfft_out.bin","wb");
 	fwrite(data_in,sizeof(float),512,fw);
 	fclose(fw);

@@ -9,20 +9,18 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <complex>
+#include "constants.h"
 #ifndef FFT_H_
 #define FFT_H_
-static const unsigned int MAX_FFT_SIZE = 4096;
 
 class fft {
-	float * realFFT;
 	std::complex<float> * CFFT;
 
 public:
 	fft() {
-		realFFT=new float[MAX_FFT_SIZE/2];
 		CFFT = new std::complex<float>[MAX_FFT_SIZE];
 	};
-float * doRealFFT(float * arr, unsigned int len, unsigned int ring_head);
+void doRealFFT(float * arr, unsigned int len, unsigned int ring_head, float *fft_real_result);
 
 std::complex<float> * doFFT(float * arr, unsigned int len, unsigned int ring_head);
 std::complex<float> * doFFT(std::complex<float> * arr, unsigned int len);

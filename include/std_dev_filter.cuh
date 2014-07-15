@@ -11,17 +11,16 @@
 
 #include <stdint.h>
 #include <vector>
-
+#include "constants.h"
 #include "edtinc.h"
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "cuda_utils.cuh"
 
 static const int STD_DEV_DEVICE_NUM = (1 % getDeviceCount());
-static const int MAX_N = 1000;
-static const int BLOCK_SIDE = 20;
+
+
 static const bool DEBUG = false;
-static const int NUMBER_OF_BINS = 1024;
 class std_dev_filter
 {
 public:

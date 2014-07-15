@@ -8,7 +8,6 @@
 #include "chroma_translate_filter.cuh"
 #include "take_object.hpp"
 #include "fft.hpp"
-
 take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int frf)
 {
 	this->channel = channel_num;
@@ -104,11 +103,19 @@ void take_object::pdv_loop() //Producer Thread
 		}
 
 		//mf->start_mean(curFrame->image_data_ptr,curFrame->vertical_mean_profile,curFrame->horizontal_mean_profile,curFrame->fftMagnitude);
+		//mf->start_mean(curFrame);
 		dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
-		sdvf->start_std_dev_filter(std_dev_filter_N,curFrame->std_dev_data,curFrame->std_dev_histogram);
+		//sdvf->update_GPU_buffer(curFrame->image_data_ptr);
 
+		if(count % filter_refresh_rate == 0)
+		{
+			//sdvf->start_std_dev_filter(std_dev_filter_N,curFrame->std_dev_data,curFrame->std_dev_histogram);
+		}
 
-		sdvf->wait_std_dev();
+		if(count % filter_refresh_rate == filter_refresh_rate-1)
+		{
+			//sdvf->wait_std_dev();
+		}
 		//mf->wait_mean();
 		dsf->wait_dark_subtraction();
 		frame_list.push_front(curFrame);
