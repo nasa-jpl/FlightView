@@ -1,4 +1,4 @@
-
+//Written by Noah
 #include "fft.hpp"
 #include <assert.h>
 #include <iostream>
@@ -32,7 +32,13 @@ static const unsigned char BitReverseTable256[] =
 		0x07, 0x87, 0x47, 0xC7, 0x27, 0xA7, 0x67, 0xE7, 0x17, 0x97, 0x57, 0xD7, 0x37, 0xB7, 0x77, 0xF7,
 		0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF
 };
-
+fft::fft()
+{
+	CFFT = new std::complex<float>[MAX_FFT_SIZE];
+}
+fft::~fft() {
+	delete CFFT;
+}
 void fft::bitReverseOrder(std::complex<float> * arr, unsigned int len) //Overloaded for
 {
 
@@ -50,13 +56,13 @@ void fft::bitReverseOrder(std::complex<float> * arr, unsigned int len) //Overloa
 	}
 }
 
-void fft::doRealFFT(float * real_arr, unsigned int len, unsigned int ring_head,float *fft_real_result)
+void fft::doRealFFT(float * real_arr, unsigned int ring_head,float *fft_real_result)
 {
-	CFFT  =  doFFT(real_arr,  len,  ring_head);
+	CFFT  =  doFFT(real_arr, ring_head);
 	double max = 0;
 
 	//realFFT[len/2] = (float) std::real(CFFT[len/2]);
-	for(unsigned int i = 0; i < len/2; i++)
+	for(unsigned int i = 0; i < FFT_INPUT_LENGTH/2; i++)
 	{
 		fft_real_result[i] = std::abs(CFFT[i]);
 		if(fft_real_result[i] > max && i !=0)
@@ -68,14 +74,14 @@ void fft::doRealFFT(float * real_arr, unsigned int len, unsigned int ring_head,f
 
 
 }
-std::complex<float> * fft::doFFT(float * real_arr, unsigned int len, unsigned int ring_head)
+std::complex<float> * fft::doFFT(float * real_arr, unsigned int ring_head)
 {
 
-	for(unsigned int i = 0; i < len; i++)
+	for(unsigned int i = 0; i < FFT_INPUT_LENGTH; i++)
 	{
-		CFFT[i] = std::complex<float>(real_arr[(ring_head+i) % len],0);
+		CFFT[i] = std::complex<float>(real_arr[(ring_head+i) % FFT_MEAN_BUFFER_LENGTH],0);
 	}
-	return doFFT(CFFT,len);
+	return doFFT(CFFT,FFT_INPUT_LENGTH);
 }
 std::complex<float> * fft::doFFT(std::complex<float> * arr, unsigned int len)
 {

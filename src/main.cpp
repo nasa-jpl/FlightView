@@ -32,12 +32,15 @@ void fft_test()
 {
 	fft myFFT;
 	float * data_in = new float[1024];
+	float * data_out = new float[1024];
+
 	FILE * f = fopen("fake_fourier_in.bin","rb");
-	fread(data_in,sizeof(float),1024,f);
+	fread(data_in,sizeof(float),FFT_INPUT_LENGTH,f);
 	fclose(f);
 	//data_in = myFFT.doRealFFT(data_in,1024,0);
+	myFFT.doRealFFT(data_in,0,data_out);
 	FILE * fw = fopen("rfft_out.bin","wb");
-	fwrite(data_in,sizeof(float),512,fw);
+	fwrite(data_out,sizeof(float),FFT_INPUT_LENGTH/2,fw);
 	fclose(fw);
 	printf("fft calculated\n");
 

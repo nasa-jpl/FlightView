@@ -18,13 +18,15 @@ struct frame_c{
 	uint32_t std_dev_histogram[NUMBER_OF_BINS];
 	float vertical_mean_profile[MAX_HEIGHT];
 	float horizontal_mean_profile[MAX_WIDTH];
-	float fftMagnitude[MEAN_BUFFER_LENGTH/2];
+	float fftMagnitude[FFT_INPUT_LENGTH/2];
 	std::atomic_int_least8_t delete_counter; //NOTE!! It is incredibly critical that this number is equal to the number of frameview_widgets that are drawing + the number of mean profiles, too many and memory will leak; too few and invalid data will be displayed.
 	std::atomic_int_least8_t async_filtering_done;
+	std::atomic_int_least8_t has_valid_std_dev;
 
 	frame_c() {
 		delete_counter = 5;
 		async_filtering_done = 0;
+		has_valid_std_dev = 0;
 	};
 };
 

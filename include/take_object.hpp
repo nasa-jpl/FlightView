@@ -55,7 +55,7 @@ class take_object {
 	chroma_translate_filter ctf;
 	dark_subtraction_filter * dsf;
 	std_dev_filter * sdvf;
-	mean_filter * mf;
+	//mean_filter * mf;
 
 	unsigned int save_count;
 	bool do_raw_save;
@@ -79,28 +79,16 @@ public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_rate = 10);
 	virtual ~take_object();
 	void start();
-	uint16_t * getImagePtr();
-	uint16_t * getRawPtr();
-	void waitForReadLock();
-	void releaseReadLock();
 
 	unsigned int getDataHeight();
 	unsigned int getFrameHeight();
 	unsigned int getFrameWidth();
-	boost::mutex data_mutex;
-	boost::unique_lock<boost::mutex> * read_lock;
-
 
 	bool dsfMaskCollected;
-	float * getStdDevData();
 
-	float * getDarkSubtractedData();
-	uint32_t * getHistogramData();
 	std::vector<float> * getHistogramBins();
 
-	float * getHorizontalMean();
-	float * getVerticalMean();
-	float * getRealFFTMagnitude();
+
 	bool std_dev_ready();
 
 	void startCapturingDSFMask();

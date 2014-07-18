@@ -7,7 +7,7 @@
 #ifndef HORIZONTALMEANFILTER_CUH_
 #define HORIZONTALMEANFILTER_CUH_
 
-static float mean_ring_buffer[3*MEAN_BUFFER_LENGTH];
+static float mean_ring_buffer[FFT_MEAN_BUFFER_LENGTH];
 static std::atomic_uint_least16_t mean_ring_buffer_head;
 class mean_filter {
 public:

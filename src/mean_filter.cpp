@@ -12,10 +12,11 @@ mean_filter::mean_filter(frame_c * frame, unsigned long frame_count, int nWidth,
 
 mean_filter::~mean_filter()
 {
-
+	//delete mean_thread;
+	//printf("mf delete\n");
 }
 //void mean_filter::start_mean(uint16_t * pic_in, float * vert_out, float * horiz_out, float * fft_out)
-void mean_filter::start_mean(frame_c * frame)
+void mean_filter::start_mean()
 
 {
 	mean_thread = boost::thread(&mean_filter::calculate_means, this);
@@ -53,17 +54,20 @@ void mean_filter::calculate_means()
 	frame_mean/=width;
 
 	mean_ring_buffer_fft_head = mean_ring_buffer_head;
+//	printf("Mrbf %u\n",mean_ring_buffer_fft_head);
+
 	mean_ring_buffer[mean_ring_buffer_head++] = frame_mean;
-	if(mean_ring_buffer_head >= MEAN_BUFFER_LENGTH)
+	if(mean_ring_buffer_head >= FFT_MEAN_BUFFER_LENGTH)
 	{
 		mean_ring_buffer_head = 0;
 	}
-	if(frame_count > MEAN_BUFFER_LENGTH)
+	if(frame_count > FFT_INPUT_LENGTH)
 	{
-		myFFT.doRealFFT(mean_ring_buffer,MEAN_BUFFER_LENGTH, mean_ring_buffer_fft_head, frame->fftMagnitude);
+		myFFT.doRealFFT(mean_ring_buffer, mean_ring_buffer_fft_head, frame->fftMagnitude);
 	}
 
 	frame->async_filtering_done = 1;
+	delete this; //I can honestly say this is the ugliest line of C++ I've ever written.
 
 }
 

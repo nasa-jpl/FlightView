@@ -17,12 +17,11 @@ class fft {
 	std::complex<float> * CFFT;
 
 public:
-	fft() {
-		CFFT = new std::complex<float>[MAX_FFT_SIZE];
-	};
-void doRealFFT(float * arr, unsigned int len, unsigned int ring_head, float *fft_real_result);
+	fft();
+	virtual ~fft();
+void doRealFFT(float * arr, unsigned int ring_head, float *fft_real_result);
 
-std::complex<float> * doFFT(float * arr, unsigned int len, unsigned int ring_head);
+std::complex<float> * doFFT(float * arr, unsigned int ring_head);
 std::complex<float> * doFFT(std::complex<float> * arr, unsigned int len);
 
 private:

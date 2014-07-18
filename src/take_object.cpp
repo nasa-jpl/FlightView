@@ -35,7 +35,7 @@ take_object::~take_object()
 
 	delete dsf;
 	delete sdvf;
-	delete mf;
+	//delete mf;
 }
 
 
@@ -68,7 +68,6 @@ void take_object::start()
 	pdv_thread_run = 1;
 	dsf = new dark_subtraction_filter(frWidth,frHeight);
 	sdvf = new std_dev_filter(frWidth,frHeight);
-	mf = new mean_filter(frWidth,frHeight);
 	//numbufs = 16;
 	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 	pdv_thread = boost::thread(&take_object::pdv_loop, this);
@@ -102,10 +101,10 @@ void take_object::pdv_loop() //Producer Thread
 			curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
 		}
 
-		//mf->start_mean(curFrame->image_data_ptr,curFrame->vertical_mean_profile,curFrame->horizontal_mean_profile,curFrame->fftMagnitude);
-		//mf->start_mean(curFrame);
+		mean_filter * mf = new mean_filter(curFrame, count, frWidth, frHeight); //This will deallocate itself when it is done.
+		mf->start_mean();
 		dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
-		//sdvf->update_GPU_buffer(curFrame->image_data_ptr);
+		sdvf->update_GPU_buffer(curFrame->image_data_ptr);
 
 		if(count % filter_refresh_rate == 0)
 		{

@@ -1,5 +1,6 @@
 #include "std_dev_filter.cuh"
 #include "cuda_utils.cuh"
+#include "constants.h"
 #include <cuda_profiler_api.h>
 #include <math.h>
 #include <iostream>
@@ -36,7 +37,7 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 		}
 		else
 		{
-			value = *(pic_d + offset+(width*height*(MAX_N - (i-gpu_buffer_head))));
+			value = *(pic_d + offset+(width*height*(GPU_FRAME_BUFFER_SIZE - (i-gpu_buffer_head))));
 		}
 		sum += value;
 		sq_sum += value * value;
@@ -130,7 +131,7 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 	float max = log((1<<16)); //ln(2^16)+.1
 	float increment = (max - 0)/(NUMBER_OF_BINS);
 	float acc = 0;
-	for(int i = 0; i < NUMBER_OF_BINS; i++)
+	for(unsigned int i = 0; i < NUMBER_OF_BINS; i++)
 	{
 		histogram_bins[i] = exp(acc)-1;
 		acc+=increment;
@@ -180,7 +181,7 @@ void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
 
 
 }
-void std_dev_filter::start_std_dev_filter(int N, float * std_dev_out, uint32_t * std_dev_histogram)
+void std_dev_filter::start_std_dev_filter(unsigned int N, float * std_dev_out, uint32_t * std_dev_histogram)
 {
 	std_dev_result = std_dev_out;
 	histogram_out = std_dev_histogram;

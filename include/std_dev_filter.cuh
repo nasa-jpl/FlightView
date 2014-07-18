@@ -26,7 +26,7 @@ class std_dev_filter
 public:
 	std_dev_filter(int nWidth, int nHeight);
 	virtual ~std_dev_filter();
-	void start_std_dev_filter(int N, float * std_dev_out, uint32_t * std_dev_histogram);
+	void start_std_dev_filter(unsigned int N, float * std_dev_out, uint32_t * std_dev_histogram);
 	void update_GPU_buffer(uint16_t * image_ptr);
 	void wait_std_dev();
 	bool outputReady();
@@ -46,8 +46,11 @@ private:
 	int lastN;
 	int gpu_buffer_head;
 	int currentN;
+
+	uint16_t * picture_in_host;
 	uint16_t * pictures_device;
 	uint16_t * current_picture_device;
+
 	float * picture_out_device;
 	float * picture_out_host;
 	float histogram_bins[NUMBER_OF_BINS];
@@ -56,7 +59,6 @@ private:
 	uint32_t * histogram_out_host;
 	uint32_t * histogram_out_device;
 
-	uint16_t * picture_in_host;
 
 	float * std_dev_result;
 	uint32_t * histogram_out;
