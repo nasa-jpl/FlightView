@@ -7,7 +7,7 @@
 #include <string>
 #include <queue>
 #include "dark_subtraction_filter.cuh"
-#include "std_dev_filter.cuh"
+#include "std_dev_filter.hpp"
 //#include "fft.hpp"
 #include <fstream>
 using namespace std;

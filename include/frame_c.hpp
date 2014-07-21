@@ -7,6 +7,10 @@
 //#include <atomic>
 #include "constants.h"
 #include "boost/thread.hpp"
+#include "boost/thread/mutex.hpp"
+
+#include "boost/thread/shared_mutex.hpp"
+
 #ifndef FRAME_C_HPP_
 #define FRAME_C_HPP_
 

@@ -8,7 +8,6 @@
 #ifndef STD_DEV_FILTER_CUH_
 #define STD_DEV_FILTER_CUH_
 
-
 #include <stdint.h>
 #include <vector>
 #include "constants.h"
@@ -16,7 +15,10 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "cuda_utils.cuh"
+#include "std_dev_filter_device_code.cuh"
+
 #include "frame_c.hpp"
+
 
 static const int STD_DEV_DEVICE_NUM = (1 % getDeviceCount());
 
@@ -37,11 +39,11 @@ public:
 private:
 	std_dev_filter() {}//Private default constructor
 	std::vector <float> shb;
-	int width;
-	int height;
-	int lastN;
-	int gpu_buffer_head;
-	int currentN;
+	unsigned int width;
+	unsigned int height;
+	unsigned int lastN;
+	unsigned int gpu_buffer_head;
+	unsigned int currentN;
 
 	uint16_t * picture_in_host;
 	uint16_t * pictures_device;

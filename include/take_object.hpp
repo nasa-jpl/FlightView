@@ -23,7 +23,7 @@
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "std_dev_filter.cuh"
+#include "std_dev_filter.hpp"
 #include "chroma_translate_filter.cuh"
 #include "dark_subtraction_filter.cuh"
 #include "mean_filter.hpp"
