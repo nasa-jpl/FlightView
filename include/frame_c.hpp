@@ -4,8 +4,9 @@
  *  Created on: Jul 15, 2014
  *      Author: nlevy
  */
-#include <atomic>
+//#include <atomic>
 #include "constants.h"
+#include "boost/thread.hpp"
 #ifndef FRAME_C_HPP_
 #define FRAME_C_HPP_
 
@@ -19,15 +20,57 @@ struct frame_c{
 	float vertical_mean_profile[MAX_HEIGHT];
 	float horizontal_mean_profile[MAX_WIDTH];
 	float fftMagnitude[FFT_INPUT_LENGTH/2];
-	std::atomic_int_least8_t delete_counter; //NOTE!! It is incredibly critical that this number is equal to the number of frameview_widgets that are drawing + the number of mean profiles, too many and memory will leak; too few and invalid data will be displayed.
-	std::atomic_int_least8_t async_filtering_done;
-	std::atomic_int_least8_t has_valid_std_dev;
 
+private:
+	/* Cuda will not compile with the atomics */
+	//std::atomic_int_least8_t delete_counter; //NOTE!! It is incredibly critical that this number is equal to the number of frameview_widgets that are drawing + the number of mean profiles, too many and memory will leak; too few and invalid data will be displayed.
+	//std::atomic_int_least8_t async_filtering_done;
+	//std::atomic_int_least8_t valid_std_dev;
+	int8_t delete_counter;
+	int8_t async_filtering_done;
+	int8_t valid_std_dev;
+
+	boost::shared_mutex dc_mux;
+	boost::shared_mutex af_mux;
+	boost::shared_mutex vsd_mux;
+public:
 	frame_c() {
 		delete_counter = 5;
 		async_filtering_done = 0;
-		has_valid_std_dev = 0;
+		valid_std_dev = 0;
 	};
+	int8_t get_delete_counter()
+	{
+		boost::shared_lock<boost::shared_mutex> shlock(dc_mux);
+		return delete_counter;
+	}
+	void set_delete_counter(int8_t val)
+	{
+		boost::unique_lock<boost::shared_mutex> ulock(dc_mux);
+		delete_counter = val;
+	}
+	int8_t get_async_filtering_done()
+	{
+		boost::shared_lock<boost::shared_mutex> shlock(af_mux);
+		return async_filtering_done;
+	}
+	void set_async_filtering_done(int8_t val)
+	{
+		boost::unique_lock<boost::shared_mutex> ulock(af_mux);
+		async_filtering_done = val;
+	}
+	int8_t get_valid_std_dev()
+	{
+		boost::shared_lock<boost::shared_mutex> shlock(vsd_mux);
+		return valid_std_dev;
+	}
+	void set_valid_std_dev(int8_t val)
+	{
+		boost::unique_lock<boost::shared_mutex> ulock(vsd_mux);
+		valid_std_dev = val;
+	}
+
+
 };
 
 

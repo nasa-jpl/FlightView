@@ -159,20 +159,30 @@ std_dev_filter::~std_dev_filter()
 	HANDLE_ERROR(cudaStreamDestroy(std_dev_stream));
 }
 
-void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
+void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 {
 	//Synchronous Part
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
-	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream)); //Turns out this does need to block :( FIX ME!!!!!
 
-	memcpy(picture_in_host, image_ptr,width*height*sizeof(uint16_t));
+	cudaError_t std_dev_stream_status = cudaStreamQuery(std_dev_stream);
+
 	char *device_ptr = ((char *)(pictures_device)) + (gpu_buffer_head*width*height*sizeof(uint16_t));
 
 	//Asynchronous Part
-	HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,picture_in_host,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
+	HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,frame->image_data_ptr,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
+	if(CUDA_SUCCESS == std_dev_stream_status)
+	{
+		dim3 blockDims(BLOCK_SIDE,BLOCK_SIDE,1);
+		dim3 gridDims(width/blockDims.x, height/blockDims.y,1);
 
+		HANDLE_ERROR(cudaMemsetAsync(histogram_out_device,0,NUMBER_OF_BINS*sizeof(uint32_t),std_dev_stream));
+		std_dev_filter_kernel <<<gridDims,blockDims,0,std_dev_stream>>> (pictures_device, picture_out_device, histogram_bins_device, histogram_out_device, width, height, gpu_buffer_head, N);
+		HANDLE_ERROR( cudaPeekAtLastError() );
+		HANDLE_ERROR(cudaMemcpyAsync(std_dev_result,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream));
+
+	}
 	//Synchronous again
-	if(++gpu_buffer_head == MAX_N) //Increment and test for ring buffer overflow
+	if(++gpu_buffer_head == GPU_FRAME_BUFFER_SIZE) //Increment and test for ring buffer overflow
 		gpu_buffer_head = 0; //If overflow, than start overwriting the front
 	if(currentN < MAX_N) //If the frame buffer has not been fully populated
 	{
@@ -181,6 +191,7 @@ void std_dev_filter::update_GPU_buffer(uint16_t * image_ptr)
 
 
 }
+/*
 void std_dev_filter::start_std_dev_filter(unsigned int N, float * std_dev_out, uint32_t * std_dev_histogram)
 {
 	std_dev_result = std_dev_out;
@@ -192,8 +203,7 @@ void std_dev_filter::start_std_dev_filter(unsigned int N, float * std_dev_out, u
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
 	if(N < MAX_N && N<= currentN) //We can't calculate the std. dev farther back in time then we are keeping track.
 	{
-		dim3 blockDims(BLOCK_SIDE,BLOCK_SIDE,1);
-		dim3 gridDims(width/blockDims.x, height/blockDims.y,1);
+
 
 		//Asynchronous Part
 #ifdef DO_HISTOGRAM
@@ -215,6 +225,7 @@ void std_dev_filter::start_std_dev_filter(unsigned int N, float * std_dev_out, u
 	}
 
 }
+*/
 uint16_t * std_dev_filter::getEntireRingBuffer() //For testing only
 {
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
