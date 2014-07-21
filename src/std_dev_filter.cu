@@ -164,13 +164,13 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 	//Synchronous Part
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
 
-	cudaError_t std_dev_stream_status = cudaStreamQuery(std_dev_stream);
+	cudaError std_dev_stream_status = cudaStreamQuery(std_dev_stream);
 
 	char *device_ptr = ((char *)(pictures_device)) + (gpu_buffer_head*width*height*sizeof(uint16_t));
 
 	//Asynchronous Part
 	HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,frame->image_data_ptr,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
-	if(CUDA_SUCCESS == std_dev_stream_status)
+	if(cudaSuccess == std_dev_stream_status)
 	{
 		dim3 blockDims(BLOCK_SIDE,BLOCK_SIDE,1);
 		dim3 gridDims(width/blockDims.x, height/blockDims.y,1);
@@ -233,12 +233,7 @@ uint16_t * std_dev_filter::getEntireRingBuffer() //For testing only
 	HANDLE_ERROR(cudaMemcpy(out,pictures_device,width*height*sizeof(uint16_t)*MAX_N,cudaMemcpyDeviceToHost));
 	return out;
 }
-void std_dev_filter::wait_std_dev()
-{
-	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
-	HANDLE_ERROR(cudaStreamSynchronize(std_dev_stream));
-	HANDLE_ERROR(cudaPeekAtLastError());
-}
+
 std::vector <float> * std_dev_filter::getHistogramBins()
 {
 

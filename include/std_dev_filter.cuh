@@ -36,9 +36,6 @@ public:
 	cudaStream_t std_dev_stream;
 private:
 	std_dev_filter() {}//Private default constructor
-
-	//boost::shared_array<float> picture_out;
-	//boost::shared_array<uint32_t> hist_data;
 	std::vector <float> shb;
 	int width;
 	int height;

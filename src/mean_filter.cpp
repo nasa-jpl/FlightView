@@ -66,7 +66,8 @@ void mean_filter::calculate_means()
 		myFFT.doRealFFT(mean_ring_buffer, mean_ring_buffer_fft_head, frame->fftMagnitude);
 	}
 
-	frame->async_filtering_done = 1;
+	//frame->async_filtering_done = 1;
+	frame->set_async_filtering_done(1);
 	delete this; //I can honestly say this is the ugliest line of C++ I've ever written.
 
 }

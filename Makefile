@@ -24,7 +24,7 @@ LIBOUT = libcuda_take.a
 
 ######################################
 #Here we specify what source files are needed for the program/library, and we create virtual paths so that we don't have to refer to the source directory all the time
-SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter.cu chroma_translate_filter.cu mean_filter.cu
+SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter.cu chroma_translate_filter.cu mean_filter.cu frame_c.cpp
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 
 
@@ -71,7 +71,7 @@ CONLYFLAGS = -std=c99
 CONLYFLAGS += $(CFLAGS)
 
 CPPFLAGS = $(CFLAGS)
-CPPFLAGS += -std=c++11 -O3 -fopenmp  -Wall -Werror #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
+CPPFLAGS += -std=c++11 -O1 -fopenmp  -Wall -Werror #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 
 NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
 #(-G -lineinfo) are both to enable cuda-gdb debugging, -Xcompiler specifies arguments to get passed directly to g++ (which NVCC is built on), the internet said to do -rdynamic
