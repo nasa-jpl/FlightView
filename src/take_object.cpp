@@ -104,7 +104,7 @@ void take_object::pdv_loop() //Producer Thread
 		mean_filter * mf = new mean_filter(curFrame, count, frWidth, frHeight); //This will deallocate itself when it is done.
 		mf->start_mean();
 		dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
-		//sdvf->update_GPU_buffer(curFrame->image_data_ptr);
+		sdvf->update_GPU_buffer(curFrame,400);
 
 		if(count % filter_refresh_rate == 0)
 		{
