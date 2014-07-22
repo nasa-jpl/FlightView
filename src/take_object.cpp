@@ -35,6 +35,16 @@ take_object::~take_object()
 
 	delete dsf;
 	delete sdvf;
+
+	printf("resseting GPUs!");
+	int count;
+	cudaGetDeviceCount(&count);
+	for(int i = 0; i < count; i++)
+	{
+		printf("resetting GPU#%i",i);
+		cudaSetDevice(i);
+		cudaDeviceReset(); //Dump all are bad stuff from each of our GPUs.
+	}
 	//delete mf;
 }
 
@@ -101,22 +111,13 @@ void take_object::pdv_loop() //Producer Thread
 			curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
 		}
 
-		mean_filter * mf = new mean_filter(curFrame, count, frWidth, frHeight); //This will deallocate itself when it is done.
-		mf->start_mean();
+
 		dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
 		sdvf->update_GPU_buffer(curFrame,400);
 
-		if(count % filter_refresh_rate == 0)
-		{
-			//sdvf->start_std_dev_filter(std_dev_filter_N,curFrame->std_dev_data,curFrame->std_dev_histogram);
-		}
-
-		if(count % filter_refresh_rate == filter_refresh_rate-1)
-		{
-			//sdvf->wait_std_dev();
-		}
-		//mf->wait_mean();
 		dsf->wait_dark_subtraction();
+		mean_filter * mf = new mean_filter(curFrame, count, frWidth, frHeight); //This will deallocate itself when it is done.
+		mf->start_mean();
 		frame_list.push_front(curFrame);
 		count++;
 		saveFrameAvailable = true;

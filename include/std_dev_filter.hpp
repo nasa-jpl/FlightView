@@ -45,20 +45,15 @@ private:
 	unsigned int gpu_buffer_head;
 	unsigned int currentN;
 
-	uint16_t * picture_in_host;
 	uint16_t * pictures_device;
 	uint16_t * current_picture_device;
 
 	float * picture_out_device;
-	float * picture_out_host;
 	float histogram_bins[NUMBER_OF_BINS];
 	float * histogram_bins_device;
 
-	uint32_t * histogram_out_host;
 	uint32_t * histogram_out_device;
 
-
 	float * std_dev_result;
-	uint32_t * histogram_out;
 };
 #endif /* STD_DEV_FILTER_CUH_ */

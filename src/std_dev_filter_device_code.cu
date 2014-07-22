@@ -8,6 +8,7 @@ void std_dev_filter_kernel_wrapper(dim3 gd, dim3 bd, unsigned int shm_size, cuda
 }
 __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, float * histogram_bins, uint32_t * histogram_out, int width, int height, int gpu_buffer_head, int N)
 {
+
 	__shared__ int block_histogram[NUMBER_OF_BINS];
 	int col = blockIdx.x*blockDim.x + threadIdx.x;
 	int row = blockIdx.y*blockDim.y + threadIdx.y;
@@ -45,7 +46,6 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 		printf("mean: %f std_dev: %f @ line 100",mean, std_dev);
 	}
 	picture_out_device[offset] = std_dev;
-
 	//__syncthreads(); //unnecessary?
 	int blockArea = blockDim.x*blockDim.y;
 	for(int shm_offset = 0; shm_offset < NUMBER_OF_BINS; shm_offset+=blockArea)
@@ -55,6 +55,7 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 			block_histogram[shm_offset + threadIdx.y * blockDim.x + threadIdx.x] = 0; //Zero shared mem initially.
 		}
 	}
+
 	if(offset == 100*width && STD_DEV_DEBUG)
 	{
 		for(int i = 0; i < NUMBER_OF_BINS;i++)
@@ -68,6 +69,7 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 	{
 		c++;
 	}
+
 	__syncthreads();
 	atomicAdd(&block_histogram[c], 1); //calculate sub histogram for each block
 	__syncthreads();
@@ -91,4 +93,5 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 			atomicAdd(&histogram_out[c],block_histogram[c]);
 		}
 	}
+
 }
