@@ -2,12 +2,13 @@
 #include "fft.hpp"
 #include <atomic>
 
-mean_filter::mean_filter(frame_c * frame, unsigned long frame_count, int nWidth, int nHeight)
+mean_filter::mean_filter(frame_c * frame, unsigned long frame_count, int nWidth, int nHeight, bool useDSF)
 {
 	width = nWidth;
 	height = nHeight;
 	this->frame = frame;
 	this->frame_count = frame_count;
+	this->useDSF = useDSF;
 }
 
 mean_filter::~mean_filter()
@@ -24,6 +25,7 @@ void mean_filter::start_mean()
 }
 void mean_filter::calculate_means()
 {
+
 	for(int r = 0; r < height; r++)
 	{
 		frame->vertical_mean_profile[r]=0;
@@ -36,8 +38,16 @@ void mean_filter::calculate_means()
 	{
 		for(int c = 0; c < width; c++)
 		{
-			frame->vertical_mean_profile[r] += frame->image_data_ptr[r*width + c];
-			frame->horizontal_mean_profile[c] += frame->image_data_ptr[r*width + c];
+			if(!useDSF)
+			{
+				frame->vertical_mean_profile[r] += frame->image_data_ptr[r*width + c];
+				frame->horizontal_mean_profile[c] += frame->image_data_ptr[r*width + c];
+			}
+			else if(useDSF)
+			{
+				frame->vertical_mean_profile[r] += frame->dark_subtracted_data[r*width + c];
+				frame->horizontal_mean_profile[c] += frame->dark_subtracted_data[r*width + c];
+			}
 		}
 	}
 
@@ -54,7 +64,7 @@ void mean_filter::calculate_means()
 	frame_mean/=width;
 
 	mean_ring_buffer_fft_head = mean_ring_buffer_head;
-//	printf("Mrbf %u\n",mean_ring_buffer_fft_head);
+	//	printf("Mrbf %u\n",mean_ring_buffer_fft_head);
 
 	mean_ring_buffer[mean_ring_buffer_head++] = frame_mean;
 	if(mean_ring_buffer_head >= FFT_MEAN_BUFFER_LENGTH)

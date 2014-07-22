@@ -87,6 +87,7 @@ public:
 	bool dsfMaskCollected;
 
 	std::vector<float> * getHistogramBins();
+    bool useDSF = false;
 
 
 	bool std_dev_ready();

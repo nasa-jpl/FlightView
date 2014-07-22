@@ -55,5 +55,6 @@ private:
 	uint32_t * histogram_out_device;
 
 	float * std_dev_result;
+	frame_c * prevFrame = NULL;
 };
 #endif /* STD_DEV_FILTER_CUH_ */
