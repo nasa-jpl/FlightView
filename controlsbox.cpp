@@ -74,12 +74,14 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     ceiling_slider.setTickInterval(BIG_TICK);
     floor_slider.setTickInterval(BIG_TICK);
 
+    useDSFCbox.setText("Use Dark Subtracted data for mean profiles & FFT?");
     //First Row
     sliders_layout.addWidget(new QLabel("Std. Dev. N:"),1,1,1,1);
     sliders_layout.addWidget(&std_dev_N_slider,1,2,1,7);
     sliders_layout.addWidget(&std_dev_N_edit,1,10,1,1);
     //Second Row
     sliders_layout.addWidget(&low_increment_cbox,2,1,1,1);
+   // sliders_layout.addWidget(&useDSFCbox,2,2,1,1);
 
     //Third Row
     sliders_layout.addWidget(new QLabel("Ceiling:"),3,1,1,1);

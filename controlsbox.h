@@ -67,6 +67,8 @@ public:
     QLineEdit filename_edit;
     QPushButton set_filename_button;
 
+    QCheckBox useDSFCbox;
+
 private:
     QTabWidget *qtw;
     frameview_widget * cur_frameview;

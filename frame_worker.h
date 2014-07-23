@@ -2,6 +2,7 @@
 #define FRAME_WORKER_H
 
 #include <QObject>
+#include <QSharedPointer>
 #include <QThread>
 #include <QMutex>
 #include <QVector>
@@ -30,11 +31,12 @@ public:
 
     QMutex vector_mutex;
     QVector<double> histo_data_vec;
-    QVector<double> rfft_data_vec;
+    //QVector<double> rfft_data_vec;
 
     unsigned int old_save_framenum;
 signals:
     void newFrameAvailable(frame_c *);
+    void newFFTMagAvailable(QSharedPointer<QVector<double>>);
     void std_dev_ready();
     void savingFrameNumChanged(unsigned int n);
 public slots:
@@ -42,7 +44,7 @@ public slots:
     void startCapturingDSFMask();
     void finishCapturingDSFMask();
     void loadDSFMask(QString);
-
+    void toggleUseDSF(bool t);
     void startSavingRawData(unsigned int framenum,QString name);
     void stopSavingRawData();
 
@@ -52,7 +54,7 @@ public slots:
 private:
     take_object to;
     //std::list
-    void updateFFTVector();
+    QSharedPointer<QVector<double>> updateFFTVector();
     void updateHistogramVector();
 
     unsigned int frHeight;

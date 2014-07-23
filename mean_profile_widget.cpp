@@ -57,6 +57,7 @@ void mean_profile_widget::initQCPStuff()
 
     qcp->yAxis->setRange(QCPRange(0,(1<<16))); //From 0 to 2^16
     qvbl.addWidget(qcp);
+
     this->setLayout(&qvbl);
 }
 
@@ -92,11 +93,11 @@ void mean_profile_widget::handleNewFrame(frame_c * frame)
        qcp->graph(0)->setData(x,y);
         //qcp->graph(0)->rescaleAxes();
         qcp->replot();
-        if(--frame->delete_counter <= 0)
-        {
-            delete frame;
-        }
-
+    }
+    if((--frame->delete_counter) == 0)// && frame->has_valid_std_dev == 0)
+    {
+        qDebug() << "deleting frame";
+        delete frame;
     }
     fps++;
 }

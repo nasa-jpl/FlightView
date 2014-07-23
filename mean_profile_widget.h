@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QVBoxLayout>
 #include <atomic>
+#include <QCheckBox>
 
 #include "qcustomplot.h"
 #include "frame_worker.h"
@@ -21,7 +22,6 @@ class mean_profile_widget : public QWidget
     QVector<double> x;
 
     QVector<double> y;
-
     frameWorker * fw;
 public:
     explicit mean_profile_widget(frameWorker * fw,image_t image_type ,QWidget *parent = 0);

@@ -163,8 +163,8 @@ void frameview_widget::handleNewFrame(frame_c * frame)
         qcp->replot();
 
     }
-    qDebug() << "dc" << frame->delete_counter;
-    if((--frame->delete_counter) == 0)
+    //qDebug() << "dc" << frame->delete_counter;
+    if((--frame->delete_counter) == 0)// && frame->has_valid_std_dev == 0)
     {
         qDebug() << "deleting frame";
         delete frame;

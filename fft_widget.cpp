@@ -4,7 +4,6 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
 {
     qcp = NULL;
     this->fw = fw;
-    fps = 0;
     zero_const_box.setText("Set constant FFT term to zero");
     zero_const_box.setChecked(true);
 }
@@ -20,11 +19,11 @@ void fft_widget::initQCPStuff()
     qcp->addPlottable(fft_bars);
     fft_bars->setName("Magnitude of FFT average pixel value");
     //fft_bars->setP
-    freq_bins = QVector<double>(MEAN_BUFFER_LENGTH/2);
+    freq_bins = QVector<double>(FFT_INPUT_LENGTH/2);
     double nyquist_freq = (double)max_fps[fw->camera_type()]/2;
-    double increment = nyquist_freq/(MEAN_BUFFER_LENGTH/2);
+    double increment = nyquist_freq/(FFT_INPUT_LENGTH/2);
     fft_bars->setWidth(increment);
-    for(int i = 0; i < MEAN_BUFFER_LENGTH/2; i++)
+    for(int i = 0; i < FFT_INPUT_LENGTH/2; i++)
     {
         freq_bins[i] = increment*i;
     }
@@ -36,28 +35,25 @@ void fft_widget::initQCPStuff()
 }
 
 
-void fft_widget::handleNewFrame()
+void fft_widget::handleNewFrame(QSharedPointer<QVector<double>> rfft_data_vec)
 
 {
     if(qcp == NULL)
     {
         initQCPStuff();
     }
-    if(fps%4==0 && !this->isHidden())
+    if(count%4==0 && !this->isHidden())
     {
-        QMutexLocker ml(&fw->vector_mutex);
-        //printf("const term in vec:%f\n",fw->rfft_data_vec[0]);
 
         if(zero_const_box.isChecked())
         {
-            fw->rfft_data_vec[0]=0;
+            (*rfft_data_vec)[0]=0;
         }
-
-        fft_bars->setData(freq_bins,fw->rfft_data_vec);
-        ml.unlock();
+        fft_bars->setData(freq_bins,*rfft_data_vec);
 
         fft_bars->rescaleAxes();
 
         qcp->replot();
     }
+    count++;
 }

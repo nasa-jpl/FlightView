@@ -1,6 +1,7 @@
 #ifndef FFT_WIDGET_H
 #define FFT_WIDGET_H
 
+#include <QSharedPointer>
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QCheckBox>
@@ -19,7 +20,7 @@ class fft_widget : public QWidget
     QVector<double> freq_bins;
     QCheckBox zero_const_box;
     frameWorker * fw;
-    unsigned int fps;
+    unsigned int count = 0;
 public:
     explicit fft_widget(frameWorker *fw, image_t image_type,QWidget *parent = 0);
     ~fft_widget();
@@ -29,7 +30,7 @@ private:
 signals:
     
 public slots:
-    void handleNewFrame();
+    void handleNewFrame(QSharedPointer<QVector<double>> rfft_data_vec);
 
 };
 

@@ -7,6 +7,10 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     qRegisterMetaType<frame_c*>("frame_c*");
+    qRegisterMetaType<QVector<double>>("QVector<double>");
+    qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");
+
+
     createBackend();
     this->resize(1440,900);
     mainwidget = new QWidget();
@@ -76,19 +80,21 @@ void MainWindow::connectAndStartBackend()
     connect(workerThread,SIGNAL(started()), fw, SLOT(captureFrames()));
 
     connect(fw,SIGNAL(newFrameAvailable(frame_c *)), unfiltered_widget, SLOT(handleNewFrame(frame_c *)));
-    connect(fw,SIGNAL(newFrameAvailable()), dsf_widget, SLOT(handleNewFrame()));
-    connect(fw,SIGNAL(newFrameAvailable()), std_dev_widget, SLOT(handleNewFrame()));
+    connect(fw,SIGNAL(newFrameAvailable(frame_c *)), dsf_widget, SLOT(handleNewFrame(frame_c *)));
+    connect(fw,SIGNAL(newFrameAvailable(frame_c *)), std_dev_widget, SLOT(handleNewFrame(frame_c *)));
     //connect(fw,SIGNAL(newFrameAvailable()),hist_widget,SLOT(handleNewFrame()));
-    //connect(fw,SIGNAL(newFrameAvailable()),vert_widget,SLOT(handleNewFrame()));
-    //connect(fw,SIGNAL(newFrameAvailable()),horiz_widget,SLOT(handleNewFrame()));
-    //connect(fw,SIGNAL(newFrameAvailable()),fft_mean_widget,SLOT(handleNewFrame()));
+    connect(fw,SIGNAL(newFrameAvailable(frame_c *)),vert_widget,SLOT(handleNewFrame(frame_c *)));
+    connect(fw,SIGNAL(newFrameAvailable(frame_c *)),horiz_widget,SLOT(handleNewFrame(frame_c *)));
+    //connect(fw,SIGNAL(newFrameAvailable(frame_c *)),fft_mean_widget,SLOT(handleNewFrame(frame_c *)));
+    //connect(fw,SIGNAL(newFFTMagAvailable(QVector<double>)),fft_mean_widget,SLOT(handleNewFrame(QVector<double>)));
 
+    connect(fw,SIGNAL(newFFTMagAvailable(QSharedPointer<QVector<double>>)),fft_mean_widget,SLOT(handleNewFrame(QSharedPointer<QVector<double>>)));
 
 
     connect(&controlbox->collect_dark_frames_button,SIGNAL(clicked()),fw,SLOT(startCapturingDSFMask()));
     connect(&controlbox->stop_dark_collection_button,SIGNAL(clicked()),fw,SLOT(finishCapturingDSFMask()));
-    connect(controlbox,SIGNAL(mask_selected(const char *)),fw,SLOT(loadDSFMask(const char *)));
-
+    //connect(controlbox,SIGNAL(mask_selected(const char *)),fw,SLOT(loadDSFMask(const char *)));
+   // connect(&controlbox->useDSFCbox,SIGNAL(toggled(bool)),fw,SLOT(toggleUseDSF(bool)));
 
     connect(controlbox,SIGNAL(startSavingFinite(unsigned int,QString)),fw,SLOT(startSavingRawData(unsigned int,QString)));
     connect(controlbox,SIGNAL(stopSaving()),fw,SLOT(stopSavingRawData()));
