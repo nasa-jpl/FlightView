@@ -22,9 +22,11 @@ void simple_sensor_grab()
 	unsigned long last_framelist_size = 0;
 	while(1)
 	{
+		printf("how to delta\n");
+
 		usleep(1000000);
-		printf("frame list size %lu, delta %lu\n",to.frame_list.size(),to.frame_list.size() - last_framelist_size);
-		last_framelist_size = to.frame_list.size();
+		//printf("frame list size %lu, delta %lu\n",to.frame_list.size(),to.frame_list.size() - last_framelist_size);
+		//last_framelist_size = to.frame_list.size();
 
 	}
 }

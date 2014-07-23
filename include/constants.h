@@ -15,7 +15,7 @@ const static unsigned int FFT_INPUT_LENGTH = 256; //must be power of 2; will fai
 static const unsigned int MAX_FFT_SIZE = 4096;
 //static const unsigned int MAX_N = 200;
 static const unsigned int MAX_N = 1000;
-
+static const unsigned int CPU_FRAME_BUFFER_SIZE = 1500;
 static const unsigned int GPU_FRAME_BUFFER_SIZE = MAX_N*3/2; //1500
 static const unsigned int BLOCK_SIDE = 20;
 static const unsigned int NUMBER_OF_BINS = 1024;

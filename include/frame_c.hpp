@@ -13,7 +13,7 @@
 #define FRAME_C_HPP_
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
 
-//#define USE_PINNED_MEMORY
+#define USE_PINNED_MEMORY
 
 
 struct frame_c{
@@ -39,16 +39,22 @@ struct frame_c{
 	std::atomic_int_least8_t has_valid_std_dev; //1 indicates doing std. dev, 2 indicates done with std. dev
 
 	frame_c() {
-		delete_counter = 5;
-		async_filtering_done = 0;
-		has_valid_std_dev = 0;
+		reset();
 #ifdef USE_PINNED_MEMORY
 		HANDLE_ERROR(cudaMallocHost( (void **)&raw_data_ptr, MAX_SIZE*sizeof(uint16_t), cudaHostAllocPortable));
 		HANDLE_ERROR(cudaMallocHost( (void **)&dark_subtracted_data, MAX_SIZE*sizeof(float), cudaHostAllocPortable));
 		HANDLE_ERROR(cudaMallocHost( (void **)&std_dev_data, MAX_SIZE*sizeof(float), cudaHostAllocPortable));
 		HANDLE_ERROR(cudaMallocHost( (void **)&std_dev_histogram, NUMBER_OF_BINS*sizeof(uint32_t), cudaHostAllocPortable));
 #endif
-	};
+	}
+	void reset()
+	{
+		delete_counter = 5;
+		async_filtering_done = 0;
+		has_valid_std_dev = 0;
+	}
+
+
 	~frame_c()
 	{
 #ifdef USE_PINNED_MEMORY

@@ -62,15 +62,14 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 	//char *device_ptr = ((char *)(pictures_device)) + (gpu_buffer_head*width*height*sizeof(uint16_t));
 	uint16_t *device_ptr = pictures_device + (gpu_buffer_head*width*height);
 	//Asynchronous Part
-	//HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,frame->image_data_ptr,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
+	HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,frame->image_data_ptr,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
 
 
 	if(cudaSuccess == std_dev_stream_status)
 	{
 		if(prevFrame != NULL)
 		{
-			//HANDLE_ERROR(cudaMemcpyAsync(prevFrame->std_dev_data,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream)); //Despite the name, these calls are synchronous w/ respect to the CPU
-			//HANDLE_ERROR(cudaMemcpyAsync(prevFrame->std_dev_histogram,histogram_out_device,NUMBER_OF_BINS*sizeof(uint32_t),cudaMemcpyDeviceToHost,std_dev_stream));
+
 			prevFrame->has_valid_std_dev = 2; //Ready to display
 		}
 
@@ -84,7 +83,8 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 		printf("launching new std_dev kernel @ count:%i\n",count);
 		std_dev_filter_kernel_wrapper(gridDims,blockDims,0,std_dev_stream,pictures_device, picture_out_device, histogram_bins_device, histogram_out_device, width, height, gpu_buffer_head, N);
 		HANDLE_ERROR( cudaPeekAtLastError() );
-
+		HANDLE_ERROR(cudaMemcpyAsync(frame->std_dev_data,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream)); //Despite the name, these calls are synchronous w/ respect to the CPU
+		HANDLE_ERROR(cudaMemcpyAsync(frame->std_dev_histogram,histogram_out_device,NUMBER_OF_BINS*sizeof(uint32_t),cudaMemcpyDeviceToHost,std_dev_stream));
 
 	}
 	//Synchronous again

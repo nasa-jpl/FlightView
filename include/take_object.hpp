@@ -30,6 +30,7 @@
 #include "edtinc.h"
 #include "camera_types.h"
 #include "frame_c.hpp"
+#include "constants.h"
 
 
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = true;
@@ -51,7 +52,6 @@ class take_object {
 
 	int std_dev_filter_N;
 	int lastfc;
-	uint64_t count;
 	chroma_translate_filter ctf;
 	dark_subtraction_filter * dsf;
 	std_dev_filter * sdvf;
@@ -106,7 +106,9 @@ public:
 	camera_t cam_type;
 	unsigned int save_framenum;
 	//std::list<std::shared_ptr<frame_c> > frame_list;
-	std::list<frame_c * > frame_list;
+	//std::list<frame_c * > frame_list;
+	frame_c * frame_ring_buffer;
+	unsigned long count = 0;
 
 private:
 	void pdv_loop();

@@ -22,6 +22,7 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 	this->raw_save_file = NULL;
 
 	dsfMaskCollected = false;
+	frame_ring_buffer = new frame_c[CPU_FRAME_BUFFER_SIZE];
 
 
 }
@@ -35,7 +36,7 @@ take_object::~take_object()
 
 	delete dsf;
 	delete sdvf;
-
+	delete frame_ring_buffer;
 	printf("resseting GPUs!");
 	int count;
 	cudaGetDeviceCount(&count);
@@ -96,7 +97,8 @@ void take_object::pdv_loop() //Producer Thread
 	while(pdv_thread_run == 1)
 	{
 		//curFrame = std::shared_ptr<frame_c>(new frame_c());
-		curFrame = new frame_c();
+		curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+		curFrame->reset();
 		wait_ptr = pdv_wait_image(pdv_p);
 		memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
 
@@ -118,13 +120,11 @@ void take_object::pdv_loop() //Producer Thread
 		dsf->wait_dark_subtraction();
 		mean_filter * mf = new mean_filter(curFrame, count, frWidth, frHeight,false); //This will deallocate itself when it is done.
 		mf->start_mean();
-		frame_list.push_front(curFrame);
-		count++;
+		//frame_list.push_front(curFrame);
 		saveFrameAvailable = true;
 		//doSave();
 		pdv_start_image(pdv_p); //Start another
 
-		//newFrameAvailable.notify_one(); //Tells everyone waiting on newFrame available that they can now go.
 		framecount = *(curFrame->raw_data_ptr + 160);
 		if(CHECK_FOR_MISSED_FRAMES_6604A && cam_type == CL_6604A)
 		{
@@ -134,10 +134,7 @@ void take_object::pdv_loop() //Producer Thread
 			}
 		}
 		last_framecount = framecount;
-		//while(newFrameAvailable)
-		{
-			; //do nothing
-		}
+		count++;
 	}
 }
 
