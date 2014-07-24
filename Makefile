@@ -71,7 +71,7 @@ CONLYFLAGS = -std=c99
 CONLYFLAGS += $(CFLAGS)
 
 CPPFLAGS = $(CFLAGS)
-CPPFLAGS += -std=c++11 -O1 -fopenmp  -Wall -Werror -Wno-unused-function -Wno-unused-variable#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
+CPPFLAGS += -std=c++11 -O1  -Wall -Werror -Wno-unused-function -Wno-unused-variable#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 
 NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=sm_35 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
 #(-G -lineinfo) are both to enable cuda-gdb debugging, -Xcompiler specifies arguments to get passed directly to g++ (which NVCC is built on), the internet said to do -rdynamic

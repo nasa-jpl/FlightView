@@ -14,11 +14,10 @@
 #include <mutex>
 */
 //#include <boost/atomic.hpp> //Atomic isn't in the boost library till 1.5.4, debian wheezy has 1.4.9 :(
-#include <stdint.h>
-#include <stdio.h>
+#include <cstdint>
+#include <cstdio>
 #include <ostream>
 #include <string>
-#include <memory>
 #include <atomic>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>

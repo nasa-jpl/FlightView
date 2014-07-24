@@ -8,8 +8,10 @@
 #ifndef STD_DEV_FILTER_CUH_
 #define STD_DEV_FILTER_CUH_
 
-#include <stdint.h>
+#include <cstdint>
+#include <cmath>
 #include <vector>
+#include <array>
 #include "constants.h"
 #include "edtinc.h"
 #include "cuda.h"
@@ -49,12 +51,25 @@ private:
 	uint16_t * current_picture_device;
 
 	float * picture_out_device;
-	float histogram_bins[NUMBER_OF_BINS];
 	float * histogram_bins_device;
 
 	uint32_t * histogram_out_device;
-
+	float histogram_bins[NUMBER_OF_BINS];
 	float * std_dev_result;
 	frame_c * prevFrame = NULL;
+};
+
+static std::array<float, NUMBER_OF_BINS> getHistogramBinValues()
+{
+	std::array<float,NUMBER_OF_BINS> values;
+	float max = log((1<<16)); //ln(2^16)
+	float increment = (max - 0)/(NUMBER_OF_BINS);
+	float acc = 0;
+	for(unsigned int i = 0; i < NUMBER_OF_BINS; i++)
+	{
+		values[i] = exp(acc)-1;
+		acc+=increment;
+	}
+	return values;
 };
 #endif /* STD_DEV_FILTER_CUH_ */

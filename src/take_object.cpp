@@ -8,6 +8,7 @@
 #include "chroma_translate_filter.cuh"
 #include "take_object.hpp"
 #include "fft.hpp"
+//#define RESET_GPUS
 take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int frf)
 {
 	this->channel = channel_num;
@@ -33,11 +34,15 @@ take_object::~take_object()
 	pdv_thread.join(); //Wait for thread to end
 	pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
 	pdv_close(pdv_p);
+	usleep(1000000);
 
+	delete[] frame_ring_buffer;
+	printf("about to delete filters!\n");
 	delete dsf;
 	delete sdvf;
-	delete frame_ring_buffer;
-	printf("resseting GPUs!");
+
+#ifdef RESET_GPUS
+	printf("resseting GPUs!\n");
 	int count;
 	cudaGetDeviceCount(&count);
 	for(int i = 0; i < count; i++)
@@ -46,7 +51,7 @@ take_object::~take_object()
 		cudaSetDevice(i);
 		cudaDeviceReset(); //Dump all are bad stuff from each of our GPUs.
 	}
-	//delete mf;
+#endif
 }
 
 

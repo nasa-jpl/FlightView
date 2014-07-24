@@ -4,8 +4,8 @@
  *  Created on: Jul 7, 2014
  *      Author: nlevy
  */
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <complex>

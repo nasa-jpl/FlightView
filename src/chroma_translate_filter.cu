@@ -1,5 +1,3 @@
-#include <stdint.h>
-#include <stdlib.h>
 #include "chroma_translate_filter.cuh"
 #include "cuda_utils.cuh"
 #include <iostream>

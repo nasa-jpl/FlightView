@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <ccomplex>
 #include <boost/thread.hpp>
 #include <atomic>

@@ -4,7 +4,6 @@
  *  Created on: Jul 15, 2014
  *      Author: nlevy
  */
-
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 const static unsigned int MAX_WIDTH = 1280;

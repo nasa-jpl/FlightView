@@ -3,7 +3,7 @@
 //#include <cuda.h>
 //#include <cuda_runtime_api.h>
 #include "cuda_utils.cuh"
-#include <stdlib.h>
+#include <cstdlib>
 #include <iostream>
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
 //Kernel code, this runs on the GPU (device)

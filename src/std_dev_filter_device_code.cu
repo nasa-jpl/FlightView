@@ -6,10 +6,10 @@ void std_dev_filter_kernel_wrapper(dim3 gd, dim3 bd, unsigned int shm_size, cuda
 	std_dev_filter_kernel <<<gd,bd,shm_size,strm>>> (pic_d, picture_out_device, histogram_bins, histogram_out, width, height, gpu_buffer_head, N);
 
 }
-__global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, float * histogram_bins, uint32_t * histogram_out, int width, int height, int gpu_buffer_head, int N)
+__global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, float * histogram_bins, unsigned int * histogram_out, int width, int height, int gpu_buffer_head, int N)
 {
 
-	__shared__ int block_histogram[NUMBER_OF_BINS];
+	__shared__ unsigned int block_histogram[NUMBER_OF_BINS];
 	int col = blockIdx.x*blockDim.x + threadIdx.x;
 	int row = blockIdx.y*blockDim.y + threadIdx.y;
 	int offset = col + row*width;

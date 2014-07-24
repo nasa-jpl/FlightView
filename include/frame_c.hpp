@@ -34,7 +34,6 @@ struct frame_c{
 	float vertical_mean_profile[MAX_HEIGHT]; //These can use regular C++ allocation because they do not have to deal w/cuda
 	float horizontal_mean_profile[MAX_WIDTH];
 	float fftMagnitude[FFT_INPUT_LENGTH/2];
-	std::atomic_int_least8_t delete_counter; //NOTE!! It is incredibly critical that this number is equal to the number of frameview_widgets that are drawing + the number of mean profiles, too many and memory will leak; too few and invalid data will be displayed.
 	std::atomic_int_least8_t async_filtering_done;
 	std::atomic_int_least8_t has_valid_std_dev; //1 indicates doing std. dev, 2 indicates done with std. dev
 
@@ -49,7 +48,6 @@ struct frame_c{
 	}
 	void reset()
 	{
-		delete_counter = 5;
 		async_filtering_done = 0;
 		has_valid_std_dev = 0;
 	}
@@ -58,7 +56,6 @@ struct frame_c{
 	~frame_c()
 	{
 #ifdef USE_PINNED_MEMORY
-
 		HANDLE_ERROR(cudaFreeHost(raw_data_ptr));
 		HANDLE_ERROR(cudaFreeHost(dark_subtracted_data));
 		HANDLE_ERROR(cudaFreeHost(std_dev_data));
