@@ -59,17 +59,39 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 
 	cudaError std_dev_stream_status = cudaStreamQuery(std_dev_stream);
 
-	//char *device_ptr = ((char *)(pictures_device)) + (gpu_buffer_head*width*height*sizeof(uint16_t));
-	uint16_t *device_ptr = pictures_device + (gpu_buffer_head*width*height);
+	char *device_ptr = ((char *)(pictures_device)) + (gpu_buffer_head*width*height*sizeof(uint16_t));
+	//uint16_t *device_ptr = pictures_device + (gpu_buffer_head*width*height);
 	//Asynchronous Part
-	HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,frame->image_data_ptr,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
 
+	HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,frame->image_data_ptr,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
+	if(cudaSuccess == cudaStreamQuery(std_dev_stream))
+	{
+		printf("really weird\n");
+	}
 
 	if(cudaSuccess == std_dev_stream_status)
 	{
 		if(prevFrame != NULL)
 		{
 
+			double sum = 0;
+			unsigned int num_nans = 0;
+			for(unsigned int i = 0; i < width*height; i++)
+			{
+				if(!isnan(prevFrame->std_dev_data[i]))
+					sum += prevFrame->std_dev_data[i];
+				else
+					num_nans++;
+			}
+			sum /= (width*height);
+			//printf("std dev avg %f, num_nans=%u \n",sum,num_nans);
+
+			/*
+			for(unsigned int i =0; i < 10000+gpu_buffer_head; i++)
+			{
+				prevFrame->std_dev_data[i] = 30000;
+			}
+			 */
 			prevFrame->has_valid_std_dev = 2; //Ready to display
 		}
 
@@ -80,7 +102,7 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 
 		//HANDLE_ERROR(cudaMemsetAsync(histogram_out_device,0,NUMBER_OF_BINS*sizeof(uint32_t),std_dev_stream));
 		//std_dev_filter_kernel <<<gridDims,blockDims,0,std_dev_stream>>> (pictures_device, picture_out_device, histogram_bins_device, histogram_out_device, width, height, gpu_buffer_head, N);
-		printf("launching new std_dev kernel @ count:%i\n",count);
+		//printf("launching new std_dev kernel @ count:%i\n",count);
 		std_dev_filter_kernel_wrapper(gridDims,blockDims,0,std_dev_stream,pictures_device, picture_out_device, histogram_bins_device, histogram_out_device, width, height, gpu_buffer_head, N);
 		HANDLE_ERROR( cudaPeekAtLastError() );
 		HANDLE_ERROR(cudaMemcpyAsync(frame->std_dev_data,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream)); //Despite the name, these calls are synchronous w/ respect to the CPU
@@ -134,7 +156,7 @@ void std_dev_filter::start_std_dev_filter(unsigned int N, float * std_dev_out, u
 	}
 
 }
-*/
+ */
 uint16_t * std_dev_filter::getEntireRingBuffer() //For testing only
 {
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));

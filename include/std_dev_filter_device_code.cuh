@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include "constants.h"
 
-static const int STD_DEV_DEBUG = true;
+static const int STD_DEV_DEBUG = false;
 #ifndef STD_DEV_FILTER_DEVICE_CODE_CUH_
 #define STD_DEV_FILTER_DEVICE_CODE_CUH_
 __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, float * histogram_bins, uint32_t * histogram_out, int width, int height, int gpu_buffer_head, int N);
