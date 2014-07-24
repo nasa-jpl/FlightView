@@ -1,4 +1,5 @@
 #include "histogram_widget.h"
+#include "std_dev_filter.hpp"
 
 histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     QWidget(parent)
@@ -25,14 +26,14 @@ void histogram_widget::initQCPStuff()
     histogram->setName("Histogram of Standard Deviation per pixel");
     //histogram->setPen(pen);
 
-    std::vector<float> copy_bins(*(fw->getHistogramBins()));
-    histo_bins = QVector<double>(copy_bins.size());
+    std::array<float,NUMBER_OF_BINS> histbinvals = getHistogramBinValues();
+    histo_bins = QVector<double>(NUMBER_OF_BINS);
 
-    for(int i = 0; i < histo_bins.size(); i++)
+    for(unsigned int i = 0; i < NUMBER_OF_BINS; i++)
     {
-        histo_bins[i]  = copy_bins[i];
+        histo_bins[i]  = histbinvals[i];
     }
-    double bar_width = copy_bins[3]-copy_bins[2]; //Probably not the best way to get the bar width, but w/e
+    double bar_width = histo_bins[3]-histo_bins[2]; //Probably not the best way to get the bar width, but w/e
 
 
 
@@ -62,7 +63,7 @@ void histogram_widget::initQCPStuff()
 }
 
 
-void histogram_widget::handleNewFrame(QSharedPointer<QVector<double>> histo_data_vec)
+void histogram_widget::handleNewFrame(QSharedPointer<QVector<double> > histo_data_vec)
 {
     if(qcp == NULL)
     {

@@ -90,8 +90,8 @@ void MainWindow::connectAndStartBackend()
     //connect(fw,SIGNAL(newFrameAvailable(frame_c *)),fft_mean_widget,SLOT(handleNewFrame(frame_c *)));
     //connect(fw,SIGNAL(newFFTMagAvailable(QVector<double>)),fft_mean_widget,SLOT(handleNewFrame(QVector<double>)));
 
-    connect(fw,SIGNAL(newFFTMagAvailable(QSharedPointer<QVector<double>>)),fft_mean_widget,SLOT(handleNewFrame(QSharedPointer<QVector<double>>)));
-    connect(fw,SIGNAL(newStdDevHistogramAvailable(QSharedPointer<QVector<double>>)),hist_widget,SLOT(handleNewFrame(QSharedPointer<QVector<double>>)));
+    connect(fw,SIGNAL(newFFTMagAvailable(QSharedPointer<QVector<double> >)),fft_mean_widget,SLOT(handleNewFrame(QSharedPointer<QVector<double> >)));
+    connect(fw,SIGNAL(newStdDevHistogramAvailable(QSharedPointer<QVector<double> >)),hist_widget,SLOT(handleNewFrame(QSharedPointer<QVector<double> >)));
 
 
 
