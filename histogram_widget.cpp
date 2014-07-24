@@ -62,19 +62,17 @@ void histogram_widget::initQCPStuff()
 }
 
 
-void histogram_widget::handleNewFrame()
+void histogram_widget::handleNewFrame(QSharedPointer<QVector<double>> histo_data_vec)
 {
     if(qcp == NULL)
     {
         initQCPStuff();
     }
-    if(fps%10==0 && !this->isHidden())
+    if(!this->isHidden())
     {
 
-        QMutexLocker ml(&fw->vector_mutex);
 
-        histogram->setData(histo_bins,fw->histo_data_vec);
-    ml.unlock();
+        histogram->setData(histo_bins,*histo_data_vec);
 
         qcp->replot();
     }

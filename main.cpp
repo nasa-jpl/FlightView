@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
     w.setWindowIcon(QIcon(icon_pixmap));
     w.show();
     splash.finish(&w);
+
     return a.exec();
 }
 

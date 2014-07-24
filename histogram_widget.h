@@ -30,7 +30,7 @@ private:
 signals:
     
 public slots:
-    void handleNewFrame();
+    void handleNewFrame(QSharedPointer<QVector<double>> histo_data_vec);
     void histogramScrolledX(const QCPRange &newRange);
     void histogramScrolledY(const QCPRange &newRange);
 

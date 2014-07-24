@@ -30,13 +30,15 @@ public:
     double histoDataMax;
 
     QMutex vector_mutex;
-    QVector<double> histo_data_vec;
     //QVector<double> rfft_data_vec;
 
     unsigned int old_save_framenum;
 signals:
     void newFrameAvailable(frame_c *);
+    void stdDevFrameCompleted(frame_c *);
     void newFFTMagAvailable(QSharedPointer<QVector<double>>);
+    void newStdDevHistogramAvailable(QSharedPointer<QVector<double>>);
+
     void std_dev_ready();
     void savingFrameNumChanged(unsigned int n);
 public slots:
@@ -55,7 +57,7 @@ private:
     take_object to;
     //std::list
     QSharedPointer<QVector<double>> updateFFTVector();
-    void updateHistogramVector();
+    QSharedPointer<QVector<double>> updateHistogramVector();
 
     unsigned int frHeight;
     unsigned int frWidth;
@@ -65,6 +67,8 @@ private:
     float * histogram_bins;
     //std::shared_ptr<frame_c> curFrame;
     frame_c * curFrame;
+    frame_c * std_dev_frame = NULL;
+
 };
 
 

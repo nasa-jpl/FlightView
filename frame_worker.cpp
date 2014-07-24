@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <QCoreApplication>
 #include <QMutexLocker>
+#include <QSharedPointer>
 frameWorker::frameWorker(QObject *parent) :
     QObject(parent)
 {
@@ -18,29 +19,39 @@ void frameWorker::captureFrames()
     to.start();
     qDebug("starting capture");
     //rfft_data_vec = QVector<double>(FFT_INPUT_LENGTH/2);
-    histo_data_vec = QVector<double>(NUMBER_OF_BINS);
 
     frHeight = to.getFrameHeight();
     frWidth = to.getFrameWidth();
     dataHeight = to.getDataHeight();
 
     unsigned long c = 0;
-
     while(1)
     {
         QCoreApplication::processEvents();
         //fr = to.getRawData(); //This now blocks
-        usleep(500); //So that CPU utilization is not 100%
-        if(to.frame_list.size() > 3 && to.frame_list.back()->async_filtering_done != 0)
-        {
-           // qDebug() << "on frame ?" << to.frame_list.size();
-            curFrame = to.frame_list.back();
-            to.frame_list.pop_back();
+        usleep(50); //So that CPU utilization is not 100%
+        curFrame = &to.frame_ring_buffer[c%CPU_FRAME_BUFFER_SIZE];
 
-            //QMutexLocker ml(&vector_mutex);
+        if(std_dev_frame != NULL)
+        {
+            if(std_dev_frame->has_valid_std_dev == 2)
+            {
+                //QSharedPointer<QVector<double>> histo_data_vec = updateHistogramVector();
+                emit stdDevFrameCompleted(std_dev_frame); //This onyl emits when there is a new frame
+                //emit newStdDevHistogramAvailable(histo_data_vec);
+                std_dev_frame = NULL;
+            }
+
+        }
+        if(curFrame->async_filtering_done != 0)
+        {
+            // qDebug() << "on frame ?" << to.frame_list.size();
+            if(curFrame->has_valid_std_dev==1)
+            {
+                std_dev_frame = curFrame;
+            }
+
             QSharedPointer<QVector<double>> fft_mags = updateFFTVector();
-            //updateFFTVector();
-            updateHistogramVector();
             //memcpy(raw_data,to.getRawPtr(),dataHeight*frWidth*sizeof(uint16_t));
             //memcpy(image_data,to.getImagePtr(),frHeight*frWidth*sizeof(uint16_t));
 
@@ -56,8 +67,9 @@ void frameWorker::captureFrames()
                 old_save_framenum = to.save_framenum;
                 emit savingFrameNumChanged(to.save_framenum);
             }
-
+            c++;
         }
+
     }
 }
 unsigned int frameWorker::getFrameHeight()
@@ -90,9 +102,10 @@ void frameWorker::finishCapturingDSFMask()
 
 
 std::vector<float> *frameWorker::getHistogramBins()
-{
-    return NULL;
-    //return histogram_bins;
+{                printf("sdv set!\n");
+
+                 return NULL;
+                              //return histogram_bins;
 }
 
 void frameWorker::loadDSFMask(QString file_name)
@@ -126,33 +139,35 @@ void frameWorker::setStdDev_N(int newN)
 {
     to.setStdDev_N(newN);
 }
-QSharedPointer<QVector<double>> frameWorker::updateFFTVector() //This would make more sense in fft_widget, but it cannot run in the gui thread.
+QSharedPointer <QVector<double>> frameWorker::updateFFTVector() //This would make more sense in fft_widget, but it cannot run in the gui thread.
 {
-    QSharedPointer<QVector<double>> fft_magnitude_vector = QSharedPointer<QVector<double>>(new QVector<double>(FFT_INPUT_LENGTH/2));
-    double max = 0;
-    for(unsigned int i = 0; i < FFT_INPUT_LENGTH/2; i++)
+QSharedPointer <QVector<double>> fft_magnitude_vector = QSharedPointer<QVector<double>>(new QVector<double>(FFT_INPUT_LENGTH/2));
+double max = 0;
+for(unsigned int i = 0; i < FFT_INPUT_LENGTH/2; i++)
+{
+    (*fft_magnitude_vector)[i] = curFrame->fftMagnitude[i];
+    if(i!=0 && curFrame->fftMagnitude[i] > max)
     {
-        (*fft_magnitude_vector)[i] = curFrame->fftMagnitude[i];
-        if(i!=0 && curFrame->fftMagnitude[i] > max)
-        {
-            max = curFrame->fftMagnitude[i];
-        }
+        max = curFrame->fftMagnitude[i];
     }
-    //printf("%f max freq bins nonconst\n",max);
-    //printf("const term in arr:%f in vec:%f\n",rfft_data[0],rfft_data_vec[0]);
-    return fft_magnitude_vector;
+}
+//printf("%f max freq bins nonconst\n",max);
+//printf("const term in arr:%f in vec:%f\n",rfft_data[0],rfft_data_vec[0]);
+return fft_magnitude_vector;
 
 }
-void frameWorker::updateHistogramVector()
+QSharedPointer<QVector<double>> frameWorker::updateHistogramVector()
 {
+    QSharedPointer<QVector<double>> histo_data_vec = QSharedPointer<QVector<double>>(new QVector<double>(NUMBER_OF_BINS));
+
 
     histoDataMax = 0;
-    for(int i = 0; i < histo_data_vec.size();i++)
+    for(int i = 0; i < NUMBER_OF_BINS;i++)
     {
-        histo_data_vec[i] = (double)curFrame->std_dev_histogram[i];
-        if(histoDataMax < histo_data_vec[i])
+        (*histo_data_vec)[i] = (double)std_dev_frame->std_dev_histogram[i];
+        if(histoDataMax < (*histo_data_vec)[i])
         {
-            histoDataMax = histo_data_vec[i];
+            histoDataMax = (*histo_data_vec)[i];
         }
     }
     //printf("hist datamax %f\n",histoDataMax);

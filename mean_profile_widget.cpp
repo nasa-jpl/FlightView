@@ -94,10 +94,6 @@ void mean_profile_widget::handleNewFrame(frame_c * frame)
         //qcp->graph(0)->rescaleAxes();
         qcp->replot();
     }
-    if((--frame->delete_counter) == 0)// && frame->has_valid_std_dev == 0)
-    {
-        qDebug() << "deleting frame";
-        delete frame;
-    }
+
     fps++;
 }

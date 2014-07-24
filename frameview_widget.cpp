@@ -138,19 +138,7 @@ void frameview_widget::handleNewFrame(frame_c * frame)
         else if(image_type == DSF)
         {
             float * local_image_ptr = frame->dark_subtracted_data;
-           // qDebug() << "dsf mask collected " << fw->dsfMaskCollected();
-            for(int col = 0; col < frWidth; col++)
-            {
-                for(int row = 0; row < frHeight; row++)
-                {
-                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
-                }
-            }
-
-        }
-        else if(image_type == STD_DEV)
-        {
-            float * local_image_ptr = frame->std_dev_data;
+            // qDebug() << "dsf mask collected " << fw->dsfMaskCollected();
             for(int col = 0; col < frWidth; col++)
             {
                 for(int row = 0; row < frHeight; row++)
@@ -158,17 +146,45 @@ void frameview_widget::handleNewFrame(frame_c * frame)
                     colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
                 }
             }
+
         }
+
         colorScale->setDataRange(QCPRange(floor,ceiling));
         qcp->replot();
 
     }
-    //qDebug() << "dc" << frame->delete_counter;
-    if((--frame->delete_counter) == 0)// && frame->has_valid_std_dev == 0)
+    if(image_type == STD_DEV)
     {
-        qDebug() << "deleting frame";
-        delete frame;
+
+        //printf("hvsd=2\n");
+        float * local_image_ptr = frame->std_dev_data;
+        float sum = 0;
+        for(int col = 0; col < frWidth; col++)
+        {
+            for(int row = 0; row < frHeight; row++)
+            {
+                colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+
+                /*
+                    //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+                    float n = local_image_ptr[(frHeight-row)*frWidth + col];
+                    if(!isnan(n))
+                    {
+                        //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+                        sum+=local_image_ptr[(frHeight-row)*frWidth + col];
+                    }
+                    */
+            }
+        }
+        //sum/=frWidth*frHeight;
+        //printf("gui std. dev avg=%f\n",sum);
+
+        colorScale->setDataRange(QCPRange(floor,ceiling));
+        qcp->replot();
     }
+
+
+
     count++;
 
 }
