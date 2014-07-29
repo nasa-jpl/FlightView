@@ -20,11 +20,11 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 
 	this->do_raw_save = false;
 
-	this->raw_save_file = NULL;
 
 	dsfMaskCollected = false;
 	frame_ring_buffer = new frame_c[CPU_FRAME_BUFFER_SIZE];
-
+	save_framenum=0;
+	saving_list.clear();
 
 }
 take_object::~take_object()
@@ -123,11 +123,19 @@ void take_object::pdv_loop() //Producer Thread
 		sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
 
 		dsf->wait_dark_subtraction();
-		mean_filter * mf = new mean_filter(curFrame, count, frWidth, frHeight,false); //This will deallocate itself when it is done.
+		mean_filter * mf = new mean_filter(curFrame, count, frWidth, frHeight,useDSF); //This will deallocate itself when it is done.
 		mf->start_mean();
 		//frame_list.push_front(curFrame);
-		saveFrameAvailable = true;
-		//doSave();
+
+		//doSave(curFrame);
+
+		if(save_framenum > 0)
+		{
+			uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
+			memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
+			saving_list.push_front(raw_copy);
+			save_framenum--;
+		}
 		pdv_start_image(pdv_p); //Start another
 
 		framecount = *(curFrame->raw_data_ptr + 160);
@@ -143,22 +151,31 @@ void take_object::pdv_loop() //Producer Thread
 	}
 }
 
-void take_object::doSave()
+void take_object::savingLoop(std::string fname)
 {
-	if(raw_save_file != NULL) //Apparently this returns false if null, true otherwise
+	FILE * file_target = fopen(fname.c_str(), "wb");
+	//setvbuf(file_target,NULL,_IOFBF,10*size);
+
+
+	while(save_framenum != 0 || !saving_list.empty())
 	{
-		if(frWidth*dataHeight != fwrite(raw_save_ptr, sizeof(uint16_t), frWidth*dataHeight, raw_save_file))
+		if(!saving_list.empty())
 		{
-			printf("Writing raw has an error.\n");
+			uint16_t * data = saving_list.back();
+			saving_list.pop_back();
+			fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
+			delete[] data;
 		}
-		//old_raw_save_ptr = raw_save_ptr; //Hoping this is an atomic operations
-		saveFrameAvailable = false;
-		save_framenum--;
-		if(save_framenum == 0)
+		else
 		{
-			stopSavingRaws();
+			//We're waiting for data to get added to the list...
+			usleep(250);
 		}
 	}
+	fclose(file_target);
+	//We're done!
+	printf("done saving!");
+
 }
 
 unsigned int take_object::getFrameHeight()
@@ -187,29 +204,26 @@ void take_object::finishCapturingDSFMask()
 }
 void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames_to_save)
 {
-	save_framenum = frames_to_save;
-	save_count = 0;
-	printf("Begin frame save! @ %s", raw_file_name.c_str());
-	if(raw_save_file != NULL)
+	save_framenum.store(0,std::memory_order_seq_cst);
+	printf("ssr called\n");
+	while(!saving_list.empty())
 	{
-		stopSavingRaws();
+		//printf("waiting for empty saving list...");
 	}
-	raw_save_file = fopen(raw_file_name.c_str(), "wb");
+	save_framenum.store(frames_to_save,std::memory_order_seq_cst);
 
-	setvbuf(raw_save_file,NULL,_IOFBF,NUMBER_OF_FRAMES_TO_BUFFER*size);
+	printf("Begin frame save! @ %s", raw_file_name.c_str());
+
+
+	boost::thread(&take_object::savingLoop,this,raw_file_name);
+	//setvbuf(raw_save_file,NULL,_IOFBF,frames_to_save*size);
 
 	//do_raw_save = true;
 }
 void take_object::stopSavingRaws()
 {
+	save_framenum.store(0,std::memory_order_relaxed);
 	printf("stop saving raws!");
-	//do_raw_save = false;
-	if(raw_save_file != NULL)
-	{
-		FILE * ptr_copy = raw_save_file;
-		raw_save_file = NULL;  //Since raw_save_file = NULL should be an atomic operation, this ensures that it won't save while we're calling fclose (boost locks were quite laggy here)
-		fclose(ptr_copy);
-	}
 }
 
 void take_object::loadDSFMask(std::string file_name)

@@ -20,12 +20,14 @@ void simple_sensor_grab()
 	to.start();
 	cout << "ruunning to" << std::endl;
 	unsigned long c = 0;
-	while(c <= 3)
+	while(c <= 20)
 	{
 		printf("how to delta\n");
 
 		usleep(1000000);
-
+		//if(c==3)
+			//to.startSavingRaws("ruhroh.raw",1000);
+		//printf("save framenum %u, listsize %u", to.save_framenum, to.saving_list.size());
 		c++;
 	}
 	//delete to;

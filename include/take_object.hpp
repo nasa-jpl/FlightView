@@ -19,6 +19,7 @@
 #include <ostream>
 #include <string>
 #include <atomic>
+#include <boost/shared_array.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -31,9 +32,8 @@
 #include "frame_c.hpp"
 #include "constants.h"
 
-
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = true;
-const static int NUMBER_OF_FRAMES_TO_BUFFER = 100;
+const static int NUMBER_OF_FRAMES_TO_BUFFER = 1500;
 
 
 
@@ -42,7 +42,7 @@ const static int NUMBER_OF_FRAMES_TO_BUFFER = 100;
 class take_object {
 	PdvDev * pdv_p;
 	boost::thread pdv_thread;
-
+	boost::thread saving_thread;
 	unsigned int size;
 
 	unsigned int channel;
@@ -63,7 +63,6 @@ class take_object {
 
 	uint16_t * raw_save_ptr;
 
-	FILE * raw_save_file;
 
 	u_char * dumb_ptr;
 	unsigned int dataHeight;
@@ -73,7 +72,6 @@ class take_object {
 	//std::shared_ptr<frame_c> curFrame;
 	frame_c* curFrame;
 	int pdv_thread_run = 0;
-
 public:
 	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_rate = 10);
 	virtual ~take_object();
@@ -101,16 +99,20 @@ public:
 
 	void setStdDev_N(int s);
 
-	void doSave();
+	void doSave(frame_c * frame);
 	camera_t cam_type;
-	unsigned int save_framenum;
+	//std::atomic_uint_fast32_t save_framenum;
+	std::atomic <uint_fast32_t> save_framenum;
 	//std::list<std::shared_ptr<frame_c> > frame_list;
 	//std::list<frame_c * > frame_list;
 	frame_c * frame_ring_buffer;
 	unsigned long count = 0;
+	std::list<uint16_t *> saving_list;
 
 private:
 	void pdv_loop();
+	void savingLoop(std::string);
+
 
 };
 
