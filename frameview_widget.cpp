@@ -118,10 +118,11 @@ void frameview_widget::handleNewFrame(frame_c * frame)
         qDebug() << " height " << frHeight << " width " << frWidth;
     }
 
-
     if(count%4 == 0 && !this->isHidden())
     {
-        //qDebug() << image_type;
+        qDebug() << "fidp" << frame->image_data_ptr[100];
+
+        /*
         if(image_type == BASE)
         {
             //qDebug() << "starting redraw";
@@ -151,9 +152,11 @@ void frameview_widget::handleNewFrame(frame_c * frame)
 
         colorScale->setDataRange(QCPRange(floor,ceiling));
         qcp->replot();
-
+    */
     }
-    if(image_type == STD_DEV)
+
+
+    if(false && image_type == STD_DEV)
     {
 
         //printf("hvsd=2\n");
@@ -165,15 +168,7 @@ void frameview_widget::handleNewFrame(frame_c * frame)
             {
                 colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
 
-                /*
-                    //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
-                    float n = local_image_ptr[(frHeight-row)*frWidth + col];
-                    if(!isnan(n))
-                    {
-                        //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
-                        sum+=local_image_ptr[(frHeight-row)*frWidth + col];
-                    }
-                    */
+
             }
         }
         //sum/=frWidth*frHeight;
@@ -182,6 +177,7 @@ void frameview_widget::handleNewFrame(frame_c * frame)
         colorScale->setDataRange(QCPRange(floor,ceiling));
         qcp->replot();
     }
+
 
 
 

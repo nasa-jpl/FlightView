@@ -67,7 +67,7 @@ QMAKE_CXXFLAGS += -std=c++11
 #LIBS += -L$$PWD/lib/ -l$$QCPLIB
 
 
-unix:!macx:!symbian: LIBS += -L$$PWD/../../cuda_take/ -lcuda_take -lboost_thread -lcudart
+unix:!macx:!symbian: LIBS += -L$$PWD/../../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp
 INCLUDEPATH += $$PWD/../../cuda_take/include\
 $$PWD/../../cuda_take/EDT_include
 DEPENDPATH += $$PWD/../../cuda_take
