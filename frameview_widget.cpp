@@ -10,10 +10,10 @@
 #include <fstream>
 #include <stdint.h>
 #include "qcustomplot.h"
-frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
-    QWidget(parent)
+frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget *parent) : QWidget(parent)
 {
-
+//CODE goes here...
+    //code
 
     this->fw = fw;
     this->image_type = image_type;
@@ -270,7 +270,7 @@ double frameview_widget::getCeiling()
     return ceiling;
 }
 double frameview_widget::getFloor()
-
 {
     return floor;
+
 }

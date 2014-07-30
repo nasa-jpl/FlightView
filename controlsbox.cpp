@@ -1,5 +1,6 @@
 #include "controlsbox.h"
 #include "frameview_widget.h"
+#include "mean_profile_widget.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGridLayout>
@@ -74,14 +75,14 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     ceiling_slider.setTickInterval(BIG_TICK);
     floor_slider.setTickInterval(BIG_TICK);
 
-    useDSFCbox.setText("Use Dark Subtracted data for mean profiles & FFT?");
+    useDSFCbox.setText("Use Dark Subtracted data for mean profiles and FFT?");
     //First Row
     sliders_layout.addWidget(new QLabel("Std. Dev. N:"),1,1,1,1);
     sliders_layout.addWidget(&std_dev_N_slider,1,2,1,7);
     sliders_layout.addWidget(&std_dev_N_edit,1,10,1,1);
     //Second Row
     sliders_layout.addWidget(&low_increment_cbox,2,1,1,1);
-   // sliders_layout.addWidget(&useDSFCbox,2,2,1,1);
+    sliders_layout.addWidget(&useDSFCbox,2,2,1,1);
 
     //Third Row
     sliders_layout.addWidget(new QLabel("Ceiling:"),3,1,1,1);
@@ -208,7 +209,7 @@ void ControlsBox::save_continous_button_slot()
     start_saving_frames_button.setEnabled(false);
     save_finite_button.setEnabled(false);
     frames_save_num_edit.setEnabled(false);
-    QString label = QString("Recording raws to %1").arg(filename_edit.text());
+    QString label = QString("Recording raws");
     fps_label.setText(label);
 
 }
@@ -245,7 +246,7 @@ void ControlsBox::save_finite_button_slot()
     start_saving_frames_button.setEnabled(false);
     save_finite_button.setEnabled(false);
     frames_save_num_edit.setEnabled(false);
-    QString label = QString("Recording raws to %1").arg(filename_edit.text());
+    QString label = QString("Recording raws");
     fps_label.setText(label);
 
 
@@ -254,19 +255,36 @@ void ControlsBox::save_finite_button_slot()
 
 void ControlsBox::tabChangedSlot(int index)
 {
+    //Multiple inheritance totally failed me.
     frameview_widget * fvw = qobject_cast<frameview_widget*>(qtw->widget(index));
-    if(cur_frameview != NULL)
-    {
-        disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateCeiling(int)));
-        disconnect(&floor_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateFloor(int)));
-    }
-    cur_frameview = fvw; //Gets set to null if not frameview widget
+    mean_profile_widget * mpw = qobject_cast<mean_profile_widget*>(qtw->widget(index));
 
-    if(cur_frameview != NULL)
+
+    if(qobject_cast<frameview_widget*>(cur_frameview) != NULL)
     {
-        ceiling_edit.setValue(cur_frameview->getCeiling());
-        floor_edit.setValue(cur_frameview->getFloor());
-        connect(&ceiling_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateCeiling(int)));
-        connect(&floor_slider, SIGNAL(valueChanged(int)), cur_frameview, SLOT(updateFloor(int)));
+        disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<frameview_widget*>(cur_frameview),SLOT(updateCeiling(int)));
+        disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<frameview_widget*>(cur_frameview), SLOT(updateFloor(int)));
+    }
+    else if(qobject_cast<mean_profile_widget*>(cur_frameview) != NULL)
+    {
+        disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<mean_profile_widget*>(cur_frameview),SLOT(updateCeiling(int)));
+        disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<mean_profile_widget*>(cur_frameview), SLOT(updateFloor(int)));
+    }
+
+    cur_frameview = qtw->widget(index); //Gets set to null if not frameview widget
+
+    if(fvw != NULL)
+    {
+        ceiling_edit.setValue(fvw->getCeiling());
+        floor_edit.setValue(fvw->getFloor());
+        connect(&ceiling_slider, SIGNAL(valueChanged(int)), fvw, SLOT(updateCeiling(int)));
+        connect(&floor_slider, SIGNAL(valueChanged(int)), fvw, SLOT(updateFloor(int)));
+    }
+    else if(mpw != NULL)
+    {
+        ceiling_edit.setValue(mpw->getCeiling());
+        floor_edit.setValue(mpw->getFloor());
+        connect(&ceiling_slider, SIGNAL(valueChanged(int)), mpw, SLOT(updateCeiling(int)));
+        connect(&floor_slider, SIGNAL(valueChanged(int)), mpw, SLOT(updateFloor(int)));
     }
 }

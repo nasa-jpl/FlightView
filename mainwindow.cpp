@@ -98,7 +98,7 @@ void MainWindow::connectAndStartBackend()
     connect(&controlbox->collect_dark_frames_button,SIGNAL(clicked()),fw,SLOT(startCapturingDSFMask()));
     connect(&controlbox->stop_dark_collection_button,SIGNAL(clicked()),fw,SLOT(finishCapturingDSFMask()));
     //connect(controlbox,SIGNAL(mask_selected(const char *)),fw,SLOT(loadDSFMask(const char *)));
-   // connect(&controlbox->useDSFCbox,SIGNAL(toggled(bool)),fw,SLOT(toggleUseDSF(bool)));
+    connect(&controlbox->useDSFCbox,SIGNAL(toggled(bool)),fw,SLOT(toggleUseDSF(bool)));
 
     connect(controlbox,SIGNAL(startSavingFinite(unsigned int,QString)),fw,SLOT(startSavingRawData(unsigned int,QString)));
     connect(controlbox,SIGNAL(stopSaving()),fw,SLOT(stopSavingRawData()));

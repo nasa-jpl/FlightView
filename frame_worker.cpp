@@ -25,6 +25,7 @@ void frameWorker::captureFrames()
     dataHeight = to.getDataHeight();
 
     unsigned long c = 0;
+    unsigned int last_savenum;
     while(1)
     {
         QCoreApplication::processEvents();
@@ -37,7 +38,7 @@ void frameWorker::captureFrames()
             if(std_dev_frame->has_valid_std_dev == 2)
             {
                 QSharedPointer<QVector <double> > histo_data_vec = updateHistogramVector();
-               // updateHistogramVector();
+                // updateHistogramVector();
                 emit stdDevFrameCompleted(std_dev_frame); //This onyl emits when there is a new frame
                 emit newStdDevHistogramAvailable(histo_data_vec);
                 std_dev_frame = NULL;
@@ -63,11 +64,14 @@ void frameWorker::captureFrames()
                 emit std_dev_ready();
             }
 
-            if(old_save_framenum != to.save_framenum)
+            unsigned int save_num = to.save_framenum.load(std::memory_order_relaxed);
+            if(!to.saving_list.empty())
             {
-                old_save_framenum = to.save_framenum;
-                emit savingFrameNumChanged(to.save_framenum);
+                save_num = 1;
             }
+            if(save_num != last_savenum)
+                emit savingFrameNumChanged(to.save_framenum);
+            last_savenum = save_num;
             c++;
         }
 
@@ -99,15 +103,6 @@ void frameWorker::finishCapturingDSFMask()
     to.finishCapturingDSFMask();
 }
 
-
-
-
-std::vector<float> *frameWorker::getHistogramBins()
-{                printf("sdv set!\n");
-
-                 return NULL;
-                              //return histogram_bins;
-}
 
 void frameWorker::loadDSFMask(QString file_name)
 {
@@ -142,19 +137,19 @@ void frameWorker::setStdDev_N(int newN)
 }
 QSharedPointer <QVector <double> > frameWorker::updateFFTVector() //This would make more sense in fft_widget, but it cannot run in the gui thread.
 {
-QSharedPointer <QVector <double> > fft_magnitude_vector = QSharedPointer <QVector <double> >(new QVector <double>(FFT_INPUT_LENGTH/2));
-double max = 0;
-for(unsigned int i = 0; i < FFT_INPUT_LENGTH/2; i++)
-{
-    (*fft_magnitude_vector)[i] = curFrame->fftMagnitude[i];
-    if(i!=0 && curFrame->fftMagnitude[i] > max)
+    QSharedPointer <QVector <double> > fft_magnitude_vector = QSharedPointer <QVector <double> >(new QVector <double>(FFT_INPUT_LENGTH/2));
+    double max = 0;
+    for(unsigned int i = 0; i < FFT_INPUT_LENGTH/2; i++)
     {
-        max = curFrame->fftMagnitude[i];
+        (*fft_magnitude_vector)[i] = curFrame->fftMagnitude[i];
+        if(i!=0 && curFrame->fftMagnitude[i] > max)
+        {
+            max = curFrame->fftMagnitude[i];
+        }
     }
-}
-//printf("%f max freq bins nonconst\n",max);
-//printf("const term in arr:%f in vec:%f\n",rfft_data[0],rfft_data_vec[0]);
-return fft_magnitude_vector;
+    //printf("%f max freq bins nonconst\n",max);
+    //printf("const term in arr:%f in vec:%f\n",rfft_data[0],rfft_data_vec[0]);
+    return fft_magnitude_vector;
 
 }
 QSharedPointer <QVector <double> > frameWorker::updateHistogramVector()

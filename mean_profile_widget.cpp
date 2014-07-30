@@ -1,12 +1,13 @@
 #include "mean_profile_widget.h"
 
-mean_profile_widget::mean_profile_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
-    QWidget(parent)
+mean_profile_widget::mean_profile_widget(frameWorker *fw, image_t image_type, QWidget *parent) : QWidget(parent)
 {
     itype = image_type;
     qcp = NULL;
     this->fw = fw;
     fps=0;
+    ceiling = 1000;
+    floor = 0;
 }
 
 mean_profile_widget::~mean_profile_widget()
@@ -88,12 +89,33 @@ void mean_profile_widget::handleNewFrame(frame_c * frame)
             }
 
         }
-        qcp->graph(0)->rescaleValueAxis();
+        //qcp->graph(0)->rescaleValueAxis();
         qcp->yAxis->setRangeLower(0);
+        qcp->yAxis->setRangeLower(floor);
+        qcp->yAxis->setRangeUpper(ceiling);
        qcp->graph(0)->setData(x,y);
         //qcp->graph(0)->rescaleAxes();
         qcp->replot();
     }
 
     fps++;
+}
+
+void mean_profile_widget::updateCeiling(int c)
+{
+    ceiling = (double)c;
+    //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
+}
+void mean_profile_widget::updateFloor(int f)
+{
+    floor = (double)f;
+    //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
+}
+double mean_profile_widget::getFloor()
+{
+return floor;
+}
+double mean_profile_widget::getCeiling()
+{
+return ceiling;
 }

@@ -15,9 +15,12 @@
 #include "frame_worker.h"
 #include "image_type.h"
 #include "qcustomplot.h"
-class frameview_widget : public QWidget
+//#include "view_widget_interface.h"
+
+class frameview_widget :public QWidget//, public view_widget_interface
 {
     Q_OBJECT
+    //Q_INTERFACES(view_widget_interface)
     QMutex mMutex;
     QVBoxLayout layout ;
     QCustomPlot * qcp;
@@ -38,11 +41,12 @@ class frameview_widget : public QWidget
     int frWidth;
     int count;
 public:
-    explicit frameview_widget(frameWorker * fw,image_t image_type ,QWidget *parent = 0);
+    explicit frameview_widget(frameWorker * fw, image_t image_type , QWidget *parent = 0);
     ~frameview_widget();
     QPushButton toggleGrayScaleButton;
     double getCeiling();
     double getFloor();
+
 private:
     void initQCPStuff(); //Needs to be in same thread as handleNewFrame?
 signals:
@@ -51,11 +55,12 @@ public slots:
     void handleNewFrame(frame_c *);
     void updateFPS();
     void toggleGrayScale();
-    void updateCeiling(int c);
-    void updateFloor(int f);
+
     void colorMapScrolledY(const QCPRange &newRange);
     void colorMapScrolledX(const QCPRange &newRange);
     void colorMapDataRangeChanged(const QCPRange &newRange);
+    void updateCeiling(int c);
+    void updateFloor(int f);
 };
 
 #endif // FRAMEVIEW_WIDGET_H

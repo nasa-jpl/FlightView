@@ -71,7 +71,8 @@ public:
 
 private:
     QTabWidget *qtw;
-    frameview_widget * cur_frameview;
+    QWidget * cur_frameview;
+    //view_widget_interface * cur_frameview;
 
 signals:
     void mask_selected(const char * file_name);
