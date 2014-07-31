@@ -37,7 +37,7 @@ void frameWorker::captureFrames()
         {
             if(std_dev_frame->has_valid_std_dev == 2)
             {
-                QSharedPointer<QVector <double> > histo_data_vec = updateHistogramVector();
+               QSharedPointer<QVector <double> > histo_data_vec = updateHistogramVector();
                 // updateHistogramVector();
                 emit stdDevFrameCompleted(std_dev_frame); //This onyl emits when there is a new frame
                 emit newStdDevHistogramAvailable(histo_data_vec);

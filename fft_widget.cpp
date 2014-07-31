@@ -1,4 +1,5 @@
 #include "fft_widget.h"
+#include "settings.h"
 fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     QWidget(parent)
 {
@@ -15,6 +16,8 @@ fft_widget::~fft_widget()
 void fft_widget::initQCPStuff()
 {
     qcp = new QCustomPlot(this);
+    qcp->setNotAntialiasedElement(QCP::aeAll);
+
     fft_bars = new QCPBars(qcp->xAxis,qcp->yAxis);
     qcp->addPlottable(fft_bars);
     fft_bars->setName("Magnitude of FFT average pixel value");
@@ -42,7 +45,7 @@ void fft_widget::handleNewFrame(QSharedPointer<QVector<double>> rfft_data_vec)
     {
         initQCPStuff();
     }
-    if(count%4==0 && !this->isHidden())
+    if(count%FRAME_SKIP_FACTOR==0 && !this->isHidden())
     {
 
         if(zero_const_box.isChecked())

@@ -32,7 +32,8 @@ HEADERS  += mainwindow.h \
     mean_profile_widget.h \
     fft_widget.h \
     frame_c_meta.h \
-    view_widget_interface.h
+    view_widget_interface.h \
+    settings.h
 
 BACKEND_HEADERS += edtinc.h \
     take_object.hpp\
@@ -49,7 +50,7 @@ OTHER_FILES += \
 RESOURCES += \
     images.qrc
 
-QMAKE_CXXFLAGS += -std=c++11
+QMAKE_CXXFLAGS += -std=c++11 -O3 -march=native
 #RC_FILE = liveview2.rc
 
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff

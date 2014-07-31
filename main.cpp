@@ -5,12 +5,13 @@
 #include <QTime>
 #include <QStyle>
 #include "mainwindow.h"
+#include "qcustomplot.h"
 
 void delay(int);
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-
+    a.setGraphicsSystem("opengl"); //Please make things faster
     QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
     QSplashScreen splash(logo_pixmap);
     splash.show();

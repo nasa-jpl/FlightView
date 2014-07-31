@@ -10,6 +10,7 @@
 #include <fstream>
 #include <stdint.h>
 #include "qcustomplot.h"
+#include "settings.h"
 frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget *parent) : QWidget(parent)
 {
 //CODE goes here...
@@ -44,7 +45,7 @@ void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewF
     qDebug() << "fw frame height " << fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
-
+    qcp->setNotAntialiasedElement(QCP::aeAll);
     QSizePolicy qsp(QSizePolicy::Preferred,QSizePolicy::Preferred);
     qsp.setHeightForWidth(true);
     qcp->setSizePolicy(qsp);
@@ -118,11 +119,10 @@ void frameview_widget::handleNewFrame(frame_c * frame)
         qDebug() << " height " << frHeight << " width " << frWidth;
     }
 
-    if(count%4 == 0 && !this->isHidden())
+    if(count % FRAME_SKIP_FACTOR == 0 && !this->isHidden())
     {
-        qDebug() << "fidp" << frame->image_data_ptr[100];
 
-        /*
+
         if(image_type == BASE)
         {
             //qDebug() << "starting redraw";
@@ -132,7 +132,9 @@ void frameview_widget::handleNewFrame(frame_c * frame)
             {
                 for(int row = 0; row < frHeight; row++)
                 {
-                    colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+                    //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+                    colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
+
                 }
             }
         }
@@ -144,7 +146,9 @@ void frameview_widget::handleNewFrame(frame_c * frame)
             {
                 for(int row = 0; row < frHeight; row++)
                 {
-                    colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+                    //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+                    colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
+
                 }
             }
 
@@ -152,11 +156,11 @@ void frameview_widget::handleNewFrame(frame_c * frame)
 
         colorScale->setDataRange(QCPRange(floor,ceiling));
         qcp->replot();
-    */
+
     }
 
 
-    if(false && image_type == STD_DEV)
+    if(image_type == STD_DEV)
     {
 
         //printf("hvsd=2\n");
@@ -166,8 +170,8 @@ void frameview_widget::handleNewFrame(frame_c * frame)
         {
             for(int row = 0; row < frHeight; row++)
             {
-                colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
-
+                //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+                colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
 
             }
         }

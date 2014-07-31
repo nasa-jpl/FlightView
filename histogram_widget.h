@@ -16,9 +16,8 @@ class histogram_widget : public QWidget
     QCPBars *histogram;
     int frHeight;
     int frWidth;
-    int fps;
     QVector<double> histo_bins;
-
+    unsigned int count = 0;
     frameWorker * fw;
 public:
     explicit histogram_widget(frameWorker * fw,image_t image_type ,QWidget *parent = 0);

@@ -19,7 +19,7 @@ class mean_profile_widget : public QWidget//, public view_widget_interface
 
     int frHeight;
     int frWidth;
-    int fps;
+    unsigned int count = 0;
     image_t itype;
     QVector<double> x;
     volatile double ceiling;

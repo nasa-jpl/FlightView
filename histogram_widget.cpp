@@ -1,12 +1,12 @@
 #include "histogram_widget.h"
 #include "std_dev_filter.hpp"
+#include "settings.h"
 
 histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     QWidget(parent)
 {
     qcp = NULL;
     this->fw = fw;
-    fps=0;
 }
 
 histogram_widget::~histogram_widget()
@@ -18,6 +18,8 @@ void histogram_widget::initQCPStuff()
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
+    qcp->setNotAntialiasedElement(QCP::aeAll);
+
     histogram = new QCPBars(qcp->xAxis, qcp->yAxis);
     qcp->setInteractions(QCP::iRangeDrag|QCP::iRangeZoom);
     qcp->addPlottable(histogram);
@@ -77,7 +79,7 @@ void histogram_widget::handleNewFrame(QSharedPointer<QVector<double> > histo_dat
 
         qcp->replot();
     }
-    fps++;
+    count++;
 }
 
 void histogram_widget::histogramScrolledY(const QCPRange &newRange)

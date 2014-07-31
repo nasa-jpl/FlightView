@@ -1,11 +1,11 @@
 #include "mean_profile_widget.h"
+#include "settings.h"
 
 mean_profile_widget::mean_profile_widget(frameWorker *fw, image_t image_type, QWidget *parent) : QWidget(parent)
 {
     itype = image_type;
     qcp = NULL;
     this->fw = fw;
-    fps=0;
     ceiling = 1000;
     floor = 0;
 }
@@ -20,9 +20,12 @@ void mean_profile_widget::initQCPStuff()
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
+    qcp->setNotAntialiasedElement(QCP::aeAll);
+
     //qcp->setInteractions(QCP::iRangeDrag|QCP::iRangeZoom);
 
     qcp->addGraph();
+
 
     if(itype == VERTICAL_MEAN)
     {
@@ -70,7 +73,7 @@ void mean_profile_widget::handleNewFrame(frame_c * frame)
         initQCPStuff();
     }
 
-    if(fps%4 == 0 && !this->isHidden())
+    if(count%FRAME_SKIP_FACTOR == 0 && !this->isHidden())
     {
         if(itype == VERTICAL_MEAN)
         {
@@ -98,7 +101,7 @@ void mean_profile_widget::handleNewFrame(frame_c * frame)
         qcp->replot();
     }
 
-    fps++;
+    count++;
 }
 
 void mean_profile_widget::updateCeiling(int c)
