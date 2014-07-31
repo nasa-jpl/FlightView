@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 #include <queue>
-#include "dark_subtraction_filter.cuh"
+#include "dark_subtraction_filter.hpp"
 #include "std_dev_filter.hpp"
 //#include "fft.hpp"
 #include <fstream>
@@ -21,10 +21,12 @@ void simple_sensor_grab()
 	cout << "ruunning to" << std::endl;
 	unsigned long c = 0;
 
-
-	while(c <= 20)
+	unsigned oldcount = 0;
+	while(c <= 8)
 	{
-		printf("how to delta\n");
+		unsigned long delta = to.count - oldcount;
+		oldcount = to.count;
+		printf("how to delta: %lu\n",delta);
 		usleep(1000000);
 		//if(c==3)
 			//to.startSavingRaws("ruhroh.raw",1000);

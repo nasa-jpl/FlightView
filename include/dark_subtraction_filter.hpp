@@ -11,10 +11,7 @@
 #include <stdint.h>
 #include "edtinc.h"
 #include "constants.h"
-#include "cuda.h"
-#include "cuda_runtime.h"
-#include "cuda_utils.cuh"
-static const int DSF_DEVICE_NUM=(3 % getDeviceCount());
+
 
 class dark_subtraction_filter
 {
@@ -34,21 +31,12 @@ public:
 private:
 	bool mask_collected;
 	//boost::shared_array<float> picture_out;
-	uint16_t width;
-	uint16_t height;
-	uint32_t averaged_samples;
+	unsigned int width;
+	unsigned int height;
+	unsigned int averaged_samples;
 
-	uint16_t * pic_in_host;
-	uint16_t * picture_device;
-	float * mask_device;
-	float * mask_in_host;
+	float mask[MAX_SIZE];
 
-	float * result_device;
-	float * pic_out_host;
-	dim3 blockDims;
-	dim3 gridDims;
-
-	cudaStream_t dsf_stream;
 };
 
 #endif /* DARK_SUBTRACTION_FILTER_CUH_ */

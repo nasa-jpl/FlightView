@@ -24,8 +24,8 @@
 #include <boost/thread/mutex.hpp>
 
 #include "std_dev_filter.hpp"
-#include "chroma_translate_filter.cuh"
-#include "dark_subtraction_filter.cuh"
+#include "chroma_translate_filter.hpp"
+#include "dark_subtraction_filter.hpp"
 #include "mean_filter.hpp"
 #include "edtinc.h"
 #include "camera_types.h"
@@ -51,7 +51,6 @@ class take_object {
 
 	int std_dev_filter_N;
 	int lastfc;
-	chroma_translate_filter ctf;
 	dark_subtraction_filter * dsf;
 	std_dev_filter * sdvf;
 	//mean_filter * mf;

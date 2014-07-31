@@ -24,7 +24,7 @@ LIBOUT = libcuda_take.a
 
 ######################################
 #Here we specify what source files are needed for the program/library, and we create virtual paths so that we don't have to refer to the source directory all the time
-SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter_device_code.cu std_dev_filter.cpp chroma_translate_filter.cu mean_filter.cu
+SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter_device_code.cu std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 
 
@@ -71,14 +71,14 @@ CONLYFLAGS = -std=c99
 CONLYFLAGS += $(CFLAGS)
 
 CPPFLAGS = $(CFLAGS)
-CPPFLAGS += -std=c++11 -O1  -Wall -Werror -Wno-unused-function -Wno-unused-variable#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
+CPPFLAGS += -std=c++11 -O3 -fopenmp  -Wall -Werror -Wno-unused-function -Wno-unused-variable#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 
 NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=sm_35 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
 #(-G -lineinfo) are both to enable cuda-gdb debugging, -Xcompiler specifies arguments to get passed directly to g++ (which NVCC is built on), the internet said to do -rdynamic
 NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= lib #where do the libraries we need to link in go?
-LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lz -lcuda -lcudart #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
+LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lz -lcuda -lcudart -lgomp #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
 AR_COMBINE_SCRIPT = combine_libs_script.ar #For building out output library we compine our stuff with libpdv, this script tells ar how to do that
 #This switch enables concatenating libpdv.a and libcuda_take.a (and possibly libboost_thread.a)
 STATIC_COMPILE_SYSTEM_LIBS = 1
