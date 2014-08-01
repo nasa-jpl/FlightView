@@ -3,30 +3,33 @@
 #include <QCoreApplication>
 #include <QMutexLocker>
 #include <QSharedPointer>
+#include <QDebug>
 frameWorker::frameWorker(QObject *parent) :
     QObject(parent)
 {
-
+    to.start();
+    qDebug("starting capture");
+    frHeight = to.getFrameHeight();
+    frWidth = to.getFrameWidth();
+    dataHeight = to.getDataHeight();
 }
 frameWorker::~frameWorker()
 {
-    //delete to;
+    qDebug() << "end frameWorker";
+    doRun = false;
+}
+void frameWorker::stop()
+{
+    qDebug() << "stop frameWorker";
+    doRun = false;
 }
 
 void frameWorker::captureFrames()
 {
-    //to = new take_object(); //allocate inside slot so that it is owned by 2nd thread
-    to.start();
-    qDebug("starting capture");
-    //rfft_data_vec = QVector<double>(FFT_INPUT_LENGTH/2);
-
-    frHeight = to.getFrameHeight();
-    frWidth = to.getFrameWidth();
-    dataHeight = to.getDataHeight();
-
     unsigned long c = 0;
     unsigned int last_savenum;
-    while(1)
+
+    while(doRun)
     {
         QCoreApplication::processEvents();
         //fr = to.getRawData(); //This now blocks
@@ -59,10 +62,6 @@ void frameWorker::captureFrames()
 
             emit newFrameAvailable(curFrame); //This onyl emits when there is a new frame
             emit newFFTMagAvailable(fft_mags);
-            //if(to.std_dev_ready())
-            {
-                emit std_dev_ready();
-            }
 
             unsigned int save_num = to.save_framenum.load(std::memory_order_relaxed);
             if(!to.saving_list.empty())
@@ -76,6 +75,9 @@ void frameWorker::captureFrames()
         }
 
     }
+
+    qDebug() << "emitting finished";
+    emit finished();
 }
 unsigned int frameWorker::getFrameHeight()
 {

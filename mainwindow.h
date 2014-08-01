@@ -15,10 +15,9 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = 0);
+    MainWindow(QThread * qth, frameWorker * fw, QWidget *parent = 0);
     ~MainWindow();
 private:
-    QThread * workerThread;
     frameWorker *fw;
     QTabWidget * tabWidget;
     QWidget * mainwidget;
@@ -35,9 +34,7 @@ private:
 public slots:
     void updateFPS(unsigned int fps);
     void testslot(int val);
-    void createBackend();
-    void destroyBackend();
-    void connectAndStartBackend();
+
     void enableStdDevTabs();
 };
 

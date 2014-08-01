@@ -41,6 +41,8 @@ public slots:
     void handleNewFrame(frame_c *frame);
     void updateCeiling(int c);
     void updateFloor(int f);
+    void rescaleRange();
+
 };
 
 #endif // MEAN_PROFILE_WIDGET_H

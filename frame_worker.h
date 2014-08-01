@@ -24,7 +24,7 @@ public:
     unsigned int getFrameWidth();
 
     bool dsfMaskCollected();
-
+    bool doRun = true;
     camera_t camera_type();
 
     double histoDataMax;
@@ -41,6 +41,7 @@ signals:
 
     void std_dev_ready();
     void savingFrameNumChanged(unsigned int n);
+    void finished();
 public slots:
     void captureFrames();
     void startCapturingDSFMask();
@@ -49,7 +50,7 @@ public slots:
     void toggleUseDSF(bool t);
     void startSavingRawData(unsigned int framenum,QString name);
     void stopSavingRawData();
-
+    void stop();
 
     void setStdDev_N(int newN);
 

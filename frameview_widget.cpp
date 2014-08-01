@@ -13,34 +13,21 @@
 #include "settings.h"
 frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget *parent) : QWidget(parent)
 {
-//CODE goes here...
+    //CODE goes here...
     //code
 
     this->fw = fw;
     this->image_type = image_type;
-    this->ceiling = 10000;
-    this->floor = 0;
+    switch(image_type)
+    {
+    case BASE: ceiling = 10000; break;
+    case DSF: ceiling = 20; break;
+    case STD_DEV: ceiling = 20; break;
+    }
+    floor = 0;
     count=0;
     toggleGrayScaleButton.setText("Toggle grayscale output");
     outputGrayScale = true;
-    qcp = NULL;
-
-}
-frameview_widget::~frameview_widget()
-{
-    if(qcp != NULL)
-    {
-        disconnect(this,SLOT(handleNewFrame()),fw,SIGNAL(newFrameAvailable()));
-        delete colorScale;
-        delete colorMapData;
-        delete colorMap;
-        delete qcp;
-    }
-}
-
-void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewFrame?
-{
-
     frHeight = fw->getFrameHeight();
     qDebug() << "fw frame height " << fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
@@ -54,10 +41,12 @@ void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewF
     qcp->axisRect()->setupFullAxesBox(true);
     qcp->xAxis->setLabel("x");
     qcp->yAxis->setLabel("y");
+
     //If this is uncommented, window size reflects focal plane size, otherwise it scales
-    //qcp->setMaximumSize(fw->getWidth(),fw->getHeight());
+
     //qcp->setBackgroundScaled(Qt::AspectRatioMode);
     colorMap = new QCPColorMap(qcp->xAxis,qcp->yAxis);
+    //colorMap->valueAxis()->
     colorMapData = NULL;
     qcp->addPlottable(colorMap);
 
@@ -85,8 +74,6 @@ void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewF
     colorScale->setMarginGroup(QCP::msBottom|QCP::msTop,marginGroup);
 
     qcp->rescaleAxes();
-    //   imageLabel->setGeometry(pictureRect);
-    //   imageLabel->setPixmap(picturePixmap);
     qcp->axisRect()->setBackgroundScaled(false);
 
 
@@ -105,84 +92,88 @@ void frameview_widget::initQCPStuff() //Needs to be in same thread as handleNewF
     connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
     connect(colorMap,SIGNAL(dataRangeChanged(QCPRange)),this,SLOT(colorMapDataRangeChanged(QCPRange)));
+
+    colorMapData = new QCPColorMapData(frWidth,frHeight,QCPRange(0,frWidth),QCPRange(0,frHeight));
+    colorMap->setData(colorMapData);
     //emit startCapturing(); //This sends a message to the frame worker to start capturing (in different thread)
     //fw->captureFrames();
+
 }
+frameview_widget::~frameview_widget()
+{
+    if(qcp != NULL)
+    {
+        disconnect(this,SLOT(handleNewFrame()),fw,SIGNAL(newFrameAvailable()));
+        delete colorScale;
+        //delete colorMapData;
+        delete colorMap;
+        delete qcp;
+    }
+}
+
 void frameview_widget::handleNewFrame(frame_c * frame)
 {
-    if(qcp==NULL)
+    if(qcp != NULL)
     {
-        qDebug() << "chcking qcp";
-        initQCPStuff();
-        colorMapData = new QCPColorMapData(frWidth,frHeight,QCPRange(0,frWidth),QCPRange(0,frHeight));
-        colorMap->setData(colorMapData);
-        qDebug() << " height " << frHeight << " width " << frWidth;
-    }
-
-    if(count % FRAME_SKIP_FACTOR == 0 && !this->isHidden())
-    {
-
-
-        if(image_type == BASE)
+        if(count % FRAME_SKIP_FACTOR == 0 && !this->isHidden())
         {
-            //qDebug() << "starting redraw";
-            uint16_t * local_image_ptr = frame->image_data_ptr;
-            //uint16_t * local_image_ptr = fw->getRawPtr();
+
+            if(image_type == BASE)
+            {
+                //qDebug() << "starting redraw";
+                uint16_t * local_image_ptr = frame->image_data_ptr;
+                //uint16_t * local_image_ptr = fw->getRawPtr();
+                for(int col = 0; col < frWidth; col++)
+                {
+                    for(int row = 0; row < frHeight; row++)
+                    {
+                        //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+                        //colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
+                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+
+                    }
+                }
+            }
+            else if(image_type == DSF)
+            {
+                float * local_image_ptr = frame->dark_subtracted_data;
+                // qDebug() << "dsf mask collected " << fw->dsfMaskCollected();
+                for(int col = 0; col < frWidth; col++)
+                {
+                    for(int row = 0; row < frHeight; row++)
+                    {
+                        //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
+                        //colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
+                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+                    }
+                }
+            }
+            colorScale->setDataRange(QCPRange(floor,ceiling));
+            qcp->replot();
+
+        }
+
+
+        if(image_type == STD_DEV)
+        {
+            float * local_image_ptr = frame->std_dev_data;
+            float sum = 0;
             for(int col = 0; col < frWidth; col++)
             {
                 for(int row = 0; row < frHeight; row++)
                 {
-                    //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
-                    colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
+                    colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+                    //colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
 
                 }
             }
+            //sum/=frWidth*frHeight;
+            //printf("gui std. dev avg=%f\n",sum);
+
+            qcp->replot();
         }
-        else if(image_type == DSF)
-        {
-            float * local_image_ptr = frame->dark_subtracted_data;
-            // qDebug() << "dsf mask collected " << fw->dsfMaskCollected();
-            for(int col = 0; col < frWidth; col++)
-            {
-                for(int row = 0; row < frHeight; row++)
-                {
-                    //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
-                    colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
-
-                }
-            }
-
-        }
-
-        colorScale->setDataRange(QCPRange(floor,ceiling));
-        qcp->replot();
 
     }
-
-
-    if(image_type == STD_DEV)
-    {
-
-        //printf("hvsd=2\n");
-        float * local_image_ptr = frame->std_dev_data;
-        float sum = 0;
-        for(int col = 0; col < frWidth; col++)
-        {
-            for(int row = 0; row < frHeight; row++)
-            {
-                //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
-                colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
-
-            }
-        }
-        //sum/=frWidth*frHeight;
-        //printf("gui std. dev avg=%f\n",sum);
-
-        colorScale->setDataRange(QCPRange(floor,ceiling));
-        qcp->replot();
-    }
-
-
 
 
     count++;
@@ -202,14 +193,16 @@ void frameview_widget::toggleGrayScale()
 }
 void frameview_widget::updateCeiling(int c)
 {
-    QMutexLocker ml(&mMutex);
     ceiling = (double)c;
+    colorScale->setDataRange(QCPRange(floor,ceiling));
+
     //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
 }
 void frameview_widget::updateFloor(int f)
 {
-    QMutexLocker ml(&mMutex);
     floor = (double)f;
+    colorScale->setDataRange(QCPRange(floor,ceiling));
+
     //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
 }
 void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
@@ -274,3 +267,8 @@ double frameview_widget::getFloor()
     return floor;
 
 }
+void frameview_widget::rescaleRange()
+{
+    colorScale->setDataRange(QCPRange(floor,ceiling));
+}
+

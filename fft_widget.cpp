@@ -7,6 +7,8 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     this->fw = fw;
     zero_const_box.setText("Set constant FFT term to zero");
     zero_const_box.setChecked(true);
+    ceiling = 100;
+    floor = 0;
 }
 fft_widget::~fft_widget()
 {
@@ -32,6 +34,7 @@ void fft_widget::initQCPStuff()
     }
     //rfft_data_vec = QVector<double>(MEAN_BUFFER_LENGTH/2);
     //rfft_data = new float[MEAN_BUFFER_LENGTH/2];
+    qcp->xAxis->setRange(QCPRange(0,nyquist_freq));
     qvbl.addWidget(qcp);
     qvbl.addWidget(&zero_const_box);
     this->setLayout(&qvbl);
@@ -54,9 +57,32 @@ void fft_widget::handleNewFrame(QSharedPointer<QVector<double>> rfft_data_vec)
         }
         fft_bars->setData(freq_bins,*rfft_data_vec);
 
-        fft_bars->rescaleAxes();
+        //fft_bars->rescaleAxes();
 
         qcp->replot();
     }
     count++;
+}
+
+void fft_widget::updateCeiling(int c)
+{
+    ceiling = (double)c;
+    qcp->yAxis->setRange(QCPRange(floor,ceiling));
+}
+void fft_widget::updateFloor(int f)
+{
+    floor = (double)f;
+    qcp->yAxis->setRange(QCPRange(floor,ceiling));
+}
+double fft_widget::getCeiling()
+{
+    return ceiling;
+}
+double fft_widget::getFloor()
+{
+    return floor;
+}
+void fft_widget::rescaleRange()
+{
+    qcp->yAxis->setRange(QCPRange(floor,ceiling));
 }

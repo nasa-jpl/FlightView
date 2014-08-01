@@ -3,7 +3,7 @@
 #include "mainwindow.h"
 #include "image_type.h"
 #include <memory>
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     : QMainWindow(parent)
 {
     qRegisterMetaType<frame_c*>("frame_c*");
@@ -11,7 +11,10 @@ MainWindow::MainWindow(QWidget *parent)
     qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");
 
 
-    createBackend();
+    this->fw = fw;
+    //start worker Thread
+    qth->start();
+    qDebug() << "fw passed to MainWindow";
     this->resize(1440,900);
     mainwidget = new QWidget();
     QVBoxLayout *layout = new QVBoxLayout;
@@ -38,9 +41,6 @@ MainWindow::MainWindow(QWidget *parent)
     tabWidget->addTab(horiz_widget,QString("Horizontal Mean Profile"));
     tabWidget->addTab(fft_mean_widget,QString("FFT of Plane Mean"));
 
-    tabWidget->setTabEnabled(2,false);
-    tabWidget->setTabEnabled(3,false);
-
     layout->addWidget(tabWidget,3);
     //Create controls box
 
@@ -55,29 +55,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     //Connect everything together
 
-
-
-    //connect(controlbox->collect_dark_frames_button,SIGNAL(clicked()),this,SLOT(testslot()));
-    connect(&controlbox->run_display_button, SIGNAL(clicked()), this, SLOT(connectAndStartBackend()));
-    connect(&controlbox->stop_display_button, SIGNAL(clicked()), this, SLOT(destroyBackend()));
-
     connect(tabWidget,SIGNAL(currentChanged(int)),controlbox,SLOT(tabChangedSlot(int)));
     controlbox->tabChangedSlot(0);
-}
 
-void MainWindow::createBackend()
-{
-    workerThread = new QThread();
-    fw = new frameWorker();
-    //workerThread->launchWorker(fw);
-    fw->moveToThread(workerThread);
-
-
-
-}
-void MainWindow::connectAndStartBackend()
-{
-    connect(workerThread,SIGNAL(started()), fw, SLOT(captureFrames()));
 
     connect(fw,SIGNAL(newFrameAvailable(frame_c *)), unfiltered_widget, SLOT(handleNewFrame(frame_c *)));
     connect(fw,SIGNAL(newFrameAvailable(frame_c *)), dsf_widget, SLOT(handleNewFrame(frame_c *)));
@@ -110,21 +90,15 @@ void MainWindow::connectAndStartBackend()
     //connect(fw,SIGNAL(savingFrameNumChanged(uint)),&controlbox,SLOT(updateSaveFrameNum_slot(uint)));
     controlbox->fps_label.setText("Running");
     controlbox->fps_label.setStyleSheet("{color: green;}");
-    //start worker Thread
-    workerThread->start();
+
+
+
+
 }
 
-void MainWindow::destroyBackend()
-{
-    qDebug() << "attempting to stop backend";
-
-    delete fw;
-    delete workerThread;
-}
 
 MainWindow::~MainWindow()
 {
-    destroyBackend();
 }
 void MainWindow::testslot(int val)
 {

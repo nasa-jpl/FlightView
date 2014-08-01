@@ -1,6 +1,7 @@
 #include "controlsbox.h"
 #include "frameview_widget.h"
 #include "mean_profile_widget.h"
+#include "fft_widget.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGridLayout>
@@ -15,8 +16,10 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
 
     run_collect_button.setText("Run Collect");
     run_display_button.setText("Run Display");
+    run_display_button.setEnabled(false);
     stop_collect_button.setText("Stop Collect");
     stop_display_button.setText("Stop Display");
+    stop_display_button.setEnabled(false);
 
     collect_dark_frames_button.setText("Collect Dark Frames");
     stop_dark_collection_button.setText("Stop Dark Collection");
@@ -255,10 +258,10 @@ void ControlsBox::save_finite_button_slot()
 
 void ControlsBox::tabChangedSlot(int index)
 {
-    //Multiple inheritance totally failed me.
+    //Multiple inheritance totally failed me. Trying to get QObject pure virtual interfaces is like boxing with satan
     frameview_widget * fvw = qobject_cast<frameview_widget*>(qtw->widget(index));
     mean_profile_widget * mpw = qobject_cast<mean_profile_widget*>(qtw->widget(index));
-
+    fft_widget * ffw = qobject_cast<fft_widget*>(qtw->widget(index));
 
     if(qobject_cast<frameview_widget*>(cur_frameview) != NULL)
     {
@@ -270,8 +273,12 @@ void ControlsBox::tabChangedSlot(int index)
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<mean_profile_widget*>(cur_frameview),SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<mean_profile_widget*>(cur_frameview), SLOT(updateFloor(int)));
     }
-
-    cur_frameview = qtw->widget(index); //Gets set to null if not frameview widget
+    else if(qobject_cast<mean_profile_widget*>(cur_frameview) != NULL)
+    {
+        disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<fft_widget*>(cur_frameview),SLOT(updateCeiling(int)));
+        disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<fft_widget*>(cur_frameview), SLOT(updateFloor(int)));
+    }
+    cur_frameview = qtw->widget(index);
 
     if(fvw != NULL)
     {
@@ -279,6 +286,9 @@ void ControlsBox::tabChangedSlot(int index)
         floor_edit.setValue(fvw->getFloor());
         connect(&ceiling_slider, SIGNAL(valueChanged(int)), fvw, SLOT(updateCeiling(int)));
         connect(&floor_slider, SIGNAL(valueChanged(int)), fvw, SLOT(updateFloor(int)));
+        useDSFCbox.setEnabled(false);
+        fvw->rescaleRange();
+
     }
     else if(mpw != NULL)
     {
@@ -286,5 +296,17 @@ void ControlsBox::tabChangedSlot(int index)
         floor_edit.setValue(mpw->getFloor());
         connect(&ceiling_slider, SIGNAL(valueChanged(int)), mpw, SLOT(updateCeiling(int)));
         connect(&floor_slider, SIGNAL(valueChanged(int)), mpw, SLOT(updateFloor(int)));
+        useDSFCbox.setEnabled(true);
+        mpw->rescaleRange();
+    }
+    else if(ffw != NULL)
+    {
+
+        ceiling_edit.setValue(ffw->getCeiling());
+        floor_edit.setValue(ffw->getFloor());
+        connect(&ceiling_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateCeiling(int)));
+        connect(&floor_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateFloor(int)));
+        useDSFCbox.setEnabled(true);
+        ffw->rescaleRange();
     }
 }

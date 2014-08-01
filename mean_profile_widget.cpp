@@ -93,9 +93,7 @@ void mean_profile_widget::handleNewFrame(frame_c * frame)
 
         }
         //qcp->graph(0)->rescaleValueAxis();
-        qcp->yAxis->setRangeLower(0);
-        qcp->yAxis->setRangeLower(floor);
-        qcp->yAxis->setRangeUpper(ceiling);
+
        qcp->graph(0)->setData(x,y);
         //qcp->graph(0)->rescaleAxes();
         qcp->replot();
@@ -107,12 +105,13 @@ void mean_profile_widget::handleNewFrame(frame_c * frame)
 void mean_profile_widget::updateCeiling(int c)
 {
     ceiling = (double)c;
+    qcp->yAxis->setRangeUpper(ceiling);
     //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
 }
 void mean_profile_widget::updateFloor(int f)
 {
     floor = (double)f;
-    //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
+    qcp->yAxis->setRangeLower(floor);
 }
 double mean_profile_widget::getFloor()
 {
@@ -121,4 +120,8 @@ return floor;
 double mean_profile_widget::getCeiling()
 {
 return ceiling;
+}
+void mean_profile_widget::rescaleRange()
+{
+    qcp->yAxis->setRange(QCPRange(ceiling,floor));
 }

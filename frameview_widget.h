@@ -21,7 +21,6 @@ class frameview_widget :public QWidget//, public view_widget_interface
 {
     Q_OBJECT
     //Q_INTERFACES(view_widget_interface)
-    QMutex mMutex;
     QVBoxLayout layout ;
     QCustomPlot * qcp;
     QCPColorMap * colorMap;
@@ -46,9 +45,6 @@ public:
     QPushButton toggleGrayScaleButton;
     double getCeiling();
     double getFloor();
-
-private:
-    void initQCPStuff(); //Needs to be in same thread as handleNewFrame?
 signals:
     void startCapturing();
 public slots:
@@ -61,6 +57,8 @@ public slots:
     void colorMapDataRangeChanged(const QCPRange &newRange);
     void updateCeiling(int c);
     void updateFloor(int f);
+    void rescaleRange();
+
 };
 
 #endif // FRAMEVIEW_WIDGET_H

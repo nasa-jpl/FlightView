@@ -21,9 +21,14 @@ class fft_widget : public QWidget
     QCheckBox zero_const_box;
     frameWorker * fw;
     unsigned int count = 0;
+    volatile double ceiling;
+    volatile double floor;
 public:
     explicit fft_widget(frameWorker *fw, image_t image_type,QWidget *parent = 0);
     ~fft_widget();
+
+    double getCeiling();
+    double getFloor();
 private:
     void initQCPStuff();
 
@@ -31,7 +36,9 @@ signals:
     
 public slots:
     void handleNewFrame(QSharedPointer<QVector<double>> rfft_data_vec);
-
+    void updateCeiling(int);
+    void updateFloor(int);
+    void rescaleRange();
 };
 
 #endif // FFT_WIDGET_H
