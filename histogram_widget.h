@@ -19,20 +19,22 @@ class histogram_widget : public QWidget
     QVector<double> histo_bins;
     unsigned int count = 0;
     frameWorker * fw;
+    volatile double ceiling;
+    volatile double floor;
 public:
     explicit histogram_widget(frameWorker * fw,image_t image_type ,QWidget *parent = 0);
     ~histogram_widget();
-
-private:
-    void initQCPStuff();
-    void update_histo_data();
+    double getCeiling();
+    double getFloor();
 signals:
     
 public slots:
     void handleNewFrame(QSharedPointer<QVector<double>> histo_data_vec);
     void histogramScrolledX(const QCPRange &newRange);
     void histogramScrolledY(const QCPRange &newRange);
-
+    void updateCeiling(int);
+    void updateFloor(int);
+    void rescaleRange();
 };
 
 #endif // HISTOGRAM_WIDGET_H

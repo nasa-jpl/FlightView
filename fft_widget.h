@@ -29,8 +29,6 @@ public:
 
     double getCeiling();
     double getFloor();
-private:
-    void initQCPStuff();
 
 signals:
     

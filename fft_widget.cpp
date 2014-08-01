@@ -9,14 +9,6 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     zero_const_box.setChecked(true);
     ceiling = 100;
     floor = 0;
-}
-fft_widget::~fft_widget()
-{
-
-}
-
-void fft_widget::initQCPStuff()
-{
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);
 
@@ -39,15 +31,16 @@ void fft_widget::initQCPStuff()
     qvbl.addWidget(&zero_const_box);
     this->setLayout(&qvbl);
 }
+fft_widget::~fft_widget()
+{
+
+}
+
 
 
 void fft_widget::handleNewFrame(QSharedPointer<QVector<double>> rfft_data_vec)
 
 {
-    if(qcp == NULL)
-    {
-        initQCPStuff();
-    }
     if(count%FRAME_SKIP_FACTOR==0 && !this->isHidden())
     {
 

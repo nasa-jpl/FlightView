@@ -68,7 +68,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
 
     colorMap->setGradient(QCPColorGradient::gpJet);
     colorMap->setInterpolate(false);
-
+    colorMap->setAntialiased(false);
     QCPMarginGroup *marginGroup = new QCPMarginGroup(qcp);
     qcp->axisRect()->setMarginGroup(QCP::msBottom|QCP::msTop,marginGroup);
     colorScale->setMarginGroup(QCP::msBottom|QCP::msTop,marginGroup);
@@ -182,7 +182,18 @@ void frameview_widget::handleNewFrame(frame_c * frame)
 void frameview_widget::updateFPS()
 {
     seconds_elapsed++;
-    fps = count/(double)seconds_elapsed;
+    //fps = count/(double)seconds_elapsed;
+
+
+    if(seconds_elapsed < 5)
+    {
+        fps=((seconds_elapsed-1)*fps + (count-old_count))/(seconds_elapsed);
+    }
+    else
+    {
+    fps = (fps*4 + (count-old_count))/5;
+    }
+    old_count = count;
     fpsLabel.setText(QString("avg fps: %1").arg(fps));
 }
 void frameview_widget::toggleGrayScale()

@@ -7,14 +7,6 @@ histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget 
 {
     qcp = NULL;
     this->fw = fw;
-}
-
-histogram_widget::~histogram_widget()
-{
-
-}
-void histogram_widget::initQCPStuff()
-{
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
@@ -61,16 +53,16 @@ void histogram_widget::initQCPStuff()
 
     connect(histogram->keyAxis(),SIGNAL(rangeChanged(QCPRange)),this,SLOT(histogramScrolledX(QCPRange)));
     connect(histogram->valueAxis(),SIGNAL(rangeChanged(QCPRange)),this,SLOT(histogramScrolledY(QCPRange)));
+}
+
+histogram_widget::~histogram_widget()
+{
 
 }
 
 
 void histogram_widget::handleNewFrame(QSharedPointer<QVector<double> > histo_data_vec)
 {
-    if(qcp == NULL)
-    {
-        initQCPStuff();
-    }
     if(!this->isHidden())
     {
 
@@ -123,3 +115,27 @@ void histogram_widget::histogramScrolledX(const QCPRange &newRange)
     //histogram->keyAxis()->setAutoTickCount(10);
 
 }
+
+void histogram_widget::updateCeiling(int c)
+{
+    ceiling = (double)c;
+    qcp->yAxis->setRange(QCPRange(floor,ceiling));
+}
+void histogram_widget::updateFloor(int f)
+{
+    floor = (double)f;
+    qcp->yAxis->setRange(QCPRange(floor,ceiling));
+}
+double histogram_widget::getCeiling()
+{
+    return ceiling;
+}
+double histogram_widget::getFloor()
+{
+    return floor;
+}
+void histogram_widget::rescaleRange()
+{
+    qcp->yAxis->setRange(QCPRange(floor,ceiling));
+}
+

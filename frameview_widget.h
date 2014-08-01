@@ -39,6 +39,7 @@ class frameview_widget :public QWidget//, public view_widget_interface
     int frHeight;
     int frWidth;
     unsigned int count = 0;
+    unsigned int old_count = 0;
 public:
     explicit frameview_widget(frameWorker * fw, image_t image_type , QWidget *parent = 0);
     ~frameview_widget();
