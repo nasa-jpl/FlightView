@@ -20,6 +20,9 @@ histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget 
     QPen pen;
     pen.setWidthF(1.2);
     histogram->setName("Histogram of Standard Deviation per pixel");
+    const uint16_t sigma = 0x03C3;
+    qcp->xAxis->setLabel(QString::fromUtf16(&sigma,1));
+    qcp->yAxis->setLabel("Spatial Frequency");
     //histogram->setPen(pen);
 
     std::array<float,NUMBER_OF_BINS> histbinvals = getHistogramBinValues();
@@ -62,9 +65,10 @@ histogram_widget::~histogram_widget()
 
 }
 
-
-void histogram_widget::handleNewFrame(QSharedPointer<QVector<double> > histo_data_vec)
+/*
+void histogram_widget::handleNewFrame()
 {
+    QSharedPointer<QVector<double> > histo_data_vec = fw->histo_data_vec;
     if(!this->isHidden())
     {
 
@@ -75,6 +79,7 @@ void histogram_widget::handleNewFrame(QSharedPointer<QVector<double> > histo_dat
     }
     count++;
 }
+*/
 
 void histogram_widget::histogramScrolledY(const QCPRange &newRange)
 {

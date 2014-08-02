@@ -7,9 +7,10 @@
 #include <QVBoxLayout>
 #include <QGridLayout>
 #include <QFileDialog>
-ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
+ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     QGroupBox(parent)
 {
+    this->fw = fw;
     cur_frameview=NULL;
     qtw = tw;
     //Collection Buttons
@@ -138,6 +139,8 @@ ControlsBox::ControlsBox(QTabWidget *tw, QWidget *parent) :
     controls_layout.addWidget(&SaveButtonsBox,2);
     this->setLayout(&controls_layout);
     this->setMaximumHeight(150);
+    connect(&backendDeltaTimer,SIGNAL(timeout()),this,SLOT(updateBackendDelta()));
+    backendDeltaTimer.start(1000);
 
     connect(&std_dev_N_edit,SIGNAL(valueChanged(int)),&std_dev_N_slider,SLOT(setValue(int)));
     connect(&std_dev_N_slider,SIGNAL(valueChanged(int)),&std_dev_N_edit,SLOT(setValue(int)));
@@ -213,8 +216,7 @@ void ControlsBox::save_continous_button_slot()
     start_saving_frames_button.setEnabled(false);
     save_finite_button.setEnabled(false);
     frames_save_num_edit.setEnabled(false);
-    QString label = QString("Recording raws");
-    fps_label.setText(label);
+
 
 }
 void ControlsBox::stop_continous_button_slot()
@@ -225,7 +227,6 @@ void ControlsBox::stop_continous_button_slot()
     start_saving_frames_button.setEnabled(true);
     save_finite_button.setEnabled(true);
     frames_save_num_edit.setEnabled(true);
-    fps_label.setText("Running");
 
 }
 void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
@@ -237,7 +238,6 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
         start_saving_frames_button.setEnabled(true);
         save_finite_button.setEnabled(true);
         frames_save_num_edit.setEnabled(true);
-        fps_label.setText("Running");
     }
     frames_save_num_edit.setValue(n);
 }
@@ -250,8 +250,7 @@ void ControlsBox::save_finite_button_slot()
     start_saving_frames_button.setEnabled(false);
     save_finite_button.setEnabled(false);
     frames_save_num_edit.setEnabled(false);
-    QString label = QString("Recording raws");
-    fps_label.setText(label);
+
 
 
 
@@ -324,4 +323,11 @@ void ControlsBox::tabChangedSlot(int index)
         useDSFCbox.setEnabled(false);
         hwt->rescaleRange();
     }
+}
+void ControlsBox::updateBackendDelta()
+{
+    static unsigned long old_c = 0;
+    unsigned int delta = fw->c-old_c;
+    old_c = fw->c;
+    fps_label.setText(QString("FPS @ backend:%1").arg(delta));
 }

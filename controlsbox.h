@@ -28,8 +28,9 @@ class ControlsBox : public QGroupBox
 {
     Q_OBJECT
 public:
-    explicit ControlsBox(QTabWidget * tw, QWidget *parent = 0);
+    explicit ControlsBox(frameWorker * fw, QTabWidget * tw, QWidget *parent = 0);
 
+    frameWorker * fw;
     QHBoxLayout controls_layout;
     QGridLayout collections_layout;
     QGridLayout sliders_layout;
@@ -68,7 +69,7 @@ public:
     QPushButton set_filename_button;
 
     QCheckBox useDSFCbox;
-
+    QTimer backendDeltaTimer;
 private:
     QTabWidget *qtw;
     QWidget * cur_frameview;
@@ -85,7 +86,7 @@ public slots:
     void save_continous_button_slot();
     void stop_continous_button_slot();
     void save_finite_button_slot();
-
+    void updateBackendDelta();
     void tabChangedSlot(int index);
     void increment_slot(bool t);
     void showSaveDialog();

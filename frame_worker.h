@@ -33,15 +33,18 @@ public:
     //QVector<double> rfft_data_vec;
 
     unsigned int old_save_framenum;
-    frame_c * curFrame;
+    frame_c * curFrame  = NULL;
     frame_c * std_dev_frame = NULL;
+    frame_c * std_dev_processing_frame = NULL;
+    unsigned long c = 0;
+
+    QSharedPointer <QVector <double> > histo_data_vec = QSharedPointer <QVector<double> >(new QVector<double>(NUMBER_OF_BINS));
+    QSharedPointer <QVector <double> > fft_magnitude_vector = QSharedPointer <QVector<double> >(new QVector<double>(NUMBER_OF_BINS));
+
 signals:
     void newFrameAvailable();
     void stdDevFrameCompleted(frame_c *);
-    void newFFTMagAvailable(QSharedPointer<QVector<double>>);
-    void newStdDevHistogramAvailable(QSharedPointer<QVector<double>>);
 
-    void std_dev_ready();
     void savingFrameNumChanged(unsigned int n);
     void finished();
 public slots:
@@ -58,7 +61,6 @@ public slots:
 
 private:
     take_object to;
-    //std::list
     QSharedPointer<QVector<double>> updateFFTVector();
     QSharedPointer<QVector<double>> updateHistogramVector();
 

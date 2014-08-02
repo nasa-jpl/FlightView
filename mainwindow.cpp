@@ -44,7 +44,7 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     layout->addWidget(tabWidget,3);
     //Create controls box
 
-    controlbox = new ControlsBox(tabWidget);
+    controlbox = new ControlsBox(fw,tabWidget);
     layout->addWidget(controlbox,1);
 
 

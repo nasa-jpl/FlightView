@@ -11,7 +11,8 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     floor = 0;
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);
-
+    qcp->xAxis->setLabel("Frequency (Hz)");
+    qcp->yAxis->setLabel("Magnitude");
     fft_bars = new QCPBars(qcp->xAxis,qcp->yAxis);
     qcp->addPlottable(fft_bars);
     fft_bars->setName("Magnitude of FFT average pixel value");

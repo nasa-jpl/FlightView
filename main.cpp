@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 
     fw->moveToThread(workerThread);
     QObject::connect(workerThread,SIGNAL(started()),fw,SLOT(captureFrames()));
-    delay(500);
+    //delay(500);
     MainWindow w(workerThread, fw);
     w.setGeometry(   QStyle::alignedRect(
                        Qt::LeftToRight,
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     return retval;
 }
 
-
+/*
 void delay( int millisecondsToWait )
 {
     QTime dieTime = QTime::currentTime().addMSecs( millisecondsToWait );
@@ -63,3 +63,4 @@ void delay( int millisecondsToWait )
         QCoreApplication::processEvents( QEventLoop::AllEvents, 100 );
     }
 }
+*/

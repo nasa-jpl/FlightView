@@ -114,7 +114,7 @@ frameview_widget::~frameview_widget()
 void frameview_widget::handleNewFrame()
 {
 
-    if(!this->isHidden())
+    if(!this->isHidden() &&  fw->curFrame != NULL)
     {
         if(image_type == BASE)
         {
@@ -125,6 +125,8 @@ void frameview_widget::handleNewFrame()
             {
                 for(int row = 0; row < frHeight; row++)
                 {
+                    //colorMap->data()->setCell(col,row,row^col);
+
                     colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
                 }
             }
@@ -147,7 +149,7 @@ void frameview_widget::handleNewFrame()
 
         }
 
-        if(image_type == STD_DEV && fw->std_dev_frame->has_valid_std_dev == 2)
+        if(image_type == STD_DEV && fw->std_dev_frame != NULL)
         {
             float * local_image_ptr = fw->std_dev_frame->std_dev_data;
             for(int col = 0; col < frWidth; col++)
@@ -185,7 +187,7 @@ void frameview_widget::updateFPS()
         fps = (fps*4 + (count-old_count))/5;
     }
     old_count = count;
-    fpsLabel.setText(QString("avg fps: %1").arg(fps));
+    fpsLabel.setText(QString("avg framerate: %1").arg(fps));
 }
 void frameview_widget::toggleGrayScale()
 {

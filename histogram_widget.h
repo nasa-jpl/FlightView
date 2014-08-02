@@ -29,7 +29,7 @@ public:
 signals:
     
 public slots:
-    void handleNewFrame(QSharedPointer<QVector<double>> histo_data_vec);
+    //void handleNewFrame(QSharedPointer<QVector<double>> histo_data_vec);
     void histogramScrolledX(const QCPRange &newRange);
     void histogramScrolledY(const QCPRange &newRange);
     void updateCeiling(int);

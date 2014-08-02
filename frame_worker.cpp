@@ -26,7 +26,6 @@ void frameWorker::stop()
 
 void frameWorker::captureFrames()
 {
-    unsigned long c = 0;
     unsigned int last_savenum;
 
     frame_c * workingFrame;
@@ -37,35 +36,24 @@ void frameWorker::captureFrames()
         usleep(50); //So that CPU utilization is not 100%
         workingFrame = &to.frame_ring_buffer[c%CPU_FRAME_BUFFER_SIZE];
 
-        if(std_dev_frame != NULL)
+        if(std_dev_processing_frame != NULL)
         {
-            if(std_dev_frame->has_valid_std_dev == 2)
+            if(std_dev_processing_frame->has_valid_std_dev == 2)
             {
-              // QSharedPointer<QVector <double> > histo_data_vec = updateHistogramVector();
-                // updateHistogramVector();
-                //emit stdDevFrameCompleted(std_dev_frame); //This onyl emits when there is a new frame
-              //  emit newStdDevHistogramAvailable(histo_data_vec);
-                //std_dev_frame = NULL;
+                std_dev_frame = std_dev_processing_frame;
+                QSharedPointer<QVector <double> > histo_data_vec = updateHistogramVector();
+
             }
 
         }
         if(workingFrame->async_filtering_done != 0)
         {
             curFrame = workingFrame;
-            // qDebug() << "on frame ?" << to.frame_list.size();
             if(curFrame->has_valid_std_dev==1)
             {
-                std_dev_frame = curFrame;
+                std_dev_processing_frame = curFrame;
             }
-
-          //  QSharedPointer <QVector<double> > fft_mags = updateFFTVector();
-            //memcpy(raw_data,to.getRawPtr(),dataHeight*frWidth*sizeof(uint16_t));
-            //memcpy(image_data,to.getImagePtr(),frHeight*frWidth*sizeof(uint16_t));
-
-            //emit newFrameAvailable(curFrame); //This onyl emits when there is a new frame
-            //emit newFrameAvailable();
-            // emit newFFTMagAvailable(fft_mags);
-
+            QSharedPointer <QVector<double> > fft_mags = updateFFTVector();
             unsigned int save_num = to.save_framenum.load(std::memory_order_relaxed);
             if(!to.saving_list.empty())
             {
@@ -140,9 +128,8 @@ void frameWorker::setStdDev_N(int newN)
 {
     to.setStdDev_N(newN);
 }
-QSharedPointer <QVector <double> > frameWorker::updateFFTVector() //This would make more sense in fft_widget, but it cannot run in the gui thread.
+QSharedPointer <QVector <double> > frameWorker::updateFFTVector() //This would make more sense in fft_widget, but then it could not run in the gui thread.
 {
-    QSharedPointer <QVector <double> > fft_magnitude_vector = QSharedPointer <QVector <double> >(new QVector <double>(FFT_INPUT_LENGTH/2));
     double max = 0;
     for(unsigned int i = 0; i < FFT_INPUT_LENGTH/2; i++)
     {
@@ -159,7 +146,6 @@ QSharedPointer <QVector <double> > frameWorker::updateFFTVector() //This would m
 }
 QSharedPointer <QVector <double> > frameWorker::updateHistogramVector()
 {
-    QSharedPointer <QVector <double> > histo_data_vec = QSharedPointer <QVector<double> >(new QVector<double>(NUMBER_OF_BINS));
 
 
     histoDataMax = 0;
