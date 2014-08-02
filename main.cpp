@@ -11,8 +11,10 @@
 void delay(int);
 int main(int argc, char *argv[])
 {
+    QApplication::setGraphicsSystem("raster"); //This is intended to make 2D rendering faster
+//    QApplication::setGraphicsSystem("opengl"); //This was not working
+
     QApplication a(argc, argv);
-    a.setGraphicsSystem("opengl"); //This is intended to make 2D rendering faster
     QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
     QSplashScreen splash(logo_pixmap);
     splash.show();

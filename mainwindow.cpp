@@ -58,20 +58,18 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     connect(tabWidget,SIGNAL(currentChanged(int)),controlbox,SLOT(tabChangedSlot(int)));
     controlbox->tabChangedSlot(0);
 
+    connect(fw,SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
 
-    connect(fw,SIGNAL(newFrameAvailable(frame_c *)), unfiltered_widget, SLOT(handleNewFrame(frame_c *)));
-    connect(fw,SIGNAL(newFrameAvailable(frame_c *)), dsf_widget, SLOT(handleNewFrame(frame_c *)));
+    //connect(fw,SIGNAL(newFrameAvailable(frame_c *)), unfiltered_widget, SLOT(handleNewFrame(frame_c *)));
+    //connect(fw,SIGNAL(newFrameAvailable(frame_c *)), dsf_widget, SLOT(handleNewFrame(frame_c *)));
 
-    //connect(fw,SIGNAL(newFrameAvailable(frame_c *)), std_dev_widget, SLOT(handleNewFrame(frame_c *)));
-    connect(fw,SIGNAL(stdDevFrameCompleted(frame_c *)), std_dev_widget, SLOT(handleNewFrame(frame_c *)));
+   // connect(fw,SIGNAL(stdDevFrameCompleted(frame_c *)), std_dev_widget, SLOT(handleNewFrame(frame_c *)));
 
-    connect(fw,SIGNAL(newFrameAvailable(frame_c *)),vert_widget,SLOT(handleNewFrame(frame_c *)));
-    connect(fw,SIGNAL(newFrameAvailable(frame_c *)),horiz_widget,SLOT(handleNewFrame(frame_c *)));
-    //connect(fw,SIGNAL(newFrameAvailable(frame_c *)),fft_mean_widget,SLOT(handleNewFrame(frame_c *)));
-    //connect(fw,SIGNAL(newFFTMagAvailable(QVector<double>)),fft_mean_widget,SLOT(handleNewFrame(QVector<double>)));
+   // connect(fw,SIGNAL(newFrameAvailable(frame_c *)),vert_widget,SLOT(handleNewFrame(frame_c *)));
+    //connect(fw,SIGNAL(newFrameAvailable(frame_c *)),horiz_widget,SLOT(handleNewFrame(frame_c *)));
 
-    connect(fw,SIGNAL(newFFTMagAvailable(QSharedPointer<QVector<double> >)),fft_mean_widget,SLOT(handleNewFrame(QSharedPointer<QVector<double> >)));
-    connect(fw,SIGNAL(newStdDevHistogramAvailable(QSharedPointer<QVector<double> >)),hist_widget,SLOT(handleNewFrame(QSharedPointer<QVector<double> >)));
+   // connect(fw,SIGNAL(newFFTMagAvailable(QSharedPointer<QVector<double> >)),fft_mean_widget,SLOT(handleNewFrame(QSharedPointer<QVector<double> >)));
+   // connect(fw,SIGNAL(newStdDevHistogramAvailable(QSharedPointer<QVector<double> >)),hist_widget,SLOT(handleNewFrame(QSharedPointer<QVector<double> >)));
 
 
 

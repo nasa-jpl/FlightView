@@ -2,6 +2,7 @@
 #include "frameview_widget.h"
 #include "mean_profile_widget.h"
 #include "fft_widget.h"
+#include "histogram_widget.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGridLayout>
@@ -262,8 +263,8 @@ void ControlsBox::tabChangedSlot(int index)
     frameview_widget * fvw = qobject_cast<frameview_widget*>(qtw->widget(index));
     mean_profile_widget * mpw = qobject_cast<mean_profile_widget*>(qtw->widget(index));
     fft_widget * ffw = qobject_cast<fft_widget*>(qtw->widget(index));
-
-    if(qobject_cast<frameview_widget*>(cur_frameview) != NULL)
+    histogram_widget * hwt  = qobject_cast<histogram_widget*>(qtw->widget(index));
+    if(qobject_cast<histogram_widget*>(cur_frameview) != NULL)
     {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<frameview_widget*>(cur_frameview),SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<frameview_widget*>(cur_frameview), SLOT(updateFloor(int)));
@@ -277,6 +278,11 @@ void ControlsBox::tabChangedSlot(int index)
     {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<fft_widget*>(cur_frameview),SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<fft_widget*>(cur_frameview), SLOT(updateFloor(int)));
+    }
+    else if(qobject_cast<mean_profile_widget*>(cur_frameview) != NULL)
+    {
+        disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<histogram_widget*>(cur_frameview),SLOT(updateCeiling(int)));
+        disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<histogram_widget*>(cur_frameview), SLOT(updateFloor(int)));
     }
     cur_frameview = qtw->widget(index);
 
@@ -308,5 +314,14 @@ void ControlsBox::tabChangedSlot(int index)
         connect(&floor_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateFloor(int)));
         useDSFCbox.setEnabled(true);
         ffw->rescaleRange();
+    }
+    else if(hwt != NULL)
+    {
+        ceiling_edit.setValue(hwt->getCeiling());
+        floor_edit.setValue(hwt->getFloor());
+        connect(&ceiling_slider, SIGNAL(valueChanged(int)), hwt, SLOT(updateCeiling(int)));
+        connect(&floor_slider, SIGNAL(valueChanged(int)), hwt, SLOT(updateFloor(int)));
+        useDSFCbox.setEnabled(false);
+        hwt->rescaleRange();
     }
 }

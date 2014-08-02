@@ -50,7 +50,7 @@ OTHER_FILES += \
 RESOURCES += \
     images.qrc
 
-QMAKE_CXXFLAGS += -std=c++11 -O3 -march=native
+QMAKE_CXXFLAGS += -std=c++11 -O3 -march=corei7-avx
 #RC_FILE = liveview2.rc
 
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff
@@ -68,7 +68,7 @@ QMAKE_CXXFLAGS += -std=c++11 -O3 -march=native
 #LIBS += -L$$PWD/lib/ -l$$QCPLIB
 
 
-unix:!macx:!symbian: LIBS += -L$$PWD/../../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp
+unix:!macx:!symbian: LIBS += -L$$PWD/../../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lGL -lQtOpenGL
 INCLUDEPATH += $$PWD/../../cuda_take/include\
 $$PWD/../../cuda_take/EDT_include
 DEPENDPATH += $$PWD/../../cuda_take

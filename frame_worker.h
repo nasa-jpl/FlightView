@@ -33,8 +33,10 @@ public:
     //QVector<double> rfft_data_vec;
 
     unsigned int old_save_framenum;
+    frame_c * curFrame;
+    frame_c * std_dev_frame = NULL;
 signals:
-    void newFrameAvailable(frame_c *);
+    void newFrameAvailable();
     void stdDevFrameCompleted(frame_c *);
     void newFFTMagAvailable(QSharedPointer<QVector<double>>);
     void newStdDevHistogramAvailable(QSharedPointer<QVector<double>>);
@@ -67,8 +69,7 @@ private:
 
     float * histogram_bins;
     //std::shared_ptr<frame_c> curFrame;
-    frame_c * curFrame;
-    frame_c * std_dev_frame = NULL;
+
 
 };
 

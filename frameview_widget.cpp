@@ -88,7 +88,8 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     // fpstimer = new QTimer(this);
     connect(&fpstimer, SIGNAL(timeout()), this, SLOT(updateFPS()));
     fpstimer.start(1000);
-
+    connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
+    rendertimer.start(33);
     connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
     connect(colorMap,SIGNAL(dataRangeChanged(QCPRange)),this,SLOT(colorMapDataRangeChanged(QCPRange)));
@@ -103,7 +104,6 @@ frameview_widget::~frameview_widget()
 {
     if(qcp != NULL)
     {
-        disconnect(this,SLOT(handleNewFrame()),fw,SIGNAL(newFrameAvailable()));
         delete colorScale;
         //delete colorMapData;
         delete colorMap;
@@ -111,59 +111,50 @@ frameview_widget::~frameview_widget()
     }
 }
 
-void frameview_widget::handleNewFrame(frame_c * frame)
+void frameview_widget::handleNewFrame()
 {
-    if(qcp != NULL)
+
+    if(!this->isHidden())
     {
-        if(count % FRAME_SKIP_FACTOR == 0 && !this->isHidden())
+        if(image_type == BASE)
         {
 
-            if(image_type == BASE)
-            {
-                //qDebug() << "starting redraw";
-                uint16_t * local_image_ptr = frame->image_data_ptr;
-                //uint16_t * local_image_ptr = fw->getRawPtr();
-                for(int col = 0; col < frWidth; col++)
-                {
-                    for(int row = 0; row < frHeight; row++)
-                    {
-                        //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
-                        //colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
-                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
 
-                    }
-                }
-            }
-            else if(image_type == DSF)
-            {
-                float * local_image_ptr = frame->dark_subtracted_data;
-                // qDebug() << "dsf mask collected " << fw->dsfMaskCollected();
-                for(int col = 0; col < frWidth; col++)
-                {
-                    for(int row = 0; row < frHeight; row++)
-                    {
-                        //colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row)*frWidth + col]);
-                        //colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
-                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
-                    }
-                }
-            }
-            colorScale->setDataRange(QCPRange(floor,ceiling));
-            qcp->replot();
-
-        }
-
-
-        if(image_type == STD_DEV)
-        {
-            float * local_image_ptr = frame->std_dev_data;
-            float sum = 0;
+            uint16_t * local_image_ptr = fw->curFrame->image_data_ptr;
             for(int col = 0; col < frWidth; col++)
             {
                 for(int row = 0; row < frHeight; row++)
                 {
                     colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
-                    //colorMap->data()->setCell(col,row,local_image_ptr[row*frWidth + col]);
+                }
+            }
+            qcp->replot();
+
+
+        }
+        if(image_type == DSF)
+        {
+
+            float * local_image_ptr = fw->curFrame->dark_subtracted_data;
+            for(int col = 0; col < frWidth; col++)
+            {
+                for(int row = 0; row < frHeight; row++)
+                {
+                    colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+                }
+            }
+            qcp->replot();
+
+        }
+
+        if(image_type == STD_DEV && fw->std_dev_frame->has_valid_std_dev == 2)
+        {
+            float * local_image_ptr = fw->std_dev_frame->std_dev_data;
+            for(int col = 0; col < frWidth; col++)
+            {
+                for(int row = 0; row < frHeight; row++)
+                {
+                    colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
 
                 }
             }
@@ -172,13 +163,13 @@ void frameview_widget::handleNewFrame(frame_c * frame)
 
             qcp->replot();
         }
-
     }
-
-
     count++;
 
 }
+
+
+
 void frameview_widget::updateFPS()
 {
     seconds_elapsed++;
@@ -191,7 +182,7 @@ void frameview_widget::updateFPS()
     }
     else
     {
-    fps = (fps*4 + (count-old_count))/5;
+        fps = (fps*4 + (count-old_count))/5;
     }
     old_count = count;
     fpsLabel.setText(QString("avg fps: %1").arg(fps));

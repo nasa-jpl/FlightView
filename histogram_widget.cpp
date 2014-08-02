@@ -5,6 +5,8 @@
 histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     QWidget(parent)
 {
+    ceiling = 8000;
+    floor = 0;
     qcp = NULL;
     this->fw = fw;
     frHeight = fw->getFrameHeight();
@@ -40,7 +42,7 @@ histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget 
     histogram->keyAxis()->setAutoTickCount(10);
     //histogram->keyAxis()->setRangeUpper(10);
 
-    histogram->valueAxis()->setRange(QCPRange(0,fw->histoDataMax));
+    histogram->valueAxis()->setRange(QCPRange(0,ceiling));
 
     //qcp->xAxis->setTickVector(histo_bins);
     //histogram->keyAxis()->setSca
@@ -76,6 +78,8 @@ void histogram_widget::handleNewFrame(QSharedPointer<QVector<double> > histo_dat
 
 void histogram_widget::histogramScrolledY(const QCPRange &newRange)
 {
+    //do Nothing!
+    /*
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
 
@@ -84,6 +88,9 @@ void histogram_widget::histogramScrolledY(const QCPRange &newRange)
     boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
 
     histogram->valueAxis()->setRange(boundedRange);
+    */
+    qcp->yAxis->setRange(QCPRange(floor,ceiling));
+
 }
 
 void histogram_widget::histogramScrolledX(const QCPRange &newRange)

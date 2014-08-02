@@ -30,6 +30,7 @@ class frameview_widget :public QWidget//, public view_widget_interface
     double fps;
     unsigned long seconds_elapsed = 0;
     QTimer fpstimer;
+    QTimer rendertimer;
     bool outputGrayScale;
     frameWorker * fw;
     image_t image_type;
@@ -49,7 +50,7 @@ public:
 signals:
     void startCapturing();
 public slots:
-    void handleNewFrame(frame_c *);
+    void handleNewFrame();
     void updateFPS();
     void toggleGrayScale();
 
