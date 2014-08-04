@@ -89,7 +89,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     connect(&fpstimer, SIGNAL(timeout()), this, SLOT(updateFPS()));
     fpstimer.start(1000);
     connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
-    rendertimer.start(33);
+    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
     connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
     connect(colorMap,SIGNAL(dataRangeChanged(QCPRange)),this,SLOT(colorMapDataRangeChanged(QCPRange)));
@@ -102,13 +102,12 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
 }
 frameview_widget::~frameview_widget()
 {
-    if(qcp != NULL)
-    {
-        delete colorScale;
-        //delete colorMapData;
-        delete colorMap;
-        delete qcp;
-    }
+
+    delete colorScale;
+    //delete colorMapData;
+    delete colorMap;
+    delete qcp;
+
 }
 
 void frameview_widget::handleNewFrame()
@@ -260,7 +259,7 @@ void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
 }
 void frameview_widget::colorMapDataRangeChanged(const QCPRange &newRange)
 {
-    qDebug() << "qcp new range data";
+
 }
 double frameview_widget::getCeiling()
 {

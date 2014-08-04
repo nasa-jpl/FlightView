@@ -5,6 +5,7 @@
 #include <QVBoxLayout>
 #include <atomic>
 #include <QCheckBox>
+#include <QTimer>
 
 #include "qcustomplot.h"
 #include "frame_worker.h"
@@ -25,6 +26,7 @@ class mean_profile_widget : public QWidget//, public view_widget_interface
     volatile double ceiling;
     volatile double floor;
     QVector<double> y;
+    QTimer rendertimer;
     frameWorker * fw;
 public:
     explicit mean_profile_widget(frameWorker * fw, image_t image_type , QWidget *parent = 0);
@@ -32,13 +34,10 @@ public:
     double getCeiling();
     double getFloor();
 
-private:
-    void initQCPStuff();
-
 signals:
     
 public slots:
-    void handleNewFrame(frame_c *frame);
+    void handleNewFrame();
     void updateCeiling(int c);
     void updateFloor(int f);
     void rescaleRange();

@@ -8,15 +8,6 @@ mean_profile_widget::mean_profile_widget(frameWorker *fw, image_t image_type, QW
     this->fw = fw;
     ceiling = 1000;
     floor = 0;
-}
-
-mean_profile_widget::~mean_profile_widget()
-{
-
-}
-
-void mean_profile_widget::initQCPStuff()
-{
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
@@ -63,21 +54,27 @@ void mean_profile_widget::initQCPStuff()
     qvbl.addWidget(qcp);
 
     this->setLayout(&qvbl);
+
+    connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
+    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+}
+
+mean_profile_widget::~mean_profile_widget()
+{
+
 }
 
 
-void mean_profile_widget::handleNewFrame(frame_c * frame)
-{
-    if(qcp==NULL)
-    {
-        initQCPStuff();
-    }
 
-    if(count%FRAME_SKIP_FACTOR == 0 && !this->isHidden())
+
+void mean_profile_widget::handleNewFrame()
+{
+
+    if(!this->isHidden() &&  fw->curFrame != NULL)
     {
         if(itype == VERTICAL_MEAN)
         {
-            float * local_image_ptr = frame->vertical_mean_profile;
+            float * local_image_ptr = fw->curFrame->vertical_mean_profile;
             for(int r=0;r<frHeight;r++) //Y Axis is reversed
             {
                 y[frHeight-r-1] = (double) local_image_ptr[r];
@@ -85,7 +82,7 @@ void mean_profile_widget::handleNewFrame(frame_c * frame)
         }
         if(itype == HORIZONTAL_MEAN)
         {
-            float * local_image_ptr = frame->horizontal_mean_profile;
+            float * local_image_ptr = fw->curFrame->horizontal_mean_profile;
             for(int c=0;c<frWidth;c++)
             {
                 y[c] = (double) local_image_ptr[c];

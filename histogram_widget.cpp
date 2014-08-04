@@ -1,6 +1,5 @@
 #include "histogram_widget.h"
-#include "std_dev_filter.hpp"
-#include "settings.h"
+
 
 histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     QWidget(parent)
@@ -32,6 +31,7 @@ histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget 
     {
         histo_bins[i]  = histbinvals[i];
     }
+    histo_data_vec = QVector<double>(NUMBER_OF_BINS);
     double bar_width = histo_bins[3]-histo_bins[2]; //Probably not the best way to get the bar width, but w/e
 
 
@@ -58,6 +58,8 @@ histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget 
 
     connect(histogram->keyAxis(),SIGNAL(rangeChanged(QCPRange)),this,SLOT(histogramScrolledX(QCPRange)));
     connect(histogram->valueAxis(),SIGNAL(rangeChanged(QCPRange)),this,SLOT(histogramScrolledY(QCPRange)));
+    connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
+    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
 
 histogram_widget::~histogram_widget()
@@ -65,21 +67,24 @@ histogram_widget::~histogram_widget()
 
 }
 
-/*
+
 void histogram_widget::handleNewFrame()
 {
-    QSharedPointer<QVector<double> > histo_data_vec = fw->histo_data_vec;
     if(!this->isHidden())
     {
+        uint32_t * histogram_data_ptr = fw->std_dev_frame->std_dev_histogram;
+        for(unsigned int b = 0; b < NUMBER_OF_BINS;b++)
+        {
+            histo_data_vec[b] = histogram_data_ptr[b];
+        }
 
-
-        histogram->setData(histo_bins,*histo_data_vec);
+        histogram->setData(histo_bins,histo_data_vec);
 
         qcp->replot();
     }
     count++;
 }
-*/
+
 
 void histogram_widget::histogramScrolledY(const QCPRange &newRange)
 {

@@ -81,6 +81,8 @@ signals:
     void startSavingFinite(unsigned int length, QString fname);
 
     void stopSaving();
+    void startDSFMaskCollection();
+    void stopDSFMaskCollection();
 public slots:
     void getMaskFile();
     void save_continous_button_slot();
@@ -91,7 +93,9 @@ public slots:
     void increment_slot(bool t);
     void showSaveDialog();
     void updateSaveFrameNum_slot(unsigned int n);
-
+private slots:
+    void start_dark_collection_slot();
+    void stop_dark_collection_slot();
 
 };
 

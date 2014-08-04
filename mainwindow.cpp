@@ -73,8 +73,8 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
 
 
 
-    connect(&controlbox->collect_dark_frames_button,SIGNAL(clicked()),fw,SLOT(startCapturingDSFMask()));
-    connect(&controlbox->stop_dark_collection_button,SIGNAL(clicked()),fw,SLOT(finishCapturingDSFMask()));
+    connect(controlbox,SIGNAL(startDSFMaskCollection()),fw,SLOT(startCapturingDSFMask()));
+    connect(controlbox,SIGNAL(stopDSFMaskCollection()),fw,SLOT(finishCapturingDSFMask()));
     //connect(controlbox,SIGNAL(mask_selected(const char *)),fw,SLOT(loadDSFMask(const char *)));
     connect(&controlbox->useDSFCbox,SIGNAL(toggled(bool)),fw,SLOT(toggleUseDSF(bool)));
 

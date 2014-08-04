@@ -5,6 +5,7 @@
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QCheckBox>
+#include <QTimer>
 #include "qcustomplot.h"
 #include "frame_worker.h"
 #include "image_type.h"
@@ -18,11 +19,14 @@ class fft_widget : public QWidget
     QCustomPlot * qcp;
     QCPBars *fft_bars;
     QVector<double> freq_bins;
+    QVector<double> rfft_data_vec;
     QCheckBox zero_const_box;
     frameWorker * fw;
     unsigned int count = 0;
     volatile double ceiling;
     volatile double floor;
+    QTimer rendertimer;
+
 public:
     explicit fft_widget(frameWorker *fw, image_t image_type,QWidget *parent = 0);
     ~fft_widget();
@@ -33,7 +37,7 @@ public:
 signals:
     
 public slots:
-    void handleNewFrame(QSharedPointer<QVector<double>> rfft_data_vec);
+    void handleNewFrame();
     void updateCeiling(int);
     void updateFloor(int);
     void rescaleRange();

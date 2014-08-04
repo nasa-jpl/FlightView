@@ -41,8 +41,6 @@ void frameWorker::captureFrames()
             if(std_dev_processing_frame->has_valid_std_dev == 2)
             {
                 std_dev_frame = std_dev_processing_frame;
-                QSharedPointer<QVector <double> > histo_data_vec = updateHistogramVector();
-
             }
 
         }
@@ -53,7 +51,6 @@ void frameWorker::captureFrames()
             {
                 std_dev_processing_frame = curFrame;
             }
-            QSharedPointer <QVector<double> > fft_mags = updateFFTVector();
             unsigned int save_num = to.save_framenum.load(std::memory_order_relaxed);
             if(!to.saving_list.empty())
             {
@@ -127,39 +124,6 @@ camera_t frameWorker::camera_type()
 void frameWorker::setStdDev_N(int newN)
 {
     to.setStdDev_N(newN);
-}
-QSharedPointer <QVector <double> > frameWorker::updateFFTVector() //This would make more sense in fft_widget, but then it could not run in the gui thread.
-{
-    double max = 0;
-    for(unsigned int i = 0; i < FFT_INPUT_LENGTH/2; i++)
-    {
-        (*fft_magnitude_vector)[i] = curFrame->fftMagnitude[i];
-        if(i!=0 && curFrame->fftMagnitude[i] > max)
-        {
-            max = curFrame->fftMagnitude[i];
-        }
-    }
-    //printf("%f max freq bins nonconst\n",max);
-    //printf("const term in arr:%f in vec:%f\n",rfft_data[0],rfft_data_vec[0]);
-    return fft_magnitude_vector;
-
-}
-QSharedPointer <QVector <double> > frameWorker::updateHistogramVector()
-{
-
-
-    histoDataMax = 0;
-    for(unsigned int i = 0; i < NUMBER_OF_BINS;i++)
-    {
-        (*histo_data_vec)[i] = std_dev_frame->std_dev_histogram[i];
-
-        if(histoDataMax < (*histo_data_vec)[i])
-        {
-            histoDataMax = (*histo_data_vec)[i];
-        }
-    }
-    return histo_data_vec;
-
 }
 void frameWorker::toggleUseDSF(bool t)
 {

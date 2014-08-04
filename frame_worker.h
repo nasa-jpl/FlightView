@@ -38,8 +38,6 @@ public:
     frame_c * std_dev_processing_frame = NULL;
     unsigned long c = 0;
 
-    QSharedPointer <QVector <double> > histo_data_vec = QSharedPointer <QVector<double> >(new QVector<double>(NUMBER_OF_BINS));
-    QSharedPointer <QVector <double> > fft_magnitude_vector = QSharedPointer <QVector<double> >(new QVector<double>(NUMBER_OF_BINS));
 
 signals:
     void newFrameAvailable();
@@ -61,8 +59,6 @@ public slots:
 
 private:
     take_object to;
-    QSharedPointer<QVector<double>> updateFFTVector();
-    QSharedPointer<QVector<double>> updateHistogramVector();
 
     unsigned int frHeight;
     unsigned int frWidth;

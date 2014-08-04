@@ -25,8 +25,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
 
     collect_dark_frames_button.setText("Collect Dark Frames");
     stop_dark_collection_button.setText("Stop Dark Collection");
-
+    stop_dark_collection_button.setEnabled(false);
     load_mask_from_file.setText("Load Mask From File");
+    load_mask_from_file.setEnabled(false);
     fps_label.setText("Warning: no data recieved");
 
     select_save_location.setText("Select save location");
@@ -139,8 +140,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     controls_layout.addWidget(&SaveButtonsBox,2);
     this->setLayout(&controls_layout);
     this->setMaximumHeight(150);
-    connect(&backendDeltaTimer,SIGNAL(timeout()),this,SLOT(updateBackendDelta()));
-    backendDeltaTimer.start(1000);
+
 
     connect(&std_dev_N_edit,SIGNAL(valueChanged(int)),&std_dev_N_slider,SLOT(setValue(int)));
     connect(&std_dev_N_slider,SIGNAL(valueChanged(int)),&std_dev_N_edit,SLOT(setValue(int)));
@@ -161,6 +161,12 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
 
 
     connect(&select_save_location,SIGNAL(clicked()),this,SLOT(showSaveDialog()));
+
+    connect(&collect_dark_frames_button,SIGNAL(clicked()),this,SLOT(start_dark_collection_slot()));
+    connect(&stop_dark_collection_button,SIGNAL(clicked()),this,SLOT(stop_dark_collection_slot()));
+
+    connect(&backendDeltaTimer,SIGNAL(timeout()),this,SLOT(updateBackendDelta()));
+    backendDeltaTimer.start(1000);
 }
 void ControlsBox::showSaveDialog()
 {
@@ -263,7 +269,7 @@ void ControlsBox::tabChangedSlot(int index)
     mean_profile_widget * mpw = qobject_cast<mean_profile_widget*>(qtw->widget(index));
     fft_widget * ffw = qobject_cast<fft_widget*>(qtw->widget(index));
     histogram_widget * hwt  = qobject_cast<histogram_widget*>(qtw->widget(index));
-    if(qobject_cast<histogram_widget*>(cur_frameview) != NULL)
+    if(qobject_cast<frameview_widget*>(cur_frameview) != NULL)
     {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<frameview_widget*>(cur_frameview),SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<frameview_widget*>(cur_frameview), SLOT(updateFloor(int)));
@@ -273,12 +279,12 @@ void ControlsBox::tabChangedSlot(int index)
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<mean_profile_widget*>(cur_frameview),SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<mean_profile_widget*>(cur_frameview), SLOT(updateFloor(int)));
     }
-    else if(qobject_cast<mean_profile_widget*>(cur_frameview) != NULL)
+    else if(qobject_cast<fft_widget*>(cur_frameview) != NULL)
     {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<fft_widget*>(cur_frameview),SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<fft_widget*>(cur_frameview), SLOT(updateFloor(int)));
     }
-    else if(qobject_cast<mean_profile_widget*>(cur_frameview) != NULL)
+    else if(qobject_cast<histogram_widget*>(cur_frameview) != NULL)
     {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<histogram_widget*>(cur_frameview),SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<histogram_widget*>(cur_frameview), SLOT(updateFloor(int)));
@@ -330,4 +336,18 @@ void ControlsBox::updateBackendDelta()
     unsigned int delta = fw->c-old_c;
     old_c = fw->c;
     fps_label.setText(QString("FPS @ backend:%1").arg(delta));
+}
+void ControlsBox::start_dark_collection_slot()
+{
+    collect_dark_frames_button.setEnabled(false);
+    stop_dark_collection_button.setEnabled(true);
+    emit startDSFMaskCollection();
+}
+void ControlsBox::stop_dark_collection_slot()
+{
+    collect_dark_frames_button.setEnabled(true);
+    stop_dark_collection_button.setEnabled(false);
+    emit stopDSFMaskCollection();
+
+
 }

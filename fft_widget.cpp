@@ -18,6 +18,7 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     fft_bars->setName("Magnitude of FFT average pixel value");
     //fft_bars->setP
     freq_bins = QVector<double>(FFT_INPUT_LENGTH/2);
+    rfft_data_vec = QVector<double>(FFT_INPUT_LENGTH/2);
     double nyquist_freq = (double)max_fps[fw->camera_type()]/2;
     double increment = nyquist_freq/(FFT_INPUT_LENGTH/2);
     fft_bars->setWidth(increment);
@@ -31,6 +32,8 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     qvbl.addWidget(qcp);
     qvbl.addWidget(&zero_const_box);
     this->setLayout(&qvbl);
+    connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
+    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
 fft_widget::~fft_widget()
 {
@@ -39,17 +42,21 @@ fft_widget::~fft_widget()
 
 
 
-void fft_widget::handleNewFrame(QSharedPointer<QVector<double>> rfft_data_vec)
+void fft_widget::handleNewFrame()
 
 {
-    if(count%FRAME_SKIP_FACTOR==0 && !this->isHidden())
+    if(!this->isHidden())
     {
-
+        float * fft_data_ptr = fw->curFrame->fftMagnitude;
+        for(unsigned int b = 0; b < FFT_INPUT_LENGTH/2;b++)
+        {
+            rfft_data_vec[b] = fft_data_ptr[b];
+        }
         if(zero_const_box.isChecked())
         {
-            (*rfft_data_vec)[0]=0;
+            rfft_data_vec[0]=0;
         }
-        fft_bars->setData(freq_bins,*rfft_data_vec);
+        fft_bars->setData(freq_bins,rfft_data_vec);
 
         //fft_bars->rescaleAxes();
 

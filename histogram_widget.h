@@ -3,10 +3,13 @@
 
 #include <QWidget>
 #include <QVBoxLayout>
-#include <QMutex>
+#include <QTimer>
 #include "qcustomplot.h"
 #include "frame_worker.h"
 #include "image_type.h"
+#include "std_dev_filter.hpp"
+#include "settings.h"
+#include "constants.h"
 
 class histogram_widget : public QWidget
 {
@@ -21,6 +24,9 @@ class histogram_widget : public QWidget
     frameWorker * fw;
     volatile double ceiling;
     volatile double floor;
+
+    QTimer rendertimer;
+    QVector<double> histo_data_vec;
 public:
     explicit histogram_widget(frameWorker * fw,image_t image_type ,QWidget *parent = 0);
     ~histogram_widget();
@@ -30,6 +36,7 @@ signals:
     
 public slots:
     //void handleNewFrame(QSharedPointer<QVector<double>> histo_data_vec);
+    void handleNewFrame();
     void histogramScrolledX(const QCPRange &newRange);
     void histogramScrolledY(const QCPRange &newRange);
     void updateCeiling(int);
