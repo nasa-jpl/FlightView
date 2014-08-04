@@ -24,21 +24,25 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 	frame_ring_buffer = new frame_c[CPU_FRAME_BUFFER_SIZE];
 	save_framenum=0;
 	saving_list.clear();
+	pdv_thread_run = 0;
 
 }
 take_object::~take_object()
 {
+	if(pdv_thread_run!=0)
+	{
 	int dummy;
 	pdv_thread_run = 0;
 	pdv_thread.join(); //Wait for thread to end
 	pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
 	pdv_close(pdv_p);
 	usleep(1000000);
-
-	delete[] frame_ring_buffer;
 	printf("about to delete filters!\n");
 	delete dsf;
 	delete sdvf;
+	}
+	delete[] frame_ring_buffer;
+
 
 #ifdef RESET_GPUS
 	printf("resseting GPUs!\n");
@@ -56,6 +60,8 @@ take_object::~take_object()
 
 void take_object::start()
 {
+	pdv_thread_run = 1;
+
 	this->pdv_p = NULL;
 	this->pdv_p = pdv_open_channel(EDT_INTERFACE,0,this->channel);
 	if(pdv_p == NULL)
