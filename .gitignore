@@ -15,3 +15,4 @@
 
 #other stuff
 *.bin
+*cuda_take*
