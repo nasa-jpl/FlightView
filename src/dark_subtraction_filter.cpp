@@ -11,7 +11,7 @@ void dark_subtraction_filter::start_mask_collection()
 {
 	mask_collected = false;
 	averaged_samples = 0; //Synchronous
-#pragma omp parallel for
+//#pragma omp parallel for
 	for(unsigned int i = 0; i < width*height; i++)
 	{
 		mask[i]=0;
@@ -21,7 +21,7 @@ void dark_subtraction_filter::start_mask_collection()
 
 void dark_subtraction_filter::finish_mask_collection()
 {
-#pragma omp parallel for
+//#pragma omp parallel for
 	for(unsigned int i = 0; i < width*height; i++)
 	{
 		mask[i]/=averaged_samples;
@@ -57,7 +57,7 @@ void dark_subtraction_filter::update_dark_subtraction(uint16_t * pic_in, float *
 	//Synchronous
 
 	//Asynchronous
-#pragma omp parallel for
+//#pragma omp parallel for
 	for(unsigned int i = 0; i < width*height; i++)
 	{
 		pic_out[i] = pic_in[i] - mask[i];
@@ -67,7 +67,7 @@ void dark_subtraction_filter::update_dark_subtraction(uint16_t * pic_in, float *
 uint32_t dark_subtraction_filter::update_mask_collection(uint16_t * pic_in)
 {
 	// Synchronous
-#pragma omp parallel for
+//#pragma omp parallel for
 	for(unsigned int i=0; i<width*height;i++)
 	{
 		mask[i] = pic_in[i] + mask[i];

@@ -53,15 +53,15 @@ void mean_filter::calculate_means()
 
 	for(int r = 0; r < height; r++)
 	{
-		frame->vertical_mean_profile[r]/=height;
+		frame->vertical_mean_profile[r]/=width;
 	}
 	frame_mean = 0;
 	for(int c = 0; c < width; c++)
 	{
-		frame->horizontal_mean_profile[c]/=width;
+		frame->horizontal_mean_profile[c]/=height;
 		frame_mean += frame->horizontal_mean_profile[c];
 	}
-	frame_mean/=width;
+	frame_mean/=height;
 
 	mean_ring_buffer_fft_head = mean_ring_buffer_head;
 	//	printf("Mrbf %u\n",mean_ring_buffer_fft_head);
