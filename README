@@ -48,10 +48,28 @@ $make
 -----------------------
 Design
 -----------------------
-cuda_take is designed to be as modular as possible. There is a loop that reads in raw daata via the functions provided by libpdv in take_object. From there, the raw data is copied into a ring buffer of frame objects. Each frame object has page-locked CPU memory allocated for the raw image and the output of the std. deviation results, all other results are stored in non page-locked memory. The page locking allows for the GPU to do Direct Memory Access in order to copy asynchronously.
+cuda_take is designed to be as modular as possible. There is a loop that reads in raw data via the functions provided by libpdv in take_object. From there, the raw data is copied into a ring buffer of frame objects. Each frame object has page-locked CPU memory allocated for the raw image and the output of the std. deviation results, all other results are stored in non page-locked memory. The page locking allows for the GPU to do Direct Memory Access in order to copy asynchronously.
 -----------------------
 Using git
 -----------------------
+Git is the version control system used to track cuda_take
+
+Once you have cloned the directory (as above), you can "stage" code changes by doing
+    $git add <name of changed file>
+
+You can then "commit" these changes to the "working branch" by doing
+    $git commit -m "<commit message goes here>
+
+In order to "pull" in changes commited on another computer you can say
+    $git pull <name of remote> <name of branch>
+
+The computer you originally clone from is generally called "origin", to update to the latest version of the source do
+    $git pull origin master
+
+In order to ensure that you don't accidentally commit object files or executables, you can modify .gitignore
+    $vim .gitignore
+A good git tutorial is available here:
+http://git-scm.com/docs/gittutorial
 -----------------------
 Troubleshooting
 -----------------------
@@ -65,3 +83,5 @@ In the event of an error about std_dev_filter out of memory try decreasing MAX_N
 Another potential problem with switching to a different NVIDIA GPU model is that NVCC (the nvidia C compiler) generates code targeted at a specific generation. By changing line 76 in the make file one can add additional GPU generations to target. Append -gencode arch=compute_XX,code=sm_XX to NVCCFLAGS where XX is derived from here: http://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
 
 Adding additional GPU archetectures to target creates a fat binary, so it will take longer to compile.
+
+Something odd that I do is create a library, libcuda_take.a, with symbols from libpdv.a, so libpdv.a does not need to be linked into everything that uses libcuda_take.a. This is achieved by compiling the library with NVCC to an intermediate file called thin_libcuda_take.a and then concatenating them using ar which accepts a script called combine_lib_scripts.ar 

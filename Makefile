@@ -81,7 +81,7 @@ LINKDIR 	= lib #where do the libraries we need to link in go?
 LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lz -lcuda -lcudart -lgomp #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
 AR_COMBINE_SCRIPT = combine_libs_script.ar #For building out output library we compine our stuff with libpdv, this script tells ar how to do that
 #This switch enables concatenating libpdv.a and libcuda_take.a (and possibly libboost_thread.a)
-STATIC_COMPILE_SYSTEM_LIBS = 1
+CONCATENATE_LIBPDV = 1
 
 ######################################
 
@@ -93,7 +93,7 @@ $(EXE) : $(objects)
 	$(NVCC) $(NVCCFLAGS) -o $@ $(wildcard obj/*.o) $(LFLAGS)
 	
 $(LIBOUT) : $(objects)
-ifeq ($(STATIC_COMPILE_SYSTEM_LIBS), 1)
+ifeq ($(CONCATENATE_LIBPDV), 1)
 	$(AR) rcs thin_$@ $(filter-out obj/main.o, $(wildcard obj/*.o))		
 	$(AR) -M <$(AR_COMBINE_SCRIPT)
 else
