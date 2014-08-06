@@ -1,0 +1,67 @@
+-----------------------
+Overview
+-----------------------
+
+
+cuda_take is a backend program that is used for capturing a camera-link device output and running "filters" on said output
+
+In order to talk to an FPIE box, initcam must first be run for the desired focal plane geometry. This script is generally available in /opt/EDTpdv
+
+cuda_take is available as an executable binary (cuda_take) for testing (this only prints out debug information) or as a statically linked library (libcuda_take.a) for inclusion in other programs (liveview2)
+
+-----------------------
+Set up (w/ git)
+-----------------------
+Assuming instalation on a debian wheezy system
+
+First, install git
+
+    $sudo apt-get install git
+
+Next, install the nvidia-cuda-toolkit v5.0 or greater.
+
+Currently, Debian Wheezy has v4.2 in it's repos, as a result you must enable wheezy-backports.
+This can be achieved by appending a url to /etc/apt/sources.list with the below command.
+
+    $echo "deb http://http.debian.net/debian wheezy-backports main" >> /etc/apt/sources.list
+
+then
+
+    $sudo apt-get update
+
+Now, install the backported nvidia-cuda-toolkit
+
+    $sudo apt-get -t wheezy-backports install "nvidia-cuda-toolkit"
+
+Now, you can get a local copy of the source code by "pulling" from an existing repository. Currently, one such repository is located @aviris-cal /home/nlevy/EDT_Development/cuda_take
+
+To clone this run:
+
+$git clone aviris-cal:/home/nlevy/EDT_Development/cuda_take
+
+Now the source code should be copied to a local directory called cuda_take, to compile this code:
+
+$cd cuda_take
+$make
+
+
+-----------------------
+Design
+-----------------------
+
+-----------------------
+Using git
+-----------------------
+-----------------------
+Troubleshooting
+-----------------------
+
+All the sizes of buffers can be modified in include/constants.h
+
+In the event of an error about std_dev_filter out of memory try decreasing MAX_N in constants.h
+
+    This error is due to the varying amounts of RAM available on different GPUs, the std. dev filter creates a ring buffer in GPU memory that is 2*MAX_N*FRAME_SIZE bytes large. If  this exceeds the amount of RAM on the GPU this will fail.
+
+Another potential problem with switching to a different NVIDIA GPU model is that NVCC (the nvidia C compiler) generates code targeted at a specific generation. By changing line 76 in the make file one can add additional GPU generations to target. Append -gencode arch=compute_XX,code=sm_XX to NVCCFLAGS where XX is derived from here: http://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
+
+Adding additional GPU archetectures to target creates a fat binary, so it will take longer to compile.
