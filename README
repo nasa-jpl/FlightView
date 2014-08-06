@@ -48,7 +48,7 @@ $make
 -----------------------
 Design
 -----------------------
-
+cuda_take is designed to be as modular as possible. There is a loop that reads in raw daata via the functions provided by libpdv in take_object. From there, the raw data is copied into a ring buffer of frame objects. Each frame object has page-locked CPU memory allocated for the raw image and the output of the std. deviation results, all other results are stored in non page-locked memory. The page locking allows for the GPU to do Direct Memory Access in order to copy asynchronously.
 -----------------------
 Using git
 -----------------------
