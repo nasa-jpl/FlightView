@@ -33,7 +33,6 @@ class frameview_widget :public QWidget//, public view_widget_interface
     QTimer rendertimer;
     bool outputGrayScale;
     frameWorker * fw;
-    image_t image_type;
 
     volatile double ceiling;
     volatile double floor;
@@ -47,6 +46,10 @@ public:
     QPushButton toggleGrayScaleButton;
     double getCeiling();
     double getFloor();
+    image_t image_type;
+    unsigned int slider_max = (1<<16) * 1.1;
+    bool slider_low_inc = false;
+
 signals:
     void startCapturing();
 public slots:

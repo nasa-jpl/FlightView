@@ -73,6 +73,8 @@ public:
 private:
     QTabWidget *qtw;
     QWidget * cur_frameview;
+
+    int ceiling_maximum;
     //view_widget_interface * cur_frameview;
 
 signals:

@@ -33,6 +33,8 @@ public:
     ~mean_profile_widget();
     double getCeiling();
     double getFloor();
+    unsigned int slider_max = (1<<16) * 1.1;
+    bool slider_low_inc = false;
 
 signals:
     
