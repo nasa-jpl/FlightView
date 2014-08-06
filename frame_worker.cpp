@@ -12,6 +12,9 @@ frameWorker::frameWorker(QObject *parent) :
     frHeight = to.getFrameHeight();
     frWidth = to.getFrameWidth();
     dataHeight = to.getDataHeight();
+
+    connect(&deltaTimer,SIGNAL(timeout()),this,SLOT(updateDelta()));
+    deltaTimer.start(1000);
 }
 frameWorker::~frameWorker()
 {
@@ -128,4 +131,9 @@ void frameWorker::setStdDev_N(int newN)
 void frameWorker::toggleUseDSF(bool t)
 {
     to.useDSF = t;
+}
+void frameWorker::updateDelta()
+{
+    delta = c-old_c;
+    old_c = c;
 }

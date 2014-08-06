@@ -5,6 +5,7 @@
 #include <QSharedPointer>
 #include <QThread>
 #include <QMutex>
+#include <QTimer>
 #include <QVector>
 #include "take_object.hpp"
 #include "frame_c_meta.h"
@@ -13,6 +14,7 @@
 class frameWorker : public QObject
 {
     Q_OBJECT
+    QTimer deltaTimer;
 public:
 
     explicit frameWorker(QObject *parent = 0);
@@ -37,7 +39,8 @@ public:
     frame_c * std_dev_frame = NULL;
     frame_c * std_dev_processing_frame = NULL;
     unsigned long c = 0;
-
+    unsigned int delta;
+    unsigned long old_c = 0;
 
 signals:
     void newFrameAvailable();
@@ -56,7 +59,7 @@ public slots:
     void stop();
 
     void setStdDev_N(int newN);
-
+    void updateDelta();
 private:
     take_object to;
 

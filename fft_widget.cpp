@@ -19,16 +19,9 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     //fft_bars->setP
     freq_bins = QVector<double>(FFT_INPUT_LENGTH/2);
     rfft_data_vec = QVector<double>(FFT_INPUT_LENGTH/2);
-    double nyquist_freq = (double)max_fps[fw->camera_type()]/2;
-    double increment = nyquist_freq/(FFT_INPUT_LENGTH/2);
-    fft_bars->setWidth(increment);
-    for(int i = 0; i < FFT_INPUT_LENGTH/2; i++)
-    {
-        freq_bins[i] = increment*i;
-    }
+
     //rfft_data_vec = QVector<double>(MEAN_BUFFER_LENGTH/2);
     //rfft_data = new float[MEAN_BUFFER_LENGTH/2];
-    qcp->xAxis->setRange(QCPRange(0,nyquist_freq));
     qvbl.addWidget(qcp);
     qvbl.addWidget(&zero_const_box);
     this->setLayout(&qvbl);
@@ -47,6 +40,15 @@ void fft_widget::handleNewFrame()
 {
     if(!this->isHidden())
     {
+
+        double nyquist_freq = fw->delta/2.0;
+        double increment = nyquist_freq/(FFT_INPUT_LENGTH/2);
+        fft_bars->setWidth(increment);
+        for(int i = 0; i < FFT_INPUT_LENGTH/2; i++)
+        {
+            freq_bins[i] = increment*i;
+        }
+
         float * fft_data_ptr = fw->curFrame->fftMagnitude;
         for(unsigned int b = 0; b < FFT_INPUT_LENGTH/2;b++)
         {
@@ -57,6 +59,7 @@ void fft_widget::handleNewFrame()
             rfft_data_vec[0]=0;
         }
         fft_bars->setData(freq_bins,rfft_data_vec);
+        qcp->xAxis->setRange(QCPRange(0,nyquist_freq));
 
         //fft_bars->rescaleAxes();
 
