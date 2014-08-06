@@ -16,7 +16,6 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     fft_bars = new QCPBars(qcp->xAxis,qcp->yAxis);
     qcp->addPlottable(fft_bars);
     fft_bars->setName("Magnitude of FFT average pixel value");
-    //fft_bars->setP
     freq_bins = QVector<double>(FFT_INPUT_LENGTH/2);
     rfft_data_vec = QVector<double>(FFT_INPUT_LENGTH/2);
     double nyquist_freq = (double)max_fps[fw->camera_type()]/2;
@@ -26,8 +25,6 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     {
         freq_bins[i] = increment*i;
     }
-    //rfft_data_vec = QVector<double>(MEAN_BUFFER_LENGTH/2);
-    //rfft_data = new float[MEAN_BUFFER_LENGTH/2];
     qcp->xAxis->setRange(QCPRange(0,nyquist_freq));
     qvbl.addWidget(qcp);
     qvbl.addWidget(&zero_const_box);
@@ -35,13 +32,6 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
-fft_widget::~fft_widget()
-{
-
-}
-
-
-
 void fft_widget::handleNewFrame()
 
 {
@@ -64,7 +54,10 @@ void fft_widget::handleNewFrame()
     }
     count++;
 }
+fft_widget::~fft_widget()
+{
 
+}
 void fft_widget::updateCeiling(int c)
 {
     ceiling = (double)c;
