@@ -388,10 +388,7 @@ void ControlsBox::tabChangedSlot(int index)
 }
 void ControlsBox::updateBackendDelta()
 {
-    static unsigned long old_c = 0;
-    unsigned int delta = fw->c-old_c;
-    old_c = fw->c;
-    fps_label.setText(QString("FPS @ backend:%1").arg(delta));
+    fps_label.setText(QString("FPS @ backend:%1").arg(fw->delta));
 }
 void ControlsBox::start_dark_collection_slot()
 {

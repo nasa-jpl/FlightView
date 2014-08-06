@@ -186,7 +186,7 @@ void frameview_widget::updateFPS()
         fps = (fps*4 + (count-old_count))/5;
     }
     old_count = count;
-    fpsLabel.setText(QString("avg framerate: %1").arg(fps));
+    fpsLabel.setText(QString("fps of display: %1").arg(fps));
 }
 void frameview_widget::toggleGrayScale()
 {
