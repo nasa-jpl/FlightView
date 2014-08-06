@@ -16,8 +16,11 @@ histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget 
     histogram = new QCPBars(qcp->xAxis, qcp->yAxis);
     qcp->setInteractions(QCP::iRangeDrag|QCP::iRangeZoom);
     qcp->addPlottable(histogram);
-    QPen pen;
-    pen.setWidthF(1.2);
+
+
+    //double penWidth = (0xFFFF/(double)NUMBER_OF_BINS);
+    double penWidth = .064; //This value was derived to make the bars look the best in the 2-4 range
+    histogram->setWidth(penWidth);
     histogram->setName("Histogram of Standard Deviation per pixel");
     const uint16_t sigma = 0x03C3;
     qcp->xAxis->setLabel(QString::fromUtf16(&sigma,1));
@@ -38,11 +41,11 @@ histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget 
 
     histogram->keyAxis()->setRangeUpper(histo_bins[histo_bins.size()-1]);
     histogram->keyAxis()->setScaleType(QCPAxis::stLogarithmic);
-    histogram->keyAxis()->setNumberFormat("b");
+    //histogram->keyAxis()->setNumberFormat("b");
     histogram->keyAxis()->setScaleLogBase(2);
-    histogram->keyAxis()->setAutoTicks(true);
+    //histogram->keyAxis()->setAutoTicks(true);
     //histogram->keyAxis()->setTickLabelType(QCPAxis::12);
-    histogram->keyAxis()->setAutoTickCount(10);
+    //histogram->keyAxis()->setAutoTickCount(10);
     //histogram->keyAxis()->setRangeUpper(10);
 
     histogram->valueAxis()->setRange(QCPRange(0,ceiling));
@@ -50,7 +53,6 @@ histogram_widget::histogram_widget(frameWorker *fw, image_t image_type, QWidget 
     //qcp->xAxis->setTickVector(histo_bins);
     //histogram->keyAxis()->setSca
 
-    histogram->setWidth(.034); //This value was derived experimentally...
     //    /qcp->xAxis->setRange(QCPRange(0.0d,100.0d));
     qvbl.addWidget(qcp);
     this->setLayout(&qvbl);

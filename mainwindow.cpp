@@ -82,7 +82,6 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     connect(controlbox,SIGNAL(stopSaving()),fw,SLOT(stopSavingRawData()));
 
     connect(&controlbox->std_dev_N_slider,SIGNAL(valueChanged(int)),fw,SLOT(setStdDev_N(int)));
-    connect(fw,SIGNAL(std_dev_ready()),this,SLOT(enableStdDevTabs()));
 
     connect(fw,SIGNAL(savingFrameNumChanged(unsigned int)),controlbox,SLOT(updateSaveFrameNum_slot(unsigned int)));
     //connect(fw,SIGNAL(savingFrameNumChanged(uint)),&controlbox,SLOT(updateSaveFrameNum_slot(uint)));

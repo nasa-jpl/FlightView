@@ -27,3 +27,4 @@ desktop.ini
 .DS_Store
 #Temp files
 *~
+*.pro.user

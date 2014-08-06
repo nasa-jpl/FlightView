@@ -6,7 +6,7 @@ mean_profile_widget::mean_profile_widget(frameWorker *fw, image_t image_type, QW
     itype = image_type;
     qcp = NULL;
     this->fw = fw;
-    ceiling = 1000;
+    ceiling = (1<<16);
     floor = 0;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();

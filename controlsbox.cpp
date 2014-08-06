@@ -202,16 +202,38 @@ void ControlsBox::increment_slot(bool t)
         ceiling_slider.setMinimum(LIL_MIN);
         floor_slider.setMaximum(LIL_MAX);
         floor_slider.setMinimum(LIL_MIN);
+
+        floor_slider.setMaximum(LIL_MAX);
+        floor_slider.setMinimum(LIL_MIN);
+        floor_edit.setMaximum(LIL_MAX);
+        floor_edit.setMinimum(LIL_MIN);
     }
     else
     {
         ceiling_slider.setTickInterval(BIG_TICK);
         floor_slider.setTickInterval(BIG_TICK);
-        ceiling_slider.setMaximum(BIG_MAX);
-        ceiling_slider.setMinimum(BIG_MIN);
-        floor_slider.setMaximum(BIG_MAX);
-        floor_slider.setMinimum(BIG_MIN);
+        ceiling_slider.setMaximum(ceiling_maximum);
+        ceiling_slider.setMinimum(-1*ceiling_maximum/4);
+        ceiling_edit.setMaximum(ceiling_maximum);
+        ceiling_edit.setMinimum(-1*ceiling_maximum/4);
+
+        floor_slider.setMaximum(ceiling_maximum);
+        floor_slider.setMinimum(-1*ceiling_maximum/4);
+        floor_edit.setMaximum(ceiling_maximum);
+        floor_edit.setMinimum(-1*ceiling_maximum/4);
     }
+
+    //Sad.... this is what not being able to inherit from a common view_widget_interface does...
+    if(qobject_cast<frameview_widget*>(cur_frameview) != NULL)
+        qobject_cast<frameview_widget*>(cur_frameview)->slider_low_inc = t;
+    else if(qobject_cast<mean_profile_widget*>(cur_frameview) != NULL)
+        qobject_cast<mean_profile_widget*>(cur_frameview)->slider_low_inc = t;
+    else if(qobject_cast<fft_widget*>(cur_frameview) != NULL)
+        qobject_cast<fft_widget*>(cur_frameview)->slider_low_inc = t;
+    else if(qobject_cast<histogram_widget*>(cur_frameview) != NULL)
+        qobject_cast<histogram_widget*>(cur_frameview)->slider_low_inc = t;
+
+
 }
 
 void ControlsBox::save_continous_button_slot()
@@ -264,7 +286,9 @@ void ControlsBox::save_finite_button_slot()
 
 void ControlsBox::tabChangedSlot(int index)
 {
-    //Multiple inheritance totally failed me. Trying to get QObject pure virtual interfaces is like boxing with satan
+    //Multiple inheritance totally failed me. Trying to get QObject pure virtual interfaces is like boxing with satan. This hideous function is the best I can do...
+
+
     frameview_widget * fvw = qobject_cast<frameview_widget*>(qtw->widget(index));
     mean_profile_widget * mpw = qobject_cast<mean_profile_widget*>(qtw->widget(index));
     fft_widget * ffw = qobject_cast<fft_widget*>(qtw->widget(index));
@@ -298,6 +322,19 @@ void ControlsBox::tabChangedSlot(int index)
         connect(&ceiling_slider, SIGNAL(valueChanged(int)), fvw, SLOT(updateCeiling(int)));
         connect(&floor_slider, SIGNAL(valueChanged(int)), fvw, SLOT(updateFloor(int)));
         useDSFCbox.setEnabled(false);
+        if(fvw->image_type == STD_DEV)
+        {
+            std_dev_N_slider.setEnabled(true);
+            std_dev_N_edit.setEnabled(true);
+        }
+        else
+        {
+            std_dev_N_slider.setEnabled(false);
+            std_dev_N_edit.setEnabled(false);
+        }
+        ceiling_maximum = fvw->slider_max;
+        low_increment_cbox.setChecked(fvw->slider_low_inc);
+        this->increment_slot(low_increment_cbox.isChecked());
         fvw->rescaleRange();
 
     }
@@ -308,7 +345,14 @@ void ControlsBox::tabChangedSlot(int index)
         connect(&ceiling_slider, SIGNAL(valueChanged(int)), mpw, SLOT(updateCeiling(int)));
         connect(&floor_slider, SIGNAL(valueChanged(int)), mpw, SLOT(updateFloor(int)));
         useDSFCbox.setEnabled(true);
+        std_dev_N_slider.setEnabled(false);
+        std_dev_N_edit.setEnabled(false);
+        ceiling_maximum = mpw->slider_max;
+        low_increment_cbox.setChecked(mpw->slider_low_inc);
+        this->increment_slot(low_increment_cbox.isChecked());
         mpw->rescaleRange();
+
+
     }
     else if(ffw != NULL)
     {
@@ -318,7 +362,14 @@ void ControlsBox::tabChangedSlot(int index)
         connect(&ceiling_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateCeiling(int)));
         connect(&floor_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateFloor(int)));
         useDSFCbox.setEnabled(true);
+        std_dev_N_slider.setEnabled(false);
+        std_dev_N_edit.setEnabled(false);
+        ceiling_maximum = ffw->slider_max;
+        low_increment_cbox.setChecked(ffw->slider_low_inc);
+        this->increment_slot(low_increment_cbox.isChecked());
+
         ffw->rescaleRange();
+
     }
     else if(hwt != NULL)
     {
@@ -327,6 +378,11 @@ void ControlsBox::tabChangedSlot(int index)
         connect(&ceiling_slider, SIGNAL(valueChanged(int)), hwt, SLOT(updateCeiling(int)));
         connect(&floor_slider, SIGNAL(valueChanged(int)), hwt, SLOT(updateFloor(int)));
         useDSFCbox.setEnabled(false);
+        std_dev_N_slider.setEnabled(true);
+        std_dev_N_edit.setEnabled(true);
+        ceiling_maximum = hwt->slider_max;
+        low_increment_cbox.setChecked(hwt->slider_low_inc);
+        this->increment_slot(low_increment_cbox.isChecked());
         hwt->rescaleRange();
     }
 }
