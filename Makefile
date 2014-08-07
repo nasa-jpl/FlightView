@@ -73,8 +73,18 @@ CONLYFLAGS += $(CFLAGS)
 CPPFLAGS = $(CFLAGS)
 CPPFLAGS += -std=c++11 -O3 -fopenmp  -Wall -Werror -Wno-unused-function -Wno-unused-variable#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 
-NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=sm_35 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
+
+
+#This version of NVCCFLAGS will build the fatest binary possible if the version of NVCC >= 6
+#NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30, -gencode arch=compute_35,code=sm_35, -gencode arch=compute_50,code=sm_50 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
+
+#This only targets the GTX 590 & GTX 780 series cards
+#NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=sm_35 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
 #(-G -lineinfo) are both to enable cuda-gdb debugging, -Xcompiler specifies arguments to get passed directly to g++ (which NVCC is built on), the internet said to do -rdynamic
+
+
+NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30, -gencode arch=compute_35,code=sm_35 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
+
 NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= lib #where do the libraries we need to link in go?
