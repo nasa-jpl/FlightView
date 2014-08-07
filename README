@@ -69,6 +69,8 @@ In order to "pull" in changes commited on another computer you can say
 The computer you originally clone from is generally called "origin", to update to the latest version of the source do
     $git pull origin master
 
+To send the latest version of a branch to a remote computer do
+    $git push <name of remote> <name of branch>
 In order to ensure that you don't accidentally commit object files or executables, you can modify .gitignore
     $vim .gitignore
 A good git tutorial is available here:
