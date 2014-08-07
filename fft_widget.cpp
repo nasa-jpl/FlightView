@@ -16,12 +16,10 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     fft_bars = new QCPBars(qcp->xAxis,qcp->yAxis);
     qcp->addPlottable(fft_bars);
     fft_bars->setName("Magnitude of FFT average pixel value");
-    //fft_bars->setP
+
     freq_bins = QVector<double>(FFT_INPUT_LENGTH/2);
     rfft_data_vec = QVector<double>(FFT_INPUT_LENGTH/2);
 
-    //rfft_data_vec = QVector<double>(MEAN_BUFFER_LENGTH/2);
-    //rfft_data = new float[MEAN_BUFFER_LENGTH/2];
     qvbl.addWidget(qcp);
     qvbl.addWidget(&zero_const_box);
     this->setLayout(&qvbl);
