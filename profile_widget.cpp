@@ -91,9 +91,13 @@ void profile_widget::handleNewFrame()
             }
 
         }
-        else if(fw->crosshair_x != -1 && fw->crosshair_y != -1)
+        qcp->graph(0)->setData(x,y);
+        qcp->replot();
+    }
+    if(fw->crosshair_x != -1 && fw->crosshair_y != -1)
+    {
+        if(!this->isHidden() &&  fw->curFrame != NULL)
         {
-            this->setEnabled(true);
             if(itype == VERTICAL_CROSS)
             {
 
@@ -138,22 +142,25 @@ void profile_widget::handleNewFrame()
                         y[c] = (double) local_image_ptr[(frHeight - fw->crosshair_y - 1)*frWidth + c];
                     }
                 }
-
             }
-        }
-        else
-        {
-            this->setEnabled(false);
-        }
-        //qcp->graph(0)->rescaleValueAxis();
+            qcp->graph(0)->setData(x,y);
+            qcp->replot();
 
-        qcp->graph(0)->setData(x,y);
-        //qcp->graph(0)->rescaleAxes();
-        qcp->replot();
+        }
     }
-
+    else
+    {
+         if(!this->isHidden())
+         {
+             plotTitle->setText("No Crosshair designated");
+             qcp->graph(0)->clearData();
+             qcp->replot();
+         }
+    }
     count++;
+
 }
+
 
 void profile_widget::updateCeiling(int c)
 {

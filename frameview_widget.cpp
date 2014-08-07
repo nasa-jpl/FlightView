@@ -93,11 +93,11 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
     connect(colorMap,SIGNAL(dataRangeChanged(QCPRange)),this,SLOT(colorMapDataRangeChanged(QCPRange)));
-    if(image_type==BASE)
+    if(image_type==BASE || image_type==DSF)
     {
         this->setFocusPolicy(Qt::ClickFocus); //Focus accepted via clicking
         connect(qcp,SIGNAL(mouseDoubleClick(QMouseEvent*)),this,SLOT(setCrosshairs(QMouseEvent*)));
-       // connect(qcp,SIGNAL()
+        // connect(qcp,SIGNAL()
     }
     colorMapData = new QCPColorMapData(frWidth,frHeight,QCPRange(0,frWidth),QCPRange(0,frHeight));
     colorMap->setData(colorMapData);
@@ -116,7 +116,7 @@ frameview_widget::~frameview_widget()
 }
 void frameview_widget::keyPressEvent(QKeyEvent *event)
 {
-    if(image_type == BASE && !this->isHidden() && event->key() == Qt::Key_Escape)
+    if((image_type == BASE || image_type == DSF) && !this->isHidden() && event->key() == Qt::Key_Escape)
     {
         fw->crosshair_x = -1;
         fw->crosshair_y = -1;
@@ -163,7 +163,14 @@ void frameview_widget::handleNewFrame()
             {
                 for(int row = 0; row < frHeight; row++)
                 {
-                    colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+                    if(row != fw->crosshair_y && col != fw->crosshair_x)
+                    {
+                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+                    }
+                    else
+                    {
+                        colorMap->data()->setCell(col,row,NAN);
+                    }
                 }
             }
             qcp->replot();
