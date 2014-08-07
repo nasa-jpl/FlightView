@@ -131,6 +131,7 @@ void frameWorker::setStdDev_N(int newN)
 void frameWorker::toggleUseDSF(bool t)
 {
     to.useDSF = t;
+    crosshair_useDSF = t;
 }
 void frameWorker::updateDelta()
 {

@@ -93,7 +93,12 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
     connect(colorMap,SIGNAL(dataRangeChanged(QCPRange)),this,SLOT(colorMapDataRangeChanged(QCPRange)));
-
+    if(image_type==BASE)
+    {
+        this->setFocusPolicy(Qt::ClickFocus); //Focus accepted via clicking
+        connect(qcp,SIGNAL(mouseDoubleClick(QMouseEvent*)),this,SLOT(setCrosshairs(QMouseEvent*)));
+       // connect(qcp,SIGNAL()
+    }
     colorMapData = new QCPColorMapData(frWidth,frHeight,QCPRange(0,frWidth),QCPRange(0,frHeight));
     colorMap->setData(colorMapData);
     //emit startCapturing(); //This sends a message to the frame worker to start capturing (in different thread)
@@ -108,6 +113,16 @@ frameview_widget::~frameview_widget()
     delete colorMap;
     delete qcp;
 
+}
+void frameview_widget::keyPressEvent(QKeyEvent *event)
+{
+    if(image_type == BASE && !this->isHidden() && event->key() == Qt::Key_Escape)
+    {
+        fw->crosshair_x = -1;
+        fw->crosshair_y = -1;
+
+        qDebug() << "x="<<fw->crosshair_x<< "y="<<fw->crosshair_y;
+    }
 }
 
 void frameview_widget::handleNewFrame()
@@ -125,8 +140,15 @@ void frameview_widget::handleNewFrame()
                 for(int row = 0; row < frHeight; row++)
                 {
                     //colorMap->data()->setCell(col,row,row^col);
+                    if(row != fw->crosshair_y && col != fw->crosshair_x)
+                    {
+                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+                    }
+                    else
+                    {
+                        colorMap->data()->setCell(col,row,NAN);
 
-                    colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+                    }
                 }
             }
             qcp->replot();
@@ -275,3 +297,10 @@ void frameview_widget::rescaleRange()
     colorScale->setDataRange(QCPRange(floor,ceiling));
 }
 
+void frameview_widget::setCrosshairs(QMouseEvent * event)
+{
+    fw->crosshair_x = qcp->xAxis->pixelToCoord(event->pos().x());
+    fw->crosshair_y = qcp->yAxis->pixelToCoord(event->pos().y());
+
+    qDebug() << "x="<<fw->crosshair_x<< "y="<<fw->crosshair_y;
+}

@@ -19,8 +19,8 @@ SOURCES += main.cpp\
     frame_worker.cpp \
     qcustomplot.cpp \
     histogram_widget.cpp \
-    mean_profile_widget.cpp \
-    fft_widget.cpp
+    fft_widget.cpp \
+    profile_widget.cpp
 
 HEADERS  += mainwindow.h \
     frameview_widget.h \
@@ -29,11 +29,11 @@ HEADERS  += mainwindow.h \
     image_type.h \
     qcustomplot.h \
     histogram_widget.h \
-    mean_profile_widget.h \
     fft_widget.h \
     frame_c_meta.h \
     view_widget_interface.h \
-    settings.h
+    settings.h \
+    profile_widget.h
 
 BACKEND_HEADERS += edtinc.h \
     take_object.hpp\

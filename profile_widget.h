@@ -11,13 +11,13 @@
 #include "frame_worker.h"
 #include "image_type.h"
 //#include "view_widget_interface.h"
-class mean_profile_widget : public QWidget//, public view_widget_interface
+class profile_widget : public QWidget//, public view_widget_interface
 {
     Q_OBJECT
    // Q_INTERFACES(view_widget_interface)
     QVBoxLayout qvbl;
     QCustomPlot * qcp;
-
+    QCPPlotTitle * plotTitle;
     int frHeight;
     int frWidth;
     unsigned int count = 0;
@@ -29,8 +29,8 @@ class mean_profile_widget : public QWidget//, public view_widget_interface
     QTimer rendertimer;
     frameWorker * fw;
 public:
-    explicit mean_profile_widget(frameWorker * fw, image_t image_type , QWidget *parent = 0);
-    ~mean_profile_widget();
+    explicit profile_widget(frameWorker * fw, image_t image_type , QWidget *parent = 0);
+    ~profile_widget();
     double getCeiling();
     double getFloor();
     unsigned int slider_max = (1<<16) * 1.1;

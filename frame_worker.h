@@ -42,6 +42,9 @@ public:
     unsigned int delta;
     unsigned long old_c = 0;
 
+    int crosshair_x = -1;
+    int crosshair_y = -1;
+    bool crosshair_useDSF= false;
 signals:
     void newFrameAvailable();
     void stdDevFrameCompleted(frame_c *);

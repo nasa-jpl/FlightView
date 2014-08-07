@@ -5,7 +5,7 @@
 #include "controlsbox.h"
 #include "frameview_widget.h"
 #include "histogram_widget.h"
-#include "mean_profile_widget.h"
+#include "profile_widget.h"
 #include "fft_widget.h"
 #include "frame_c_meta.h"
 
@@ -28,8 +28,10 @@ private:
     histogram_widget * hist_widget;
 
 
-    mean_profile_widget * vert_widget;
-    mean_profile_widget * horiz_widget;
+    profile_widget * vert_mean_widget;
+    profile_widget * horiz_mean_widget;
+    profile_widget * vert_cross_widget;
+    profile_widget * horiz_cross_widget;
     fft_widget * fft_mean_widget;
 public slots:
     void updateFPS(unsigned int fps);

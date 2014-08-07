@@ -50,14 +50,14 @@ SOURCES       = main.cpp \
 		frame_worker.cpp \
 		qcustomplot.cpp \
 		histogram_widget.cpp \
-		mean_profile_widget.cpp \
+		profile_widget.cpp \
 		fft_widget.cpp moc_mainwindow.cpp \
 		moc_frameview_widget.cpp \
 		moc_controlsbox.cpp \
 		moc_frame_worker.cpp \
 		moc_qcustomplot.cpp \
 		moc_histogram_widget.cpp \
-		moc_mean_profile_widget.cpp \
+		moc_profile_widget.cpp \
 		moc_fft_widget.cpp \
 		qrc_images.cpp
 OBJECTS       = main.o \
@@ -67,7 +67,7 @@ OBJECTS       = main.o \
 		frame_worker.o \
 		qcustomplot.o \
 		histogram_widget.o \
-		mean_profile_widget.o \
+		profile_widget.o \
 		fft_widget.o \
 		moc_mainwindow.o \
 		moc_frameview_widget.o \
@@ -75,7 +75,7 @@ OBJECTS       = main.o \
 		moc_frame_worker.o \
 		moc_qcustomplot.o \
 		moc_histogram_widget.o \
-		moc_mean_profile_widget.o \
+		moc_profile_widget.o \
 		moc_fft_widget.o \
 		qrc_images.o
 DIST          = /usr/share/qt4/mkspecs/common/unix.conf \
@@ -192,7 +192,7 @@ qmake:  FORCE
 
 dist: 
 	@$(CHK_DIR_EXISTS) .tmp/liveview21.0.0 || $(MKDIR) .tmp/liveview21.0.0 
-	$(COPY_FILE) --parents $(SOURCES) $(DIST) .tmp/liveview21.0.0/ && $(COPY_FILE) --parents mainwindow.h frameview_widget.h controlsbox.h frame_worker.h image_type.h qcustomplot.h histogram_widget.h mean_profile_widget.h fft_widget.h frame_c_meta.h view_widget_interface.h settings.h BACKEND_HEADERS .tmp/liveview21.0.0/ && $(COPY_FILE) --parents images.qrc .tmp/liveview21.0.0/ && $(COPY_FILE) --parents main.cpp mainwindow.cpp frameview_widget.cpp controlsbox.cpp frame_worker.cpp qcustomplot.cpp histogram_widget.cpp mean_profile_widget.cpp fft_widget.cpp .tmp/liveview21.0.0/ && (cd `dirname .tmp/liveview21.0.0` && $(TAR) liveview21.0.0.tar liveview21.0.0 && $(COMPRESS) liveview21.0.0.tar) && $(MOVE) `dirname .tmp/liveview21.0.0`/liveview21.0.0.tar.gz . && $(DEL_FILE) -r .tmp/liveview21.0.0
+	$(COPY_FILE) --parents $(SOURCES) $(DIST) .tmp/liveview21.0.0/ && $(COPY_FILE) --parents mainwindow.h frameview_widget.h controlsbox.h frame_worker.h image_type.h qcustomplot.h histogram_widget.h profile_widget.h fft_widget.h frame_c_meta.h view_widget_interface.h settings.h BACKEND_HEADERS .tmp/liveview21.0.0/ && $(COPY_FILE) --parents images.qrc .tmp/liveview21.0.0/ && $(COPY_FILE) --parents main.cpp mainwindow.cpp frameview_widget.cpp controlsbox.cpp frame_worker.cpp qcustomplot.cpp histogram_widget.cpp profile_widget.cpp fft_widget.cpp .tmp/liveview21.0.0/ && (cd `dirname .tmp/liveview21.0.0` && $(TAR) liveview21.0.0.tar liveview21.0.0 && $(COMPRESS) liveview21.0.0.tar) && $(MOVE) `dirname .tmp/liveview21.0.0`/liveview21.0.0.tar.gz . && $(DEL_FILE) -r .tmp/liveview21.0.0
 
 
 clean:compiler_clean 
@@ -213,9 +213,9 @@ mocclean: compiler_moc_header_clean compiler_moc_source_clean
 
 mocables: compiler_moc_header_make_all compiler_moc_source_make_all
 
-compiler_moc_header_make_all: moc_mainwindow.cpp moc_frameview_widget.cpp moc_controlsbox.cpp moc_frame_worker.cpp moc_qcustomplot.cpp moc_histogram_widget.cpp moc_mean_profile_widget.cpp moc_fft_widget.cpp
+compiler_moc_header_make_all: moc_mainwindow.cpp moc_frameview_widget.cpp moc_controlsbox.cpp moc_frame_worker.cpp moc_qcustomplot.cpp moc_histogram_widget.cpp moc_profile_widget.cpp moc_fft_widget.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_mainwindow.cpp moc_frameview_widget.cpp moc_controlsbox.cpp moc_frame_worker.cpp moc_qcustomplot.cpp moc_histogram_widget.cpp moc_mean_profile_widget.cpp moc_fft_widget.cpp
+	-$(DEL_FILE) moc_mainwindow.cpp moc_frameview_widget.cpp moc_controlsbox.cpp moc_frame_worker.cpp moc_qcustomplot.cpp moc_histogram_widget.cpp moc_profile_widget.cpp moc_fft_widget.cpp
 moc_mainwindow.cpp: controlsbox.h \
 		frameview_widget.h \
 		frame_c_meta.h \
@@ -224,7 +224,7 @@ moc_mainwindow.cpp: controlsbox.h \
 		qcustomplot.h \
 		histogram_widget.h \
 		settings.h \
-		mean_profile_widget.h \
+		profile_widget.h \
 		fft_widget.h \
 		mainwindow.h
 	/usr/bin/moc-qt4 $(DEFINES) $(INCPATH) mainwindow.h -o moc_mainwindow.cpp
@@ -259,12 +259,12 @@ moc_histogram_widget.cpp: qcustomplot.h \
 		histogram_widget.h
 	/usr/bin/moc-qt4 $(DEFINES) $(INCPATH) histogram_widget.h -o moc_histogram_widget.cpp
 
-moc_mean_profile_widget.cpp: qcustomplot.h \
+moc_profile_widget.cpp: qcustomplot.h \
 		frame_worker.h \
 		frame_c_meta.h \
 		image_type.h \
-		mean_profile_widget.h
-	/usr/bin/moc-qt4 $(DEFINES) $(INCPATH) mean_profile_widget.h -o moc_mean_profile_widget.cpp
+		profile_widget.h
+	/usr/bin/moc-qt4 $(DEFINES) $(INCPATH) profile_widget.h -o moc_profile_widget.cpp
 
 moc_fft_widget.cpp: qcustomplot.h \
 		frame_worker.h \
@@ -308,7 +308,7 @@ main.o: main.cpp mainwindow.h \
 		qcustomplot.h \
 		histogram_widget.h \
 		settings.h \
-		mean_profile_widget.h \
+		profile_widget.h \
 		fft_widget.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
@@ -321,7 +321,7 @@ mainwindow.o: mainwindow.cpp mainwindow.h \
 		qcustomplot.h \
 		histogram_widget.h \
 		settings.h \
-		mean_profile_widget.h \
+		profile_widget.h \
 		fft_widget.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mainwindow.o mainwindow.cpp
 
@@ -339,7 +339,7 @@ controlsbox.o: controlsbox.cpp controlsbox.h \
 		frame_worker.h \
 		image_type.h \
 		qcustomplot.h \
-		mean_profile_widget.h \
+		profile_widget.h \
 		fft_widget.h \
 		histogram_widget.h \
 		settings.h
@@ -360,13 +360,13 @@ histogram_widget.o: histogram_widget.cpp histogram_widget.h \
 		settings.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o histogram_widget.o histogram_widget.cpp
 
-mean_profile_widget.o: mean_profile_widget.cpp mean_profile_widget.h \
+profile_widget.o: profile_widget.cpp profile_widget.h \
 		qcustomplot.h \
 		frame_worker.h \
 		frame_c_meta.h \
 		image_type.h \
 		settings.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mean_profile_widget.o mean_profile_widget.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o profile_widget.o profile_widget.cpp
 
 fft_widget.o: fft_widget.cpp fft_widget.h \
 		qcustomplot.h \
@@ -394,8 +394,8 @@ moc_qcustomplot.o: moc_qcustomplot.cpp
 moc_histogram_widget.o: moc_histogram_widget.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_histogram_widget.o moc_histogram_widget.cpp
 
-moc_mean_profile_widget.o: moc_mean_profile_widget.cpp 
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_mean_profile_widget.o moc_mean_profile_widget.cpp
+moc_profile_widget.o: moc_profile_widget.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_profile_widget.o moc_profile_widget.cpp
 
 moc_fft_widget.o: moc_fft_widget.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_fft_widget.o moc_fft_widget.cpp

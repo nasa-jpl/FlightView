@@ -40,6 +40,7 @@ class frameview_widget :public QWidget//, public view_widget_interface
     int frWidth;
     unsigned int count = 0;
     unsigned int old_count = 0;
+    //int crosshair_x=-1,crosshair_y=-1;
 public:
     explicit frameview_widget(frameWorker * fw, image_t image_type , QWidget *parent = 0);
     ~frameview_widget();
@@ -49,7 +50,8 @@ public:
     image_t image_type;
     unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
-
+protected:
+    void keyPressEvent(QKeyEvent *event);
 signals:
     void startCapturing();
 public slots:
@@ -63,6 +65,7 @@ public slots:
     void updateCeiling(int c);
     void updateFloor(int f);
     void rescaleRange();
+    void setCrosshairs(QMouseEvent * event);
 
 };
 

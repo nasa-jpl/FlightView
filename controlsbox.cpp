@@ -1,6 +1,6 @@
 #include "controlsbox.h"
 #include "frameview_widget.h"
-#include "mean_profile_widget.h"
+#include "profile_widget.h"
 #include "fft_widget.h"
 #include "histogram_widget.h"
 #include <QHBoxLayout>
@@ -81,7 +81,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     ceiling_slider.setTickInterval(BIG_TICK);
     floor_slider.setTickInterval(BIG_TICK);
 
-    useDSFCbox.setText("Use Dark Subtracted data for mean profiles and FFT?");
+    useDSFCbox.setText("Use Dark Subtracted data for profiles and FFT?");
     //First Row
     sliders_layout.addWidget(new QLabel("Std. Dev. N:"),1,1,1,1);
     sliders_layout.addWidget(&std_dev_N_slider,1,2,1,7);
@@ -181,9 +181,11 @@ void ControlsBox::showSaveDialog()
 
 void ControlsBox::getMaskFile()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Select mask file"),
-                                                    "",
-                                                    tr("Files (*.raw)"));
+    //QString fileName = QFileDialog::getOpenFileName(this, tr("Select mask file","",tr("Files (*.raw)"));
+    QFileDialog dialog(0);
+
+    dialog.setFilter(QDir::Writable | QDir::Files);
+    QString fileName = dialog.getOpenFileName(this, tr("Select mask file"),"",tr("Files (*.raw)"));
     if(fileName.isEmpty())
     {
         return;
@@ -226,8 +228,8 @@ void ControlsBox::increment_slot(bool t)
     //Sad.... this is what not being able to inherit from a common view_widget_interface does...
     if(qobject_cast<frameview_widget*>(cur_frameview) != NULL)
         qobject_cast<frameview_widget*>(cur_frameview)->slider_low_inc = t;
-    else if(qobject_cast<mean_profile_widget*>(cur_frameview) != NULL)
-        qobject_cast<mean_profile_widget*>(cur_frameview)->slider_low_inc = t;
+    else if(qobject_cast<profile_widget*>(cur_frameview) != NULL)
+        qobject_cast<profile_widget*>(cur_frameview)->slider_low_inc = t;
     else if(qobject_cast<fft_widget*>(cur_frameview) != NULL)
         qobject_cast<fft_widget*>(cur_frameview)->slider_low_inc = t;
     else if(qobject_cast<histogram_widget*>(cur_frameview) != NULL)
@@ -290,7 +292,7 @@ void ControlsBox::tabChangedSlot(int index)
 
 
     frameview_widget * fvw = qobject_cast<frameview_widget*>(qtw->widget(index));
-    mean_profile_widget * mpw = qobject_cast<mean_profile_widget*>(qtw->widget(index));
+    profile_widget * mpw = qobject_cast<profile_widget*>(qtw->widget(index));
     fft_widget * ffw = qobject_cast<fft_widget*>(qtw->widget(index));
     histogram_widget * hwt  = qobject_cast<histogram_widget*>(qtw->widget(index));
     if(qobject_cast<frameview_widget*>(cur_frameview) != NULL)
@@ -298,10 +300,10 @@ void ControlsBox::tabChangedSlot(int index)
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<frameview_widget*>(cur_frameview),SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<frameview_widget*>(cur_frameview), SLOT(updateFloor(int)));
     }
-    else if(qobject_cast<mean_profile_widget*>(cur_frameview) != NULL)
+    else if(qobject_cast<profile_widget*>(cur_frameview) != NULL)
     {
-        disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<mean_profile_widget*>(cur_frameview),SLOT(updateCeiling(int)));
-        disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<mean_profile_widget*>(cur_frameview), SLOT(updateFloor(int)));
+        disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<profile_widget*>(cur_frameview),SLOT(updateCeiling(int)));
+        disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<profile_widget*>(cur_frameview), SLOT(updateFloor(int)));
     }
     else if(qobject_cast<fft_widget*>(cur_frameview) != NULL)
     {

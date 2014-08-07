@@ -29,16 +29,20 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     std_dev_widget = new frameview_widget(fw, STD_DEV);
     hist_widget = new histogram_widget(fw,STD_DEV_HISTOGRAM);
 
-    vert_widget = new mean_profile_widget(fw,VERTICAL_MEAN);
-    horiz_widget = new mean_profile_widget(fw,HORIZONTAL_MEAN);
+    vert_mean_widget = new profile_widget(fw,VERTICAL_MEAN);
+    horiz_mean_widget = new profile_widget(fw,HORIZONTAL_MEAN);
+    vert_cross_widget = new profile_widget(fw,VERTICAL_CROSS);
+    horiz_cross_widget = new profile_widget(fw,HORIZONTAL_CROSS);
     fft_mean_widget = new fft_widget(fw,FFT_MEAN);
 
     tabWidget->addTab(unfiltered_widget, QString("Live View"));
     tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
     tabWidget->addTab(std_dev_widget, QString("Std. Deviation"));
     tabWidget->addTab(hist_widget,QString("Histogram View"));
-    tabWidget->addTab(vert_widget,QString("Vertical Mean Profile"));
-    tabWidget->addTab(horiz_widget,QString("Horizontal Mean Profile"));
+    tabWidget->addTab(vert_mean_widget,QString("Vertical Mean Profile"));
+    tabWidget->addTab(horiz_mean_widget,QString("Horizontal Mean Profile"));
+    tabWidget->addTab(vert_cross_widget,QString("Vertical Crosshair Profile"));
+    tabWidget->addTab(horiz_cross_widget,QString("Horizontal Crosshair Profile"));
     tabWidget->addTab(fft_mean_widget,QString("FFT of Plane Mean"));
 
     layout->addWidget(tabWidget,3);
