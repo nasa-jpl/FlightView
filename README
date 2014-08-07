@@ -1,0 +1,51 @@
+@author Noah Levy
+
+JPL (inactive) email: nlevy@jpl.nasa.gov
+Email: noahmslevy@gmail.com or nml45@cornell.edu
+--------------------------
+Overview
+--------------------------
+liveview2 is a QT frontend for cuda_take, it is used to display the data coming from a focal plane and the analytics (std. dev, dark subtraction, fft) that the backend does. It makes use of QCustomPlot (http:www.qcustomplot.com) in order to make pretty plots within QT C++ windows.
+
+--------------------------
+Directory Structure
+--------------------------
+cuda_take must be installed in a directory 2 levels below liveview2's source directory. This was done because QT tends to clutter up the parent directory of where it's .pro file is with __RELEASE__ and _DEBUG_ folders.
+
+In other words, the directory structure should look like this:
+
+
+<top level dir>/cuda_take  <-- This is where you clone to from git
+<top level dir>/liveview2/liveview2 <-- This is where you clone to from git
+
+----------------------------
+Building
+----------------------------
+First, follow the instructions in the readme for cuda_take installation, by the end you should have git and nvcc on your computer; you should also have a built version of libcuda_take.a in your cuda_take directory.
+
+Next, use git to pull a copy of the liveview2 source. Since this directory must be a subdirectory within a folder for the paths to resolve do this:
+
+	$cd <top level dir>
+	$mkdir liveview2 <-- this can be any name
+	$git clone aviris-cal:/home/nlevy/EDT_development/liveview2/liveview2
+
+Now, cd into the liveview2/liveview2 directory and either open the .pro file in qtcreator and build it with the qt IDE or run
+	$qmake
+	$make
+
+-----------------------------
+Design
+-----------------------------
+liveview2 is designed to be somewhat modular, the backend is queried by a single class, frame_worker, which is run outside of the event thread. All of the widgets for viewing data are implemented as their own classes and are embedded in the mainwindow class via a QTabbedWidget.
+
+One source of great regret is that all of the data viewing classes are similar, but I could not make inheritance work for them and QT. As a result they all duplicate variables such as floor and ceiling.
+
+Each widget has its own renderTimer which emits a local signal to replot the data at a framerate defined in settings.h. The queuing thread that runs frame_worker does not periodically send signals to the event thread, this is because this had terrible performance in real life.
+
+--------------------------------
+Bugs
+--------------------------------
+When selecting a save file, I had no way of checking permissions. If the user selects a file that they cannot write to, the backend will hang and the program will crash.
+
+For some reason, when a crosshair is deselected the crosshair profile windows display ghost data.
+ 
