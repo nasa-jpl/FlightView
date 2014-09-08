@@ -74,6 +74,7 @@ void take_object::start()
 	switch(size)
 	{
 	case 481*640*sizeof(uint16_t): cam_type = CL_6604A; break;
+    case 285*640*sizeof(uint16_t): cam_type = CL_6604A; break;
 	default: cam_type = CL_6604B; break;
 	}
 	printf("frame period:%i\n", pdv_get_frame_period(pdv_p));
