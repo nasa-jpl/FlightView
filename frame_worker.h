@@ -52,6 +52,7 @@ public:
     int crossStartCol = -1;
     int crossWidth = -1;
     bool crosshair_useDSF= false;
+    bool displayCross = true;
 signals:
     void newFrameAvailable();
     void stdDevFrameCompleted(frame_c *);
@@ -68,6 +69,7 @@ public slots:
     void startSavingRawData(unsigned int framenum,QString name);
     void stopSavingRawData();
     void stop();
+    void updateCrossDiplay(bool checked);
 
     void setStdDev_N(int newN);
     void updateDelta();

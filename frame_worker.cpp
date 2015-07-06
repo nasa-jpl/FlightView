@@ -128,3 +128,8 @@ void frameWorker::updateDelta()
     delta = (float)(c * 1000) / (float)(deltaTimer.elapsed());
     emit updateFPS();
 }
+void frameWorker::updateCrossDiplay( bool checked )
+{
+    qDebug() << "display = " << displayCross;
+    displayCross = checked;
+}

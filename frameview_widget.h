@@ -4,7 +4,8 @@
 #include <QWidget>
 #include <QThread>
 #include <QImage>
-#include <QVBoxLayout>
+#include <QGridLayout>
+#include <QCheckBox>
 #include <QLabel>
 #include <QTimer>
 #include <QPushButton>
@@ -20,7 +21,8 @@ class frameview_widget :public QWidget
 {
     Q_OBJECT
 
-    QVBoxLayout layout ;
+    QGridLayout layout;
+    QCheckBox displayCrosshairCheck;
     QCustomPlot* qcp;
     QCPColorMap* colorMap;
     QCPColorMapData* colorMapData;
@@ -30,7 +32,6 @@ class frameview_widget :public QWidget
     unsigned long seconds_elapsed = 0;
     QTimer fpstimer;
     QTimer rendertimer;
-    bool outputGrayScale;
     frameWorker* fw;
 
     volatile double ceiling;

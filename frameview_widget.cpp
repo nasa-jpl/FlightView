@@ -37,6 +37,18 @@ frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget*
     count=0;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
+
+    displayCrosshairCheck.setText( tr("Display Crosshairs on Frame") );
+    displayCrosshairCheck.setChecked( true );
+    if( image_type == STD_DEV )
+    {
+        displayCrosshairCheck.setEnabled( false );
+        displayCrosshairCheck.setChecked( false );
+    }
+    connect(&displayCrosshairCheck,SIGNAL(toggled(bool)),fw,SLOT(updateCrossDiplay(bool)));
+
+
+
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);
     QSizePolicy qsp(QSizePolicy::Preferred,QSizePolicy::Preferred);
@@ -77,9 +89,10 @@ frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget*
     qcp->rescaleAxes();
     qcp->axisRect()->setBackgroundScaled(false);
 
-    layout.addWidget(qcp,8);
+    layout.addWidget(qcp,0,0,8,8);
     fpsLabel.setText("FPS");
-    layout.addWidget(&fpsLabel,1);
+    layout.addWidget(&fpsLabel,8,0,1,2);
+    layout.addWidget(&displayCrosshairCheck,8,2,1,2);
     this->setLayout(&layout);
 
     fps = 0;
@@ -128,16 +141,17 @@ void frameview_widget::handleNewFrame()
             {
                 for(int row = 0; row < frHeight; row++ )
                 {
-                    //colorMap->data()->setCell(col,row,row^col);
-                    if( row != fw->crosshair_y && col != fw->crosshair_x && row != fw->crossStartRow && row != fw->crossHeight && col != fw->crossStartCol && col != fw->crossWidth )
-                    {
-                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
-                    }
-                    else
+                    if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
+                         || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
                     {
                         // this will blank out the part of the frame where the crosshair is pointing so that it is
                         // visible in the display
                         colorMap->data()->setCell(col,row,NAN);
+                    }
+                    else
+                    {
+                        // display normally
+                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
                     }
                 }
             }
@@ -150,13 +164,17 @@ void frameview_widget::handleNewFrame()
             {
                 for(int row = 0; row < frHeight; row++)
                 {
-                    if(row != fw->crosshair_y && col != fw->crosshair_x)
+                    if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
+                         || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
                     {
-                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+                        // this will blank out the part of the frame where the crosshair is pointing so that it is
+                        // visible in the display
+                        colorMap->data()->setCell(col,row,NAN);
                     }
                     else
                     {
-                        colorMap->data()->setCell(col,row,NAN);
+                        // display normally
+                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
                     }
                 }
             }
@@ -181,8 +199,6 @@ void frameview_widget::handleNewFrame()
 void frameview_widget::updateFPS()
 {
     seconds_elapsed++;
-    //fps = count/(double)seconds_elapsed;
-
 
     if(seconds_elapsed < 5)
     {
