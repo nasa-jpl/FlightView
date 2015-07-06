@@ -11,22 +11,20 @@ frameWorker::frameWorker(QObject *parent) :
     qDebug("starting capture");
     frHeight = to.getFrameHeight();
     frWidth = to.getFrameWidth();
-    dataHeight = to.getDataHeight();
+    dataHeight = to.getDataHeight() + 180; // Why?
 
-    connect(&deltaTimer,SIGNAL(timeout()),this,SLOT(updateDelta()));
-    deltaTimer.start(1000);
+    deltaTimer.start();
 }
 frameWorker::~frameWorker()
 {
-    qDebug() << "end frameWorker";
+    //qDebug() << "end frameWorker";
     doRun = false;
 }
 void frameWorker::stop()
 {
-    qDebug() << "stop frameWorker";
+    //qDebug() << "stop frameWorker";
     doRun = false;
 }
-
 void frameWorker::captureFrames()
 {
     unsigned int last_savenum;
@@ -45,7 +43,6 @@ void frameWorker::captureFrames()
             {
                 std_dev_frame = std_dev_processing_frame;
             }
-
         }
         if(workingFrame->async_filtering_done != 0)
         {
@@ -65,26 +62,26 @@ void frameWorker::captureFrames()
             c++;
         }
 
+        if( c >= framecount_window )
+        {
+            updateDelta();
+        }
     }
-
-    qDebug() << "emitting finished";
+    //qDebug() << "emitting finished";
     emit finished();
 }
 unsigned int frameWorker::getFrameHeight()
 {
     return frHeight;
 }
-
 unsigned int frameWorker::getFrameWidth()
 {
     return frWidth;
 }
-
 unsigned int frameWorker::getDataHeight()
 {
     return dataHeight;
 }
-
 void frameWorker::startCapturingDSFMask()
 {
     qDebug() << "calling to start DSF cap";
@@ -95,31 +92,24 @@ void frameWorker::finishCapturingDSFMask()
     qDebug() << "calling to stop DSF cap";
     to.finishCapturingDSFMask();
 }
-
-
 void frameWorker::loadDSFMask(QString file_name)
 {
     to.loadDSFMask(file_name.toUtf8().constData());
 }
-
-
 void frameWorker::startSavingRawData(unsigned int framenum, QString name)
 {
     qDebug() << "Start Saving! @" << name;
 
     to.startSavingRaws(name.toUtf8().constData(),framenum);
 }
-
 void frameWorker::stopSavingRawData()
 {
     to.stopSavingRaws();
 }
-
 bool frameWorker::dsfMaskCollected()
 {
     return to.dsfMaskCollected;
 }
-
 camera_t frameWorker::camera_type()
 {
     return to.cam_type;
@@ -135,6 +125,6 @@ void frameWorker::toggleUseDSF(bool t)
 }
 void frameWorker::updateDelta()
 {
-    delta = c-old_c;
-    old_c = c;
+    delta = (float)(c * 1000) / (float)(deltaTimer.elapsed());
+    emit updateFPS();
 }

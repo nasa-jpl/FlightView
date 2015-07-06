@@ -5,7 +5,7 @@
 #include <QSharedPointer>
 #include <QThread>
 #include <QMutex>
-#include <QTimer>
+#include <QElapsedTimer>
 #include <QVector>
 #include "take_object.hpp"
 #include "frame_c_meta.h"
@@ -14,8 +14,9 @@
 class frameWorker : public QObject
 {
     Q_OBJECT
-    QTimer deltaTimer;
+    QElapsedTimer deltaTimer;
 public:
+    take_object to;
 
     explicit frameWorker(QObject *parent = 0);
     virtual ~frameWorker();
@@ -39,8 +40,12 @@ public:
     frame_c * std_dev_frame = NULL;
     frame_c * std_dev_processing_frame = NULL;
     unsigned long c = 0;
-    unsigned int delta;
+    unsigned long framecount_window = 50; //we measure elapsed time for the backend fps every 50 frames
+    float delta;
     unsigned long old_c = 0;
+
+    unsigned int frHeight;
+    unsigned int frWidth;
 
     int crosshair_x = -1;
     int crosshair_y = -1;
@@ -48,6 +53,7 @@ public:
 signals:
     void newFrameAvailable();
     void stdDevFrameCompleted(frame_c *);
+    void updateFPS();
 
     void savingFrameNumChanged(unsigned int n);
     void finished();
@@ -63,11 +69,8 @@ public slots:
 
     void setStdDev_N(int newN);
     void updateDelta();
-private:
-    take_object to;
 
-    unsigned int frHeight;
-    unsigned int frWidth;
+private:
     unsigned int dataHeight;
 
 

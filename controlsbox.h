@@ -12,6 +12,7 @@
 #include <QButtonGroup>
 #include <QFileDialog>
 #include "frameview_widget.h"
+#include "pref_window.h"
 #include <stdint.h>
 
 #include "boost/shared_array.hpp"
@@ -51,13 +52,21 @@ public:
     QPushButton load_mask_from_file;
     QPushButton select_save_location;
     QLabel fps_label;
+    QString fps;
+    QLabel server_ip_label;
+    QLabel server_port_label;
+
+    QLabel std_dev_n_label;
+    QLabel lines_label;
 
     QCheckBox low_increment_cbox;
     QSlider std_dev_N_slider;
     QSlider ceiling_slider;
     QSlider floor_slider;
+    QSlider lines_slider;
 
     QSpinBox std_dev_N_edit;
+    QSpinBox line_average_edit;
     QSpinBox ceiling_edit;
     QSpinBox floor_edit;
 
@@ -67,9 +76,13 @@ public:
     QSpinBox frames_save_num_edit;
     QLineEdit filename_edit;
     QPushButton set_filename_button;
+    QPushButton pref_button;
+
+    preferenceWindow* prefWindow;
 
     QCheckBox useDSFCbox;
-    QTimer backendDeltaTimer;
+    QElapsedTimer backendDeltaTimer;
+
 private:
     QTabWidget *qtw;
     QWidget * cur_frameview;
@@ -98,6 +111,7 @@ public slots:
 private slots:
     void start_dark_collection_slot();
     void stop_dark_collection_slot();
+    void load_pref_window();
 
 };
 

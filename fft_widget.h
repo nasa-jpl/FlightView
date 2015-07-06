@@ -21,7 +21,6 @@ class fft_widget : public QWidget
     QVector<double> freq_bins;
     QVector<double> rfft_data_vec;
     QCheckBox zero_const_box;
-    frameWorker * fw;
     unsigned int count = 0;
     volatile double ceiling;
     volatile double floor;
@@ -31,6 +30,7 @@ public:
     explicit fft_widget(frameWorker *fw, image_t image_type,QWidget *parent = 0);
     ~fft_widget();
 
+    frameWorker * fw;
     double getCeiling();
     double getFloor();
     unsigned int slider_max = (1<<16) * 1.1;

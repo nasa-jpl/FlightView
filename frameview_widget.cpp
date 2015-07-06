@@ -18,18 +18,23 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
 
     this->fw = fw;
     this->image_type = image_type;
+    int base_ceiling;
+    if( fw->to.cam_type == CL_6604A )
+        base_ceiling = 16383;
+    else
+        base_ceiling = 65535;
     switch(image_type)
     {
-    case BASE: ceiling = 10000; break;
+    case BASE: ceiling = base_ceiling; break;
     case DSF: ceiling = 20; break;
     case STD_DEV: ceiling = 20; break;
     }
-    floor = 0;
+    floor=0;
     count=0;
     toggleGrayScaleButton.setText("Toggle grayscale output");
     outputGrayScale = true;
     frHeight = fw->getFrameHeight();
-    qDebug() << "fw frame height " << fw->getFrameHeight();
+    // qDebug() << "fw frame height " << fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);
@@ -83,7 +88,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     //layout.addWidget(&toggleGrayScaleButton,1);
     this->setLayout(&layout);
 
-    qDebug() << "emitting capture signal, starting timer";
+    // qDebug() << "emitting capture signal, starting timer";
     fps = 0;
     // fpstimer = new QTimer(this);
     connect(&fpstimer, SIGNAL(timeout()), this, SLOT(updateFPS()));
@@ -92,7 +97,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
     connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
-    connect(colorMap,SIGNAL(dataRangeChanged(QCPRange)),this,SLOT(colorMapDataRangeChanged(QCPRange)));
+    // connect(colorMap,SIGNAL(dataRangeChanged(QCPRange)),this,SLOT(colorMapDataRangeChanged(QCPRange)));
     if(image_type==BASE || image_type==DSF)
     {
         this->setFocusPolicy(Qt::ClickFocus); //Focus accepted via clicking
@@ -127,17 +132,16 @@ void frameview_widget::keyPressEvent(QKeyEvent *event)
 
 void frameview_widget::handleNewFrame()
 {
-
-    if(!this->isHidden() &&  fw->curFrame != NULL)
+    if(!this->isHidden() && fw->curFrame)
     {
         if(image_type == BASE)
         {
 
 
             uint16_t * local_image_ptr = fw->curFrame->image_data_ptr;
-            for(int col = 0; col < frWidth; col++)
+            for(int col = 0; col < frWidth; col++ )
             {
-                for(int row = 0; row < frHeight; row++)
+                for(int row = 0; row < frHeight; row++ )
                 {
                     //colorMap->data()->setCell(col,row,row^col);
                     if(row != fw->crosshair_y && col != fw->crosshair_x)
@@ -146,14 +150,13 @@ void frameview_widget::handleNewFrame()
                     }
                     else
                     {
+                        // this will blank out the part of the frame where the crosshair is pointing so that it is
+                        // visible in the display
                         colorMap->data()->setCell(col,row,NAN);
-
                     }
                 }
             }
             qcp->replot();
-
-
         }
         if(image_type == DSF)
         {
@@ -174,9 +177,7 @@ void frameview_widget::handleNewFrame()
                 }
             }
             qcp->replot();
-
         }
-
         if(image_type == STD_DEV && fw->std_dev_frame != NULL)
         {
             float * local_image_ptr = fw->std_dev_frame->std_dev_data;
@@ -195,7 +196,6 @@ void frameview_widget::handleNewFrame()
         }
     }
     count++;
-
 }
 
 
@@ -286,10 +286,11 @@ void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
     }
     qcp->xAxis->setRange(boundedRange);
 }
-void frameview_widget::colorMapDataRangeChanged(const QCPRange &newRange)
+/*void frameview_widget::colorMapDataRangeChanged(const QCPRange &newRange)
 {
 
-}
+
+} */
 double frameview_widget::getCeiling()
 {
     return ceiling;

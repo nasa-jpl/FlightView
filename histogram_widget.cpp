@@ -132,9 +132,7 @@ void histogram_widget::histogramScrolledX(const QCPRange &newRange)
     }
     histogram->keyAxis()->setRange(boundedRange);
     //histogram->keyAxis()->setAutoTickCount(10);
-
 }
-
 void histogram_widget::updateCeiling(int c)
 {
     ceiling = (double)c;
@@ -157,4 +155,3 @@ void histogram_widget::rescaleRange()
 {
     qcp->yAxis->setRange(QCPRange(floor,ceiling));
 }
-

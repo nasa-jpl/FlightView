@@ -5,8 +5,9 @@
 #-------------------------------------------------
 
 QT       += core gui
+QT       += network
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
+greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
 
 TARGET = liveview2
 TEMPLATE = app
@@ -20,7 +21,9 @@ SOURCES += main.cpp\
     qcustomplot.cpp \
     histogram_widget.cpp \
     fft_widget.cpp \
-    profile_widget.cpp
+    profile_widget.cpp \
+    pref_window.cpp \
+    saveserver.cpp
 
 HEADERS  += mainwindow.h \
     frameview_widget.h \
@@ -31,9 +34,10 @@ HEADERS  += mainwindow.h \
     histogram_widget.h \
     fft_widget.h \
     frame_c_meta.h \
-    view_widget_interface.h \
     settings.h \
-    profile_widget.h
+    profile_widget.h \
+    pref_window.h \
+    saveserver.h
 
 BACKEND_HEADERS += edtinc.h \
     take_object.hpp\

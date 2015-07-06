@@ -38,7 +38,7 @@ public:
 
 
 signals:
-    
+
 public slots:
     //void handleNewFrame(QSharedPointer<QVector<double>> histo_data_vec);
     void handleNewFrame();

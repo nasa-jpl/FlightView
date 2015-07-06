@@ -61,11 +61,12 @@ public slots:
 
     void colorMapScrolledY(const QCPRange &newRange);
     void colorMapScrolledX(const QCPRange &newRange);
-    void colorMapDataRangeChanged(const QCPRange &newRange);
+    //void colorMapDataRangeChanged(const QCPRange &newRange);
     void updateCeiling(int c);
     void updateFloor(int f);
     void rescaleRange();
     void setCrosshairs(QMouseEvent * event);
+    // void reverseContrast( bool inverted );
 
 };
 

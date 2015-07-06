@@ -10,17 +10,18 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     qRegisterMetaType<QVector<double>>("QVector<double>");
     qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");
 
-
     this->fw = fw;
     //start worker Thread
     qth->start();
-    qDebug() << "fw passed to MainWindow";
+    // qDebug() << "fw passed to MainWindow";
     this->resize(1440,900);
     mainwidget = new QWidget();
     QVBoxLayout *layout = new QVBoxLayout;
 
     //Create tabs
     tabWidget = new QTabWidget;
+
+    save_server = new saveServer(fw);
 
     //NOTE: Care should be taken to ensure that tabbed widgets are ordered by the value of their image_type enum
     //signals/slots (currentChanged) make use of this relation
@@ -51,9 +52,7 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     controlbox = new ControlsBox(fw,tabWidget);
     layout->addWidget(controlbox,1);
 
-
     mainwidget->setLayout(layout);
-
 
     this->setCentralWidget(mainwidget);
 
@@ -75,8 +74,6 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
    // connect(fw,SIGNAL(newFFTMagAvailable(QSharedPointer<QVector<double> >)),fft_mean_widget,SLOT(handleNewFrame(QSharedPointer<QVector<double> >)));
    // connect(fw,SIGNAL(newStdDevHistogramAvailable(QSharedPointer<QVector<double> >)),hist_widget,SLOT(handleNewFrame(QSharedPointer<QVector<double> >)));
 
-
-
     connect(controlbox,SIGNAL(startDSFMaskCollection()),fw,SLOT(startCapturingDSFMask()));
     connect(controlbox,SIGNAL(stopDSFMaskCollection()),fw,SLOT(finishCapturingDSFMask()));
     //connect(controlbox,SIGNAL(mask_selected(const char *)),fw,SLOT(loadDSFMask(const char *)));
@@ -90,29 +87,30 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     connect(fw,SIGNAL(savingFrameNumChanged(unsigned int)),controlbox,SLOT(updateSaveFrameNum_slot(unsigned int)));
     //connect(fw,SIGNAL(savingFrameNumChanged(uint)),&controlbox,SLOT(updateSaveFrameNum_slot(uint)));
     controlbox->fps_label.setText("Running");
-    controlbox->fps_label.setStyleSheet("{color: green;}");
+    // controlbox->fps_label.setStyleSheet("{color: green;}");
 
-
-
-
+    if( save_server->isListening() )
+    {
+        controlbox->server_ip_label.setText( tr("Server IP: %1").arg(save_server->ipAddress) );
+        controlbox->server_port_label.setText( tr("Server Port: %1").arg(save_server->port) );
+    }
 }
 
 
 MainWindow::~MainWindow()
 {
 }
-void MainWindow::testslot(int val)
+/*void MainWindow::testslot(int val)
 {
     qDebug() << "test slot hit";
-}
+}*/
 
-void MainWindow::updateFPS(unsigned int fps)
+/* void MainWindow::updateFPS(unsigned int fps)
 {
     //controlbox->fps_label->setText();
-}
+}*/
 void MainWindow::enableStdDevTabs()
 {
-
     qDebug() << "enabling std. dev. tabs";
     tabWidget->setTabEnabled(2,true);
     tabWidget->setTabEnabled(3,true);

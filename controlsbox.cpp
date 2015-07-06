@@ -11,16 +11,17 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     QGroupBox(parent)
 {
     this->fw = fw;
-    cur_frameview=NULL;
     qtw = tw;
+    cur_frameview = NULL;
     //Collection Buttons
 
+    prefWindow = new preferenceWindow( fw, tw );
 
     run_collect_button.setText("Run Collect");
     run_display_button.setText("Run Display");
     run_display_button.setEnabled(false);
-    stop_collect_button.setText("Stop Collect");
-    stop_display_button.setText("Stop Display");
+    //stop_collect_button.setText("Stop Collect");
+    //stop_display_button.setText("Stop Display");
     stop_display_button.setEnabled(false);
 
     collect_dark_frames_button.setText("Collect Dark Frames");
@@ -29,22 +30,29 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     load_mask_from_file.setText("Load Mask From File");
     load_mask_from_file.setEnabled(false);
     fps_label.setText("Warning: no data recieved");
+    server_ip_label.setText( "Server IP: Not Connected!" );
+    server_port_label.setText( "Port Number: Not Connected!" );
+
+    pref_button.setText("Change Preferences");
 
     select_save_location.setText("Select save location");
     frames_save_num_edit.setMaximum(100000);
     //First Row
-    collections_layout.addWidget(&run_display_button,1,1,1,1);
+    //collections_layout.addWidget(&run_display_button,1,1,1,1);
     //collections_layout->addWidget(&run_display_button,1,2);
-    collections_layout.addWidget(&stop_display_button,1,2,1,1);
+    //collections_layout.addWidget(&stop_display_button,1,2,1,1);
     //collections_layout->addWidget(&stop_display_button,1,4);
 
     //Second Row
-    collections_layout.addWidget(&collect_dark_frames_button,2,1,1,1);
-    collections_layout.addWidget(&stop_dark_collection_button,2,2,1,1);
-    collections_layout.addWidget(&load_mask_from_file,3,2,1,1);
+    collections_layout.addWidget(&collect_dark_frames_button,1,1,1,1);
+    collections_layout.addWidget(&stop_dark_collection_button,1,2,1,1);
+    collections_layout.addWidget(&load_mask_from_file,2,2,1,1);
+    collections_layout.addWidget(&pref_button,3,2,1,1);
 
     //Third Row
-    collections_layout.addWidget(&fps_label,3,1,1,1);
+    collections_layout.addWidget(&fps_label,2,1,1,1);
+    collections_layout.addWidget(&server_ip_label,3,1,1,1);
+    collections_layout.addWidget(&server_port_label,4,1,1,1);
 
     CollectionButtonsBox.setLayout(&collections_layout);
 
@@ -55,6 +63,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     std_dev_N_slider.setMaximum(MAX_N-1);
     std_dev_N_slider.setValue(std_dev_N_slider.maximum());
 
+    lines_label.setText("Lines to Average:");
+    lines_slider.setOrientation(Qt::Horizontal);
+    lines_slider.setMinimum(1);
 
     ceiling_slider.setOrientation(Qt::Horizontal);
     ceiling_slider.setMaximum(BIG_MAX);
@@ -77,13 +88,21 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     floor_edit.setMinimum(BIG_MIN);
     floor_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
 
+    line_average_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
+    line_average_edit.setMinimum(1);
+    line_average_edit.setSingleStep(2);
+
     low_increment_cbox.setText("Slider Low Increment?");
     ceiling_slider.setTickInterval(BIG_TICK);
     floor_slider.setTickInterval(BIG_TICK);
 
+    lines_slider.setSingleStep(2);
+    lines_slider.setTickInterval(2);
+
     useDSFCbox.setText("Use Dark Subtracted data for profiles and FFT?");
     //First Row
-    sliders_layout.addWidget(new QLabel("Std. Dev. N:"),1,1,1,1);
+    std_dev_n_label.setText("Std. Dev. N:");
+    sliders_layout.addWidget(&std_dev_n_label,1,1,1,1);
     sliders_layout.addWidget(&std_dev_N_slider,1,2,1,7);
     sliders_layout.addWidget(&std_dev_N_edit,1,10,1,1);
     //Second Row
@@ -145,6 +164,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     connect(&std_dev_N_edit,SIGNAL(valueChanged(int)),&std_dev_N_slider,SLOT(setValue(int)));
     connect(&std_dev_N_slider,SIGNAL(valueChanged(int)),&std_dev_N_edit,SLOT(setValue(int)));
 
+    connect(&lines_slider,SIGNAL(valueChanged(int)),&line_average_edit,SLOT(setValue(int)));
+    connect(&line_average_edit,SIGNAL(valueChanged(int)),&lines_slider,SLOT(setValue(int)));
+
     connect(&ceiling_edit,SIGNAL(valueChanged(int)),&ceiling_slider,SLOT(setValue(int)));
     connect(&ceiling_slider,SIGNAL(valueChanged(int)),&ceiling_edit,SLOT(setValue(int)));
 
@@ -159,14 +181,15 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     //connect(&start_saving_frames_button,SIGNAL(clicked()),this,SLOT(start_continous_button_slot()));
     connect(&stop_saving_frames_button,SIGNAL(clicked()),this,SLOT(stop_continous_button_slot()));
 
-
     connect(&select_save_location,SIGNAL(clicked()),this,SLOT(showSaveDialog()));
 
     connect(&collect_dark_frames_button,SIGNAL(clicked()),this,SLOT(start_dark_collection_slot()));
     connect(&stop_dark_collection_button,SIGNAL(clicked()),this,SLOT(stop_dark_collection_slot()));
 
-    connect(&backendDeltaTimer,SIGNAL(timeout()),this,SLOT(updateBackendDelta()));
-    backendDeltaTimer.start(1000);
+    connect(&pref_button,SIGNAL(clicked()),this,SLOT(load_pref_window()));
+
+    connect(fw,SIGNAL(updateFPS()),this,SLOT(updateBackendDelta()));
+    backendDeltaTimer.start();
 }
 void ControlsBox::showSaveDialog()
 {
@@ -237,7 +260,6 @@ void ControlsBox::increment_slot(bool t)
 
 
 }
-
 void ControlsBox::save_continous_button_slot()
 {
     emit startSavingContinous(filename_edit.text().toLocal8Bit().data());
@@ -280,16 +302,12 @@ void ControlsBox::save_finite_button_slot()
     start_saving_frames_button.setEnabled(false);
     save_finite_button.setEnabled(false);
     frames_save_num_edit.setEnabled(false);
-
-
-
-
 }
 
 void ControlsBox::tabChangedSlot(int index)
 {
-    //Multiple inheritance totally failed me. Trying to get QObject pure virtual interfaces is like boxing with satan. This hideous function is the best I can do...
-
+    // Noah: Multiple inheritance totally failed me. Trying to get QObject pure virtual interfaces is like boxing with satan. This hideous function is the best I can do...
+    // JP sez: You know what this has going for it??? It works!! :^) >:^( ;^)
 
     frameview_widget * fvw = qobject_cast<frameview_widget*>(qtw->widget(index));
     profile_widget * mpw = qobject_cast<profile_widget*>(qtw->widget(index));
@@ -304,6 +322,7 @@ void ControlsBox::tabChangedSlot(int index)
     {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<profile_widget*>(cur_frameview),SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<profile_widget*>(cur_frameview), SLOT(updateFloor(int)));
+        disconnect(&lines_slider, SIGNAL(valueChanged(int)), qobject_cast<profile_widget*>(cur_frameview), SLOT(updateCrossRange(int)));
     }
     else if(qobject_cast<fft_widget*>(cur_frameview) != NULL)
     {
@@ -317,80 +336,156 @@ void ControlsBox::tabChangedSlot(int index)
     }
     cur_frameview = qtw->widget(index);
 
-    if(fvw != NULL)
+    if(mpw)
     {
-        ceiling_edit.setValue(fvw->getCeiling());
-        floor_edit.setValue(fvw->getFloor());
-        connect(&ceiling_slider, SIGNAL(valueChanged(int)), fvw, SLOT(updateCeiling(int)));
-        connect(&floor_slider, SIGNAL(valueChanged(int)), fvw, SLOT(updateFloor(int)));
-        useDSFCbox.setEnabled(false);
-        if(fvw->image_type == STD_DEV)
-        {
-            std_dev_N_slider.setEnabled(true);
-            std_dev_N_edit.setEnabled(true);
-        }
-        else
-        {
-            std_dev_N_slider.setEnabled(false);
-            std_dev_N_edit.setEnabled(false);
-        }
-        ceiling_maximum = fvw->slider_max;
-        low_increment_cbox.setChecked(fvw->slider_low_inc);
-        this->increment_slot(low_increment_cbox.isChecked());
-        fvw->rescaleRange();
-
-    }
-    else if(mpw != NULL)
-    {
-        ceiling_edit.setValue(mpw->getCeiling());
-        floor_edit.setValue(mpw->getFloor());
         connect(&ceiling_slider, SIGNAL(valueChanged(int)), mpw, SLOT(updateCeiling(int)));
         connect(&floor_slider, SIGNAL(valueChanged(int)), mpw, SLOT(updateFloor(int)));
+        ceiling_edit.setValue(mpw->getCeiling());
+        floor_edit.setValue(mpw->getFloor());
+
+        int frameMax;
+        switch(mpw->itype)
+        {
+        case VERTICAL_CROSS:
+            frameMax = fw->frWidth - 1;
+            lines_slider.setMaximum(frameMax);
+            line_average_edit.setMaximum(frameMax);
+            mpw->updateCrossRange(mpw->horizLinesAvgd);
+            lines_slider.setValue(mpw->horizLinesAvgd);
+            lines_slider.setEnabled( true );
+            line_average_edit.setEnabled( true );
+            break;
+        case VERTICAL_MEAN:
+            frameMax = fw->frWidth;
+            lines_slider.setMaximum(frameMax);
+            line_average_edit.setMaximum(frameMax);
+            mpw->updateCrossRange(frameMax);
+            lines_slider.setValue(frameMax);
+            lines_slider.setEnabled( false );
+            line_average_edit.setEnabled( false );
+            break;
+        case HORIZONTAL_CROSS:
+            frameMax = fw->frHeight - 1;
+            lines_slider.setMaximum(frameMax);
+            line_average_edit.setMaximum(frameMax);
+            mpw->updateCrossRange(mpw->vertLinesAvgd);
+            lines_slider.setValue(mpw->vertLinesAvgd);
+            lines_slider.setEnabled( true );
+            line_average_edit.setEnabled( true );
+            break;
+        case HORIZONTAL_MEAN:
+            frameMax = fw->frHeight;
+            lines_slider.setMaximum(frameMax);
+            line_average_edit.setMaximum(frameMax);
+            mpw->updateCrossRange(frameMax);
+            lines_slider.setValue(frameMax);
+            lines_slider.setEnabled( false );
+            line_average_edit.setEnabled( false );
+            break;
+        default:
+            break;
+        }
+        connect(&lines_slider, SIGNAL(valueChanged(int)), mpw, SLOT(updateCrossRange(int)));
+
         useDSFCbox.setEnabled(true);
-        std_dev_N_slider.setEnabled(false);
-        std_dev_N_edit.setEnabled(false);
+        std_dev_n_label.setVisible(false);
+        std_dev_N_slider.setVisible(false);
+        std_dev_N_edit.setVisible(false);
+        sliders_layout.removeWidget(&std_dev_n_label);
+        sliders_layout.removeWidget(&std_dev_N_slider);
+        sliders_layout.removeWidget(&std_dev_N_edit);
+
+        lines_label.setVisible( true );
+        lines_slider.setVisible( true );
+        line_average_edit.setVisible( true );
+
+        sliders_layout.addWidget(&lines_label,1,1,1,1);
+        sliders_layout.addWidget(&lines_slider,1,2,1,7);
+        sliders_layout.addWidget(&line_average_edit,1,10,1,1);
+
         ceiling_maximum = mpw->slider_max;
         low_increment_cbox.setChecked(mpw->slider_low_inc);
         this->increment_slot(low_increment_cbox.isChecked());
         mpw->rescaleRange();
-
-
     }
-    else if(ffw != NULL)
+    else
     {
+        lines_slider.setVisible( false );
+        line_average_edit.setVisible( false );
+        lines_label.setVisible( false );
+        sliders_layout.removeWidget(&lines_slider);
+        sliders_layout.removeWidget(&line_average_edit);
+        sliders_layout.removeWidget(&lines_label);
 
-        ceiling_edit.setValue(ffw->getCeiling());
-        floor_edit.setValue(ffw->getFloor());
-        connect(&ceiling_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateCeiling(int)));
-        connect(&floor_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateFloor(int)));
-        useDSFCbox.setEnabled(true);
-        std_dev_N_slider.setEnabled(false);
-        std_dev_N_edit.setEnabled(false);
-        ceiling_maximum = ffw->slider_max;
-        low_increment_cbox.setChecked(ffw->slider_low_inc);
-        this->increment_slot(low_increment_cbox.isChecked());
+        sliders_layout.addWidget(&std_dev_n_label,1,1,1,1);
+        sliders_layout.addWidget(&std_dev_N_slider,1,2,1,7);
+        sliders_layout.addWidget(&std_dev_N_edit,1,10,1,1);
+        std_dev_n_label.setVisible( true );
+        std_dev_N_slider.setVisible( true );
+        std_dev_N_edit.setVisible( true );
+        fw->to.updateVertRange(0,fw->frWidth);
+        fw->to.updateHorizRange(0,fw->frHeight);
 
-        ffw->rescaleRange();
+        if(fvw != NULL)
+        {
+            ceiling_edit.setValue(fvw->getCeiling());
+            floor_edit.setValue(fvw->getFloor());
+            connect(&ceiling_slider, SIGNAL(valueChanged(int)), fvw, SLOT(updateCeiling(int)));
+            connect(&floor_slider, SIGNAL(valueChanged(int)), fvw, SLOT(updateFloor(int)));
+            useDSFCbox.setEnabled(false);
+            if(fvw->image_type == STD_DEV)
+            {
+                std_dev_N_slider.setEnabled(true);
+                std_dev_N_edit.setEnabled(true);
+            }
+            else
+            {
+                std_dev_N_slider.setEnabled(false);
+                std_dev_N_edit.setEnabled(false);
+            }
+            ceiling_maximum = fvw->slider_max;
+            low_increment_cbox.setChecked(fvw->slider_low_inc);
+            this->increment_slot(low_increment_cbox.isChecked());
+            fvw->rescaleRange();
 
-    }
-    else if(hwt != NULL)
-    {
-        ceiling_edit.setValue(hwt->getCeiling());
-        floor_edit.setValue(hwt->getFloor());
-        connect(&ceiling_slider, SIGNAL(valueChanged(int)), hwt, SLOT(updateCeiling(int)));
-        connect(&floor_slider, SIGNAL(valueChanged(int)), hwt, SLOT(updateFloor(int)));
-        useDSFCbox.setEnabled(false);
-        std_dev_N_slider.setEnabled(true);
-        std_dev_N_edit.setEnabled(true);
-        ceiling_maximum = hwt->slider_max;
-        low_increment_cbox.setChecked(hwt->slider_low_inc);
-        this->increment_slot(low_increment_cbox.isChecked());
-        hwt->rescaleRange();
+        }
+        else if(ffw != NULL)
+        {
+
+            ceiling_edit.setValue(ffw->getCeiling());
+            floor_edit.setValue(ffw->getFloor());
+            connect(&ceiling_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateCeiling(int)));
+            connect(&floor_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateFloor(int)));
+            useDSFCbox.setEnabled(true);
+            std_dev_N_slider.setEnabled(false);
+            std_dev_N_edit.setEnabled(false);
+            ceiling_maximum = ffw->slider_max;
+            low_increment_cbox.setChecked(ffw->slider_low_inc);
+            this->increment_slot(low_increment_cbox.isChecked());
+
+            ffw->rescaleRange();
+
+        }
+        else if(hwt != NULL)
+        {
+            ceiling_edit.setValue(hwt->getCeiling());
+            floor_edit.setValue(hwt->getFloor());
+            connect(&ceiling_slider, SIGNAL(valueChanged(int)), hwt, SLOT(updateCeiling(int)));
+            connect(&floor_slider, SIGNAL(valueChanged(int)), hwt, SLOT(updateFloor(int)));
+            useDSFCbox.setEnabled(false);
+            std_dev_N_slider.setEnabled(true);
+            std_dev_N_edit.setEnabled(true);
+            ceiling_maximum = hwt->slider_max;
+            low_increment_cbox.setChecked(hwt->slider_low_inc);
+            this->increment_slot(low_increment_cbox.isChecked());
+            hwt->rescaleRange();
+        }
     }
 }
 void ControlsBox::updateBackendDelta()
 {
-    fps_label.setText(QString("FPS @ backend:%1").arg(fw->delta));
+    fps = QString::number(fw->delta, 'f', 1);
+    fps_label.setText(QString("FPS @ backend:%1").arg(fps));
 }
 void ControlsBox::start_dark_collection_slot()
 {
@@ -403,6 +498,14 @@ void ControlsBox::stop_dark_collection_slot()
     collect_dark_frames_button.setEnabled(true);
     stop_dark_collection_button.setEnabled(false);
     emit stopDSFMaskCollection();
-
-
+}
+void ControlsBox::load_pref_window()
+{
+    QPoint pos = prefWindow->pos();
+    if( pos.x() < 0 )
+        pos.setX(0);
+    if( pos.y() < 0 )
+        pos.setY(0);
+    prefWindow->move(pos);
+    prefWindow->show();
 }

@@ -8,7 +8,7 @@
 #include "qcustomplot.h"
 #include "frame_worker.h"
 #include <QThread>
-void delay(int);
+// void delay(int);
 int main(int argc, char *argv[])
 {
     QApplication::setGraphicsSystem("raster"); //This is intended to make 2D rendering faster
@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
     fw->moveToThread(workerThread);
     QObject::connect(workerThread,SIGNAL(started()),fw,SLOT(captureFrames()));
     //delay(500);
+
     MainWindow w(workerThread, fw);
     w.setGeometry(   QStyle::alignedRect(
                        Qt::LeftToRight,
@@ -43,14 +44,16 @@ int main(int argc, char *argv[])
     qDebug() << "Goodbye!";
     fw->stop();
 
+
     delete fw;
     qDebug() << "about to exit workerThread";
     workerThread->exit(0);
     qDebug() << "waiting on workerThread";
-    //workerThread->wait();
+    // workerThread->wait();
     qDebug() << "deleting on workerThread";
 
     delete workerThread;
+
     return retval;
 }
 
