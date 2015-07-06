@@ -130,6 +130,5 @@ void frameWorker::updateDelta()
 }
 void frameWorker::updateCrossDiplay( bool checked )
 {
-    qDebug() << "display = " << displayCross;
     displayCross = checked;
 }
