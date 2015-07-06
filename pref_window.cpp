@@ -8,6 +8,8 @@ preferenceWindow::preferenceWindow(frameWorker* fw, QTabWidget* qtw, QWidget* pa
 {   
     this->fw = fw;
     this->mainWinTab = qtw;
+    frHeight = fw->getFrameHeight();
+    frWidth = fw->getFrameWidth();
 
     closeButton = new QPushButton(tr("&Close"));
     createLogFileTab();
@@ -66,11 +68,11 @@ void preferenceWindow::createRenderingTab()
     camera_label = new QLabel;
     camera_t camera = fw->camera_type();
     if( camera == CL_6604A )
-        camera_label->setText( tr("Camera type: 6604A       Frame resolution:  %1 x %2").arg(fw->frWidth).arg(fw->frHeight) );
+        camera_label->setText( tr("Camera type: 6604A       Frame resolution:  %1 x %2").arg(frWidth).arg(frHeight) );
     else if( camera == CL_6604B )
-        camera_label->setText( tr("Camera type: 6604B[Chroma]       Frame resolution: %1 x %2").arg(fw->frWidth).arg(fw->frHeight) );
+        camera_label->setText( tr("Camera type: 6604B[Chroma]       Frame resolution: %1 x %2").arg(frWidth).arg(frHeight) );
     else
-        camera_label->setText( tr("Camera type: Custom      Frame resolution: %1 x %2").arg(fw->frWidth).arg(fw->frHeight) );
+        camera_label->setText( tr("Camera type: Custom      Frame resolution: %1 x %2").arg(frWidth).arg(frHeight) );
     leftBound =  new QLineEdit;
     rightBound = new QLineEdit;
     leftBound->setText("0");
@@ -182,16 +184,16 @@ void preferenceWindow::ignoreLastRow( bool checked )
     if( ppw )
     {
         if( checked )
-            ppw->updateEndRow( fw->frHeight - rowsToSkip );
+            ppw->updateEndRow( frHeight - rowsToSkip );
     else
-            ppw->updateEndRow( fw->frHeight );
+            ppw->updateEndRow( frHeight );
     }
     else if( ffw )
     {
         if( checked )
-            ffw->fw->to.update_end_row( fw->frHeight - rowsToSkip );
+            ffw->fw->to.update_end_row( frHeight - rowsToSkip );
         else
-            ffw->fw->to.update_end_row( fw->frHeight );
+            ffw->fw->to.update_end_row( frHeight );
     }
 
 }

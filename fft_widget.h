@@ -8,16 +8,14 @@
 #include <QTimer>
 #include "qcustomplot.h"
 #include "frame_worker.h"
-#include "image_type.h"
-
-#include "camera_types.h"
 
 class fft_widget : public QWidget
 {
     Q_OBJECT
+
     QVBoxLayout qvbl;
-    QCustomPlot * qcp;
-    QCPBars *fft_bars;
+    QCustomPlot* qcp;
+    QCPBars* fft_bars;
     QVector<double> freq_bins;
     QVector<double> rfft_data_vec;
     QCheckBox zero_const_box;
@@ -25,18 +23,15 @@ class fft_widget : public QWidget
     volatile double ceiling;
     volatile double floor;
     QTimer rendertimer;
-
 public:
-    explicit fft_widget(frameWorker *fw, image_t image_type,QWidget *parent = 0);
-    ~fft_widget();
+    explicit fft_widget(frameWorker *fw, QWidget *parent = 0);
 
-    frameWorker * fw;
+    frameWorker* fw;
     double getCeiling();
     double getFloor();
     unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
-signals:
-    
+
 public slots:
     void handleNewFrame();
     void updateCeiling(int);

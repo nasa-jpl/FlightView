@@ -11,30 +11,31 @@
 #include <stdint.h>
 #include "qcustomplot.h"
 #include "settings.h"
-frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget *parent) : QWidget(parent)
+
+frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget* parent) : QWidget(parent)
 {
     //CODE goes here...
     //code
 
     this->fw = fw;
     this->image_type = image_type;
+
     int base_ceiling;
     if( fw->to.cam_type == CL_6604A )
         base_ceiling = 16383;
     else
         base_ceiling = 65535;
+
     switch(image_type)
     {
     case BASE: ceiling = base_ceiling; break;
     case DSF: ceiling = 20; break;
     case STD_DEV: ceiling = 20; break;
+    default: break; // to remove annoying warnings on compilation
     }
     floor=0;
     count=0;
-    toggleGrayScaleButton.setText("Toggle grayscale output");
-    outputGrayScale = true;
     frHeight = fw->getFrameHeight();
-    // qDebug() << "fw frame height " << fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);
@@ -48,10 +49,9 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qcp->yAxis->setLabel("y");
 
     //If this is uncommented, window size reflects focal plane size, otherwise it scales
-
     //qcp->setBackgroundScaled(Qt::AspectRatioMode);
+
     colorMap = new QCPColorMap(qcp->xAxis,qcp->yAxis);
-    //colorMap->valueAxis()->
     colorMapData = NULL;
     qcp->addPlottable(colorMap);
 
@@ -62,13 +62,9 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     colorScale->setType(QCPAxis::atRight);
 
     colorMap->setColorScale(colorScale);
-    //colorMap->data()->setValueRange(QCPRange(0,frHeight));
     colorMap->data()->setValueRange(QCPRange(frHeight,0));
 
     colorMap->data()->setKeyRange(QCPRange(0,frWidth));
-    //colorScale->axis()->setLabel("kabel");
-    //QCPRange * drange = new QCPRange(0.0d,10000.0d);
-    //colorScale->setDataRange(*drange);
     colorMap->setDataRange(QCPRange(floor,ceiling));
 
     colorMap->setGradient(QCPColorGradient::gpJet);
@@ -81,43 +77,33 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qcp->rescaleAxes();
     qcp->axisRect()->setBackgroundScaled(false);
 
-
     layout.addWidget(qcp,8);
     fpsLabel.setText("FPS");
     layout.addWidget(&fpsLabel,1);
-    //layout.addWidget(&toggleGrayScaleButton,1);
     this->setLayout(&layout);
 
-    // qDebug() << "emitting capture signal, starting timer";
     fps = 0;
-    // fpstimer = new QTimer(this);
     connect(&fpstimer, SIGNAL(timeout()), this, SLOT(updateFPS()));
     fpstimer.start(1000);
     connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+
     connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
-    // connect(colorMap,SIGNAL(dataRangeChanged(QCPRange)),this,SLOT(colorMapDataRangeChanged(QCPRange)));
+
     if(image_type==BASE || image_type==DSF)
     {
         this->setFocusPolicy(Qt::ClickFocus); //Focus accepted via clicking
         connect(qcp,SIGNAL(mouseDoubleClick(QMouseEvent*)),this,SLOT(setCrosshairs(QMouseEvent*)));
-        // connect(qcp,SIGNAL()
     }
     colorMapData = new QCPColorMapData(frWidth,frHeight,QCPRange(0,frWidth),QCPRange(0,frHeight));
     colorMap->setData(colorMapData);
-    //emit startCapturing(); //This sends a message to the frame worker to start capturing (in different thread)
-    //fw->captureFrames();
-
 }
 frameview_widget::~frameview_widget()
 {
-
     delete colorScale;
-    //delete colorMapData;
     delete colorMap;
     delete qcp;
-
 }
 void frameview_widget::keyPressEvent(QKeyEvent *event)
 {
@@ -137,14 +123,13 @@ void frameview_widget::handleNewFrame()
         if(image_type == BASE)
         {
 
-
             uint16_t * local_image_ptr = fw->curFrame->image_data_ptr;
             for(int col = 0; col < frWidth; col++ )
             {
                 for(int row = 0; row < frHeight; row++ )
                 {
                     //colorMap->data()->setCell(col,row,row^col);
-                    if(row != fw->crosshair_y && col != fw->crosshair_x)
+                    if( row != fw->crosshair_y && col != fw->crosshair_x && row != fw->crossStartRow && row != fw->crossHeight && col != fw->crossStartCol && col != fw->crossWidth )
                     {
                         colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
                     }
@@ -160,7 +145,6 @@ void frameview_widget::handleNewFrame()
         }
         if(image_type == DSF)
         {
-
             float * local_image_ptr = fw->curFrame->dark_subtracted_data;
             for(int col = 0; col < frWidth; col++)
             {
@@ -186,20 +170,14 @@ void frameview_widget::handleNewFrame()
                 for(int row = 0; row < frHeight; row++)
                 {
                     colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
-
                 }
             }
-            //sum/=frWidth*frHeight;
-            //printf("gui std. dev avg=%f\n",sum);
 
             qcp->replot();
         }
     }
     count++;
 }
-
-
-
 void frameview_widget::updateFPS()
 {
     seconds_elapsed++;
@@ -217,25 +195,15 @@ void frameview_widget::updateFPS()
     old_count = count;
     fpsLabel.setText(QString("fps of display: %1").arg(fps));
 }
-void frameview_widget::toggleGrayScale()
-{
-    outputGrayScale = !outputGrayScale;
-    qDebug() << outputGrayScale;
-
-}
 void frameview_widget::updateCeiling(int c)
 {
     ceiling = (double)c;
     colorScale->setDataRange(QCPRange(floor,ceiling));
-
-    //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
 }
 void frameview_widget::updateFloor(int f)
 {
     floor = (double)f;
     colorScale->setDataRange(QCPRange(floor,ceiling));
-
-    //colorMap->setDataRange(QCPRange((double)floor,(double)ceiling));
 }
 void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
 {
@@ -286,11 +254,6 @@ void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
     }
     qcp->xAxis->setRange(boundedRange);
 }
-/*void frameview_widget::colorMapDataRangeChanged(const QCPRange &newRange)
-{
-
-
-} */
 double frameview_widget::getCeiling()
 {
     return ceiling;
@@ -298,13 +261,11 @@ double frameview_widget::getCeiling()
 double frameview_widget::getFloor()
 {
     return floor;
-
 }
 void frameview_widget::rescaleRange()
 {
     colorScale->setDataRange(QCPRange(floor,ceiling));
 }
-
 void frameview_widget::setCrosshairs(QMouseEvent * event)
 {
     fw->crosshair_x = qcp->xAxis->pixelToCoord(event->pos().x());

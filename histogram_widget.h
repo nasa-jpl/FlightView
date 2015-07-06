@@ -28,19 +28,14 @@ class histogram_widget : public QWidget
     QTimer rendertimer;
     QVector<double> histo_data_vec;
 public:
-    explicit histogram_widget(frameWorker * fw,image_t image_type ,QWidget *parent = 0);
-    ~histogram_widget();
+    explicit histogram_widget(frameWorker * fw, QWidget *parent = 0);
     double getCeiling();
     double getFloor();
 
     unsigned int slider_max = 300000;
     bool slider_low_inc = false;
 
-
-signals:
-
 public slots:
-    //void handleNewFrame(QSharedPointer<QVector<double>> histo_data_vec);
     void handleNewFrame();
     void histogramScrolledX(const QCPRange &newRange);
     void histogramScrolledY(const QCPRange &newRange);

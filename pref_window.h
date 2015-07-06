@@ -19,16 +19,11 @@ class preferenceWindow : public QWidget
 {
     Q_OBJECT
 
-public:
-    preferenceWindow(frameWorker* fw, QTabWidget* qtw, QWidget *parent = 0);
-
-private:
-    void createLogFileTab();
-    void createRenderingTab();
-
     int index;
     int base_scale;
     int rowsToSkip = 1;
+    unsigned int frHeight;
+    unsigned int frWidth;
 
     QTabWidget* mainWinTab;
     frameWorker* fw;
@@ -57,6 +52,12 @@ private:
     QRadioButton* nativeScaleButton;
     QRadioButton* invert16bitButton;
     QRadioButton* invert14bitButton;
+public:
+    preferenceWindow(frameWorker* fw, QTabWidget* qtw, QWidget *parent = 0);
+
+private:
+    void createLogFileTab();
+    void createRenderingTab();
 
 private slots:
     void getFilePath();

@@ -28,13 +28,13 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     unfiltered_widget = new frameview_widget(fw, BASE);
     dsf_widget = new frameview_widget(fw, DSF);
     std_dev_widget = new frameview_widget(fw, STD_DEV);
-    hist_widget = new histogram_widget(fw,STD_DEV_HISTOGRAM);
+    hist_widget = new histogram_widget(fw);
 
     vert_mean_widget = new profile_widget(fw,VERTICAL_MEAN);
     horiz_mean_widget = new profile_widget(fw,HORIZONTAL_MEAN);
     vert_cross_widget = new profile_widget(fw,VERTICAL_CROSS);
     horiz_cross_widget = new profile_widget(fw,HORIZONTAL_CROSS);
-    fft_mean_widget = new fft_widget(fw,FFT_MEAN);
+    fft_mean_widget = new fft_widget(fw);
 
     tabWidget->addTab(unfiltered_widget, QString("Live View"));
     tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
@@ -95,20 +95,6 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
         controlbox->server_port_label.setText( tr("Server Port: %1").arg(save_server->port) );
     }
 }
-
-
-MainWindow::~MainWindow()
-{
-}
-/*void MainWindow::testslot(int val)
-{
-    qDebug() << "test slot hit";
-}*/
-
-/* void MainWindow::updateFPS(unsigned int fps)
-{
-    //controlbox->fps_label->setText();
-}*/
 void MainWindow::enableStdDevTabs()
 {
     qDebug() << "enabling std. dev. tabs";

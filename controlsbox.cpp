@@ -347,7 +347,7 @@ void ControlsBox::tabChangedSlot(int index)
         switch(mpw->itype)
         {
         case VERTICAL_CROSS:
-            frameMax = fw->frWidth - 1;
+            frameMax = fw->getFrameWidth() - 1;
             lines_slider.setMaximum(frameMax);
             line_average_edit.setMaximum(frameMax);
             mpw->updateCrossRange(mpw->horizLinesAvgd);
@@ -356,7 +356,7 @@ void ControlsBox::tabChangedSlot(int index)
             line_average_edit.setEnabled( true );
             break;
         case VERTICAL_MEAN:
-            frameMax = fw->frWidth;
+            frameMax = fw->getFrameWidth();
             lines_slider.setMaximum(frameMax);
             line_average_edit.setMaximum(frameMax);
             mpw->updateCrossRange(frameMax);
@@ -365,7 +365,7 @@ void ControlsBox::tabChangedSlot(int index)
             line_average_edit.setEnabled( false );
             break;
         case HORIZONTAL_CROSS:
-            frameMax = fw->frHeight - 1;
+            frameMax = fw->getFrameHeight() - 1;
             lines_slider.setMaximum(frameMax);
             line_average_edit.setMaximum(frameMax);
             mpw->updateCrossRange(mpw->vertLinesAvgd);
@@ -374,7 +374,7 @@ void ControlsBox::tabChangedSlot(int index)
             line_average_edit.setEnabled( true );
             break;
         case HORIZONTAL_MEAN:
-            frameMax = fw->frHeight;
+            frameMax = fw->getFrameHeight();
             lines_slider.setMaximum(frameMax);
             line_average_edit.setMaximum(frameMax);
             mpw->updateCrossRange(frameMax);
@@ -423,8 +423,8 @@ void ControlsBox::tabChangedSlot(int index)
         std_dev_n_label.setVisible( true );
         std_dev_N_slider.setVisible( true );
         std_dev_N_edit.setVisible( true );
-        fw->to.updateVertRange(0,fw->frWidth);
-        fw->to.updateHorizRange(0,fw->frHeight);
+        fw->to.updateVertRange(0,fw->getFrameWidth());
+        fw->to.updateHorizRange(0,fw->getFrameHeight());
 
         if(fvw != NULL)
         {

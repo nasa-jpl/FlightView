@@ -27,9 +27,9 @@ void frameWorker::stop()
 }
 void frameWorker::captureFrames()
 {
-    unsigned int last_savenum;
+    unsigned int last_savenum = 0;
 
-    frame_c * workingFrame;
+    frame_c* workingFrame;
     while(doRun)
     {
         QCoreApplication::processEvents();

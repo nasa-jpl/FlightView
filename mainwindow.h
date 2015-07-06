@@ -17,7 +17,6 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow(QThread * qth, frameWorker * fw, QWidget *parent = 0);
-    ~MainWindow();
 
 private:
     frameWorker *fw;
@@ -37,8 +36,6 @@ private:
     fft_widget* fft_mean_widget;
 
 public slots:
-    //void updateFPS(unsigned int fps);
-    //void testslot(int val);
 
     void enableStdDevTabs();
 };

@@ -1,6 +1,6 @@
 #include "fft_widget.h"
 #include "settings.h"
-fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
+fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
     QWidget(parent)
 {
     qcp = NULL;
@@ -23,18 +23,11 @@ fft_widget::fft_widget(frameWorker *fw, image_t image_type, QWidget *parent) :
     qvbl.addWidget(qcp);
     qvbl.addWidget(&zero_const_box);
     this->setLayout(&qvbl);
+
     connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
-fft_widget::~fft_widget()
-{
-
-}
-
-
-
 void fft_widget::handleNewFrame()
-
 {
     if(!this->isHidden())
     {
@@ -59,13 +52,10 @@ void fft_widget::handleNewFrame()
         fft_bars->setData(freq_bins,rfft_data_vec);
         qcp->xAxis->setRange(QCPRange(0,nyquist_freq));
 
-        //fft_bars->rescaleAxes();
-
         qcp->replot();
     }
     count++;
 }
-
 void fft_widget::updateCeiling(int c)
 {
     ceiling = (double)c;

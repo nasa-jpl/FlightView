@@ -14,6 +14,7 @@
 class frameWorker : public QObject
 {
     Q_OBJECT
+
     QElapsedTimer deltaTimer;
 public:
     take_object to;
@@ -44,11 +45,12 @@ public:
     float delta;
     unsigned long old_c = 0;
 
-    unsigned int frHeight;
-    unsigned int frWidth;
-
     int crosshair_x = -1;
     int crosshair_y = -1;
+    int crossStartRow = -1;
+    int crossHeight = -1;
+    int crossStartCol = -1;
+    int crossWidth = -1;
     bool crosshair_useDSF= false;
 signals:
     void newFrameAvailable();
@@ -69,15 +71,12 @@ public slots:
 
     void setStdDev_N(int newN);
     void updateDelta();
-
 private:
     unsigned int dataHeight;
-
-
+    unsigned int frHeight;
+    unsigned int frWidth;
     float * histogram_bins;
     //std::shared_ptr<frame_c> curFrame;
-
-
 };
 
 
