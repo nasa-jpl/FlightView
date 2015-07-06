@@ -1,4 +1,4 @@
-
+// #include "math.h"
 #include "std_dev_filter_device_code.cuh"
 
 void std_dev_filter_kernel_wrapper(dim3 gd, dim3 bd, unsigned int shm_size, cudaStream_t strm, uint16_t * pic_d, float * picture_out_device, float * histogram_bins, uint32_t * histogram_out, int width, int height, int gpu_buffer_head, int N)
@@ -13,16 +13,16 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 	int col = blockIdx.x*blockDim.x + threadIdx.x;
 	int row = blockIdx.y*blockDim.y + threadIdx.y;
 	int offset = col + row*width;
-	float sum = 0; //Should be put in registers
-	float sq_sum = 0;
-	float mean = 0;
-	float std_dev;
+	register float sum = 0; //Should be put in registers
+	register double sq_sum = 0;
+	double mean = 0;
+	double std_dev;
 	int value = 0;
 	int c = 0;
-	if(offset == 100*width && STD_DEV_DEBUG)
+/*	if(offset == 100*width && STD_DEV_DEBUG)
 	{
 		printf("sum: %f sq_sum: %f \n",sum,sq_sum);
-	}
+	} */
 	for(int i = 0; i < N; ++i) {
 		if((gpu_buffer_head -i) >= 0)
 		{
@@ -33,17 +33,23 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 			value = *(pic_d + offset+(width*height*(GPU_FRAME_BUFFER_SIZE - (i-gpu_buffer_head))));
 		}
 		sum += value;
-		sq_sum += value * value;
+		sq_sum += (double)value * (double)value;
 		if(offset == 100*width && STD_DEV_DEBUG)
 		{
-			printf("value @ line 100: %i sum: %f sq_sum: %f \n",value,sum,sq_sum);
+			printf("value @ line 100: %i sum: %f sq_sum: %f\n",value,sum,sq_sum);
 		}
 	}
-	mean = sum / N;
-	std_dev = sqrt(sq_sum / N - mean * mean);
+	mean = (double)sum / (double)N;
+	std_dev = sqrt( ((sq_sum - (double)2*mean*(double)sum) / (double)N ) + mean*mean );
+    // std_dev = sqrt(sq_sum / N - mean * mean);
+	// std_dev = sqrt( (sq_sum- 2*mean*sum)/ N + mean * mean );
 	if(offset == 100*width && STD_DEV_DEBUG)
 	{
-		printf("mean: %f std_dev: %f @ line 100",mean, std_dev);
+		printf("mean: %f std_dev: %f @ line 100\n",mean, std_dev);
+	}
+	if(offset == 100*width && STD_DEV_DEBUG)
+	{
+		printf("value @ line 100: %i sum: %f sq_sum: %d\n",value,sum,sq_sum);
 	}
 	picture_out_device[offset] = std_dev;
 	//__syncthreads(); //unnecessary?
@@ -56,7 +62,7 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 		}
 	}
 
-	if(offset == 100*width && STD_DEV_DEBUG)
+	/*if(offset == 100*width && STD_DEV_DEBUG)
 	{
 		for(int i = 0; i < NUMBER_OF_BINS;i++)
 		{
@@ -64,7 +70,7 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 		}
 		printf("\n");
 
-	}
+	}*/
 	while(std_dev > histogram_bins[c] && c < (NUMBER_OF_BINS-1))
 	{
 		c++;
@@ -74,7 +80,7 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 	atomicAdd(&block_histogram[c], 1); //calculate sub histogram for each block
 	__syncthreads();
 
-	if(STD_DEV_DEBUG && blockIdx.x == 0 && blockIdx.y == 0 && threadIdx.x == 0 && threadIdx.y==0)
+	/*if(STD_DEV_DEBUG && blockIdx.x == 0 && blockIdx.y == 0 && threadIdx.x == 0 && threadIdx.y==0)
 	{
 		sum = 0;
 		printf("threads per block %i \n", blockDim.x *blockDim.y);
@@ -85,7 +91,7 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 		}
 		printf("\n %f",sum);
 	}
-
+*/
 	if(threadIdx.x == 0 && threadIdx.y == 0) //Only need to do this once per block
 	{
 		for(c=0; c < NUMBER_OF_BINS; c++)

@@ -39,7 +39,7 @@ public:
 	uint16_t * getEntireRingBuffer(); //For testing only
 	cudaStream_t std_dev_stream;
 private:
-	std_dev_filter() {}//Private default constructor
+    std_dev_filter() {}//Private default constructor
 	std::vector <float> shb;
 	unsigned int width;
 	unsigned int height;
@@ -58,7 +58,6 @@ private:
 	float * std_dev_result;
 	frame_c * prevFrame = NULL;
 };
-
 static std::array<float, NUMBER_OF_BINS> getHistogramBinValues()
 {
 	std::array<float,NUMBER_OF_BINS> values;
@@ -71,5 +70,5 @@ static std::array<float, NUMBER_OF_BINS> getHistogramBinValues()
 		acc+=increment;
 	}
 	return values;
-};
+}
 #endif /* STD_DEV_FILTER_CUH_ */

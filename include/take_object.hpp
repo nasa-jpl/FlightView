@@ -65,8 +65,8 @@ class take_object {
 
 	u_char * dumb_ptr;
 	unsigned int dataHeight;
-	unsigned int frHeight;
-	unsigned int frWidth;
+    unsigned int frHeight;
+    unsigned int frWidth;
 	//frame_c * curFrame;
 	//std::shared_ptr<frame_c> curFrame;
 	frame_c* curFrame;
@@ -88,10 +88,17 @@ public:
 
 	bool std_dev_ready();
 
+    void setInversion( bool, unsigned int );
+    void chromaPixRemap( bool );
+    void update_start_row( int );
+    void update_end_row( int );
+
 	void startCapturingDSFMask();
 	void finishCapturingDSFMask();
 	void loadDSFMask(std::string file_name);
 
+    void updateHorizRange( int, int );
+    void updateVertRange( int, int );
 
 	void startSavingRaws(std::string, unsigned int );
 	void stopSavingRaws();
@@ -112,6 +119,13 @@ private:
 	void pdv_loop();
 	void savingLoop(std::string);
 
+    unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
+    int meanStartRow;
+    int meanHeight;
+    int meanStartCol;
+    int meanWidth;
+    bool inverted = false;
+    bool chromaPix = false; // Enable Chroma Pixel Mapping? (Chroma Translate filter?)
 
 };
 

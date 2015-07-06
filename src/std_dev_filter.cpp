@@ -52,11 +52,11 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 
 	cudaError std_dev_stream_status = cudaStreamQuery(std_dev_stream);
 
-	char *device_ptr = ((char *)(pictures_device)) + (gpu_buffer_head*width*height*sizeof(uint16_t));
+    char *device_ptr = ((char *)(pictures_device)) + (gpu_buffer_head*width*height*sizeof(uint16_t));
 	//uint16_t *device_ptr = pictures_device + (gpu_buffer_head*width*height);
 	//Asynchronous Part
 
-	HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,frame->image_data_ptr,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
+    HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,frame->image_data_ptr,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
 	if(cudaSuccess == cudaStreamQuery(std_dev_stream))
 	{
 		printf("really weird\n");

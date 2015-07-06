@@ -6,6 +6,7 @@
  */
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
+
 const static unsigned int MAX_WIDTH = 1280;
 const static unsigned int MAX_HEIGHT = 480;
 const static unsigned int MAX_SIZE = MAX_WIDTH*MAX_HEIGHT;

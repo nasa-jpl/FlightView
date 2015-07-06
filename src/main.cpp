@@ -8,7 +8,7 @@
 #include <queue>
 #include "dark_subtraction_filter.hpp"
 #include "std_dev_filter.hpp"
-//#include "fft.hpp"
+#include "fft.hpp"
 #include <fstream>
 using namespace std;
 
@@ -18,7 +18,7 @@ void simple_sensor_grab()
 {
 	take_object to;
 	to.start();
-	cout << "ruunning to" << std::endl;
+    cout << "running to" << std::endl;
 	unsigned long c = 0;
 
 	unsigned oldcount = 0;
@@ -71,10 +71,10 @@ void simple_pdv_test()
 int main()
 {
 	//simple_pdv_test();
-	//fft_test();
+    //fft_test();
 	//sensor_grab_test();
-	simple_sensor_grab();
-	//std_dev_test();
+    simple_sensor_grab();
+    //std_dev_test();
 	return 0;
 }
 

@@ -30,11 +30,11 @@ struct frame_c{
 	uint16_t * image_data_ptr;
 
 	float dark_subtracted_data[MAX_SIZE];
-	float vertical_mean_profile[MAX_HEIGHT]; //These can use regular C++ allocation because they do not have to deal w/cuda
-	float horizontal_mean_profile[MAX_WIDTH];
-	float fftMagnitude[FFT_INPUT_LENGTH/2];
+    float vertical_mean_profile[MAX_HEIGHT]; //These can use regular C++ allocation because they do not have to deal w/cuda
+    float horizontal_mean_profile[MAX_WIDTH];
+    float fftMagnitude[FFT_INPUT_LENGTH/2];
 	std::atomic_int_least8_t async_filtering_done;
-	std::atomic_int_least8_t has_valid_std_dev; //1 indicates doing std. dev, 2 indicates done with std. dev
+    std::atomic_int_least8_t has_valid_std_dev; //1 indicates doing std. dev, 2 indicates done with std. dev
 
 	frame_c() {
 		reset();
@@ -47,7 +47,7 @@ struct frame_c{
 	void reset()
 	{
 		async_filtering_done = 0;
-		has_valid_std_dev = 0;
+        has_valid_std_dev = 0;
 	}
 
 

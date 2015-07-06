@@ -67,7 +67,7 @@ void fft::doRealFFT(float * real_arr, unsigned int ring_head,float *fft_real_res
 		fft_real_result[i] = std::abs(CFFT[i]);
 		if(fft_real_result[i] > max && i !=0)
 		{
-			max = fft_real_result[i];
+            max = fft_real_result[i];
 		}
 	}
 	//printf("max nonconst in fft:%f\n",max);
@@ -79,7 +79,7 @@ std::complex<float> * fft::doFFT(float * real_arr, unsigned int ring_head)
 
 	for(unsigned int i = 0; i < FFT_INPUT_LENGTH; i++)
 	{
-		CFFT[i] = std::complex<float>(real_arr[(ring_head+i) % FFT_MEAN_BUFFER_LENGTH],0);
+        CFFT[i] = std::complex<float>(real_arr[(ring_head+i) % FFT_MEAN_BUFFER_LENGTH],0);
 	}
 	return doFFT(CFFT,FFT_INPUT_LENGTH);
 }
@@ -102,7 +102,6 @@ std::complex<float> * fft::doFFT(std::complex<float> * arr, unsigned int len)
 		{
 			for(unsigned int r = 0; r < N/2; r++)
 			{
-
 				std::complex<float> a = arr[index+r]; //Save temp values to avoid data availability probrem
 				std::complex<float> b = arr[index+r+N/2];
 				std::complex<float> exponent =(len/N)*r;

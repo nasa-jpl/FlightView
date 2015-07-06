@@ -45,7 +45,7 @@ take_object::~take_object()
 
 
 #ifdef RESET_GPUS
-	printf("resseting GPUs!\n");
+    printf("reseting GPUs!\n");
 	int count;
 	cudaGetDeviceCount(&count);
 	for(int i = 0; i < count; i++)
@@ -81,8 +81,14 @@ void take_object::start()
 	frWidth = pdv_get_width(pdv_p);
 	//Our version of height should not include the header size
 	dataHeight = pdv_get_height(pdv_p);
-	frHeight = cam_type == CL_6604A ? dataHeight -1 : dataHeight;
+    frHeight = cam_type == CL_6604A ? dataHeight -1 : dataHeight;
 	printf("cam type: %u. Width: %u Height %u frame height %u \n", cam_type, frWidth, dataHeight, frHeight);
+
+    // initial dimensions for calculating the mean that can be updated later
+    meanStartRow = 0;
+    meanStartCol = 0;
+    meanHeight = frHeight;
+    meanWidth = frWidth;
 
 	std::cout << "about to start threads" << std::endl;
 	pdv_multibuf(pdv_p,this->numbufs);
@@ -92,8 +98,8 @@ void take_object::start()
 	sdvf = new std_dev_filter(frWidth,frHeight);
 	//numbufs = 16;
 	pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
-	pdv_thread = boost::thread(&take_object::pdv_loop, this);
-	//save_thread = boost::thread(&take_object::savingLoop, this);
+    pdv_thread = boost::thread(&take_object::pdv_loop, this);
+    //save_thread = boost::thread(&take_object::savingLoop, this);
 
 }
 void take_object::pdv_loop() //Producer Thread
@@ -110,28 +116,53 @@ void take_object::pdv_loop() //Producer Thread
 		//curFrame = std::shared_ptr<frame_c>(new frame_c());
 		curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
 		curFrame->reset();
-		wait_ptr = pdv_wait_image(pdv_p);
+        wait_ptr = pdv_wait_image(pdv_p);
 		memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
+        /* In this section of the code, after we have copied the memory from the camera link
+         * buffer into the raw_dataptr, we will check various parameters to see if we need to
+         * modify the data based on our hardware.
+         *
+         * First, the data is stored differently depending on the type of camera, 6604A or B.
+         *
+         * Second, we may have to offset the data's first or last row if it contains metadata.
+         * This feature is controlled from the preference window in liveview.
+         *
+         * Third, we may need to invert the data range if a cable is inverting the magnitudes
+         * that arrive from the ADC. This feature is also modified from the preference window.
+         */
+        // std::cout << "frHeight is now: " << frHeight << std::endl;
+        if( chromaPix )
+        {
+            apply_chroma_translate_filter(curFrame->raw_data_ptr);
+            // curFrame->image_data_ptr = curFrame->raw_data_ptr;
+        }
+        if(cam_type == CL_6604B)
+        {
+            apply_chroma_translate_filter(curFrame->raw_data_ptr);
+            curFrame->image_data_ptr = curFrame->raw_data_ptr;
+        }
+        else if(cam_type == CL_6604A)
+        {
+            curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
+        }
+        else
+        {
+            curFrame->image_data_ptr = curFrame->raw_data_ptr;
+        }
+        if( inverted )
+        { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
 
-		if(cam_type == CL_6604B)
-		{
-			apply_chroma_translate_filter(curFrame->raw_data_ptr);
-			curFrame->image_data_ptr = curFrame->raw_data_ptr;
-		}
-
-		else
-		{
-			curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
-		}
+            for( uint i = 0; i < frHeight*frWidth; i++ )
+                curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
+        }
 
 		sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
 
 		dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
 
-		mean_filter * mf = new mean_filter(curFrame, count, frWidth, frHeight,useDSF); //This will deallocate itself when it is done.
+        mean_filter * mf = new mean_filter(curFrame, count, meanStartCol, meanWidth, meanStartRow, meanHeight, frWidth, useDSF );
+        //This will deallocate itself when it is done.
 		mf->start_mean();
-
-
 
 		if(save_framenum > 0)
 		{
@@ -142,23 +173,22 @@ void take_object::pdv_loop() //Producer Thread
 		}
 		pdv_start_image(pdv_p); //Start another
 
-		framecount = *(curFrame->raw_data_ptr + 160);
+        framecount = *(curFrame->raw_data_ptr + 160); // wtf
 		if(CHECK_FOR_MISSED_FRAMES_6604A && cam_type == CL_6604A)
 		{
 			if( framecount -1 != last_framecount)
 			{
-				std::cerr << "WARN MISSED FRAME" << framecount << " " << lastfc << std::endl;
+                std::cerr << "WARNING: MISSED FRAME " << framecount << std::endl;
 			}
 		}
 		last_framecount = framecount;
 		count++;
 	}
 }
-
 void take_object::savingLoop(std::string fname)
 {
 	FILE * file_target = fopen(fname.c_str(), "wb");
-	//setvbuf(file_target,NULL,_IOFBF,10*size);
+    //setvbuf(file_target,NULL,_IOFBF,10*size); `
 
 
 	while(save_framenum != 0 || !saving_list.empty())
@@ -181,7 +211,6 @@ void take_object::savingLoop(std::string fname)
 	printf("done saving!");
 
 }
-
 unsigned int take_object::getFrameHeight()
 {
 	return frHeight;
@@ -194,12 +223,10 @@ unsigned int take_object::getDataHeight()
 {
 	return dataHeight;
 }
-
 void take_object::startCapturingDSFMask()
 {
 	dsfMaskCollected = false;
 	dsf->start_mask_collection();
-
 }
 void take_object::finishCapturingDSFMask()
 {
@@ -252,9 +279,6 @@ void take_object::loadDSFMask(std::string file_name)
 		fread(mask_in,sizeof(float),frWidth*frHeight,pFile);
 		fclose (pFile);
 		std::cout << file_name << " read in "<< size << " bytes successfully " <<  std::endl;
-
-
-
 	}
 	dsf->load_mask(mask_in);
 }
@@ -262,14 +286,40 @@ void take_object::setStdDev_N(int s)
 {
 	this->std_dev_filter_N = s;
 }
-
-
+/*
 std::vector<float> * take_object::getHistogramBins()
 {
 	return sdvf->getHistogramBins();
-}
+} */
 bool take_object::std_dev_ready()
 {
 	return sdvf->outputReady();
 }
+void take_object::setInversion( bool checked, unsigned int factor )
+{
+    inverted = checked;
+    invFactor = factor;
+}
+void take_object::chromaPixRemap( bool checked )
+{
+    chromaPix = checked;
+}
+void take_object::update_start_row( int sr )
+{ // these will only trigger for vertical mean profiles
+        meanStartRow = sr;
 
+}
+void take_object::update_end_row( int er )
+{
+        meanHeight = er;
+}
+void take_object::updateVertRange( int br, int er )
+{ // these will only trigger for horizontal cross profiles
+    meanStartRow = br;
+    meanHeight = er;
+}
+void take_object::updateHorizRange( int bc, int ec )
+{
+    meanStartCol = bc;
+    meanWidth = ec;
+}
