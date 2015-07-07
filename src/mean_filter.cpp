@@ -66,7 +66,6 @@ void mean_filter::calculate_means()
             }
         }
     }
-
     for(int r = beginRow; r < height; r++)
     {
         frame->vertical_mean_profile[r] /= horizDiff;

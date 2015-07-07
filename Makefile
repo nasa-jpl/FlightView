@@ -88,7 +88,7 @@ NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=s
 NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= lib #where do the libraries we need to link in go?
-LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lz -lcuda -lcudart -lgomp #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
+LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lboost_system -lz -lcuda -lcudart -lgomp -lpthread -ldl #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
 AR_COMBINE_SCRIPT = combine_libs_script.ar #For building out output library we compine our stuff with libpdv, this script tells ar how to do that
 #This switch enables concatenating libpdv.a and libcuda_take.a (and possibly libboost_thread.a)
 CONCATENATE_LIBPDV = 1

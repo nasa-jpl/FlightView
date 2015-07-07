@@ -72,7 +72,7 @@ class take_object {
 	frame_c* curFrame;
 	int pdv_thread_run = 0;
 public:
-	take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 1000, int filter_refresh_rate = 10);
+    take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 128000, int filter_refresh_rate = 10);
 	virtual ~take_object();
 	void start();
 
@@ -84,7 +84,6 @@ public:
 
 	std::vector<float> * getHistogramBins();
     bool useDSF = false;
-
 
 	bool std_dev_ready();
 
