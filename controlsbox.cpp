@@ -423,8 +423,8 @@ void ControlsBox::tabChangedSlot(int index)
         std_dev_n_label.setVisible( true );
         std_dev_N_slider.setVisible( true );
         std_dev_N_edit.setVisible( true );
-        fw->to.updateVertRange(0,fw->getFrameWidth());
-        fw->to.updateHorizRange(0,fw->getFrameHeight());
+        fw->to.updateVertRange(0,fw->getFrameHeight());
+        fw->to.updateHorizRange(0,fw->getFrameWidth());
 
         if(fvw != NULL)
         {
@@ -447,7 +447,6 @@ void ControlsBox::tabChangedSlot(int index)
             low_increment_cbox.setChecked(fvw->slider_low_inc);
             this->increment_slot(low_increment_cbox.isChecked());
             fvw->rescaleRange();
-
         }
         else if(ffw != NULL)
         {
@@ -464,7 +463,6 @@ void ControlsBox::tabChangedSlot(int index)
             this->increment_slot(low_increment_cbox.isChecked());
 
             ffw->rescaleRange();
-
         }
         else if(hwt != NULL)
         {

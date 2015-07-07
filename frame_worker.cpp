@@ -61,7 +61,6 @@ void frameWorker::captureFrames()
             last_savenum = save_num;
             c++;
         }
-
         if( c >= framecount_window )
         {
             updateDelta();
