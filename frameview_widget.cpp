@@ -284,6 +284,7 @@ void frameview_widget::rescaleRange()
 }
 void frameview_widget::setCrosshairs(QMouseEvent * event)
 { // lol ;) ;) ;) This is a stupid bugfix
+    std::cout << "wtf" << std::endl;
     int currentVDiff = fw->crossStartRow - fw->crossHeight;
     int currentHDiff = fw->crossStartCol - fw->crossWidth;
 
