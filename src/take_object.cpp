@@ -89,6 +89,9 @@ void take_object::start()
     meanHeight = frHeight;
     meanWidth = frWidth;
 
+    if( cam_type == CL_6604B )
+        chromaPix = true;
+
     std::cout << "about to start threads" << std::endl;
     pdv_multibuf(pdv_p,this->numbufs);
 
@@ -135,12 +138,7 @@ void take_object::pdv_loop() //Producer Thread
             apply_chroma_translate_filter(curFrame->raw_data_ptr);
             // curFrame->image_data_ptr = curFrame->raw_data_ptr;
         }
-        if(cam_type == CL_6604B)
-        {
-            apply_chroma_translate_filter(curFrame->raw_data_ptr);
-            curFrame->image_data_ptr = curFrame->raw_data_ptr;
-        }
-        else if(cam_type == CL_6604A)
+        if(cam_type == CL_6604A)
         {
             curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
         }
@@ -148,6 +146,7 @@ void take_object::pdv_loop() //Producer Thread
         {
             curFrame->image_data_ptr = curFrame->raw_data_ptr;
         }
+
         if( inverted )
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
 
