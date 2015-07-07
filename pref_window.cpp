@@ -68,11 +68,18 @@ void preferenceWindow::createRenderingTab()
     camera_label = new QLabel;
     camera_t camera = fw->camera_type();
     if( camera == CL_6604A )
+    {
         camera_label->setText( tr("Camera type: 6604A       Frame resolution:  %1 x %2").arg(frWidth).arg(frHeight) );
+    }
     else if( camera == CL_6604B )
+    {
+        chromaPixCheck->setChecked( true );
         camera_label->setText( tr("Camera type: 6604B[Chroma]       Frame resolution: %1 x %2").arg(frWidth).arg(frHeight) );
+    }
     else
+    {
         camera_label->setText( tr("Camera type: Custom      Frame resolution: %1 x %2").arg(frWidth).arg(frHeight) );
+    }
     leftBound =  new QLineEdit;
     rightBound = new QLineEdit;
     leftBound->setText("0");

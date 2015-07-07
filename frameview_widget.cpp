@@ -283,9 +283,46 @@ void frameview_widget::rescaleRange()
     colorScale->setDataRange(QCPRange(floor,ceiling));
 }
 void frameview_widget::setCrosshairs(QMouseEvent * event)
-{
+{ // lol ;) ;) ;) This is a stupid bugfix
+    int currentVDiff = fw->crossStartRow - fw->crossHeight;
+    int currentHDiff = fw->crossStartCol - fw->crossWidth;
+
     fw->crosshair_x = qcp->xAxis->pixelToCoord(event->pos().x());
     fw->crosshair_y = qcp->yAxis->pixelToCoord(event->pos().y());
+    if( currentHDiff )
+    {
+        if( (fw->crosshair_x + (currentHDiff/2)) > frWidth)
+        {
+            fw->crossStartCol = frWidth - currentHDiff;
+            fw->crossWidth = frWidth;
+        }
+        else if( (fw->crosshair_x - (currentHDiff/2)) < 0)
+        {
+            fw->crossWidth = currentHDiff;
+        }
+        else
+        {
+            fw->crossStartCol = fw->crosshair_x - (currentHDiff/2);
+            fw->crossWidth = fw->crosshair_x + (currentHDiff/2);
+        }
+    }
+    if( currentVDiff )
+    {
+        if(fw->crosshair_y + (currentVDiff/2) > frHeight)
+        {
+            fw->crossStartRow = frHeight - currentVDiff;
+            fw->crossHeight = frHeight;
+        }
+        else if(fw->crosshair_y - (currentVDiff/2) < 0)
+        {
+            fw->crossHeight = currentVDiff;
+        }
+        else
+        {
+            fw->crossStartRow = fw->crosshair_y - (currentVDiff/2);
+            fw->crossHeight = fw->crosshair_y + (currentVDiff/2);
+        }
+    }
 
     qDebug() << "x="<<fw->crosshair_x<< "y="<<fw->crosshair_y;
 }
