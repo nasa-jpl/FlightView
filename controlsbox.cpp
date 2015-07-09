@@ -328,6 +328,9 @@ void ControlsBox::tabChangedSlot(int index)
     {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<fft_widget*>(cur_frameview),SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<fft_widget*>(cur_frameview), SLOT(updateFloor(int)));
+        disconnect(&lines_slider, SIGNAL(valueChanged(int)),qobject_cast<fft_widget*>(cur_frameview), SLOT(updateCrossRange(int)));
+        disconnect(qobject_cast<fft_widget*>(cur_frameview)->vCrossButton,SIGNAL(toggled(bool)),&lines_slider,SLOT(setEnabled(bool)));
+        disconnect(qobject_cast<fft_widget*>(cur_frameview)->vCrossButton,SIGNAL(toggled(bool)),&line_average_edit,SLOT(setEnabled(bool)));
     }
     else if(qobject_cast<histogram_widget*>(cur_frameview) != NULL)
     {
@@ -350,8 +353,8 @@ void ControlsBox::tabChangedSlot(int index)
             frameMax = fw->getFrameWidth() - 1;
             lines_slider.setMaximum(frameMax);
             line_average_edit.setMaximum(frameMax);
-            mpw->updateCrossRange(mpw->horizLinesAvgd);
-            lines_slider.setValue(mpw->horizLinesAvgd);
+            mpw->updateCrossRange(fw->horizLinesAvgd);
+            lines_slider.setValue(fw->horizLinesAvgd);
             lines_slider.setEnabled( true );
             line_average_edit.setEnabled( true );
             break;
@@ -408,6 +411,54 @@ void ControlsBox::tabChangedSlot(int index)
         this->increment_slot(low_increment_cbox.isChecked());
         mpw->rescaleRange();
     }
+    else if( ffw )
+    {
+        ceiling_edit.setValue(ffw->getCeiling());
+        floor_edit.setValue(ffw->getFloor());
+        connect(&ceiling_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateCeiling(int)));
+        connect(&floor_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateFloor(int)));
+
+        useDSFCbox.setEnabled(true);
+        std_dev_n_label.setVisible(false);
+        std_dev_N_slider.setVisible(false);
+        std_dev_N_edit.setVisible(false);
+        sliders_layout.removeWidget(&std_dev_n_label);
+        sliders_layout.removeWidget(&std_dev_N_slider);
+        sliders_layout.removeWidget(&std_dev_N_edit);
+
+        lines_label.setVisible( true );
+        lines_slider.setVisible( true );
+        line_average_edit.setVisible( true );
+
+        sliders_layout.addWidget(&lines_label,1,1,1,1);
+        sliders_layout.addWidget(&lines_slider,1,2,1,7);
+        sliders_layout.addWidget(&line_average_edit,1,10,1,1);
+
+        ceiling_maximum = ffw->slider_max;
+        low_increment_cbox.setChecked(ffw->slider_low_inc);
+        this->increment_slot(low_increment_cbox.isChecked());
+
+        ffw->updateFFT();
+        int frameMax = 0;
+        ffw->rescaleRange();
+        frameMax = fw->getFrameWidth() - 1;
+        lines_slider.setMaximum(frameMax);
+        line_average_edit.setMaximum(frameMax);
+        lines_slider.setValue(fw->horizLinesAvgd);
+        if(ffw->vCrossButton->isChecked())
+        {
+            lines_slider.setEnabled( true );
+            line_average_edit.setEnabled( true );
+        }
+        else
+        {
+            lines_slider.setEnabled( false );
+            line_average_edit.setEnabled( false );
+        }
+        connect(ffw->vCrossButton,SIGNAL(toggled(bool)),&lines_slider,SLOT(setEnabled(bool)));
+        connect(ffw->vCrossButton,SIGNAL(toggled(bool)),&line_average_edit,SLOT(setEnabled(bool)));
+        connect(&lines_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateCrossRange(int)));
+    }
     else
     {
         lines_slider.setVisible( false );
@@ -447,22 +498,6 @@ void ControlsBox::tabChangedSlot(int index)
             low_increment_cbox.setChecked(fvw->slider_low_inc);
             this->increment_slot(low_increment_cbox.isChecked());
             fvw->rescaleRange();
-        }
-        else if(ffw != NULL)
-        {
-
-            ceiling_edit.setValue(ffw->getCeiling());
-            floor_edit.setValue(ffw->getFloor());
-            connect(&ceiling_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateCeiling(int)));
-            connect(&floor_slider, SIGNAL(valueChanged(int)), ffw, SLOT(updateFloor(int)));
-            useDSFCbox.setEnabled(true);
-            std_dev_N_slider.setEnabled(false);
-            std_dev_N_edit.setEnabled(false);
-            ceiling_maximum = ffw->slider_max;
-            low_increment_cbox.setChecked(ffw->slider_low_inc);
-            this->increment_slot(low_increment_cbox.isChecked());
-
-            ffw->rescaleRange();
         }
         else if(hwt != NULL)
         {

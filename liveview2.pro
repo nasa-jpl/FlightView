@@ -59,7 +59,7 @@ QMAKE_CXXFLAGS += -std=c++11 -O3 -march=corei7-avx
 
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff
 # Tell the qcustomplot header that it will be used as library:
-#DEFINES += QCUSTOMPLOT_USE_LIBRARY
+DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 
 # Link with debug version of qcustomplot if compiling in debug mode, else with release library:
 #CONFIG(debug, release|debug) {

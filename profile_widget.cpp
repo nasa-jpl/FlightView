@@ -1,5 +1,6 @@
 #include "profile_widget.h"
 #include "settings.h"
+/* #define QDEBUG */
 
 profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *parent) : QWidget(parent)
 {
@@ -68,9 +69,9 @@ void profile_widget::handleNewFrame()
             case VERTICAL_MEAN:
                 plotTitle->setText(QString("Vertical Mean Profile @ x=%1").arg(fw->crosshair_x));
                 local_image_ptr = fw->curFrame->vertical_mean_profile;
-                for(int r=startRow;r<endRow;r++) //Y Axis is reversed
+                for(int r=endRow;r>startRow;r--) //Y Axis is reversed
                 {
-                    y[r] = (double) local_image_ptr[r];
+                    y[r] = (double) local_image_ptr[frHeight - r];
                 }
                 break;
             case HORIZONTAL_MEAN:
@@ -85,9 +86,9 @@ void profile_widget::handleNewFrame()
                 plotTitle->setText(QString("Vertical Profile Centered @ x=%1").arg(fw->crosshair_x));
 
                 local_image_ptr = fw->curFrame->vertical_mean_profile;
-                for(int r=startRow;r<endRow;r++)
+                for(int r=endRow;r>startRow;r--)
                 {
-                    y[r] = (double) local_image_ptr[r];
+                    y[r] = (double) local_image_ptr[frHeight - r];
                 }
                 break;
             case HORIZONTAL_CROSS:
@@ -164,7 +165,7 @@ void profile_widget::updateCrossRange( int linesToAverage )
     //std::cout << "Image type @ cross update: " << itype << std::endl;
     if( itype == VERTICAL_CROSS )
     {
-        horizLinesAvgd = linesToAverage;
+        fw->horizLinesAvgd = linesToAverage;
         if( (fw->crosshair_x + (linesToAverage/2)) > frWidth)
         {
             startCol = frWidth - linesToAverage;

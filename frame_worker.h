@@ -26,6 +26,7 @@ public:
     unsigned int getFrameHeight();
     unsigned int getDataHeight();
     unsigned int getFrameWidth();
+    int horizLinesAvgd = 1;
 
     bool dsfMaskCollected();
     bool doRun = true;

@@ -35,7 +35,7 @@ public:
     unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
     int frHeight;
-    int horizLinesAvgd = 1;
+    //int horizLinesAvgd = 1;
     int vertLinesAvgd = 1;
     image_t itype;
 public slots:

@@ -2,6 +2,7 @@
 
 #include <QtNetwork/QTcpServer>
 #include <QtNetwork/QNetworkInterface>
+/*#define QDEBUG */
 
 saveServer::saveServer(frameWorker* fw, QObject* parent ) : QTcpServer(parent)
 {
@@ -34,8 +35,12 @@ saveServer::saveServer(frameWorker* fw, QObject* parent ) : QTcpServer(parent)
 void saveServer::incomingConnection( int socketDescriptor )
 {
     if( !clientConnection->setSocketDescriptor( socketDescriptor ) )
+    {
+#ifdef QDEBUG
         std::cout << "Client Connection refused by host! :(" << std::endl;
-    return;
+        return;
+#endif
+    }
 }
 
 void saveServer::readCommand()
@@ -48,7 +53,9 @@ void saveServer::readCommand()
         if( clientConnection->bytesAvailable() < (int)sizeof(quint16) )
         {
             clientConnection->disconnectFromHost();
+#ifdef QDEBUG
             std::cout << "No data received..." << std::endl;
+#endif
             return;
         }
 
@@ -64,8 +71,9 @@ void saveServer::readCommand()
     in >> commandType;
     in >> framesToSave;
     in >> fname;
-
+#ifdef QDEBUG
     std::cout << "Command received!" << std::endl;
+#endif
 
     switch(commandType)
     {

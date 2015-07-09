@@ -8,7 +8,9 @@ frameWorker::frameWorker(QObject *parent) :
     QObject(parent)
 {
     to.start();
+#ifdef VERBOSE
     qDebug("starting capture");
+#endif
     frHeight = to.getFrameHeight();
     frWidth = to.getFrameWidth();
     dataHeight = to.getDataHeight() + 180; // Why?

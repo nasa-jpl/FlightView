@@ -97,7 +97,7 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
 }
 void MainWindow::enableStdDevTabs()
 {
-    qDebug() << "enabling std. dev. tabs";
+    //qDebug() << "enabling std. dev. tabs";
     tabWidget->setTabEnabled(2,true);
     tabWidget->setTabEnabled(3,true);
     disconnect(fw,SIGNAL(std_dev_ready()),this,SLOT(enableStdDevTabs()));
