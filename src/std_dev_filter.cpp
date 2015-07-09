@@ -6,6 +6,8 @@
 #include <iostream>
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
 
+/* #define VERBOSE */
+
 std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 {
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
@@ -15,7 +17,7 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 	currentN = 0;
 
 
-	printf("\ncreated logarithmic bins\n");
+    //printf("\ncreated logarithmic bins\n");
 
 	HANDLE_ERROR(cudaStreamCreate(&std_dev_stream));
 	HANDLE_ERROR(cudaMalloc( (void **)&pictures_device, width*height*sizeof(uint16_t)*GPU_FRAME_BUFFER_SIZE)); //Allocate a huge amount of memory on the GPU (N times the size of each frame stored as a u_char)
@@ -57,10 +59,12 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 	//Asynchronous Part
 
     HANDLE_ERROR(cudaMemcpyAsync(device_ptr ,frame->image_data_ptr,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); 	//Incrementally copies data to device (as each frame comes in it gets copied
-	if(cudaSuccess == cudaStreamQuery(std_dev_stream))
+#ifdef VERBOSE
+    if(cudaSuccess == cudaStreamQuery(std_dev_stream))
 	{
 		printf("really weird\n");
 	}
+#endif
 
 	if(cudaSuccess == std_dev_stream_status)
 	{

@@ -2,7 +2,8 @@
 #include "fft.hpp"
 #include <atomic>
 
-mean_filter::mean_filter(frame_c * frame, unsigned long frame_count, int startCol, int endCol, int startRow, int endRow, int actualWidth, bool useDSF )
+mean_filter::mean_filter(frame_c * frame,unsigned long frame_count,int startCol,int endCol,int startRow,int endRow,int actualWidth, \
+                         bool useDSF,int FFTtype)
 {
     beginCol = startCol;
     width = endCol;
@@ -14,8 +15,8 @@ mean_filter::mean_filter(frame_c * frame, unsigned long frame_count, int startCo
 	this->frame = frame;
 	this->frame_count = frame_count;
 	this->useDSF = useDSF;
+    this->FFTtype = FFTtype;
 }
-
 /*mean_filter::~mean_filter()
 {
     //delete mean_thread;
@@ -23,10 +24,8 @@ mean_filter::mean_filter(frame_c * frame, unsigned long frame_count, int startCo
 }*/
 //void mean_filter::start_mean(uint16_t * pic_in, float * vert_out, float * horiz_out, float * fft_out)
 void mean_filter::start_mean()
-
 {
 	mean_thread = boost::thread(&mean_filter::calculate_means, this);
-
 }
 void mean_filter::calculate_means()
 {
@@ -58,11 +57,15 @@ void mean_filter::calculate_means()
             {
                 frame->vertical_mean_profile[r] += frame->image_data_ptr[r*frWidth + c];
                 frame->horizontal_mean_profile[c] += frame->image_data_ptr[r*frWidth + c];
+                if( FFTtype == TAP_PROFIL )
+                    tap_profile[r*TAP_WIDTH + c%TAP_WIDTH] = frame->image_data_ptr[r*frWidth + c];
             }
             else if(useDSF)
             {
                 frame->vertical_mean_profile[r] += frame->dark_subtracted_data[r*frWidth + c];
                 frame->horizontal_mean_profile[c] += frame->dark_subtracted_data[r*frWidth + c];
+                if( FFTtype == TAP_PROFIL )
+                    tap_profile[r*TAP_WIDTH + c%TAP_WIDTH] = frame->dark_subtracted_data[r*frWidth + c];
             }
         }
     }
@@ -72,30 +75,37 @@ void mean_filter::calculate_means()
     }
 
     // begin determining frame mean for FFT
-	frame_mean = 0;
+    frame_mean = 0;
     for(int c = beginCol; c < width; c++)
     {
-        frame->horizontal_mean_profile[c] /= vertDiff;
-		frame_mean += frame->horizontal_mean_profile[c];
+        frame->horizontal_mean_profile[c] /= (vertDiff);
+        frame_mean += frame->horizontal_mean_profile[c];
 	}
-    frame_mean /= width;
+    frame_mean /= frWidth;
 
-	mean_ring_buffer_fft_head = mean_ring_buffer_head;
-	//	printf("Mrbf %u\n",mean_ring_buffer_fft_head);
+    mean_ring_buffer_fft_head = mean_ring_buffer_head;
 
-	mean_ring_buffer[mean_ring_buffer_head++] = frame_mean;
-	if(mean_ring_buffer_head >= FFT_MEAN_BUFFER_LENGTH)
-	{
-		mean_ring_buffer_head = 0;
-	}
-	if(frame_count > FFT_INPUT_LENGTH)
+    mean_ring_buffer[mean_ring_buffer_head++] = frame_mean;
+    if(mean_ring_buffer_head >= FFT_MEAN_BUFFER_LENGTH)
+    {
+        mean_ring_buffer_head = 0;
+    }
+    if(frame_count > FFT_INPUT_LENGTH && FFTtype == PLANE_MEAN)
 	{
 		myFFT.doRealFFT(mean_ring_buffer, mean_ring_buffer_fft_head, frame->fftMagnitude);
-	}
-	frame->async_filtering_done = 1;
+    }
+    else if( FFTtype == VERT_CROSS )
+    {
+        myFFT.doRealFFT(frame->vertical_mean_profile, 0, frame->fftMagnitude); // FOR THE VERTICAL CROSSHAIR FFT
+    }
+    else if( FFTtype == TAP_PROFIL )
+    {
+        myFFT.doRealFFT(tap_profile, 0, frame->fftMagnitude);
+    }
+
+    frame->async_filtering_done = 1;
     delete this; //I can honestly say this is the ugliest line of C++ I've ever written.
 }
-
 void mean_filter::wait_mean()
 {
 	mean_thread.join();

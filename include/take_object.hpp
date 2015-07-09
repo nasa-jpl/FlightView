@@ -27,17 +27,22 @@
 #include "chroma_translate_filter.hpp"
 #include "dark_subtraction_filter.hpp"
 #include "mean_filter.hpp"
-#include "edtinc.h"
+//#include "edtinc.h"
 #include "camera_types.h"
 #include "frame_c.hpp"
 #include "constants.h"
 
-static const bool CHECK_FOR_MISSED_FRAMES_6604A = true;
+/* #define VERBOSE */
+#ifndef HOST
+#define HOST "unknown location"
+#endif
+
+#ifndef UNAME
+#define UNAME "unknown person"
+#endif
+
+static const bool CHECK_FOR_MISSED_FRAMES_6604A = false;
 const static int NUMBER_OF_FRAMES_TO_BUFFER = 1500;
-
-
-
-
 
 class take_object {
 	PdvDev * pdv_p;
@@ -56,12 +61,11 @@ class take_object {
 	//mean_filter * mf;
 
 	unsigned int save_count;
-	bool do_raw_save;
+    bool do_raw_save;
 
 	bool saveFrameAvailable;
 
 	uint16_t * raw_save_ptr;
-
 
 	u_char * dumb_ptr;
 	unsigned int dataHeight;
@@ -72,7 +76,7 @@ class take_object {
 	frame_c* curFrame;
 	int pdv_thread_run = 0;
 public:
-    take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 128000, int filter_refresh_rate = 10);
+    take_object(int channel_num = 0, int number_of_buffers = 64, int fmsize = 10000, int filter_refresh_rate = 10);
 	virtual ~take_object();
 	void start();
 
@@ -99,6 +103,10 @@ public:
     void updateHorizRange( int, int );
     void updateVertRange( int, int );
 
+    void changeFFTtype( int );
+    int getFFTtype();
+
+    //void panicSave( std::string );
 	void startSavingRaws(std::string, unsigned int );
 	void stopSavingRaws();
 
@@ -117,6 +125,10 @@ public:
 private:
 	void pdv_loop();
 	void savingLoop(std::string);
+    //void saveFramesInBuffer();
+    /* This function will save all the frames currently in the frame_ring_buffer
+     * to a pre-specified raw file. For the moment, it stops the take_object loop
+     * until it has finished saving. */
 
     unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
     int meanStartRow;
@@ -125,7 +137,7 @@ private:
     int meanWidth;
     bool inverted = false;
     bool chromaPix = false; // Enable Chroma Pixel Mapping? (Chroma Translate filter?)
-
+    int whichFFT;
 };
 
 #endif /* TAKEOBJECT_HPP_ */

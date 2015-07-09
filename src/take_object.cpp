@@ -8,6 +8,7 @@
 #include "take_object.hpp"
 #include "fft.hpp"
 //#define RESET_GPUS
+
 take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int frf)
 {
     this->channel = channel_num;
@@ -17,8 +18,9 @@ take_object::take_object(int channel_num, int number_of_buffers, int fmsize, int
 
     this->std_dev_filter_N = 400;
 
-    this->do_raw_save = false;
+    whichFFT = PLANE_MEAN;
 
+    this->do_raw_save = false;
 
     dsfMaskCollected = false;
     frame_ring_buffer = new frame_c[CPU_FRAME_BUFFER_SIZE];
@@ -36,7 +38,9 @@ take_object::~take_object()
         pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
         pdv_close(pdv_p);
         usleep(1000000);
+#ifdef VERBOSE
         printf("about to delete filters!\n");
+#endif
         delete dsf;
         delete sdvf;
     }
@@ -61,11 +65,16 @@ void take_object::start()
 {
     pdv_thread_run = 1;
 
+    std::cout << "This version of cuda_take was compiled on " << __DATE__ << " at " << __TIME__ << " using gcc " << __GNUC__ << std::endl;
+    std::cout << "The compilation was perfromed by " << UNAME << " @ " << HOST << std::endl;
+
     this->pdv_p = NULL;
     this->pdv_p = pdv_open_channel(EDT_INTERFACE,0,this->channel);
     if(pdv_p == NULL)
     {
+#ifdef VERBOSE
         std::cout << "Oh gawd, couldn't open channel" << std::endl;
+#endif
         //TODO: throw exception
         return;
     }
@@ -76,12 +85,16 @@ void take_object::start()
     case 285*640*sizeof(uint16_t): cam_type = CL_6604A; break;
     default: cam_type = CL_6604B; break;
     }
+#ifdef VERBOSE
     printf("frame period:%i\n", pdv_get_frame_period(pdv_p));
+#endif
     frWidth = pdv_get_width(pdv_p);
     //Our version of height should not include the header size
     dataHeight = pdv_get_height(pdv_p);
     frHeight = cam_type == CL_6604A ? dataHeight -1 : dataHeight;
+#ifdef VERBOSE
     printf("cam type: %u. Width: %u Height %u frame height %u \n", cam_type, frWidth, dataHeight, frHeight);
+#endif
 
     // initial dimensions for calculating the mean that can be updated later
     meanStartRow = 0;
@@ -91,11 +104,11 @@ void take_object::start()
 
     if( cam_type == CL_6604B )
         chromaPix = true;
-
+#ifdef VERBOSE
     std::cout << "about to start threads" << std::endl;
+#endif
     pdv_multibuf(pdv_p,this->numbufs);
 
-    pdv_thread_run = 1;
     dsf = new dark_subtraction_filter(frWidth,frHeight);
     sdvf = new std_dev_filter(frWidth,frHeight);
     //numbufs = 16;
@@ -132,7 +145,6 @@ void take_object::pdv_loop() //Producer Thread
          * Third, we may need to invert the data range if a cable is inverting the magnitudes
          * that arrive from the ADC. This feature is also modified from the preference window.
          */
-        // std::cout << "frHeight is now: " << frHeight << std::endl;
         if( chromaPix )
         {
             apply_chroma_translate_filter(curFrame->raw_data_ptr);
@@ -149,7 +161,6 @@ void take_object::pdv_loop() //Producer Thread
 
         if( inverted )
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
-
             for( uint i = 0; i < frHeight*frWidth; i++ )
                 curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
         }
@@ -158,7 +169,7 @@ void take_object::pdv_loop() //Producer Thread
 
         dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
 
-        mean_filter * mf = new mean_filter(curFrame, count, meanStartCol, meanWidth, meanStartRow, meanHeight, frWidth, useDSF );
+        mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,meanStartRow,meanHeight,frWidth,useDSF,whichFFT);
         //This will deallocate itself when it is done.
         mf->start_mean();
 
@@ -183,11 +194,33 @@ void take_object::pdv_loop() //Producer Thread
         count++;
     }
 }
+/*void take_object::saveFramesInBuffer()
+{
+    register int ndx = count % CPU_FRAME_BUFFER_SIZE;
+    // So! We need to make a copy of the frame ring buffer so that we can
+    // take the raws out of the frames. So we need to copy starting from the current framecount
+    // to the end of the array then from the beginning of the array to the current framecount.
+    //
+    frame_c* buf_copy = new frame_c[CPU_FRAME_BUFFER_SIZE];
+    memcpy(buf_copy + ndx*sizeof(frame_c),frame_ring_buffer + ndx*sizeof(frame_c),(CPU_FRAME_BUFFER_SIZE - ndx)*sizeof(frame_c));
+    memcpy(buf_copy,frame_ring_buffer,(ndx -1)*sizeof(frame_c));
+    // we need to do one iteration of the saving loop first so that it doesn't immediately end the while loop...
+    uint16_t raw_copy[frWidth*frHeight];
+    memcpy(raw_copy,(buf_copy[ndx++]).raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
+    saving_list.push_front(raw_copy);
+    while( ndx != (int)(count % CPU_FRAME_BUFFER_SIZE) )
+    {
+        uint16_t raw_copy[frWidth*frHeight];
+        memcpy(raw_copy,(buf_copy[ndx++]).raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
+        saving_list.push_front(raw_copy);
+        if( ndx == CPU_FRAME_BUFFER_SIZE )
+            ndx = 0;
+    }
+    delete[] buf_copy;
+}*/
 void take_object::savingLoop(std::string fname)
 {
     FILE * file_target = fopen(fname.c_str(), "wb");
-    //setvbuf(file_target,NULL,_IOFBF,10*size); `
-
 
     while(save_framenum != 0 || !saving_list.empty())
     {
@@ -231,18 +264,26 @@ void take_object::finishCapturingDSFMask()
     dsf->finish_mask_collection();
     dsfMaskCollected = true;
 }
+/*void take_object::panicSave( std::string raw_file_name )
+{
+    while(!saving_list.empty());
+    boost::thread(&take_object::saveFramesInBuffer,this);
+    boost::thread(&take_object::savingLoop,this,raw_file_name);
+}*/
 void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames_to_save)
 {
     save_framenum.store(0,std::memory_order_seq_cst);
+#ifdef VERBOSE
     printf("ssr called\n");
+#endif
     while(!saving_list.empty())
     {
         //printf("waiting for empty saving list...");
     }
     save_framenum.store(frames_to_save,std::memory_order_seq_cst);
-
+#ifdef VERBOSE
     printf("Begin frame save! @ %s", raw_file_name.c_str());
-
+#endif
 
     boost::thread(&take_object::savingLoop,this,raw_file_name);
     //setvbuf(raw_save_file,NULL,_IOFBF,frames_to_save*size);
@@ -252,7 +293,9 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 void take_object::stopSavingRaws()
 {
     save_framenum.store(0,std::memory_order_relaxed);
+#ifdef VERBOSE
     printf("stop saving raws!");
+#endif
 }
 
 void take_object::loadDSFMask(std::string file_name)
@@ -284,6 +327,14 @@ void take_object::setStdDev_N(int s)
 {
     this->std_dev_filter_N = s;
 }
+void take_object::changeFFTtype(int t)
+{
+    whichFFT = t;
+}
+int take_object::getFFTtype()
+{
+    return whichFFT;
+}
 /*
 std::vector<float> * take_object::getHistogramBins()
 {
@@ -314,9 +365,11 @@ void take_object::updateVertRange( int br, int er )
 { // these will only trigger for horizontal cross profiles
     meanStartRow = br;
     meanHeight = er;
+    //std::cout << "meanStartRow: " << meanStartRow << " meanHeight: " << meanHeight << std::endl;
 }
 void take_object::updateHorizRange( int bc, int ec )
 {
     meanStartCol = bc;
     meanWidth = ec;
+    //std::cout << "meanStartCol: " << meanStartCol << " meanWidth: " << meanWidth << std::endl;
 }

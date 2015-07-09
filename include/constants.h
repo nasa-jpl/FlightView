@@ -9,6 +9,7 @@
 
 const static unsigned int MAX_WIDTH = 1280;
 const static unsigned int MAX_HEIGHT = 480;
+const static unsigned int TAP_WIDTH = 160;
 const static unsigned int MAX_SIZE = MAX_WIDTH*MAX_HEIGHT;
 const static unsigned int FFT_MEAN_BUFFER_LENGTH = 1000;
 const static unsigned int FFT_INPUT_LENGTH = 256; //must be power of 2; will fail silently otherwise
