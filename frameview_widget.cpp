@@ -1,4 +1,3 @@
-
 #include "frameview_widget.h"
 #include <QSize>
 #include <QDebug>
@@ -20,19 +19,14 @@ frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget*
     this->fw = fw;
     this->image_type = image_type;
 
-    int base_ceiling;
-    if( fw->to.cam_type == CL_6604A )
-        base_ceiling = 16383;
-    else
-        base_ceiling = 65535;
-
     switch(image_type)
     {
-    case BASE: ceiling = base_ceiling; break;
+    case BASE: ceiling = fw->base_ceiling; break;
     case DSF: ceiling = 20; break;
     case STD_DEV: ceiling = 20; break;
     default: break; // to remove annoying warnings on compilation
     }
+    ceiling = fw->base_ceiling;
     floor=0;
     count=0;
     frHeight = fw->getFrameHeight();
@@ -46,8 +40,6 @@ frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget*
         displayCrosshairCheck.setChecked( false );
     }
     connect(&displayCrosshairCheck,SIGNAL(toggled(bool)),fw,SLOT(updateCrossDiplay(bool)));
-
-
 
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);

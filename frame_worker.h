@@ -1,59 +1,70 @@
 #ifndef FRAME_WORKER_H
 #define FRAME_WORKER_H
 
+// Qt includes
+#include <QElapsedTimer>
 #include <QObject>
+#include <QMutex>
 #include <QSharedPointer>
 #include <QThread>
-#include <QMutex>
-#include <QElapsedTimer>
 #include <QVector>
+
+// standard include
+#include <memory>
+
+// cuda_take includes
 #include "take_object.hpp"
 #include "frame_c_meta.h"
-#include <memory>
 
 class frameWorker : public QObject
 {
     Q_OBJECT
 
-    QElapsedTimer deltaTimer;
-public:
-    take_object to;
+    frame_c * std_dev_processing_frame = NULL;
 
+    unsigned int dataHeight;
+    unsigned int frHeight;
+    unsigned int frWidth;
+
+    unsigned long c = 0;
+    unsigned long framecount_window = 50; //we measure elapsed time for the backend fps every 50 frames
+
+    float * histogram_bins;
+
+    bool crosshair_useDSF = false;
+    bool doRun = true;
+
+    QElapsedTimer deltaTimer;
+
+public:
     explicit frameWorker(QObject *parent = 0);
     virtual ~frameWorker();
 
-    std::vector<float> *getHistogramBins();
-    unsigned int getFrameHeight();
-    unsigned int getDataHeight();
-    unsigned int getFrameWidth();
-    int horizLinesAvgd = 1;
+    take_object to;
 
-    bool dsfMaskCollected();
-    bool doRun = true;
-    camera_t camera_type();
+    int base_ceiling;
 
-    double histoDataMax;
-
-    QMutex vector_mutex;
-    //QVector<double> rfft_data_vec;
-
-    unsigned int old_save_framenum;
     frame_c * curFrame  = NULL;
     frame_c * std_dev_frame = NULL;
-    frame_c * std_dev_processing_frame = NULL;
-    unsigned long c = 0;
-    unsigned long framecount_window = 50; //we measure elapsed time for the backend fps every 50 frames
-    float delta;
-    unsigned long old_c = 0;
 
+    float delta;
+
+    bool displayCross = true;
+
+    int horizLinesAvgd = 1;
     int crosshair_x = -1;
     int crosshair_y = -1;
     int crossStartRow = -1;
     int crossHeight = -1;
     int crossStartCol = -1;
     int crossWidth = -1;
-    bool crosshair_useDSF= false;
-    bool displayCross = true;
+
+    camera_t camera_type();
+    unsigned int getFrameHeight();
+    unsigned int getDataHeight();
+    unsigned int getFrameWidth();
+    bool dsfMaskCollected();
+
 signals:
     void newFrameAvailable();
     void stdDevFrameCompleted(frame_c *);
@@ -61,25 +72,19 @@ signals:
 
     void savingFrameNumChanged(unsigned int n);
     void finished();
+
 public slots:
     void captureFrames();
     void startCapturingDSFMask();
     void finishCapturingDSFMask();
-    void loadDSFMask(QString);
     void toggleUseDSF(bool t);
     void startSavingRawData(unsigned int framenum,QString name);
     void stopSavingRawData();
-    void stop();
     void updateCrossDiplay(bool checked);
-
     void setStdDev_N(int newN);
     void updateDelta();
-private:
-    unsigned int dataHeight;
-    unsigned int frHeight;
-    unsigned int frWidth;
-    float * histogram_bins;
-    //std::shared_ptr<frame_c> curFrame;
+    void stop();
+
 };
 
 

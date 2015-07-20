@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     fft_widget.cpp \
     profile_widget.cpp \
     pref_window.cpp \
-    saveserver.cpp
+    saveserver.cpp \
+    playback_widget.cpp
 
 HEADERS  += mainwindow.h \
     frameview_widget.h \
@@ -37,12 +38,12 @@ HEADERS  += mainwindow.h \
     settings.h \
     profile_widget.h \
     pref_window.h \
-    saveserver.h
+    saveserver.h \
+    playback_widget.h
 
 BACKEND_HEADERS += edtinc.h \
     take_object.hpp\
     camera_types.h
-
 
 HEADERS += BACKEND_HEADERS
 OTHER_FILES += \
@@ -72,7 +73,7 @@ DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 #LIBS += -L$$PWD/lib/ -l$$QCPLIB
 
 
-unix:!macx:!symbian: LIBS += -L$$PWD/../../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -ldl # -lGL -lQtOpenGL
+unix:!macx:!symbian: LIBS += -L$$PWD/../../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -lokFrontPanel -ldl # -lGL -lQtOpenGL
 INCLUDEPATH += $$PWD/../../cuda_take/include\
 $$PWD/../../cuda_take/EDT_include
 DEPENDPATH += $$PWD/../../cuda_take

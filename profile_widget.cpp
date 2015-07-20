@@ -7,7 +7,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     itype = image_type;
     qcp = NULL;
     this->fw = fw;
-    ceiling = (1<<16);
+    ceiling = fw->base_ceiling;
     floor = 0;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
