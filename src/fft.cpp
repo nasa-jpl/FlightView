@@ -85,8 +85,8 @@ std::complex<float> * fft::doFFT(float * real_arr, unsigned int ring_head)
 }
 std::complex<float> * fft::doFFT(std::complex<float> * arr, unsigned int len)
 {
-	assert(IS_POW2(len));
-	assert(len <= MAX_FFT_SIZE);
+    assert(IS_POW2(len));
+    assert(len <= MAX_FFT_SIZE);
 	bitReverseOrder(arr,len);
 	//printf("doing fft\n");
 	unsigned int base = (int)ceil(log10((float)len)/log10(2.0));

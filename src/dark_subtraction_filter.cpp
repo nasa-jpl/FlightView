@@ -77,7 +77,6 @@ uint32_t dark_subtraction_filter::update_mask_collection(uint16_t * pic_in)
 	for(unsigned int i=0; i<width*height;i++)
 	{
 		mask[i] = pic_in[i] + mask[i];
-
 	}
 	averaged_samples++;
 	return averaged_samples;
