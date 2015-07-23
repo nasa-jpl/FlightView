@@ -73,9 +73,9 @@ DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 #LIBS += -L$$PWD/lib/ -l$$QCPLIB
 
 
-unix:!macx:!symbian: LIBS += -L$$PWD/../../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -lokFrontPanel -ldl # -lGL -lQtOpenGL
-INCLUDEPATH += $$PWD/../../cuda_take/include\
-$$PWD/../../cuda_take/EDT_include
-DEPENDPATH += $$PWD/../../cuda_take
+unix:!macx:!symbian: LIBS += -L$$PWD/../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -lokFrontPanel -ldl # -lGL -lQtOpenGL
+INCLUDEPATH += $$PWD/../cuda_take/include\
+$$PWD/../cuda_take/EDT_include
+DEPENDPATH += $$PWD/../cuda_take
 
-unix:!macx:!symbian: PRE_TARGETDEPS += $$PWD/../../cuda_take/libcuda_take.a
+unix:!macx:!symbian: PRE_TARGETDEPS += $$PWD/../cuda_take/libcuda_take.a
