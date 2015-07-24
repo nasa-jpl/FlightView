@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
     QSplashScreen splash(logo_pixmap);
     splash.show();
-    splash.showMessage(QObject::tr("Loading AVIRIS-Next Generation Live View2..."),
+    splash.showMessage(QObject::tr("Loading AVIRIS-Next Generation LiveView2. Compiled on " __DATE__ ", " __TIME__ " PDT by " UNAME "@" HOST  ),
                        Qt::AlignCenter | Qt::AlignBottom , Qt::gray);
     frameWorker * fw = new frameWorker();
 
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     QObject::connect(workerThread,SIGNAL(started()),fw,SLOT(captureFrames()));
     //delay(500);
 
-    std::cout << "This version of liveview2 was compiled on " << __DATE__ << " at " << __TIME__<< " using gcc " << __GNUC__ << std::endl;
+    std::cout << "This version of liveview2 was compiled on " << __DATE__ << " at " << __TIME__<< " using gcc " << __GNUC__ << "." << __GNUC_MINOR__ << "." <<  __GNUC_PATCHLEVEL__ << std::endl;
     std::cout << "The compilation was performed by " << UNAME << "  @ " << HOST << std::endl;
     MainWindow w(workerThread, fw);
     w.setGeometry(   QStyle::alignedRect(
