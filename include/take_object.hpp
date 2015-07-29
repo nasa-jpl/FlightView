@@ -21,9 +21,6 @@
 #include <boost/thread/mutex.hpp>
 //#include <boost/atomic.hpp>
 
-//OpalKelly Device Support
-#include "okFrontPanelDLL.h"
-
 //custom includes
 #include "frame_c.hpp"
 #include "std_dev_filter.hpp"
@@ -36,7 +33,13 @@
 //These Macros set the hardware type that take_object will use to collect data
 #define EDT
 //#define OPALKELLY
+
+
 #ifdef OPALKELLY
+//OpalKelly Device Support
+#include "okFrontPanelDLL.h"
+#include "ok_addresses.h"
+
 // the location of the OpalKelly bit file which configures the  FPGA
 #define FPGA_CONFIG_FILE "/home/jryan/NGIS_DATA/jryan/projects/cuda_take/top4ch.bit"
 #endif
@@ -53,8 +56,6 @@
 #define UNAME "unknown person"
 #endif
 
-
-
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence or absence of the "WARNING: MISSED FRAME X" line
 
 class take_object {
@@ -66,10 +67,10 @@ class take_object {
 #endif
 #ifdef OPALKELLY
     okCFrontPanel* xem;
-    unsigned long clock_div;
-    unsigned long clock_delay;
+    unsigned long clock_div = CLOCK_DIV;
+    unsigned long clock_delay = CLOCK_DLY;
     int blocklen;
-    int framelen;
+    long framelen;
 #endif
 
     boost::thread pdv_thread; // this thread controls the data collection
@@ -153,7 +154,7 @@ private:
 #ifdef OPALKELLY
     okCFrontPanel* initializeFPGA();
     void ok_init_pipe();
-    u_char* ok_read_frame();
+    void ok_read_frame(unsigned char*);
 #endif
 
     // variables needed by the Raw Filters

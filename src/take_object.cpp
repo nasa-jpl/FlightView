@@ -15,10 +15,6 @@ take_object::take_object(int channel_num, int number_of_buffers, int frf)
     this->numbufs = number_of_buffers;
     this->filter_refresh_rate =frf;
 #endif
-#ifdef OPALKELLY
-    clock_div = 0x0054;
-    clock_delay = 0x0000;
-#endif
 
     frame_ring_buffer = new frame_c[CPU_FRAME_BUFFER_SIZE];
 
@@ -45,7 +41,7 @@ take_object::~take_object()
         pdv_close(pdv_p);
 #endif
 
-        usleep(1000000);
+        sleep(1);
 
 #ifdef VERBOSE
         printf("about to delete filters!\n");
@@ -65,7 +61,7 @@ take_object::~take_object()
     {
         printf("resetting GPU#%i",i);
         cudaSetDevice(i);
-        cudaDeviceReset(); //Dump all are bad stuff from each of our GPUs.
+        cudaDeviceReset(); //Dump all the bad stuff from each of our GPUs.
     }
 #endif
 }
@@ -90,16 +86,31 @@ void take_object::start()
     // actual grabbing of the dimensions
     frWidth = pdv_get_width(pdv_p);
     dataHeight = pdv_get_height(pdv_p);
-    frHeight = cam_type == CL_6604A ? dataHeight -1 : dataHeight;
 #endif
 #ifdef OPALKELLY
+    // Step 1: Check that the Opal Kelly DLL is loaded
+    if(!okFrontPanelDLL_LoadLib(NULL))
+    {
+        std::cerr << "Front Panel DLL could not be loaded." << std::endl;
+        return;
+    }
+
+    // Step 2: Initialize the device, and check that the initialization was valid
     xem = initializeFPGA();
-    frWidth = 640;
-    frHeight = 480;
+    if(xem == NULL)
+    {
+        return;
+    }
+
+    // Step 3: Initialize some values that we will need to hardcode for this device
+    frWidth = NCOL;
+    frHeight = NROW;
     dataHeight = frHeight;
     size = frHeight*frWidth*sizeof(uint16_t);
-    framelen = 2*frWidth*frHeight;
-    blocklen = 1024;
+    framelen = 2*frWidth*frHeight/NCHUNX;
+    blocklen = BLOCK_LEN;
+
+    // Step 4: Begin writing values to the pipe
     ok_init_pipe();
 #endif
 
@@ -107,19 +118,24 @@ void take_object::start()
     {
     case 481*640*sizeof(uint16_t): cam_type = CL_6604A; break;
     case 285*640*sizeof(uint16_t): cam_type = CL_6604A; break;
+    case 480*640*sizeof(uint16_t): cam_type = CL_6604A; break;
     default: cam_type = CL_6604B; chromaPix = true; break;
     }
 
-    //printf("frame period:%i\n", pdv_get_frame_period(pdv_p));
+#ifdef EDT
+    frHeight = cam_type == CL_6604A ? dataHeight - 1 : dataHeight;
+#endif
 #ifdef VERBOSE
-    printf("cam type: %u. Width: %u Height %u frame height %u \n", cam_type, frWidth, dataHeight, frHeight);
+    std::cout << "Camera Type: " << cam_type << ". Frame Width: " << frWidth << \
+                 " Data Height: " << dataHeight << " Frame Height: " << frHeight << std::endl;
+    std::cout << "About to start threads..." << std::endl;
 #endif
 
-    // initialize the filters
+    // Initialize the filters
     dsf = new dark_subtraction_filter(frWidth,frHeight);
     sdvf = new std_dev_filter(frWidth,frHeight);
 
-    // initial dimensions for calculating the mean that can be updated later
+    // Initial dimensions for calculating the mean that can be updated later
     meanStartRow = 0;
     meanStartCol = 0;
     meanHeight = frHeight;
@@ -129,9 +145,6 @@ void take_object::start()
     pdv_multibuf(pdv_p,this->numbufs);
     numbufs = 16;
     pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
-#endif
-#ifdef VERBOSE
-    std::cout << "about to start threads" << std::endl;
 #endif
 
     pdv_thread = boost::thread(&take_object::pdv_loop, this);
@@ -223,17 +236,15 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
     while(!saving_list.empty())
     {
 #ifdef VERBOSE
-        printf("Waiting for empty saving list...");
+        printf("Waiting for empty saving list...\n");
 #endif
     }
     save_framenum.store(frames_to_save,std::memory_order_seq_cst);
 #ifdef VERBOSE
-    printf("Begin frame save! @ %s", raw_file_name.c_str());
+    printf("Begin frame save! @ %s\n", raw_file_name.c_str());
 #endif
 
-    boost::thread(&take_object::savingLoop,this,raw_file_name);
-    //setvbuf(raw_save_file,NULL,_IOFBF,frames_to_save*size);
-    //do_raw_save = true;
+    saving_thread = boost::thread(&take_object::savingLoop,this,raw_file_name);
 }
 void take_object::stopSavingRaws()
 {
@@ -280,7 +291,10 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 
     uint16_t framecount = 1;
     uint16_t last_framecount = 0;
-    u_char* wait_ptr;
+    unsigned char* wait_ptr;
+#ifdef OPALKELLY
+    wait_ptr = (unsigned char*) malloc(sizeof(unsigned char)*framelen);
+#endif
 
     while(pdv_thread_run == 1)
     {
@@ -290,7 +304,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         wait_ptr = pdv_wait_image(pdv_p);
 #endif
 #ifdef OPALKELLY
-        wait_ptr = ok_read_frame();
+        ok_read_frame(wait_ptr);
 #endif
         /* In this section of the code, after we have copied the memory from the camera link
          * buffer into the raw_data_ptr, we will check various parameters to see if we need to
@@ -321,7 +335,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         }
         if( inverted )
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
-            for( uint i = 0; i < frHeight*frWidth; i++ )
+            for(uint i = 0; i < frHeight*frWidth; i++ )
                 curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
         }
 
@@ -347,7 +361,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         framecount = *(curFrame->raw_data_ptr + 160); // The framecount is stored 160 bytes offset from the beginning of the data
         if(CHECK_FOR_MISSED_FRAMES_6604A && cam_type == CL_6604A)
         {
-            if( framecount - 1 != last_framecount)
+            if( (framecount - 1 != last_framecount) && (last_framecount != UINT16_MAX) )
             {
                 std::cerr << "WARNING: MISSED FRAME " << framecount << std::endl;
             }
@@ -355,6 +369,9 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         last_framecount = framecount;
         count++;
     }
+#ifdef OPALKELLY
+    free(wait_ptr);
+#endif
 }
 void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thread)
 {
@@ -378,7 +395,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 
     //We're done!
     fclose(file_target);
-    printf("Frame save complete!");
+    printf("Frame save complete!\n");
 }
 /*void take_object::saveFramesInBuffer()
 {
@@ -411,14 +428,14 @@ okCFrontPanel* take_object::initializeFPGA()
     okCFrontPanel* dev = new okCFrontPanel;
     if (okCFrontPanel::NoError != dev->OpenBySerial())
     {
-        return(NULL);
+        std::cerr << "Could not open device through serial port. Is one connected?" << std::endl;
+        delete dev;
+        return NULL;
     }
-
     std::cout << "Found a device: " << dev->GetBoardModelString(dev->GetBoardModel()).c_str() << std::endl;
 
     dev->LoadDefaultPLLConfiguration();
 
-#ifdef VERBOSE
     // Get some general information about the XEM.
     std::string str;
     std::cout << "Device firmware version: " << dev->GetDeviceMajorVersion() << "." << dev->GetDeviceMinorVersion() << std::endl;
@@ -426,53 +443,53 @@ okCFrontPanel* take_object::initializeFPGA()
     std::cout << "Device serial number: " << str.c_str() << std::endl;
     str = dev->GetDeviceID();
     std::cout << "Device device ID: " << str.c_str() << std::endl;
-#endif
 
     // Download the configuration file.
     if(okCFrontPanel::NoError != dev->ConfigureFPGA(FPGA_CONFIG_FILE))
     {
-        std::cout << "FPGA configuration failed." << std::endl;
+        std::cerr << "FPGA configuration failed." << std::endl;
         delete dev;
         return(NULL);
     }
 
-#ifdef VERBOSE
     // Check for FrontPanel support in the FPGA configuration.
     if (dev->IsFrontPanelEnabled())
         std::cout << "FrontPanel support is enabled." << std::endl;
     else
-        std::cout << "FrontPanel support is not enabled." << std::endl;
-#endif
+        std::cerr << "FrontPanel support is not enabled." << std::endl;
 
-    return(dev);
+    return dev;
 }
 void take_object::ok_init_pipe()
 {
     xem->SetWireInValue(0x00, clock_div|clock_delay);
-    xem->SetWireInValue(0x01, blocklen/2 - 2);
-
-    xem->UpdateWireOuts();
-    while( xem->GetWireOutValue(0x20) )
-    {
+    xem->SetWireInValue(0x01, FIFO_THRESH);
+    xem->UpdateWireIns();
+    do {
         xem->UpdateWireOuts();
         usleep(250);
-    }
-    xem->ActivateTriggerIn(0x43, 0);
-    xem->UpdateTriggerOuts();
-    xem->ActivateTriggerIn(0x42, 0);
+    } while(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_WRITE_MASK);
+    xem->ActivateTriggerIn(FIFO_RESET_TRIG, 0);
+    xem->ActivateTriggerIn(ACQ_TRIG, 0);
 }
-u_char* take_object::ok_read_frame()
+void take_object::ok_read_frame(unsigned char* wait_ptr)
 {
-    u_char* temp_ptr;
-    if( xem->IsTriggered(0x60, 0x0001) )
+    xem->UpdateWireOuts();
+    if(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_FULL_MASK)
     {
-#ifdef VERBOSE && OPALKELLY
-        std::cerr << "WARNING: MISSED FRAME" << std::endl;
-#endif
-        return NULL;
+        //std::cerr << "WARNING: MISSED FRAME" << std::endl;
+
+        // Reset the buffer
+        xem->ActivateTriggerIn(FIFO_RESET_TRIG, 0);
+        usleep(1000);
+        xem->ActivateTriggerIn(ACQ_TRIG, 0);
     }
-    long result = xem->ReadFromBlockPipeOut(0xA0, blocklen, framelen, temp_ptr);
-    std::cout << "Read Status: " << result << std::endl;
-    return temp_ptr;
+    //Check for FIFO_WRITE
+    while( !(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_WRITE_MASK) )
+    {
+        xem->UpdateWireOuts();
+        usleep(1);
+    }
+    long result = xem->ReadFromBlockPipeOut(0xA0, blocklen, framelen, wait_ptr);
 }
 #endif

@@ -12,21 +12,17 @@
 void dark_subtraction_filter::start_mask_collection()
 {
 	mask_collected = false;
-	averaged_samples = 0; //Synchronous
-//#pragma omp parallel for
+    averaged_samples = 0;
 	for(unsigned int i = 0; i < width*height; i++)
 	{
 		mask[i]=0;
 	}
 }
-
-
 void dark_subtraction_filter::finish_mask_collection()
 {
-//#pragma omp parallel for
 	for(unsigned int i = 0; i < width*height; i++)
 	{
-		mask[i]/=averaged_samples;
+        mask[i] /= averaged_samples;
 	}
 	mask_collected = true;
 #ifdef VERBOSE
@@ -44,8 +40,7 @@ void dark_subtraction_filter::update(uint16_t * pic_in, float * pic_out)
 		update_mask_collection(pic_in);
 	}
 }
-
-void dark_subtraction_filter::load_mask(float * mask_arr)
+void dark_subtraction_filter::load_mask(float* mask_arr)
 {
 	memcpy(mask,mask_arr,width*height*sizeof(float));
 	mask_collected = true;
@@ -53,30 +48,29 @@ void dark_subtraction_filter::load_mask(float * mask_arr)
 	std::cout << "mask loaded" << std::endl;
 #endif
 }
-float * dark_subtraction_filter::get_mask()
+float* dark_subtraction_filter::get_mask()
 {
 	return mask;
 }
-void dark_subtraction_filter::update_dark_subtraction(uint16_t * pic_in, float * pic_out)
+void dark_subtraction_filter::update_dark_subtraction(uint16_t* pic_in, float* pic_out)
 {
-
-	//Synchronous
-
-	//Asynchronous
-//#pragma omp parallel for
 	for(unsigned int i = 0; i < width*height; i++)
 	{
 		pic_out[i] = pic_in[i] - mask[i];
 	}
 }
-
-uint32_t dark_subtraction_filter::update_mask_collection(uint16_t * pic_in)
+void dark_subtraction_filter::static_dark_subtract(unsigned int* pic_in, float* pic_out)
 {
-	// Synchronous
-//#pragma omp parallel for
-	for(unsigned int i=0; i<width*height;i++)
+    for(unsigned int i = 0; i < width*height; i++)
+    {
+        pic_out[i] = (float)pic_in[i] - mask[i];
+    }
+}
+uint32_t dark_subtraction_filter::update_mask_collection(uint16_t* pic_in)
+{
+    for(unsigned int i = 0; i<width*height; i++)
 	{
-		mask[i] = pic_in[i] + mask[i];
+        mask[i] = pic_in[i] + mask[i];
 	}
 	averaged_samples++;
 	return averaged_samples;
@@ -84,16 +78,15 @@ uint32_t dark_subtraction_filter::update_mask_collection(uint16_t * pic_in)
 
 dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)
 {
-
-
 	mask_collected = false;
-	width=nWidth;
-	height=nHeight;
-
+    width = nWidth;
+    height = nHeight;
+    for(unsigned int i = 0; i < width*height; i++)
+    {
+        mask[i]=0;
+    }
 }
 dark_subtraction_filter::~dark_subtraction_filter()
 {
 	mask_collected = false; //Do this to prevent reading after object has been killed
 }
-
-
