@@ -20,7 +20,7 @@ class frameWorker : public QObject
 {
     Q_OBJECT
 
-    frame_c * std_dev_processing_frame = NULL;
+    frame_c* std_dev_processing_frame = NULL;
 
     unsigned int dataHeight;
     unsigned int frHeight;
@@ -42,22 +42,24 @@ public:
 
     take_object to;
 
-    int base_ceiling;
-
-    frame_c * curFrame  = NULL;
-    frame_c * std_dev_frame = NULL;
+    frame_c* curFrame  = NULL;
+    frame_c* std_dev_frame = NULL;
 
     float delta;
 
     bool displayCross = true;
 
     int horizLinesAvgd = 1;
+    int vertLinesAvgd = 1;
+
     int crosshair_x = -1;
     int crosshair_y = -1;
     int crossStartRow = -1;
     int crossHeight = -1;
     int crossStartCol = -1;
     int crossWidth = -1;
+
+    int base_ceiling;
 
     camera_t camera_type();
     unsigned int getFrameHeight();

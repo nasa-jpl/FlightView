@@ -14,21 +14,30 @@
 class histogram_widget : public QWidget
 {
     Q_OBJECT
-    QVBoxLayout qvbl;
-    QCustomPlot * qcp;
-    QCPBars *histogram;
-    int frHeight;
-    int frWidth;
-    QVector<double> histo_bins;
-    unsigned int count = 0;
+
     frameWorker * fw;
+    QTimer rendertimer;
+
+    // GUI elements
+    QVBoxLayout qvbl;
+
+    // Plot elements
+    QCustomPlot* qcp;
+    QCPBars* histogram;
+
+    // Plot rendering elements
+    int frHeight, frWidth;
+
     volatile double ceiling;
     volatile double floor;
 
-    QTimer rendertimer;
+    QVector<double> histo_bins;
     QVector<double> histo_data_vec;
+    unsigned int count = 0;
+
 public:
     explicit histogram_widget(frameWorker * fw, QWidget *parent = 0);
+
     double getCeiling();
     double getFloor();
 
@@ -37,6 +46,8 @@ public:
 
 public slots:
     void handleNewFrame();
+
+    // Plot controls
     void histogramScrolledX(const QCPRange &newRange);
     void histogramScrolledY(const QCPRange &newRange);
     void updateCeiling(int);

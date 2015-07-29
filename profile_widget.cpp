@@ -162,7 +162,6 @@ void profile_widget::updateCrossRange( int linesToAverage )
     int startRow = 0;
     int endCol = frWidth;
     int endRow = frHeight;
-    //std::cout << "Image type @ cross update: " << itype << std::endl;
     if( itype == VERTICAL_CROSS )
     {
         fw->horizLinesAvgd = linesToAverage;
@@ -185,7 +184,7 @@ void profile_widget::updateCrossRange( int linesToAverage )
     }
     else if( itype == HORIZONTAL_CROSS )
     {
-        vertLinesAvgd = linesToAverage;
+        fw->vertLinesAvgd = linesToAverage;
         if(fw->crosshair_y + (linesToAverage/2) > frHeight)
         {
             startRow = frHeight - linesToAverage;
@@ -203,8 +202,6 @@ void profile_widget::updateCrossRange( int linesToAverage )
         fw->crossStartRow = startRow;
         fw->crossHeight = endRow;
     }
-    //std::cout << "Vertical Range: " << startRow << " to " << endRow << std::endl;
-    //std::cout << "Horizontal Range: " << startCol << " to " << endCol << std::endl;
     fw->to.updateVertRange( startRow, endRow );
     fw->to.updateHorizRange( startCol, endCol );
 }

@@ -3,14 +3,156 @@
 
 #include "playback_widget.h"
 
+/* ========================================================================= */
+// BUFFER HANDLER
+
+buffer_handler::buffer_handler(int height, int width, QObject* parent) :
+    QObject(parent)
+{
+    this->fr_height = height;
+    this->fr_width = width;
+    this->fr_size = fr_height*fr_width;
+    this->fp = NULL;
+    this->running = true;
+}
+buffer_handler::~buffer_handler()
+{
+    if(fp)
+    {
+        fclose(fp);
+        free(frame);
+    }
+}
+void buffer_handler::loadFile(QString file_name)
+{
+    // Step 1: Open the file specified in the parameter
+    fp = fopen(file_name.toStdString().c_str(), "rb");
+    if(!fp)
+    {
+        emit loaded(NO_LOAD);
+        return;
+    }
+
+    //Step 2: Find the size of the raw file
+    fseek(fp, 0, SEEK_END);
+    unsigned int filesize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    num_frames = filesize / (fr_size*pixel_size);
+    if(!filesize)
+    {
+        emit loaded(NO_DATA);
+        return;
+    }
+
+    frame = (uint16_t*) malloc(pixel_size*fr_size);
+    dark_data = (float*) calloc(fr_size,sizeof(float));
+    current_frame = 1;
+
+    emit loaded(SUCCESS);
+}
+void buffer_handler::loadDSF(QString file_name, unsigned int elements_to_read, long offset)
+{
+    unsigned int ndx = 0;
+    float frames_in_mask = 0;
+
+    // Step 0: Check that there is a file loaded first...
+    if(!frame)
+    {
+        emit loaded(NO_FILE);
+        return;
+    }
+
+    // Step 1: Allocate some memory and attempt to open the file
+    float* mask_in = (float*) calloc(fr_size, sizeof(float));
+    FILE* mask_file;
+    mask_file = fopen(file_name.toStdString().c_str(), "rb");
+
+    // Step 1.5: Check that the file is valid
+    if(mask_file)
+    {
+        // Step 2: Offset the file pointer to the requested frame
+        if(fseek(mask_file, offset, SEEK_SET) >= 0)
+        {
+            // Step 3: Read the data into a temporary buffer, then copy it into an unsigned int buffer which we can use to
+            // process the whole file at the same time
+            uint16_t* temp_buffer = (uint16_t*) malloc(elements_to_read*sizeof(uint16_t));
+            unsigned int* pic_buffer = (unsigned int*) malloc(elements_to_read*sizeof(unsigned int));
+            fread(temp_buffer, sizeof(uint16_t), elements_to_read, mask_file);
+            for( ; ndx < elements_to_read; ndx++) { pic_buffer[ndx] = (unsigned int)temp_buffer[ndx]; }
+            free(temp_buffer);
+
+            // Step 4: For each frame, begin collecting the value at each position.
+            for(unsigned int* pic_in = pic_buffer; pic_in <= (pic_buffer + elements_to_read - fr_size); pic_in += fr_size)
+            {
+                for(ndx = 0; ndx <= fr_size; ndx++)
+                    mask_in[ndx] += (float)pic_in[ndx];
+                frames_in_mask++;
+            }
+
+            // Step 5: Average the collected values and close the file
+            for(ndx = 0; ndx < fr_size; ndx++) { mask_in[ndx] /= frames_in_mask; }
+            free(pic_buffer);
+        }
+        else
+        {
+            emit loaded(READ_FAIL);
+            return;
+        }
+    }
+    else
+    {
+        emit loaded(NO_MASK);
+        return;
+    }
+
+    // Step 6: Load the mask, then free the memory we allocated
+    emit loadMask(mask_in);
+    fclose (mask_file);
+
+    emit loaded(SUCCESS);
+}
+void buffer_handler::getFrame()
+{
+    current_frame = 1;
+    while(running)
+    {
+        if(current_frame != old_frame)
+        {
+            fseek(fp,(current_frame-1)*fr_size*pixel_size,SEEK_SET);
+            fread(frame,pixel_size,fr_size,fp);
+            old_frame = current_frame;
+        }
+        else
+        {
+            usleep(5);
+        }
+    }
+    emit finished();
+}
+void buffer_handler::stop()
+{
+    running = false;
+}
+void buffer_handler::debug()
+{
+    std::cout << "Hello, World!" << std::endl;
+}
+
+/* ========================================================================= */
+// PLAYBACK WIDGET
+
 playback_widget::playback_widget(frameWorker* fw, QWidget* parent) :
     QWidget(parent)
 {
     this->fw = fw;
-    current_frame = 0;
-    frHeight = fw->getFrameHeight();
-    frWidth = fw->getFrameWidth();
+    this->frHeight = fw->getDataHeight();
+    this->frWidth = fw->getFrameWidth();
+
     frame_size = frHeight*frWidth;
+    bh = new buffer_handler(frHeight, frWidth);
+    buffer_thread = new QThread();
+    bh->moveToThread(buffer_thread);
+    bh->current_frame = 1;
 
     // making the controls
     openFileButton = new QPushButton(this);
@@ -73,16 +215,20 @@ playback_widget::playback_widget(frameWorker* fw, QWidget* parent) :
     qcp->rescaleAxes();
     qcp->axisRect()->setBackgroundScaled(false);
 
-    dsf = new dark_subtraction_filter(frWidth,frHeight);
+    dark = new dark_subtraction_filter(frWidth,frHeight);
 
     // connecting the buttons to slots
     connect(openFileButton,SIGNAL(clicked()),this,SLOT(loadFile()));
     connect(playPauseButton,SIGNAL(clicked()),this,SLOT(playPause()));
     connect(forwardButton,SIGNAL(clicked()),this,SLOT(moveForward()));
     connect(backwardButton,SIGNAL(clicked()),this,SLOT(moveBackward()));
-    //connect(progressBar,SIGNAL(valueChanged(int)),this,SLOT(handleFrame(int)));
+    connect(progressBar,SIGNAL(valueChanged(int)),this,SLOT(handleFrame(int)));
     connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
+    connect(buffer_thread,SIGNAL(started()),bh,SLOT(getFrame()));
+    connect(bh,SIGNAL(finished()),buffer_thread,SLOT(deleteLater()));
+    connect(bh,SIGNAL(loaded(err_code)),this,SLOT(finishLoading(err_code)));
+    connect(bh,SIGNAL(loadMask(float*)),this,SLOT(loadMaskIn(float*)));
     connect(this,SIGNAL(frameDone(int)),progressBar,SLOT(setValue(int)));
     connect(this,SIGNAL(frameDone(int)),this,SLOT(updateStatus(int)));
 
@@ -95,11 +241,17 @@ playback_widget::playback_widget(frameWorker* fw, QWidget* parent) :
     qgl.addWidget(forwardButton,8,4,1,1);
     qgl.addWidget(statusLabel,8,5,1,3);
     this->setLayout(&qgl);
+
+    buffer_thread->start();
 }
 playback_widget::~playback_widget()
 {
-    delete dsf;
-    free(input_array);
+    bh->stop();
+    delete bh;
+    buffer_thread->exit(0);
+    buffer_thread->wait();
+    delete buffer_thread;
+    delete dark;
     delete colorScale;
     delete colorMap;
     delete qcp;
@@ -123,33 +275,20 @@ double playback_widget::getFloor()
 void playback_widget::toggleUseDSF(bool t)
 {
     useDSF = t;
+    bh->old_frame = -1;
+    handleFrame(bh->current_frame);
 }
-void playback_widget::loadDSF(QString file_name, unsigned int bytes_to_read)
+void playback_widget::loadDSF(QString f, unsigned int e, long o)
 {
-    float* mask_in = new float[frWidth*frHeight];
-    FILE* mask_file;
-    unsigned long mask_size = 0;
-    mask_file = fopen(file_name.toStdString().c_str(), "rb");
-    if(mask_file)
-    {
-        fseek (mask_file, 0, SEEK_END); // non-portable
-        mask_size = ftell(mask_file);
-        if(mask_size != (frWidth*frHeight*sizeof(float)))
-        {
-            std::cerr << "Error: Dark Mask File does not match image size" << std::endl;
-            fclose (mask_file);
-            return;
-        }
-        rewind(mask_file); // go back to beginning
-        fread(mask_in, sizeof(float), frWidth*frHeight, mask_file);
-        fclose (mask_file);
-    }
-    else
-    {
-        std::cerr << "Error: could not Dark Mask" << std::endl;
-        return;
-    }
-    dsf->load_mask(mask_in);
+    bh->loadDSF(f, e, o);
+}
+void playback_widget::stop()
+{
+    // taking advantage of our clunky corner case catching code
+    play = false;
+    playBackward = true;
+    bh->current_frame = 1;
+    playPause();
 }
 void playback_widget::colorMapScrolledX(const QCPRange &newRange)
 {
@@ -224,7 +363,7 @@ void playback_widget::keyPressEvent(QKeyEvent* c)
 {
     if(!c->modifiers())
     {
-        if(c->key() == Qt::Key_Space)
+        if(c->key() == Qt::Key_Space || c->key() == Qt::Key_Return)
         {
             this->playPause();
             c->accept();
@@ -242,6 +381,24 @@ void playback_widget::keyPressEvent(QKeyEvent* c)
             c->accept();
             return;
         }
+        if(c->key() == Qt::Key_S)
+        {
+            this->stop();
+            c->accept();
+            return;
+        }
+        if(c->key() == Qt::Key_R)
+        {
+            this->fastRewind();
+            c->accept();
+            return;
+        }
+        if(c->key() == Qt::Key_F)
+        {
+            this->fastForward();
+            c->accept();
+            return;
+        }
         // More key mappings can be provided here
     }
 }
@@ -249,68 +406,97 @@ void playback_widget::keyPressEvent(QKeyEvent* c)
 //private slots
 void playback_widget::loadFile()
 {
-    // remove reference to file in current memory, if there is one...
-    if(input_array)
-        free(input_array);
+    statusLabel->setText("Error: No file selected. Please open a .raw file or drop one in the window.");
 
     QString fname = QFileDialog::getOpenFileName(this, "Please Select a Raw File", "/home/jryan/NGIS_DATA/jryan/",tr("Raw (*.raw *.bin *.hsi *.img)"));
-    if(fname == NULL) // if the cancel button is pressed
-        return;
-    FILE* fp = fopen(fname.toStdString().c_str(), "rb");
-
-    // find the size of the raw file
-    fseek(fp, 0, SEEK_END);
-    unsigned int filesize = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-    nFrames = filesize / (frame_size*pixel_size);
-
-    // allocate memory for the frames
-    frames = (uint16_t*) malloc(filesize);
-    input_array = (unsigned int*) malloc(sizeof(double)*nFrames*frame_size);
-
-    // load the bytes from the file into the frames array
-    fread(frames,pixel_size,filesize/pixel_size,fp);
-    fclose(fp);
-
-    for(unsigned int ndx = 0; ndx < frame_size*nFrames; ndx++)
+    if(fname.isEmpty()) // if the cancel button is pressed
     {
-        input_array[ndx] = (unsigned int)frames[ndx];
+        updateStatus(0);
+        return;
     }
-    free(frames);
+    bh->loadFile(fname);
+}
+void playback_widget::finishLoading(err_code e)
+{
+    switch(e)
+    {
+    case NO_LOAD:
+        statusLabel->setText("Error: Selected file could not be opened.");
+        break;
+    case NO_DATA:
+        statusLabel->setText("Error: The selected file contains no data.");
+        break;
+    case NO_FILE:
+        statusLabel->setText("Error: Please load a data file before selecting dark frames.");
+        break;
+    case READ_FAIL:
+        statusLabel->setText("Error: Mask file read failed.");
+        break;
+    case NO_MASK:
+        statusLabel->setText("Error: Could not load Dark Mask");
+        break;
+    default: /* SUCCESS */
 
-    playPauseButton->setEnabled(true);
-    forwardButton->setEnabled(true);
-    backwardButton->setEnabled(true);
-    progressBar->setEnabled(true);
-    progressBar->setMinimum(++current_frame);
-    progressBar->setMaximum(nFrames);
+        // Queue up the controls
+        playPauseButton->setEnabled(true);
+        forwardButton->setEnabled(true);
+        backwardButton->setEnabled(true);
+        progressBar->setEnabled(true);
+        progressBar->setMinimum(1);
+        progressBar->setMaximum(bh->num_frames);
 
-    handleFrame(current_frame);
+        // Process the newly loaded frame
+        bh->old_frame = -1; // shhhhhh... don't tell anyone how janky this is ;)
+        usleep(1000);
+        bh->old_frame = -1;
+        handleFrame(bh->current_frame);
+
+        break;
+    }
+}
+void playback_widget::loadMaskIn(float* mask_arr)
+{
+    dark->load_mask(mask_arr);
+    free(mask_arr);
 }
 void playback_widget::updateStatus(int frameNum)
 {
-    if( interval == 1 )
+    if(bh->frame)
     {
-        statusLabel->setText(tr("Frame: %1 / %2").arg(frameNum).arg(nFrames));
+        if( interval == 1 )
+            statusLabel->setText(tr("Frame: %1 / %2").arg(frameNum).arg(bh->num_frames));
+        else if( interval > 1 )
+            statusLabel->setText(tr("Frame: %1 / %2  (x%3)").arg(frameNum).arg(bh->num_frames).arg(interval));
     }
-    else if( interval > 1 )
+    else
     {
-        statusLabel->setText(tr("Frame: %1 / %2  (x%3)").arg(frameNum).arg(nFrames).arg(interval));
+        statusLabel->setText("Error: No file selected. Please open a .raw file or drop one in the window.");
     }
 }
 void playback_widget::handleFrame(int frameNum)
 {
-    current_frame = frameNum;
+    bh->current_frame = frameNum;
+    if(bh->current_frame == bh->old_frame)
+        return;
+    dark->update_dark_subtraction(bh->frame, bh->dark_data);
     for(int col = 0; col < frWidth; col++)
     {
         for(int row = 0; row < frHeight; row++)
         {
-            colorMap->data()->setCell(col,row,\
-                             input_array[(current_frame-1)*frame_size + (frHeight-row-1)*frWidth + col]);
+            if(useDSF)
+            {
+                colorMap->data()->setCell(col,row, \
+                                          bh->dark_data[(frHeight-row-1)*frWidth + col]);
+            }
+            else
+            {
+                colorMap->data()->setCell(col,row, \
+                                          bh->frame[(frHeight-row-1)*frWidth + col]);
+            }
         }
     }
     qcp->replot();
-    emit frameDone(current_frame);
+    emit frameDone(bh->current_frame);
 }
 void playback_widget::playPause()
 {
@@ -322,6 +508,7 @@ void playback_widget::playPause()
     }
     if(play || playBackward)
     {
+        // We need to disconnect each button from any possible connected states before we can make new connections
         disconnect(forwardButton,SIGNAL(clicked()),this,SLOT(moveForward()));
         disconnect(backwardButton,SIGNAL(clicked()),this,SLOT(moveBackward()));
         disconnect(forwardButton,SIGNAL(clicked()),this,SLOT(fastForward()));
@@ -333,21 +520,22 @@ void playback_widget::playPause()
 
         if(play)
         {
-            disconnect(&renderTimer,SIGNAL(timeout()),this,SLOT(moveBackward()));
-            connect(&renderTimer,SIGNAL(timeout()),this,SLOT(moveForward()));
+            disconnect(&render_timer,SIGNAL(timeout()),this,SLOT(moveBackward()));
+            connect(&render_timer,SIGNAL(timeout()),this,SLOT(moveForward()));
         }
         else if(playBackward)
         {
-            disconnect(&renderTimer,SIGNAL(timeout()),this,SLOT(moveForward()));
-            connect(&renderTimer,SIGNAL(timeout()),this,SLOT(moveBackward()));
+            disconnect(&render_timer,SIGNAL(timeout()),this,SLOT(moveForward()));
+            connect(&render_timer,SIGNAL(timeout()),this,SLOT(moveBackward()));
         }
-        renderTimer.start(75);
+        render_timer.start(50);
     }
     else
     {
-        renderTimer.stop();
+        render_timer.stop();
         interval = 1;
-        updateStatus(current_frame);
+        bh->old_frame = -1;
+        handleFrame(bh->current_frame);
 
         disconnect(forwardButton,SIGNAL(clicked()),this,SLOT(fastForward()));
         disconnect(backwardButton,SIGNAL(clicked()),this,SLOT(fastRewind()));
@@ -359,21 +547,21 @@ void playback_widget::playPause()
 }
 void playback_widget::moveForward()
 {
-    current_frame += interval;
-    if(current_frame > nFrames)
+    bh->current_frame += interval;
+    if(bh->current_frame > bh->num_frames)
     {
-        current_frame = 1;
+        bh->current_frame = 1 + (bh->current_frame-bh->num_frames-1);
     }
-    handleFrame(current_frame);
+    handleFrame(bh->current_frame);
 }
 void playback_widget::moveBackward()
 {
-    current_frame -= interval;
-    if(current_frame <= 1)
+    bh->current_frame -= interval;
+    if(bh->current_frame < 1)
     {
-        current_frame = nFrames - 1;
+        bh->current_frame = bh->num_frames + bh->current_frame;
     }
-    handleFrame(current_frame);
+    handleFrame(bh->current_frame);
 }
 void playback_widget::fastForward()
 {
@@ -383,6 +571,7 @@ void playback_widget::fastForward()
         interval *= 2;
     if(!play)
     {
+        interval = 1;
         playBackward = false;
         playPause();
     }
@@ -395,7 +584,17 @@ void playback_widget::fastRewind()
         interval *= 2;
     if(!playBackward)
     {
-        playBackward = true;
-        playPause();
+        if(!play)
+        {
+            play = true;
+            playBackward = true;
+            playPause();
+        }
+        else
+        {
+            interval = 1;
+            playBackward = true;
+            playPause();
+        }
     }
 }

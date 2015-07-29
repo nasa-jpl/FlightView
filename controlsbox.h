@@ -4,6 +4,7 @@
 // Qt GUI includes
 #include <QButtonGroup>
 #include <QCheckBox>
+#include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QGroupBox>
@@ -99,7 +100,7 @@ signals:
 
     void startDSFMaskCollection();
     void stopDSFMaskCollection();
-    void mask_selected(QString file_name, unsigned int bytes_to_read);
+    void mask_selected(QString file_name, unsigned int bytes_to_read, long offset);
 
 public slots:
     void tab_changed_slot(int index);

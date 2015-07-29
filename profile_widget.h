@@ -13,33 +13,44 @@
 class profile_widget : public QWidget//, public view_widget_interface
 {
     Q_OBJECT
+
+    frameWorker * fw;
+    QTimer rendertimer;
+
+    // GUI elements
     QVBoxLayout qvbl;
+
+    // Plot elements
     QCustomPlot * qcp;
     QCPPlotTitle * plotTitle;
-    int frWidth;
-    int startRow;
-    int endRow;
-    int beginCol;
-    int beginRow;
-    unsigned int count = 0;
-    QVector<double> x;
-    QVector<double> y;
+
+    // Frame rendering elements
+    int frWidth, frHeight;
+
     volatile double ceiling;
     volatile double floor;
-    QTimer rendertimer;
-    frameWorker * fw;
+
+    int startRow,endRow;
+    QVector<double> x;
+    QVector<double> y;
+
+    unsigned int count = 0;
+
 public:
     explicit profile_widget(frameWorker * fw, image_t image_type , QWidget *parent = 0);
+
     double getCeiling();
     double getFloor();
+
     unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
-    int frHeight;
-    //int horizLinesAvgd = 1;
-    int vertLinesAvgd = 1;
+
     image_t itype;
+
 public slots:
     void handleNewFrame();
+
+    // plot controls
     void updateCeiling(int c);
     void updateFloor(int f);
     void rescaleRange();

@@ -15,7 +15,7 @@ frameWorker::frameWorker(QObject *parent) :
 
     frHeight = to.getFrameHeight();
     frWidth = to.getFrameWidth();
-    dataHeight = to.getDataHeight() + 180; // Why?
+    dataHeight = to.getDataHeight();
 
     if(camera_type() == CL_6604A)
         base_ceiling = (1<<14) - 1;
@@ -58,12 +58,12 @@ bool frameWorker::dsfMaskCollected()
 void frameWorker::captureFrames()
 {
     unsigned int last_savenum = 0;
-
     frame_c* workingFrame;
+
     while(doRun)
     {
         QCoreApplication::processEvents();
-        usleep(50); //So that CPU utilization is not 100%
+        usleep(100); //So that CPU utilization is not 100%
         workingFrame = &to.frame_ring_buffer[c%CPU_FRAME_BUFFER_SIZE];
 
         if(std_dev_processing_frame != NULL)
@@ -90,7 +90,7 @@ void frameWorker::captureFrames()
             last_savenum = save_num;
             c++;
         }
-        if( c >= framecount_window )
+        if( c%framecount_window == 0 && c != 0 )
         {
             updateDelta();
         }
@@ -117,7 +117,7 @@ void frameWorker::toggleUseDSF(bool t)
 }
 void frameWorker::startSavingRawData(unsigned int framenum, QString name)
 {
-    qDebug() << "Start Saving Frames @" << name;
+    qDebug() << "Start Saving Frames @ " << name;
 
     to.startSavingRaws(name.toUtf8().constData(), framenum);
 }

@@ -216,9 +216,10 @@ void ControlsBox::tab_changed_slot(int index)
     {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), qobject_cast<playback_widget*>(cur_frameview), SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), qobject_cast<playback_widget*>(cur_frameview), SLOT(updateFloor(int)));
-        disconnect(this, SIGNAL(mask_selected(QString, unsigned int)), qobject_cast<playback_widget*>(cur_frameview), \
-                   SLOT(loadDSF(QString, unsigned int)));
-        //load_mask_from_file.setEnabled(false); // The playback widget is the only widget which currently uses the load mask button
+        disconnect(this, SIGNAL(mask_selected(QString, unsigned int, long)), qobject_cast<playback_widget*>(cur_frameview), \
+                   SLOT(loadDSF(QString, unsigned int, long)));
+        load_mask_from_file.setEnabled(false); // The playback widget is the only widget which currently uses the load mask button
+        qobject_cast<playback_widget*>(cur_frameview)->stop();
     }
 
     // Next, we set up the widget of the current tab.
@@ -255,8 +256,8 @@ void ControlsBox::tab_changed_slot(int index)
             frameMax = fw->getFrameHeight() - 1;
             lines_slider.setMaximum(frameMax);
             line_average_edit.setMaximum(frameMax);
-            mpw->updateCrossRange(mpw->vertLinesAvgd);
-            lines_slider.setValue(mpw->vertLinesAvgd);
+            mpw->updateCrossRange(fw->vertLinesAvgd);
+            lines_slider.setValue(fw->vertLinesAvgd);
             lines_slider.setEnabled( true );
             line_average_edit.setEnabled( true );
             break;
@@ -413,8 +414,8 @@ void ControlsBox::tab_changed_slot(int index)
 
             std_dev_N_slider.setEnabled(false);
             std_dev_N_edit.setEnabled(false);
-            //load_mask_from_file.setEnabled(true);
-            connect(this, SIGNAL(mask_selected(QString, unsigned int)), pbw, SLOT(loadDSF(QString, unsigned int)));
+            load_mask_from_file.setEnabled(true);
+            connect(this, SIGNAL(mask_selected(QString, unsigned int, long)), pbw, SLOT(loadDSF(QString, unsigned int, long)));
 
             use_DSF_cbox.setEnabled(true);
             ceiling_maximum = pbw->slider_max;
@@ -527,14 +528,96 @@ void ControlsBox::stop_dark_collection_slot()
 }
 void ControlsBox::getMaskFile()
 {
-    QFileDialog dialog(0);
-    dialog.setFilter(QDir::Writable | QDir::Files);
-    QString fileName = dialog.getOpenFileName(this, tr("Select mask file"),"",tr("Files (*.raw)"));
+    // Step 1: Open a dialog to select the mask file location
+    QFileDialog location_dialog(0);
+    location_dialog.setFilter(QDir::Writable | QDir::Files);
+    QString fileName = location_dialog.getOpenFileName(this, tr("Select mask file"),"",tr("Files (*.raw)"));
     if(fileName.isEmpty())
     {
         return;
     }
-    emit mask_selected(fileName, 4096); // placeholder
+
+    // Step 2: Calculate the number of frames
+    FILE* mask_file;
+    unsigned long mask_size = 0;
+    unsigned long frame_size = fw->getFrameHeight()*fw->getFrameWidth();
+    unsigned long num_frames = 0;
+    mask_file = fopen(fileName.toStdString().c_str(), "rb");
+    if(!mask_file)
+    {
+        std::cerr << "Error: Mask file could not be loaded." << std::endl;
+        return;
+    }
+    fseek (mask_file, 0, SEEK_END); // non-portable
+    mask_size = ftell(mask_file);
+    num_frames = mask_size / (frame_size*sizeof(uint16_t));
+    fclose(mask_file);
+    if(!mask_size)
+    {
+        std::cerr << "Error: Mask file contains no data." << std::endl;
+        return;
+    }
+
+    // Step 3: Open a new dialog to select which frames to read
+    QDialog bytes_dialog;
+    bytes_dialog.setWindowTitle("Select Read Area");
+    QLabel status_label;
+    status_label.setText(tr("The selected file contains %1 frames.\nPlease select which frames to use for the Dark Subtraction Mask.") \
+                         .arg(num_frames));
+    QSpinBox left_bound;
+    QSpinBox right_bound;
+    left_bound.setMinimum(1);
+    left_bound.setMaximum(num_frames);
+    left_bound.setValue(1);
+    right_bound.setMinimum(1);
+    right_bound.setMaximum(num_frames);
+    right_bound.setValue(num_frames);
+    QPushButton* select_range = new QPushButton(tr("&Select Range"));
+    select_range->setDefault(true);
+    QPushButton* cancel = new QPushButton(tr("&Cancel"));
+    QDialogButtonBox* buttons = new QDialogButtonBox(Qt::Horizontal);
+    buttons->addButton(select_range, QDialogButtonBox::AcceptRole);
+    buttons->addButton(cancel, QDialogButtonBox::RejectRole);
+    connect(buttons,SIGNAL(rejected()),&bytes_dialog,SLOT(reject()));
+    connect(buttons,SIGNAL(accepted()),&bytes_dialog,SLOT(accept()));
+    QGridLayout bd_layout;
+    bd_layout.addWidget(&status_label, 0, 0, 1, 4);
+    bd_layout.addWidget(new QLabel("Read from frame:"), 1, 0, 1, 1);
+    bd_layout.addWidget(&left_bound, 1, 1, 1, 1);
+    bd_layout.addWidget(new QLabel(" to "), 1, 2, 1, 1);
+    bd_layout.addWidget(&right_bound, 1, 3, 1, 1);
+    bd_layout.addWidget(buttons, 2, 1, 1, 4);
+    bytes_dialog.setLayout(&bd_layout);
+    bytes_dialog.show();
+    int result = bytes_dialog.exec();
+
+    // Step 4: Check that the given range is acceptable
+    if(result == QDialog::Accepted)
+    {
+        int lo_val = left_bound.value();
+        int hi_val = right_bound.value();
+        int elem_to_read = hi_val - lo_val + 1;
+        long offset = (lo_val-1)*frame_size;
+        if(elem_to_read > 0)
+        {
+            elem_to_read *= frame_size;
+            emit mask_selected(fileName, (unsigned int)elem_to_read, offset);
+        }
+        else if(elem_to_read == 0)
+        {
+            elem_to_read = frame_size;
+            emit mask_selected(fileName, (unsigned int)elem_to_read, offset);
+        }
+        else
+        {
+            std::cerr << "Error: The selected range of dark frames is invalid." << std::endl;
+            return;
+        }
+    }
+    else
+    {
+        return;
+    }
 }
 void ControlsBox::use_DSF_general(bool checked)
 {

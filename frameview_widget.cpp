@@ -22,11 +22,10 @@ frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget*
     switch(image_type)
     {
     case BASE: ceiling = fw->base_ceiling; break;
-    case DSF: ceiling = 20; break;
-    case STD_DEV: ceiling = 20; break;
+    case DSF: ceiling = 100; break;
+    case STD_DEV: ceiling = 100; break;
     default: break; // to remove annoying warnings on compilation
     }
-    ceiling = fw->base_ceiling;
     floor=0;
     count=0;
     frHeight = fw->getFrameHeight();
@@ -127,7 +126,6 @@ void frameview_widget::handleNewFrame()
     {
         if(image_type == BASE)
         {
-
             uint16_t * local_image_ptr = fw->curFrame->image_data_ptr;
             for(int col = 0; col < frWidth; col++ )
             {
@@ -274,7 +272,7 @@ void frameview_widget::rescaleRange()
 {
     colorScale->setDataRange(QCPRange(floor,ceiling));
 }
-void frameview_widget::setCrosshairs(QMouseEvent * event)
+void frameview_widget::setCrosshairs(QMouseEvent* event)
 { // lol ;) ;) ;) This is a stupid bugfix
     int currentVDiff = fw->crossStartRow - fw->crossHeight;
     int currentHDiff = fw->crossStartCol - fw->crossWidth;
