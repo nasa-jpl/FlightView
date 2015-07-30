@@ -30,17 +30,17 @@ int main(int argc, char *argv[])
     QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
     QSplashScreen splash(logo_pixmap);
     splash.show();
-    splash.showMessage(QObject::tr("Loading AVIRIS-Next Generation Live View2..."),
+    splash.showMessage(QObject::tr("Loading AVIRIS-Next Generation LiveView2. Compiled on " __DATE__ ", " __TIME__ " PDT by " UNAME "@" HOST  ),
                        Qt::AlignCenter | Qt::AlignBottom , Qt::gray);
-
-    // Display version author message
-    std::cout << "This version of liveview2 was compiled on " << __DATE__ << " at " << __TIME__<< " using gcc " << __GNUC__ << std::endl;
-    std::cout << "The compilation was performed by " << UNAME << " @ " << HOST << std::endl;
 
     frameWorker * fw = new frameWorker();
     QThread * workerThread = new QThread();
     fw->moveToThread(workerThread);
     QObject::connect(workerThread,SIGNAL(started()),fw,SLOT(captureFrames()));
+
+    // Display version author message
+    std::cout << "This version of liveview2 was compiled on " << __DATE__ << " at " << __TIME__<< " using gcc " << __GNUC__ << std::endl;
+    std::cout << "The compilation was performed by " << UNAME << " @ " << HOST << std::endl;
 
     MainWindow w(workerThread, fw);
     w.setGeometry(   QStyle::alignedRect(

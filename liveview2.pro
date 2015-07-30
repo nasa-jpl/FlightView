@@ -62,6 +62,13 @@ QMAKE_CXXFLAGS += -std=c++11 -O3 -march=corei7-avx
 # Tell the qcustomplot header that it will be used as library:
 DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 
+# make a nice folder containing what is needed in a release:
+QMAKE_POST_LINK += mkdir -p ../lv2_release;
+QMAKE_POST_LINK += cp liveview2 ../lv2_release/;
+QMAKE_POST_LINK += cp ../liveview2/liveview2_icon.png ../lv2_release/;
+QMAKE_POST_LINK += cp ../liveview2/liveview2.desktop ../lv2_release/;
+
+
 # Link with debug version of qcustomplot if compiling in debug mode, else with release library:
 #CONFIG(debug, release|debug) {
 #  win32:QCPLIB = qcustomplotd1

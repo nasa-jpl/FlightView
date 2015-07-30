@@ -47,6 +47,8 @@ void buffer_handler::loadFile(QString file_name)
     frame = (uint16_t*) malloc(pixel_size*fr_size);
     dark_data = (float*) calloc(fr_size,sizeof(float));
     current_frame = 1;
+    fseek(fp,(current_frame-1)*fr_size*pixel_size,SEEK_SET);
+    fread(frame,pixel_size,fr_size,fp);
 
     emit loaded(SUCCESS);
 }
@@ -447,8 +449,6 @@ void playback_widget::finishLoading(err_code e)
 
         // Process the newly loaded frame
         bh->old_frame = -1; // shhhhhh... don't tell anyone how janky this is ;)
-        usleep(1000);
-        bh->old_frame = -1;
         handleFrame(bh->current_frame);
 
         break;
@@ -478,6 +478,7 @@ void playback_widget::handleFrame(int frameNum)
     bh->current_frame = frameNum;
     if(bh->current_frame == bh->old_frame)
         return;
+    usleep(5);
     dark->update_dark_subtraction(bh->frame, bh->dark_data);
     for(int col = 0; col < frWidth; col++)
     {
