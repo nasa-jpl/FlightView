@@ -86,3 +86,55 @@ void MainWindow::enableStdDevTabs()
     tabWidget->setTabEnabled(3,true);
     disconnect(fw,SIGNAL(std_dev_ready()),this,SLOT(enableStdDevTabs()));
 }
+
+// protected
+void MainWindow::keyPressEvent(QKeyEvent* c)
+{
+    /*!
+     * Contains all keyboard shortcuts for liveview2
+     */
+    playback_widget* pbw = qobject_cast<playback_widget*>(tabWidget->widget(tabWidget->currentIndex()));
+    if(pbw) // inside playback widget
+    {
+        if(!c->modifiers())
+        {
+            if(c->key() == Qt::Key_Space || c->key() == Qt::Key_Return)
+            {
+                pbw->playPause();
+                c->accept();
+                return;
+            }
+            if(c->key() == Qt::Key_A)
+            {
+                pbw->moveBackward();
+                c->accept();
+                return;
+            }
+            if(c->key() == Qt::Key_D)
+            {
+                pbw->moveForward();
+                c->accept();
+                return;
+            }
+            if(c->key() == Qt::Key_S)
+            {
+                pbw->stop();
+                c->accept();
+                return;
+            }
+            if(c->key() == Qt::Key_R)
+            {
+                pbw->fastRewind();
+                c->accept();
+                return;
+            }
+            if(c->key() == Qt::Key_F)
+            {
+                pbw->fastForward();
+                c->accept();
+                return;
+            }
+            // More key mappings can be provided here
+        }
+    }
+}

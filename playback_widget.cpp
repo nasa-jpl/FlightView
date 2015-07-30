@@ -1,5 +1,6 @@
 #include <QFileDialog>
 #include <QStyle>
+#include <QUrl>
 
 #include "playback_widget.h"
 
@@ -121,7 +122,11 @@ void buffer_handler::getFrame()
         if(current_frame != old_frame)
         {
             fseek(fp,(current_frame-1)*fr_size*pixel_size,SEEK_SET);
-            fread(frame,pixel_size,fr_size,fp);
+
+            buf_access.lock();
+                fread(frame,pixel_size,fr_size,fp);
+            buf_access.unlock();
+
             old_frame = current_frame;
         }
         else
@@ -154,7 +159,8 @@ playback_widget::playback_widget(frameWorker* fw, QWidget* parent) :
     bh = new buffer_handler(frHeight, frWidth);
     buffer_thread = new QThread();
     bh->moveToThread(buffer_thread);
-    bh->current_frame = 1;
+
+    setAcceptDrops(true);
 
     // making the controls
     openFileButton = new QPushButton(this);
@@ -359,146 +365,6 @@ void playback_widget::rescaleRange()
     colorScale->setDataRange(QCPRange(floor,ceiling));
     qcp->replot();
 }
-
-// protected
-void playback_widget::keyPressEvent(QKeyEvent* c)
-{
-    if(!c->modifiers())
-    {
-        if(c->key() == Qt::Key_Space || c->key() == Qt::Key_Return)
-        {
-            this->playPause();
-            c->accept();
-            return;
-        }
-        if(c->key() == Qt::Key_A)
-        {
-            this->moveBackward();
-            c->accept();
-            return;
-        }
-        if(c->key() == Qt::Key_D)
-        {
-            this->moveForward();
-            c->accept();
-            return;
-        }
-        if(c->key() == Qt::Key_S)
-        {
-            this->stop();
-            c->accept();
-            return;
-        }
-        if(c->key() == Qt::Key_R)
-        {
-            this->fastRewind();
-            c->accept();
-            return;
-        }
-        if(c->key() == Qt::Key_F)
-        {
-            this->fastForward();
-            c->accept();
-            return;
-        }
-        // More key mappings can be provided here
-    }
-}
-
-//private slots
-void playback_widget::loadFile()
-{
-    statusLabel->setText("Error: No file selected. Please open a .raw file or drop one in the window.");
-
-    QString fname = QFileDialog::getOpenFileName(this, "Please Select a Raw File", "/home/jryan/NGIS_DATA/jryan/",tr("Raw (*.raw *.bin *.hsi *.img)"));
-    if(fname.isEmpty()) // if the cancel button is pressed
-    {
-        updateStatus(0);
-        return;
-    }
-    bh->loadFile(fname);
-}
-void playback_widget::finishLoading(err_code e)
-{
-    switch(e)
-    {
-    case NO_LOAD:
-        statusLabel->setText("Error: Selected file could not be opened.");
-        break;
-    case NO_DATA:
-        statusLabel->setText("Error: The selected file contains no data.");
-        break;
-    case NO_FILE:
-        statusLabel->setText("Error: Please load a data file before selecting dark frames.");
-        break;
-    case READ_FAIL:
-        statusLabel->setText("Error: Mask file read failed.");
-        break;
-    case NO_MASK:
-        statusLabel->setText("Error: Could not load Dark Mask");
-        break;
-    default: /* SUCCESS */
-
-        // Queue up the controls
-        playPauseButton->setEnabled(true);
-        forwardButton->setEnabled(true);
-        backwardButton->setEnabled(true);
-        progressBar->setEnabled(true);
-        progressBar->setMinimum(1);
-        progressBar->setMaximum(bh->num_frames);
-
-        // Process the newly loaded frame
-        bh->old_frame = -1; // shhhhhh... don't tell anyone how janky this is ;)
-        handleFrame(bh->current_frame);
-
-        break;
-    }
-}
-void playback_widget::loadMaskIn(float* mask_arr)
-{
-    dark->load_mask(mask_arr);
-    free(mask_arr);
-}
-void playback_widget::updateStatus(int frameNum)
-{
-    if(bh->frame)
-    {
-        if( interval == 1 )
-            statusLabel->setText(tr("Frame: %1 / %2").arg(frameNum).arg(bh->num_frames));
-        else if( interval > 1 )
-            statusLabel->setText(tr("Frame: %1 / %2  (x%3)").arg(frameNum).arg(bh->num_frames).arg(interval));
-    }
-    else
-    {
-        statusLabel->setText("Error: No file selected. Please open a .raw file or drop one in the window.");
-    }
-}
-void playback_widget::handleFrame(int frameNum)
-{
-    bh->current_frame = frameNum;
-    if(bh->current_frame == bh->old_frame)
-        return;
-    usleep(5);
-    dark->update_dark_subtraction(bh->frame, bh->dark_data);
-    for(int col = 0; col < frWidth; col++)
-    {
-        for(int row = 0; row < frHeight; row++)
-        {
-            if(useDSF)
-            {
-                colorMap->data()->setCell(col,row, \
-                                          bh->dark_data[(frHeight-row-1)*frWidth + col]);
-            }
-            else
-            {
-                colorMap->data()->setCell(col,row, \
-                                          bh->frame[(frHeight-row-1)*frWidth + col]);
-            }
-        }
-    }
-    qcp->replot();
-    emit frameDone(bh->current_frame);
-}
 void playback_widget::playPause()
 {
     play = !play;
@@ -598,4 +464,125 @@ void playback_widget::fastRewind()
             playPause();
         }
     }
+}
+
+// protected
+void playback_widget::dragEnterEvent(QDragEnterEvent* event)
+{
+    if(event->mimeData()->hasUrls())
+        event->acceptProposedAction();
+}
+void playback_widget::dropEvent(QDropEvent* event)
+{
+    foreach (const QUrl &url, event->mimeData()->urls())
+    {
+        const QString &fileName = url.toLocalFile();
+#ifdef VERBOSE
+        qDebug() << "Dropped file:" << fileName;
+#endif
+            bh->loadFile(fileName);
+    }
+}
+
+//private slots
+void playback_widget::loadFile()
+{
+    if(this->isPlaying() || playBackward == true)
+    {
+        play = true;
+        playBackward = false;
+        playPause();
+    }
+    statusLabel->setText("Error: No file selected. Please open a .raw file or drop one in the window.");
+
+    QString fname = QFileDialog::getOpenFileName(this, "Please Select a Raw File", "/home/jryan/NGIS_DATA/jryan/",tr("Raw (*.raw *.bin *.hsi *.img)"));
+    if(fname.isEmpty()) // if the cancel button is pressed
+    {
+        updateStatus(bh->current_frame);
+        return;
+    }
+    bh->loadFile(fname);
+}
+void playback_widget::finishLoading(err_code e)
+{
+    switch(e)
+    {
+    case NO_LOAD:
+        statusLabel->setText("Error: Selected file could not be opened.");
+        break;
+    case NO_DATA:
+        statusLabel->setText("Error: The selected file contains no data.");
+        break;
+    case NO_FILE:
+        statusLabel->setText("Error: Please load a data file before selecting dark frames.");
+        break;
+    case READ_FAIL:
+        statusLabel->setText("Error: Mask file read failed.");
+        break;
+    case NO_MASK:
+        statusLabel->setText("Error: Could not load Dark Mask");
+        break;
+    default: /* SUCCESS */
+
+        // Queue up the controls
+        playPauseButton->setEnabled(true);
+        forwardButton->setEnabled(true);
+        backwardButton->setEnabled(true);
+        progressBar->setEnabled(true);
+        progressBar->setMinimum(1);
+        progressBar->setMaximum(bh->num_frames);
+
+        // Process the newly loaded frame
+        bh->old_frame = -1; // shhhhhh... don't tell anyone how janky this is ;)
+        handleFrame(bh->current_frame);
+
+        break;
+    }
+}
+void playback_widget::loadMaskIn(float* mask_arr)
+{
+    dark->load_mask(mask_arr);
+    free(mask_arr);
+}
+void playback_widget::updateStatus(int frameNum)
+{
+    if(bh->frame)
+    {
+        if( interval == 1 )
+            statusLabel->setText(tr("Frame: %1 / %2").arg(frameNum).arg(bh->num_frames));
+        else if( interval > 1 )
+            statusLabel->setText(tr("Frame: %1 / %2  (x%3)").arg(frameNum).arg(bh->num_frames).arg(interval));
+    }
+    else
+    {
+        statusLabel->setText("Error: No file selected. Please open a .raw file or drop one in the window.");
+    }
+}
+void playback_widget::handleFrame(int frameNum)
+{
+    bh->current_frame = frameNum;
+    if(bh->current_frame == bh->old_frame)
+        return;
+    usleep(5);
+    bh->buf_access.lock();
+    dark->update_dark_subtraction(bh->frame, bh->dark_data);
+    for(int col = 0; col < frWidth; col++)
+    {
+        for(int row = 0; row < frHeight; row++)
+        {
+            if(useDSF)
+            {
+                colorMap->data()->setCell(col,row, \
+                                          bh->dark_data[(frHeight-row-1)*frWidth + col]);
+            }
+            else
+            {
+                colorMap->data()->setCell(col,row, \
+                                          bh->frame[(frHeight-row-1)*frWidth + col]);
+            }
+        }
+    }
+    bh->buf_access.unlock();
+    qcp->replot();
+    emit frameDone(bh->current_frame);
 }

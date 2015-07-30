@@ -4,6 +4,7 @@
 #include <QGridLayout>
 #include <QIcon>
 #include <QLabel>
+#include <QMutex>
 #include <QPushButton>
 #include <QSlider>
 #include <QSpinBox>
@@ -20,14 +21,6 @@ class buffer_handler : public QObject
 {
     Q_OBJECT
 
-    /* JP sez: Hello future coder! You may be surprised that liveview can load files of any size and play them back at a
-     * reasonable rate using only ~500 kB of memory...  As you explore this code, you will realize it is all an illusion
-     * supported by a hunk of very sketchy code. The truth is that I use a Just-In-Time (JIT) buffer which only keeps
-     * one frame in memory at a time. The data array is read and written as needed. This is acheived through parallel threads which have no
-     * protection for access! We are dancing on the knife's edge for timing. On some systems with slower hard drives, this means
-     * that the computer may attempt to access memory before it is ready to be rendered. Some tweaking of the timing, especially
-     * on initial load, may be necessary to bring the forces in balance. A mutex should probably be used in the future. */
-
     FILE* fp;
 
     int fr_height, fr_width;
@@ -39,6 +32,8 @@ class buffer_handler : public QObject
 public:
     buffer_handler(int height, int width, QObject* parent = 0);
     virtual ~buffer_handler();
+
+    QMutex buf_access;
 
     int current_frame;
     int old_frame = 1;
@@ -135,8 +130,16 @@ public slots:
     void updateFloor(int f);
     void rescaleRange();
 
+    // playback controls
+    void playPause();
+    void moveForward();
+    void moveBackward();
+    void fastForward();
+    void fastRewind();
+
 protected:
-    void keyPressEvent(QKeyEvent* c);
+    void dragEnterEvent(QDragEnterEvent* event);
+    void dropEvent(QDropEvent* event);
 
 signals:
     void frameDone(int);
@@ -146,15 +149,6 @@ private slots:
     void finishLoading(err_code e);
     void loadMaskIn(float*);
     void updateStatus(int);
-    void handleFrame(int);
-
-    // playback controls
-    void playPause();
-
-    void moveForward();
-    void moveBackward();
-    void fastForward();
-    void fastRewind();
-    
+    void handleFrame(int); 
 };
 #endif // PLAYBACK_WIDGET_H

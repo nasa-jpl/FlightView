@@ -42,6 +42,9 @@ private:
 public slots:
     void enableStdDevTabs();
 
+protected:
+    void keyPressEvent(QKeyEvent* c);
+
 };
 
 #endif // MAINWINDOW_H
