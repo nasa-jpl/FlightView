@@ -1,92 +1,146 @@
-@author Noah Levy
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///		CUDA TAKE																							   ///
+///		2015 Jet Propulsion Laboratory, AVIRIS lab															   ///
+///		Made with love in the basement <3																	   ///
+///																											   ///
+///		@authors: Noah Levy and JP Ryan																		   ///
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+------------------------
+Contact Us!
+------------------------
+JP's contact information
+JPL email: John.P.Ryan@jpl.nasa.gov
+Email: jpryan104@gmail.com or jpr369@nyu.edu
+
+Noah's contact information
 Inactive email: nlevy@jpl.nasa.gov
 Email: noahmslevy@gmail.com or nml45@cornell.edu
+
 -----------------------
 Overview
 -----------------------
+cuda_take is a backend program that is used for capturing a camera-link device output and running "filters" which perform analysis on said output.
 
-
-cuda_take is a backend program that is used for capturing a camera-link device output and running "filters" on said output
-
-In order to talk to an FPIE box, initcam must first be run for the desired focal plane geometry. This script is generally available in /opt/EDTpdv
+The program will not be able to allocate memory without a specified camera geometry. To talk to an FPIE box, initcam must first be run for the desired focal plane geometry. This script is generally available in /opt/EDTpdv
 
 cuda_take is available as an executable binary (cuda_take) for testing (this only prints out debug information) or as a statically linked library (libcuda_take.a) for inclusion in other programs (liveview2)
 
 -----------------------
-Set up (w/ git)
+Installation
 -----------------------
-Assuming instalation on a debian wheezy system
+To install on a debian wheezy system:
+NB -> If git is already installed, skip step 1. If you are running a version of the nvidia-cuda-toolkit that is v5.0 or greater, skip step 2.
 
-First, install git
+1. Install git using the command (You must have superuser access)
 
     $sudo apt-get install git
 
-Next, install the nvidia-cuda-toolkit v5.0 or greater.
+2. Install an nvidia-cuda-toolkit of v5.0 or greater:
 
-Currently, Debian Wheezy has v4.2 in it's repos, as a result you must enable wheezy-backports.
-This can be achieved by appending a url to /etc/apt/sources.list with the below command.
+	a. Debian Wheezy uses v4.2 in its repositories by default, therefore to obtain compatibility with newer versions of cuda you must use wheezy-backports.
+	Append a url to /etc/apt/sources.list with the following command
 
-    $echo "deb http://http.debian.net/debian wheezy-backports main" >> /etc/apt/sources.list
+    	$echo "deb http://http.debian.net/debian wheezy-backports main" >> /etc/apt/sources.list
 
-then
+	b. Update the libraries
 
-    $sudo apt-get update
+    	$sudo apt-get update
 
-Now, install the backported nvidia-cuda-toolkit
+	c. Install the backported nvidia-cuda-toolkit
 
-    $sudo apt-get -t wheezy-backports install "nvidia-cuda-toolkit"
+   		$sudo apt-get -t wheezy-backports install "nvidia-cuda-toolkit"
 
-Now, you can get a local copy of the source code by "pulling" from an existing repository. Currently, one such repository is located @aviris-cal /home/nlevy/EDT_Development/cuda_take
+3. Get a local copy of the source code by "pulling" from the remote master repository located on the JPL github. The most recent versions of cuda_take and liveview will be uploaded to the aviris repo:
 
-To clone this run:
+		$git clone http://github.jpl.nasa.gov/aviris/cuda_take.git
+NB -> git will ask you for a login. Use your standard JPL login - if you have logged in to JPL git in the past, no further action is needed. Otherwise, you will need to login to git online first.
 
-$git clone aviris-cal:/home/nlevy/EDT_Development/cuda_take
 
-Now the source code should be copied to a local directory called cuda_take, to compile this code:
+4. git will automatically generate a directory named cuda_take containing the source code. It is a good idea to keep this directory in a local "projects" folder which is shared by liveview, or any other application that will use cuda_take. To compile, enter the following commands ( -j is added as an option to maximize the compilation speed using parallel threads):
 
-$cd cuda_take
-$make
+	$cd cuda_take
+	$make -j
 
+5. (Optional - for developers) When modifying headers in the source code, developers must have make re-construct libcuda_take.a at compile time:
+
+	$make clean
+	$make -j
 
 -----------------------
 Design
 -----------------------
-cuda_take is designed to be as modular as possible. There is a loop that reads in raw data via the functions provided by libpdv in take_object. From there, the raw data is copied into a ring buffer of frame objects. Each frame object has page-locked CPU memory allocated for the raw image and the output of the std. deviation results, all other results are stored in non page-locked memory. The page locking allows for the GPU to do Direct Memory Access in order to copy asynchronously.
+cuda_take is designed to be as modular as possible. There is a loop that reads in raw data via the functions provided by libpdv in take_object. Alternatively, future developers may add in custom hardware options through the use of conitional compilation. Opal Kelly FPGA boards are supported for development. Any future forms of hardware must be custom implemented up to the point of obtaining a complete image. From there, the raw data is copied into a ring buffer of frame objects. Each frame object has page-locked CPU memory allocated for the raw image and the output of the std. deviation results, all other results are stored in non page-locked memory. The page locking allows for the GPU to do Direct Memory Access in order to copy asynchronously. Furthermore, mean and FFT calculations are performed in a parallel process for each frame.
+
+-----------------------
+Components
+-----------------------
+Take Object -> take_object.cpp
+The primary component of cuda_take, this object controls all data in the backend, communicates with the hardware, and performs some preliminary calculations on the raw data before it is rendered and processed. The other filters are launched for each frame from this object within the event loop, which is called pdv_loop.
+
+Chroma Translate Filter -> chroma_translate_filter.cpp
+For the Chroma series of detectors, the data signal arriving along the camera link cable is encoded via a serialization scheme. The data for a single pixel is recorded in parallel for each of the 8 tap panels on the device. The serializer then sends the parallel pixels in the order of the tap from left to right. Therefore, a single pixel in a tap will be sent along the cable for tap 1->2->3->4->5->6->7->8 ...
+Before the image data is sent out for processing, we must use a simple algorithm to remap the pixels to the correct position. The chroma translate filter takes the raw image as it enters the computer from the camera link and turns it into a positionally correct image.
+
+Dark Subtraction Filter -> dark_subtraction_filter.cpp
+The dark subtraction is an intuitive feature - dark subtraction is performed on an image based on a single frame mask. The mask is calculated based on an average of any number frames as specified by the user. Dark frame masks may be created either from live recordings or loaded from a file (or portion of a file).
+
+Standard Deviation Filter -> std_dev_filter.cpp
+This filter calculates the standard deviation of each pixel in a frame based on the value of that pixel over a time window. The default time window (N) is 499 frames. While the memory is allocated on the host (CPU), this code essentially prepares the values and then launches a kernel on the device (GPU).
+Device Code 			  -> std_dev_filter_device_code.cu
+This code performs the actual calculation of the standard deviations. Each pixel's standard deviation calculation is launched as a separate thread with a process time of approximately O(N+NUMBER_OF_BINS). Both the standard deviation image view and histogram data are produced here, so we need to calculate the standard deviations, synchronize, then determine spatial frequencies for the histogram.
+
+Mean Filter -> mean_filer.cpp
+This filter performs the calculations for the vertical and horizontal profile plots and for the FFT data. In general, the mean filter is able to calculate the mean of image data values between any set of x and y coordinates as a rectangle. Additionally, the frame mean is computed within a buffer of 1500 frames for the FFT, with additional options for FFTs of vertical profiles and all the pixels in a tap.
+Here are the three different types of time series input by cuda_take:
+1. Frame Mean (Frame Rate sampling) - the average of all pixels in one frame is determined and used as a single value in the series. Thus, all the frame means combine to make a series with a length of 1500 frames in time.
+2. Vertical Crosshair Profile (Row Clock sampling) - The vertical profile contains the data for all pixels in one column. This vertical profile is used as the time series input and the FFT is calculated each frame. Therefore, the image data is being sampled at the rate that rows of data are sent along the data bus, which is approximately 48 kHz (Pixel Clock / Number of Rows)
+3. Tap Profile (Pixel Clock sampling) - All the pixels in a tap with dimensions 160cols x 480 rows is concatenated into a time series which is input to the FFT. This enables detection of periodic signals at the pixel level. The sampling rate is equal to the pixel clock, which usually runs at 10MHz. If this value is changed at the hardware level, the value of the pixel clock must be re-entered, and the program recompiled.
+FFT Filter -> fft.cpp
+This code performs a generalized FFT calculation for an array. cuda_take uses the FFT filter with time series of three different frequencies. Although the function expects a ring buffer as its input, due to the nature of the Fourier Transform, any array representing a time series will provide meaningful data. 
+
 -----------------------
 Using git
 -----------------------
 Git is the version control system used to track cuda_take
 
-Once you have cloned the directory (as above), you can "stage" code changes by doing
+1. Once you have cloned the directory (as above), you can "stage" code changes by doing
+
     $git add <name of changed file>
 
-You can then "commit" these changes to the "working branch" by doing
-    $git commit -m "<commit message goes here>
+2. "commit" these changes to the "working branch"
 
-In order to "pull" in changes commited on another computer you can say
-    $git pull <name of remote> <name of branch>
+    $git commit -a
 
-The computer you originally clone from is generally called "origin", to update to the latest version of the source do
-    $git pull origin master
+NB -> git will then ask you to add remarks on your commit in a text file. "#" characters represent comments and must be deleted to display the text.
+
+3. To "pull" in changes commited on another computer. Generally our branch is called "master":
+
+    $git pull -u <name of remote> <name of branch>
+
+The computer you originally clone from is generally called "origin", to update to the latest version of the source.
+
+    $git pull -u origin master
 
 To send the latest version of a branch to a remote computer do
-    $git push <name of remote> <name of branch>
+    $git push -u <name of remote> <name of branch>
+
 In order to ensure that you don't accidentally commit object files or executables, you can modify .gitignore
     $vim .gitignore
-A good git tutorial is available here:
+
+For more help, check out the git tutroial at:
 http://git-scm.com/docs/gittutorial
+
 -----------------------
 Troubleshooting
 -----------------------
-
 All the sizes of buffers can be modified in include/constants.h
 
-In the event of an error about std_dev_filter out of memory try decreasing MAX_N in constants.h
-
-    This error is due to the varying amounts of RAM available on different GPUs, the std. dev filter creates a ring buffer in GPU memory that is 2*MAX_N*FRAME_SIZE bytes large. If  this exceeds the amount of RAM on the GPU this will fail.
+In the event of an error about std_dev_filter out of memory try decreasing MAX_N in constants.h - on some systems with less powerful graphics processors, there is less device (GPU)RAM available as compared with the environment on which cuda_take was developed.
+The std. dev filter creates a ring buffer in GPU memory that is 2*MAX_N*FRAME_SIZE bytes large. If this exceeds the amount of RAM on the GPU this will fail.
 
 Another potential problem with switching to a different NVIDIA GPU model is that NVCC (the nvidia C compiler) generates code targeted at a specific generation. By changing line 76 in the make file one can add additional GPU generations to target. Append -gencode arch=compute_XX,code=sm_XX to NVCCFLAGS where XX is derived from here: http://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
 
 Adding additional GPU archetectures to target creates a fat binary, so it will take longer to compile.
 
-Something odd that I do is create a library, libcuda_take.a, with symbols from libpdv.a, so libpdv.a does not need to be linked into everything that uses libcuda_take.a. This is achieved by compiling the library with NVCC to an intermediate file called thin_libcuda_take.a and then concatenating them using ar which accepts a script called combine_lib_scripts.ar 
+Something odd that I do is create a library, libcuda_take.a, with symbols from libpdv.a, so libpdv.a does not need to be linked into everything that uses libcuda_take.a. This is achieved by compiling the library with NVCC to an intermediate file called thin_libcuda_take.a and then concatenating them using ar which accepts a script called combine_lib_scripts.ar

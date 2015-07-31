@@ -6,7 +6,10 @@ NVCC = nvcc
 AR = ar
 LIBTOOL = libtool
 SOURCEDIR = src
+HARDWARE = EDT
+ifeq ($(HARDWARE),OPALKELLY)
 okFP_SDK ?= /usr/lib/ 
+endif
 ######################################
 
 
@@ -67,8 +70,11 @@ OBJDIR = obj
 IDIR      = -Iinclude -IEDT_include
 
 #SECOND NOTE: ONLY BUILD WITH O1! Somehow, someway, O2 optimizes out things that nvcc needs and O0 has linker redefinition errors. #JankCity <- This has been fixed, but still a good idea
-CFLAGS     = -g -O1 -D HOST=\"`hostname`\" -D UNAME=\"`whoami`\" -I$(okFP_SDK) #This is added to the compilation of every file, enables gdb debugging symbols (-g) and limited optimization (-O1) 
+CFLAGS     = -g -O1 -D HOST=\"`hostname`\" -D UNAME=\"`whoami`\" #This is added to the compilation of every file, enables gdb debugging symbols (-g) and limited optimization (-O1) 
 # and defines some global constants that interact with the operating 
+ifeq ($(HARDWARE),OPALKELLY)
+CFLAGS	   += -I$(okFP_SDK)
+endif
 CONLYFLAGS = -std=c99
 CONLYFLAGS += $(CFLAGS)
 
@@ -91,8 +97,10 @@ NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= lib #where do the libraries we need to link in go?
 LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lboost_system -lz -lcuda -lcudart -lgomp -lpthread -ldl #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
+ifeq ($(HARDWARE),OPALKELLY)
 LDFLAGS	   := -L$(okFP_SDK)
 okFP_LIBS  := -lokFrontPanel
+endif
 AR_COMBINE_SCRIPT = combine_libs_script.ar #For building out output library we compine our stuff with libpdv, this script tells ar how to do that
 #This switch enables concatenating libpdv.a and libcuda_take.a (and possibly libboost_thread.a)
 CONCATENATE_LIBPDV = 1
@@ -103,8 +111,13 @@ all : $(EXE) $(LIBOUT)
 #	@echo $(SOURCES)
 #	@echo $(objects)
 #	@echo $(OBJS)
+ifeq ($(HARDWARE),OPALKELLY)
 $(EXE) : $(objects)
 	$(NVCC) $(NVCCFLAGS) $(okFP_LDFLAGS) $(LDFLAGS) -o $@ $(wildcard obj/*.o) $(LFLAGS) $(okFP_LIBS)
+else
+$(EXE) : $(objects)
+	$(NVCC) $(NVCCFLAGS) -o $@ $(wildcard obj/*.o) $(LFLAGS)
+endif
 	
 $(LIBOUT) : $(objects)
 ifeq ($(CONCATENATE_LIBPDV), 1)
@@ -123,9 +136,13 @@ $(OBJDIR)/%.o : %.c
 	$(CC) $(CONLYFLAGS) $(IDIR) -c -o $@ $<
 
 #what to do to build cpp files -> o files
+ifeq ($(HARDWARE),OPALKELLY)
 $(OBJDIR)/%.o : %.cpp
 	$(CCPP) $(CPPFLAGS) $(okFP_CXXFLAGS) $(CXXFLAGS) $(IDIR) -c -o $@ $<
-
+else
+$(OBJDIR)/%.o : %.cpp
+	$(CCPP) $(CPPFLAGS) $(IDIR) -c -o $@ $<
+endif
 #What to do to build cu files -> o files
 $(OBJDIR)/%.o : %.cu 
 	$(NVCC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
