@@ -48,11 +48,12 @@ public slots:
     void handleNewFrame();
 
     // Plot controls
-    void histogramScrolledX(const QCPRange &newRange);
     void histogramScrolledY(const QCPRange &newRange);
+    void histogramScrolledX(const QCPRange &newRange);
     void updateCeiling(int);
     void updateFloor(int);
     void rescaleRange();
+    void resetRange();
 };
 
 #endif // HISTOGRAM_WIDGET_H

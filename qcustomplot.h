@@ -73,10 +73,6 @@ class QCPAbstractLegendItem;
 class QCPColorMap;
 class QCPColorScale;
 
-
-/*! \file */
-
-
 // decl definitions for shared library compilation/usage:
 #if defined(QCUSTOMPLOT_COMPILE_LIBRARY)
 #  define QCP_LIB_DECL Q_DECL_EXPORT

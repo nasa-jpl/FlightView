@@ -16,6 +16,28 @@
 fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
     QWidget(parent)
 {
+    /*! \brief Plots a bar graph of the FFT of a time series.
+     * The FFT Widget displays the Fourier Transform of three different types of data in a bar graph format.
+     * There are three sampling types which may be selected using the buttons underneath the plot. From the
+     * cuda_take documentation, here are the three different types of time series input by cuda_take:
+     *      1. Frame Mean (Frame Rate sampling) - the average of all pixels in one frame is determined and
+     *         used as a single value in the series. Thus, all the frame means combine to make a series with
+     *         a length of 1500 frames in time.
+     *      2. Vertical Crosshair Profile (Row Clock sampling) - The vertical profile contains the data for
+     *         all pixels in one column. This vertical profile is used as the time series input and the FFT
+     *         is calculated each frame. Therefore, the image data is being sampled at the rate that rows of
+     *         data are sent along the data bus, which is approximately 48 kHz (Pixel Clock / Number of Rows)
+     *      3. Tap Profile (Pixel Clock sampling) - All the pixels in a tap with dimensions 160cols x 480 rows
+     *         is concatenated into a time series which is input to the FFT. This enables detection of periodic
+     *         signals at the pixel level. The sampling rate is equal to the pixel clock, which usually runs at
+     *         10MHz. If this value is changed at the hardware level, the value of the pixel clock must be
+     *         re-entered, and the program recompiled. (jk - I think this depends on resolution)
+     * In vertical crosshair FFTs, the number of columns to be binned may be selected using the slider in the
+     * controls box. In the tap profile, the tap that is being sampled may be selected using the numbered display
+     * next to the button.
+     * \author JP Ryan
+     * \author Noah Levy
+     */
     qcp = NULL;
     this->fw = fw;
 
@@ -68,8 +90,31 @@ fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
     connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
+
+// public functions
+double fft_widget::getCeiling()
+{
+    /*! \brief Return the value of the ceiling for this widget as a double */
+    return ceiling;
+}
+double fft_widget::getFloor()
+{
+    /*! \brief Return the value of the floor for this widget as a double */
+    return floor;
+}
+
+// public slots
 void fft_widget::handleNewFrame()
 {
+    /*! \brief Render a new frame of data from the backend
+     * The nyquist frequency is determined based on the FFT type. The sampling rate is dependent on
+     * the pixels being sampled, hence the dimensions of the frame and the frame rate are used.
+     * Next, the bar graph bars are spaced according to the input vector length.
+     * Then the bars are plotted based on the fftMagnitudes inside the frame struct for the current
+     * frame in the buffer.
+     * \author Noah Levy
+     * \author JP Ryan
+     */
     if(!this->isHidden())
     {
         double nyquist_freq;
@@ -105,29 +150,29 @@ void fft_widget::handleNewFrame()
 }
 void fft_widget::updateCeiling(int c)
 {
+    /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
     ceiling = (double)c;
     qcp->yAxis->setRange(QCPRange(floor,ceiling));
 }
 void fft_widget::updateFloor(int f)
 {
+    /*! \brief Change the value of the floor for this widget to the input parameter and replot the color scale. */
     floor = (double)f;
     qcp->yAxis->setRange(QCPRange(floor,ceiling));
 }
-double fft_widget::getCeiling()
-{
-    return ceiling;
-}
-double fft_widget::getFloor()
-{
-    return floor;
-}
 void fft_widget::rescaleRange()
 {
+    /*! \brief Set the color scale of the display to the last used values for this widget */
     qcp->yAxis->setRange(QCPRange(floor,ceiling));
 }
 void fft_widget::updateCrossRange(int linesToAverage)
 {
-    // We only need this to work for verrtical crosshairs as we do not take the FFT of horizontal crosshairs...
+    /*! \brief Update the number of columns to bin for the vertical crosshair FFT
+     * Very similar to the one in the profile_widget, which is where this was copied from. This
+     * repetition is due to the lack of virtual functions and a common view widget interface.
+     * \author JP Ryan
+     */
+    // We only need this to work for vertical crosshairs as we do not take the FFT of horizontal crosshairs...
     int startCol = 0;
     int startRow = 0;
     int endCol = fw->getFrameWidth();
@@ -152,19 +197,13 @@ void fft_widget::updateCrossRange(int linesToAverage)
     fw->to.updateVertRange( startRow, endRow );
     fw->to.updateHorizRange( startCol, endCol );
 }
-void fft_widget::tapPrfChanged(int tapNum)
-{
-    int startCol = 0;
-    int startRow = 0;
-    int endCol = TAP_WIDTH;
-    int endRow = fw->getFrameHeight();
-    startCol += tapNum*TAP_WIDTH;
-    endCol += tapNum*TAP_WIDTH;
-    fw->to.updateVertRange( startRow, endRow );
-    fw->to.updateHorizRange( startCol, endCol );
-}
 void fft_widget::updateFFT()
 {
+    /*! \brief Update the type of FFT being input at the backend
+     * We also need to change the mean filter range due to the nature
+     * of how general my mean calculation is.
+     * \author JP Ryan
+     */
     if(plMeanButton->isChecked())
     {
         fw->to.updateVertRange(0, fw->getFrameHeight());
@@ -173,7 +212,7 @@ void fft_widget::updateFFT()
     }
     else if(vCrossButton->isChecked())
     {
-        updateCrossRange( fw->horizLinesAvgd );
+        updateCrossRange(fw->horizLinesAvgd);
         fw->to.changeFFTtype(VERT_CROSS);
     }
     else if(tapPrfButton->isChecked())
@@ -181,4 +220,22 @@ void fft_widget::updateFFT()
         tapPrfChanged(tapToProfile.value());
         fw->to.changeFFTtype(TAP_PROFIL);
     }
+}
+
+// private slots
+void fft_widget::tapPrfChanged(int tapNum)
+{
+    /*! \brief Change the tap being input at the backend
+     * This action requires updating the area being used by the mean filter to input
+     * to the FFT.
+     * \author JP Ryan
+     */
+    int startCol = 0;
+    int startRow = 0;
+    int endCol = TAP_WIDTH;
+    int endRow = fw->getFrameHeight();
+    startCol += tapNum*TAP_WIDTH;
+    endCol += tapNum*TAP_WIDTH;
+    fw->to.updateVertRange( startRow, endRow );
+    fw->to.updateHorizRange( startCol, endCol );
 }

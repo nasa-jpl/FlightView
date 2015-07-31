@@ -8,6 +8,18 @@
 ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     QGroupBox(parent)
 {
+    /*! \brief The main controls for liveview2
+     * The ControlsBox is a wrapper GUI class which contains the (mostly) static controls between widgets.
+     * After establishing the buttons in the constructor, the class will call the function tab_changed_slot(int index)
+     * to establish widget-specific controls and settings. For instance, all profile widgets and FFTs make use
+     * of the Lines To Average slider rather than the disabled Std Dev N slider. As Qt does not support
+     * a pure virtual interface for widgets, each widget must make a connection to its own version of
+     * updateCeiling(int c), updateFloor(int f), and any other widget specfic action within its case in
+     * tab_changed_slot. The beginning of this function specifies the behavior for when tabs are exited -
+     * all connections made must be disconnected to prevent overlap and repetition.
+     * \author JP Ryan
+     * \author Noah Levy
+     */
     this->fw = fw;
     qtw = tw;
     cur_frameview = NULL;
@@ -175,6 +187,15 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
 // public slot(s)
 void ControlsBox::tab_changed_slot(int index)
 {
+    /*! \brief The function which adjusts the controls for the widgets when the tab in the main window is changed
+     * Observe the structure before getting confused: First, we find the soon-to-be current widget by attempting to
+     * make a non-null cast to the widget at the index we just switched to.
+     * Then we disconnect the connections that we made setting up the "cur_frameview", i.e, the widget we are now leaving.
+     * Then we make new connections and adjustments for the widget we just made a valid pointer to. Crucially, the top slider
+     * differs depending on the widget. FFT widgets and Profile Widgets use it, all others use the Std Dev N slider.
+     * \author Noah Levy
+     * \author JP Ryan
+     */
     // Noah: Multiple inheritance totally failed me. Trying to get QObject pure virtual interfaces is like boxing with satan. This hideous function is the best I can do...
     // JP sez: You know what this has going for it??? It works!! :^) >:^( ;^)
 
@@ -184,7 +205,7 @@ void ControlsBox::tab_changed_slot(int index)
     histogram_widget * hwt  = qobject_cast<histogram_widget*>(qtw->widget(index));
     playback_widget* pbw = qobject_cast<playback_widget*>(qtw->widget(index));
 
-    /* When we change tabs, we need to disconnect widget-specfic controls so that we can create new connections between the same buttons
+    /*! \badcode When we change tabs, we need to disconnect widget-specfic controls so that we can create new connections between the same buttons
      * in the controls box. Any connection that we make when opening a tab needs to be disconnected when we move away from the tab. Otherwise,
      * a button will connect multiple times and cause bugs. The qobject_cast lines attempts to create a pointer to a specific widget based on
      * the general QWidget of the current tab that we have open in the QTabWidget in mainwindow.cpp.  */
@@ -430,10 +451,19 @@ void ControlsBox::tab_changed_slot(int index)
 // private slots
 void ControlsBox::increment_slot(bool t)
 {
+    /*! \brief Handles the Precision Slider range adjustment
+     * If the slider is set to increment low, we set the tick and step to 1, the max ceiling to 2000 (or whatever the values
+     * of LIL_TICK and LIL_MAX happen to be. If the increment is set high, the max is set to BIG_MAX and the slider will scroll
+     * through at the rate of BIG_TICK, which is 400. We then attempt to cast a pointer to the currently displayed widget, and
+     * then adjust its copy of the variable slider_low_inc, which holds whether or not the precision slider mode is active.
+     * \author Noah Levy
+     */
     if(t)
     {
         ceiling_slider.setTickInterval(LIL_TICK);
         floor_slider.setTickInterval(LIL_TICK);
+        ceiling_slider.setSingleStep(LIL_TICK);
+        floor_slider.setSingleStep(LIL_TICK);
         ceiling_slider.setMaximum(LIL_MAX);
         ceiling_slider.setMinimum(LIL_MIN);
         floor_slider.setMaximum(LIL_MAX);
@@ -448,6 +478,8 @@ void ControlsBox::increment_slot(bool t)
     {
         ceiling_slider.setTickInterval(BIG_TICK);
         floor_slider.setTickInterval(BIG_TICK);
+        ceiling_slider.setSingleStep(BIG_TICK);
+        floor_slider.setSingleStep(BIG_TICK);
         ceiling_slider.setMaximum(ceiling_maximum);
         ceiling_slider.setMinimum(-1*ceiling_maximum/4);
         ceiling_edit.setMaximum(ceiling_maximum);
@@ -473,11 +505,17 @@ void ControlsBox::increment_slot(bool t)
 }
 void ControlsBox::update_backend_delta()
 {
+    /*! \brief Update the QLabel text of the frame rate measured by the frameWorker event loop.
+    * \author Noah Levy
+    */
     fps = QString::number(fw->delta, 'f', 1);
     fps_label.setText(QString("FPS @ backend:%1").arg(fps));
 }
 void ControlsBox::show_save_dialog()
 {
+    /*! \brief Display the file dialog to specify the path for saving raw frames.
+     * \author Noah Levy
+     */
     QString dialog_file_name = QFileDialog::getSaveFileName(this,tr("Save frames as raw"),filename_edit.text(),tr("Raw (*.raw *.bin *.hsi *.img)"));
     if(!dialog_file_name.isEmpty())
     {
@@ -486,6 +524,9 @@ void ControlsBox::show_save_dialog()
 }
 void ControlsBox::save_finite_button_slot()
 {
+    /*! \brief Emit the signal to save frames at the backend.
+     * \author Noah Levy
+     */
 #ifdef VERBOSE
     qDebug() << "fname: " << filename_edit.text();
 #endif
@@ -497,6 +538,9 @@ void ControlsBox::save_finite_button_slot()
 }
 void ControlsBox::stop_continous_button_slot()
 {
+    /*! \brief Emit the signal to stop saving frames at the backend. Handled automatically.
+     * \author: Noah Levy
+     */
     emit stopSaving();
     stop_saving_frames_button.setEnabled(false);
     start_saving_frames_button.setEnabled(true);
@@ -505,6 +549,10 @@ void ControlsBox::stop_continous_button_slot()
 }
 void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
 {
+    /*! \brief Change the value in the box which displays the number of frames to save.
+     * As frames are saved, the number in the readout will decrease as a sanity check.
+     * \author Noah Levy
+     */
     if(n == 0)
     {
         stop_saving_frames_button.setEnabled(false);
@@ -515,19 +563,30 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
     frames_save_num_edit.setValue(n);
 }
 void ControlsBox::start_dark_collection_slot()
-{
+{ /*! \brief Begins recording dark frames in the backend
+   *  \author JP Ryan
+   */
     collect_dark_frames_button.setEnabled(false);
     stop_dark_collection_button.setEnabled(true);
     emit startDSFMaskCollection();
 }
 void ControlsBox::stop_dark_collection_slot()
 {
+    /*! \brief Stops recording dark frames in the backend
+     *  \author JP Ryan
+     */
     emit stopDSFMaskCollection();
     collect_dark_frames_button.setEnabled(true);
     stop_dark_collection_button.setEnabled(false);
 }
 void ControlsBox::getMaskFile()
 {
+    /*! \brief Load a file containing Dark Frames, and create a mask from the specified region of the file.
+     * First opens a file dialog, verifies the file, then opens a QDialog which allows the user to select a range
+     * of frames which contain dark that will then be averaged into a mask. A widget which uses this signal must be
+     * able to receive the signal maskSelected(QString filename, unsigned int elem_to_read, long offset)
+     * \author JP Ryan
+     */
     // Step 1: Open a dialog to select the mask file location
     QFileDialog location_dialog(0);
     location_dialog.setFilter(QDir::Writable | QDir::Files);
@@ -621,6 +680,11 @@ void ControlsBox::getMaskFile()
 }
 void ControlsBox::use_DSF_general(bool checked)
 {
+    /*! \brief Toggles the use of the static dark frame mask for the playback widget.
+     * A stupid little function I made because the playback widget uses the pre-loaded mask
+     * as opposed to the others which use the recorded mask.
+     * \author JP Ryan
+     */
     playback_widget* pbw = qobject_cast<playback_widget*>(cur_frameview);
     if(pbw)
     {
@@ -634,6 +698,9 @@ void ControlsBox::use_DSF_general(bool checked)
 
 void ControlsBox::load_pref_window()
 {
+    /*! \brief Displays the preference window one the screen
+     *  \author JP Ryan
+     */
     QPoint pos = prefWindow->pos();
     if( pos.x() < 0 )
         pos.setX(0);

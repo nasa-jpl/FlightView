@@ -13,9 +13,6 @@
 
 frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget* parent) : QWidget(parent)
 {
-    //CODE goes here...
-    //code
-
     this->fw = fw;
     this->image_type = image_type;
 
@@ -31,14 +28,7 @@ frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget*
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
 
-    displayCrosshairCheck.setText( tr("Display Crosshairs on Frame") );
-    displayCrosshairCheck.setChecked( true );
-    if( image_type == STD_DEV )
-    {
-        displayCrosshairCheck.setEnabled( false );
-        displayCrosshairCheck.setChecked( false );
-    }
-    connect(&displayCrosshairCheck,SIGNAL(toggled(bool)),fw,SLOT(updateCrossDiplay(bool)));
+
 
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);
@@ -86,14 +76,20 @@ frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget*
     layout.addWidget(&displayCrosshairCheck,8,2,1,2);
     this->setLayout(&layout);
 
+    displayCrosshairCheck.setText( tr("Display Crosshairs on Frame") );
+    displayCrosshairCheck.setChecked( true );
+    if( image_type == STD_DEV )
+    {
+        displayCrosshairCheck.setEnabled( false );
+        displayCrosshairCheck.setChecked( false );
+    }
     fps = 0;
-    connect(&fpstimer, SIGNAL(timeout()), this, SLOT(updateFPS()));
-    fpstimer.start(1000);
-    connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
-    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 
+    connect(&fpstimer, SIGNAL(timeout()), this, SLOT(updateFPS()));
+    connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
     connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
+    connect(&displayCrosshairCheck,SIGNAL(toggled(bool)),fw,SLOT(updateCrossDiplay(bool)));
 
     if(image_type==BASE || image_type==DSF)
     {
@@ -102,6 +98,9 @@ frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget*
     }
     colorMapData = new QCPColorMapData(frWidth,frHeight,QCPRange(0,frWidth),QCPRange(0,frHeight));
     colorMap->setData(colorMapData);
+
+    fpstimer.start(1000);
+    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
 frameview_widget::~frameview_widget()
 {
@@ -109,17 +108,22 @@ frameview_widget::~frameview_widget()
     delete colorMap;
     delete qcp;
 }
-void frameview_widget::keyPressEvent(QKeyEvent *event)
-{
-    if((image_type == BASE || image_type == DSF) && !this->isHidden() && event->key() == Qt::Key_Escape)
-    {
-        fw->crosshair_x = -1;
-        fw->crosshair_y = -1;
 
-        qDebug() << "x="<<fw->crosshair_x<< "y="<<fw->crosshair_y;
-    }
+// public functions
+double frameview_widget::getCeiling()
+{
+    return ceiling;
+}
+double frameview_widget::getFloor()
+{
+    return floor;
+}
+void frameview_widget::toggleDisplayCrosshair()
+{
+    displayCrosshairCheck.setChecked(!displayCrosshairCheck.isChecked());
 }
 
+// public slots
 void frameview_widget::handleNewFrame()
 {
     if(!this->isHidden() && fw->curFrame)
@@ -201,16 +205,6 @@ void frameview_widget::updateFPS()
     old_count = count;
     fpsLabel.setText(QString("fps of display: %1").arg(fps));
 }
-void frameview_widget::updateCeiling(int c)
-{
-    ceiling = (double)c;
-    colorScale->setDataRange(QCPRange(floor,ceiling));
-}
-void frameview_widget::updateFloor(int f)
-{
-    floor = (double)f;
-    colorScale->setDataRange(QCPRange(floor,ceiling));
-}
 void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
 {
     QCPRange boundedRange = newRange;
@@ -260,13 +254,15 @@ void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
     }
     qcp->xAxis->setRange(boundedRange);
 }
-double frameview_widget::getCeiling()
+void frameview_widget::updateCeiling(int c)
 {
-    return ceiling;
+    ceiling = (double)c;
+    colorScale->setDataRange(QCPRange(floor,ceiling));
 }
-double frameview_widget::getFloor()
+void frameview_widget::updateFloor(int f)
 {
-    return floor;
+    floor = (double)f;
+    colorScale->setDataRange(QCPRange(floor,ceiling));
 }
 void frameview_widget::rescaleRange()
 {

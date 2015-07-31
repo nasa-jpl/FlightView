@@ -7,7 +7,20 @@
 frameWorker::frameWorker(QObject *parent) :
     QObject(parent)
 {
-    to.start();
+    /*! \brief Communicates with the backend and connects public information between widgets.
+     * The framWorker class contains backend and analysis information that must be shared between classes in the GUI.
+     * Structurally, frameWorker is a worker object tied to a QThread started in main. The main event loop in this object
+     * may therefore be considered the function handleNewFrame() which periodically grabs a frame from the backend
+     * and checks for asynchronous signals from the filters about the status of the data processing. A frame may still
+     * be displayed even if analysis functions associated with it time out for the loop.
+     * In general, the frameWorker is the only object with a copy of the take_object and should exclusively handle
+     * communication with cuda_take.
+     *
+     * \author Noah Levy
+     * \author JP Ryan
+     */
+
+    to.start(); // begin cuda_take
 
 #ifdef VERBOSE
     qDebug("starting capture");
@@ -22,7 +35,7 @@ frameWorker::frameWorker(QObject *parent) :
     else
         base_ceiling = (1<<16) - 1;
 
-    deltaTimer.start();
+    deltaTimer.start(); // this is the backend timer which is tied to the collection of new frames from take_object
 }
 frameWorker::~frameWorker()
 {
@@ -35,14 +48,17 @@ frameWorker::~frameWorker()
 // public functions
 camera_t frameWorker::camera_type()
 {
+    /*! \brief Returns the value of the camera_type enum for the current hardware. */
     return to.cam_type;
 }
 unsigned int frameWorker::getFrameHeight()
 {
+    /*! \brief Returns the value of the frame height dimension as an unsigned int (480 for most geometries) */
     return frHeight;
 }
 unsigned int frameWorker::getDataHeight()
 {
+    /*! \brief Reutrns the value of the number of rows of raw data as an unsigned int (including any metadata) */
     return dataHeight;
 }
 unsigned int frameWorker::getFrameWidth()
@@ -57,13 +73,18 @@ bool frameWorker::dsfMaskCollected()
 // public slots
 void frameWorker::captureFrames()
 {
+    /*!
+     * \brief The backend communication with take object is handled for each frame in this loop.
+     *
+     *
+     */
     unsigned int last_savenum = 0;
     frame_c* workingFrame;
 
     while(doRun)
     {
         QCoreApplication::processEvents();
-        usleep(100); //So that CPU utilization is not 100%
+        usleep(50); //So that CPU utilization is not 100%
         workingFrame = &to.frame_ring_buffer[c%CPU_FRAME_BUFFER_SIZE];
 
         if(std_dev_processing_frame != NULL)

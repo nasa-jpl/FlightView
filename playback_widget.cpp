@@ -15,6 +15,7 @@ buffer_handler::buffer_handler(int height, int width, QObject* parent) :
     this->fr_size = fr_height*fr_width;
     this->fp = NULL;
     this->running = true;
+    this->current_frame = 1;
 }
 buffer_handler::~buffer_handler()
 {
@@ -24,6 +25,13 @@ buffer_handler::~buffer_handler()
         free(frame);
     }
 }
+// public function(s)
+bool buffer_handler::hasFP()
+{
+    return fp != NULL ? true : false;
+}
+
+// public slots
 void buffer_handler::loadFile(QString file_name)
 {
     // Step 1: Open the file specified in the parameter
@@ -116,14 +124,12 @@ void buffer_handler::loadDSF(QString file_name, unsigned int elements_to_read, l
 }
 void buffer_handler::getFrame()
 {
-    current_frame = 1;
     while(running)
     {
-        if(current_frame != old_frame)
+        if(current_frame != old_frame && fp)
         {
-            fseek(fp,(current_frame-1)*fr_size*pixel_size,SEEK_SET);
-
             buf_access.lock();
+                fseek(fp,(current_frame-1)*fr_size*pixel_size,SEEK_SET);
                 fread(frame,pixel_size,fr_size,fp);
             buf_access.unlock();
 
@@ -131,7 +137,7 @@ void buffer_handler::getFrame()
         }
         else
         {
-            usleep(5);
+            usleep(1);
         }
     }
     emit finished();
@@ -293,10 +299,14 @@ void playback_widget::loadDSF(QString f, unsigned int e, long o)
 void playback_widget::stop()
 {
     // taking advantage of our clunky corner case catching code
-    play = false;
-    playBackward = true;
+
     bh->current_frame = 1;
-    playPause();
+    if(bh->hasFP())
+    {
+        play = false;
+        playBackward = true;
+        playPause();
+    }
 }
 void playback_widget::colorMapScrolledX(const QCPRange &newRange)
 {
@@ -316,9 +326,11 @@ void playback_widget::colorMapScrolledX(const QCPRange &newRange)
             boundedRange.upper = lowerRangeBound+oldSize;
         }
         if (boundedRange.upper > upperRangeBound)
-        {
+        {    if(this->isPlaying() || playBackward)
+            {
             boundedRange.lower = upperRangeBound-oldSize;
             boundedRange.upper = upperRangeBound;
+            }
         }
     }
     qcp->xAxis->setRange(boundedRange);
@@ -414,6 +426,7 @@ void playback_widget::playPause()
 }
 void playback_widget::moveForward()
 {
+    bh->old_frame = -1;
     bh->current_frame += interval;
     if(bh->current_frame > bh->num_frames)
     {
@@ -423,6 +436,7 @@ void playback_widget::moveForward()
 }
 void playback_widget::moveBackward()
 {
+    bh->old_frame = -1;
     bh->current_frame -= interval;
     if(bh->current_frame < 1)
     {
@@ -561,28 +575,30 @@ void playback_widget::updateStatus(int frameNum)
 void playback_widget::handleFrame(int frameNum)
 {
     bh->current_frame = frameNum;
+    usleep(50);
     if(bh->current_frame == bh->old_frame)
         return;
-    usleep(5);
+
     bh->buf_access.lock();
-    dark->update_dark_subtraction(bh->frame, bh->dark_data);
-    for(int col = 0; col < frWidth; col++)
-    {
-        for(int row = 0; row < frHeight; row++)
+        dark->update_dark_subtraction(bh->frame, bh->dark_data);
+        for(int col = 0; col < frWidth; col++)
         {
-            if(useDSF)
+            for(int row = 0; row < frHeight; row++)
             {
-                colorMap->data()->setCell(col,row, \
-                                          bh->dark_data[(frHeight-row-1)*frWidth + col]);
-            }
-            else
-            {
-                colorMap->data()->setCell(col,row, \
-                                          bh->frame[(frHeight-row-1)*frWidth + col]);
+                if(useDSF)
+                {
+                    colorMap->data()->setCell(col,row, \
+                                            bh->dark_data[(frHeight-row-1)*frWidth + col]);
+                }
+                else
+                {
+                    colorMap->data()->setCell(col,row, \
+                                            bh->frame[(frHeight-row-1)*frWidth + col]);
+                }
             }
         }
-    }
     bh->buf_access.unlock();
+
     qcp->replot();
     emit frameDone(bh->current_frame);
 }

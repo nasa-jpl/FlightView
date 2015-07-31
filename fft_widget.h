@@ -11,6 +11,8 @@
 #include "qcustomplot.h"
 #include "frame_worker.h"
 
+/*! \file */
+
 class fft_widget : public QWidget
 {
     Q_OBJECT

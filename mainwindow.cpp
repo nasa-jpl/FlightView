@@ -94,6 +94,8 @@ void MainWindow::keyPressEvent(QKeyEvent* c)
      * Contains all keyboard shortcuts for liveview2
      */
     playback_widget* pbw = qobject_cast<playback_widget*>(tabWidget->widget(tabWidget->currentIndex()));
+    frameview_widget* fvw = qobject_cast<frameview_widget*>(tabWidget->widget(tabWidget->currentIndex()));
+    histogram_widget* hgw = qobject_cast<histogram_widget*>(tabWidget->widget(tabWidget->currentIndex()));
     if(pbw) // inside playback widget
     {
         if(!c->modifiers())
@@ -137,4 +139,53 @@ void MainWindow::keyPressEvent(QKeyEvent* c)
             // More key mappings can be provided here
         }
     }
+    else if(fvw) // inside frameview widget
+    {
+        if(fvw->image_type == BASE || fvw->image_type == DSF)
+        {
+            if(c->key() == Qt::Key_Escape)
+            {
+                fw->crosshair_x = -1;
+                fw->crosshair_y = -1;
+
+                qDebug() << "x="<<fw->crosshair_x<< "y="<<fw->crosshair_y;
+                c->accept();
+                return;
+            }
+            else if(c->key() == Qt::Key_D)
+            {
+                fvw->toggleDisplayCrosshair();
+                c->accept();
+                return;
+            }
+        }
+    }
+    else if(hgw)
+    {
+        if(c->key() == Qt::Key_R)
+        {
+            hgw->resetRange();
+            c->accept();
+            return;
+        }
+    }
+    if(c->key() == Qt::Key_P)
+    {
+        controlbox->low_increment_cbox.setChecked(!controlbox->low_increment_cbox.isChecked());
+        c->accept();
+        return;
+    }
+    else if((controlbox->use_DSF_cbox.isEnabled()) && (c->key() == Qt::Key_M))
+    {
+        controlbox->use_DSF_cbox.setChecked(!controlbox->use_DSF_cbox.isChecked());
+    }
+    else if(c->key() == Qt::Key_Comma)
+    {
+        controlbox->collect_dark_frames_button.click();
+    }
+    else if(c->key() == Qt::Key_Period)
+    {
+        controlbox->stop_dark_collection_button.click();
+    }
+
 }

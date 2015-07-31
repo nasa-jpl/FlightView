@@ -33,6 +33,8 @@ public:
     buffer_handler(int height, int width, QObject* parent = 0);
     virtual ~buffer_handler();
 
+    bool hasFP();
+
     QMutex buf_access;
 
     int current_frame;

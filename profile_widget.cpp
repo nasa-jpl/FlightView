@@ -47,7 +47,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     }
 
     qcp->yAxis->setLabel("Average Magnitude");
-    qcp->yAxis->setRange(QCPRange(0,(1<<16))); //From 0 to 2^16
+    qcp->yAxis->setRange(QCPRange(0,fw->base_ceiling)); //From 0 to 2^16
 
     qcp->graph(0)->setData(x,y);
 

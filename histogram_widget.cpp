@@ -4,7 +4,7 @@
 histogram_widget::histogram_widget(frameWorker *fw, QWidget *parent) :
     QWidget(parent)
 {
-    ceiling = 10000;
+    ceiling = (1<<16) - 1;
     floor = 0;
     qcp = NULL;
     this->fw = fw;
@@ -34,6 +34,7 @@ histogram_widget::histogram_widget(frameWorker *fw, QWidget *parent) :
     histo_data_vec = QVector<double>(NUMBER_OF_BINS);
 
     histogram->keyAxis()->setRangeUpper(histo_bins[histo_bins.size()-1]);
+    histogram->keyAxis()->setRangeLower(1);
     histogram->keyAxis()->setScaleType(QCPAxis::stLogarithmic);
     histogram->keyAxis()->setScaleLogBase(2);
     histogram->valueAxis()->setRange(QCPRange(0,ceiling));
@@ -114,4 +115,8 @@ double histogram_widget::getFloor()
 void histogram_widget::rescaleRange()
 {
     qcp->yAxis->setRange(QCPRange(floor,ceiling));
+}
+void histogram_widget::resetRange()
+{
+    qcp->xAxis->setRange(QCPRange(1,histo_bins[histo_bins.size()-1]));
 }

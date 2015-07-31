@@ -17,6 +17,8 @@
 #include <QTabWidget>
 #include <QVBoxLayout>
 
+/*! \file */
+
 // standard includes
 #include <stdint.h>
 

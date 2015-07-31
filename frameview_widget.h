@@ -54,12 +54,10 @@ public:
 
     double getCeiling();
     double getFloor();
+    void toggleDisplayCrosshair();
     image_t image_type;
     unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
-
-protected:
-    void keyPressEvent(QKeyEvent* event);
 
 signals:
     void startCapturing();
