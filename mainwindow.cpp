@@ -1,8 +1,14 @@
-#include <QVBoxLayout>
+/*! Qt includes */
 #include <QDebug>
+#include <QVBoxLayout>
+
+/*! Standard includes */
+#include <memory>
+
+/*! Live View includes */
 #include "mainwindow.h"
 #include "image_type.h"
-#include <memory>
+
 MainWindow::MainWindow(QThread* qth, frameWorker* fw, QWidget* parent)
     : QMainWindow(parent)
 {
@@ -12,7 +18,7 @@ MainWindow::MainWindow(QThread* qth, frameWorker* fw, QWidget* parent)
 
     this->fw = fw;
 
-    //start worker Thread
+    /*! start the workerThread from main */
     qth->start();
 
 #ifdef VERBOSE
@@ -22,13 +28,13 @@ MainWindow::MainWindow(QThread* qth, frameWorker* fw, QWidget* parent)
     mainwidget = new QWidget();
     QVBoxLayout *layout = new QVBoxLayout;
 
-    //Create tabs
+    /*! Create tabs */
     tabWidget = new QTabWidget;
 
     save_server = new saveServer(fw);
 
-    // NOTE: Care should be taken to ensure that tabbed widgets are ordered by the value of their image_type enum
-    // signals/slots (currentChanged) make use of this relation
+    /*! \note Care should be taken to ensure that tabbed widgets are ordered by the value of their image_type enum
+     * signals/slots (currentChanged) make use of this relation */
     unfiltered_widget = new frameview_widget(fw, BASE);
     dsf_widget = new frameview_widget(fw, DSF);
     std_dev_widget = new frameview_widget(fw, STD_DEV);
@@ -40,6 +46,7 @@ MainWindow::MainWindow(QThread* qth, frameWorker* fw, QWidget* parent)
     fft_mean_widget = new fft_widget(fw);
     raw_play_widget = new playback_widget(fw);
 
+    /*! Add tabs in order */
     tabWidget->addTab(unfiltered_widget, QString("Live View"));
     tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
     tabWidget->addTab(std_dev_widget, QString("Std. Deviation"));
@@ -53,14 +60,14 @@ MainWindow::MainWindow(QThread* qth, frameWorker* fw, QWidget* parent)
 
     layout->addWidget(tabWidget,3);
 
-    //Create controls box
+    /*! Create controls box */
     controlbox = new ControlsBox(fw,tabWidget);
     layout->addWidget(controlbox,1);
 
     mainwidget->setLayout(layout);
     this->setCentralWidget(mainwidget);
 
-    // Connections
+    /*! Connections */
     connect(tabWidget,SIGNAL(currentChanged(int)),controlbox,SLOT(tab_changed_slot(int)));
     controlbox->tab_changed_slot(0);
 
@@ -90,8 +97,40 @@ void MainWindow::enableStdDevTabs()
 // protected
 void MainWindow::keyPressEvent(QKeyEvent* c)
 {
-    /*!
-     * Contains all keyboard shortcuts for liveview2
+    /*! \brief Contains all keyboard shortcuts for liveview2.
+     * \param c The key from the keyboard buffer.
+     *
+     * \paragraph
+     * This function checks which widget is currently being displayed to check for widget-specific controls using the
+     * qobject_cast method.
+     * \paragraph
+     * ------------------------------
+     * Keyboard Controls
+     * ------------------------------
+     * \paragraph
+     * p - Toggle the Precision Slider
+     * m - Toggle the Dark Subtraction Mask (if one is present)
+     * , - Begin recording Dark Frames
+     * . - Stop recording dark frames
+     * \paragraph
+     * FOR FRAME VIEWS (RAW IMAGE, DARK SUBTRACTION, STANDARD DEVIATION)
+     * left click - profile the data at the specified coordinate
+     * esc - reset the crosshairs
+     * d - Toggle display of the crosshairs
+     * \paragraph
+     * FOR THE HISTOGRAM WIDGET
+     * r - reset the range of the display. Zooming may make it difficult to return to the original scale of the plot.
+     * \paragraph
+     * FOR THE PLAYBACK WIDGET
+     * 'drag and drop onto the viewing window' - load the selected file. WARNING: Any filetype is accepted. This means if the filetype is not data, garbage will be displayed in the viewing window.
+     * s - Stop playback and return to the first frame
+     * return - Play/Pause
+     * f - Fast Forward. Multiple presses increase the fast forward multiplier up to 64x faster.
+     * r - Rewind. Multple presses inreas the rewind multiplier up to 64x faster.
+     * a - Move back one frame. Only works when playback is paused.
+     * d - Move forward one frame. Only works when playback is paused.
+     *
+     * \author JP Ryan
      */
     playback_widget* pbw = qobject_cast<playback_widget*>(tabWidget->widget(tabWidget->currentIndex()));
     frameview_widget* fvw = qobject_cast<frameview_widget*>(tabWidget->widget(tabWidget->currentIndex()));
@@ -162,12 +201,15 @@ void MainWindow::keyPressEvent(QKeyEvent* c)
     }
     else if(hgw)
     {
+        /*! \example How to add a keyboard shortcut to Live View
+         * @{ */
         if(c->key() == Qt::Key_R)
         {
             hgw->resetRange();
             c->accept();
             return;
         }
+        /*! @} */
     }
     if(c->key() == Qt::Key_P)
     {

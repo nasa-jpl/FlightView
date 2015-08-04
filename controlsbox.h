@@ -1,7 +1,7 @@
 #ifndef CONTROLSBOX_H
 #define CONTROLSBOX_H
 
-// Qt GUI includes
+/* Qt GUI includes */
 #include <QButtonGroup>
 #include <QCheckBox>
 #include <QDialogButtonBox>
@@ -17,27 +17,37 @@
 #include <QTabWidget>
 #include <QVBoxLayout>
 
-/*! \file */
-
-// standard includes
+/* standard includes */
 #include <stdint.h>
 
-// boost includes - is this still needed?
+/* boost includes - is this still needed? */
 #include "boost/shared_array.hpp"
 
-// liveview includes
+/* liveview includes */
 #include "frameview_widget.h"
 #include "pref_window.h"
 
-// regular slider range
+/* regular slider range */
 const static int BIG_MAX = (1<<16) - 1;
 const static int BIG_MIN = -1*BIG_MAX;
 const static int BIG_TICK = 400;
 
-// slider low increment range
+/* slider low increment range */
 const static int LIL_MAX = 2000;
 const static int LIL_MIN = -2000;
 const static int LIL_TICK = 1;
+
+/*! \file
+ *  \brief Widget which contains the GUI elements common to several or all plotting widgets.
+ * \paragraph
+ *
+ * The ControlsBox is a wrapper GUI class which contains the (mostly) static controls between widgets. After establishing the buttons
+ * in the constructor, the class will call the function tab_slot_changed(int index) to establish widget-specific controls and settings.
+ * For instance, all profile widgets and FFTs make use of the Lines To Average slider rather than the disabled Std Dev N slider. As Qt
+ * does not support a pure virtual interface for widgets, each widget must make a connection to its own version of updateCeiling(int c),
+ * updateFloor(int f), and any other widget specfic action within its case in tab_slot_changed(int index). The beginning of this function
+ * specifies the behavior for when tabs are exited - all connections made must be disconnected.
+*/
 
 class ControlsBox : public QGroupBox
 {
@@ -50,7 +60,7 @@ public:
     preferenceWindow* prefWindow;
     QHBoxLayout controls_layout;
 
-    //LEFT SIDE BUTTONS (Collections)
+    /* LEFT SIDE BUTTONS (Collections) */
     QGridLayout collections_layout;
     QWidget CollectionButtonsBox;
     QPushButton collect_dark_frames_button;
@@ -62,7 +72,7 @@ public:
     QLabel server_ip_label;
     QLabel server_port_label;
 
-    //MIDDLE BUTTONS (Sliders)
+    /* MIDDLE BUTTONS (Sliders) */
     QGridLayout sliders_layout;
     QWidget ThresholdingSlidersBox;
     QSlider std_dev_N_slider;
@@ -78,7 +88,7 @@ public:
     QCheckBox low_increment_cbox;
     QCheckBox use_DSF_cbox;
 
-    //RIGHT SIDE BUTTONS (save)
+    /* RIGHT SIDE BUTTONS (save) */
     QGridLayout save_layout;
     QWidget SaveButtonsBox;
     QPushButton save_finite_button;
@@ -97,11 +107,24 @@ private:
     int ceiling_maximum;
 
 signals:
+    /*! \brief Passes the message to save raw frames at the backend.
+     * \paragraph
+     *
+     * Please note that at the time this message is passed, the file name parameter must be valid or the program
+     * will experience a segmentation violation. Very little checking of location validity and permissions is done
+     * at the backend. */
     void startSavingFinite(unsigned int length, QString fname);
+
+    /*! \brief Ends the saving loop at the backend. */
     void stopSaving();
 
+    /*! \brief Passes the DSF the message to begin averaging dark frames for all live widgets. */
     void startDSFMaskCollection();
+
+    /*! \brief Averages the collected frames and loads in the mask. */
     void stopDSFMaskCollection();
+
+    /*! \brief Passes the information needed to generate the dark mask and load it into the DSF in the playback_widget. */
     void mask_selected(QString file_name, unsigned int bytes_to_read, long offset);
 
 public slots:
@@ -111,15 +134,24 @@ private slots:
     void increment_slot(bool t);
     void update_backend_delta();
 
+    /*! \addtogroup savingfunc Frame saving functions
+     * Contains functions which control the processes needed to save frames.
+     * @{ */
     void show_save_dialog();
     void save_finite_button_slot();
     void stop_continous_button_slot();
     void updateSaveFrameNum_slot(unsigned int n);
+    /*! @} */
 
+    /*! \addtogroup maskfunc Mask recording functions
+     * Contains the functions which control the processes needed to record and use Dark
+     * Subtraction Filters
+     * @{ */
     void getMaskFile();
     void start_dark_collection_slot();
     void stop_dark_collection_slot();
     void use_DSF_general(bool);
+    /*! @} */
 
     void load_pref_window();
 

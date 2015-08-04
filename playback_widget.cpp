@@ -28,13 +28,17 @@ buffer_handler::~buffer_handler()
 // public function(s)
 bool buffer_handler::hasFP()
 {
+    /*! \brief Returns whether or not there is a loaded file pointer. */
     return fp != NULL ? true : false;
 }
 
 // public slots
 void buffer_handler::loadFile(QString file_name)
 {
-    // Step 1: Open the file specified in the parameter
+    /*! \brief Prepares a file for read in the backend.
+     * \param file_name The filename as received by the GUI in playback_widget or from the drag and drop.
+     */
+    /*! Step 1: Open the file specified in the parameter */
     fp = fopen(file_name.toStdString().c_str(), "rb");
     if(!fp)
     {
@@ -42,7 +46,7 @@ void buffer_handler::loadFile(QString file_name)
         return;
     }
 
-    //Step 2: Find the size of the raw file
+    /*! Step 2: Find the size of the raw file */
     fseek(fp, 0, SEEK_END);
     unsigned int filesize = ftell(fp);
     fseek(fp, 0, SEEK_SET);
@@ -53,46 +57,54 @@ void buffer_handler::loadFile(QString file_name)
         return;
     }
 
+    /*! Step 3: Allocate the memory for the frames */
     frame = (uint16_t*) malloc(pixel_size*fr_size);
     dark_data = (float*) calloc(fr_size,sizeof(float));
+
+    /*! Step 4: Populate data for the first frame */
     current_frame = 1;
     fseek(fp,(current_frame-1)*fr_size*pixel_size,SEEK_SET);
     fread(frame,pixel_size,fr_size,fp);
 
+    /*! Step 5: Pass back the handling of the data to the playback_widget */
     emit loaded(SUCCESS);
 }
 void buffer_handler::loadDSF(QString file_name, unsigned int elements_to_read, long offset)
 {
+    /*! \brief Generates a dark mask the size of one frame from a range within a file.
+     * \param file_name The file name as specified by the GUI in ControlsBox.
+     * \param elements_to_read The number of words to read in the file.
+     * \param offset The number of words to offset before beginning to read the file. */
     unsigned int ndx = 0;
     float frames_in_mask = 0;
 
-    // Step 0: Check that there is a file loaded first...
+    /*! Step 0: Check that there is a file loaded first... */
     if(!frame)
     {
         emit loaded(NO_FILE);
         return;
     }
 
-    // Step 1: Allocate some memory and attempt to open the file
+    /*! Step 1: Allocate some memory and attempt to open the file */
     float* mask_in = (float*) calloc(fr_size, sizeof(float));
     FILE* mask_file;
     mask_file = fopen(file_name.toStdString().c_str(), "rb");
 
-    // Step 1.5: Check that the file is valid
+    /*! Step 1.5: Check that the file is valid */
     if(mask_file)
     {
-        // Step 2: Offset the file pointer to the requested frame
+        /*! Step 2: Offset the file pointer to the requested frame */
         if(fseek(mask_file, offset, SEEK_SET) >= 0)
         {
-            // Step 3: Read the data into a temporary buffer, then copy it into an unsigned int buffer which we can use to
-            // process the whole file at the same time
+            /*! Step 3: Read the data into a temporary buffer, then copy it into an unsigned int buffer which we can use to
+             * process the whole file at the same time */
             uint16_t* temp_buffer = (uint16_t*) malloc(elements_to_read*sizeof(uint16_t));
             unsigned int* pic_buffer = (unsigned int*) malloc(elements_to_read*sizeof(unsigned int));
             fread(temp_buffer, sizeof(uint16_t), elements_to_read, mask_file);
             for( ; ndx < elements_to_read; ndx++) { pic_buffer[ndx] = (unsigned int)temp_buffer[ndx]; }
             free(temp_buffer);
 
-            // Step 4: For each frame, begin collecting the value at each position.
+            /*! Step 4: For each frame, begin collecting the value at each position. */
             for(unsigned int* pic_in = pic_buffer; pic_in <= (pic_buffer + elements_to_read - fr_size); pic_in += fr_size)
             {
                 for(ndx = 0; ndx <= fr_size; ndx++)
@@ -100,7 +112,7 @@ void buffer_handler::loadDSF(QString file_name, unsigned int elements_to_read, l
                 frames_in_mask++;
             }
 
-            // Step 5: Average the collected values and close the file
+            /*! Step 5: Average the collected values and close the file */
             for(ndx = 0; ndx < fr_size; ndx++) { mask_in[ndx] /= frames_in_mask; }
             free(pic_buffer);
         }
@@ -116,14 +128,22 @@ void buffer_handler::loadDSF(QString file_name, unsigned int elements_to_read, l
         return;
     }
 
-    // Step 6: Load the mask, then free the memory we allocated
+    /*! Step 6: Load the mask, then free the memory we allocated */
     emit loadMask(mask_in);
     fclose (mask_file);
 
+    /*! Step 7: Call playback_widget to finish loading the file */
     emit loaded(SUCCESS);
 }
 void buffer_handler::getFrame()
 {
+    /*! \brief The main event loop of the buffer_handler class.
+     * \paragraph
+     *
+     * The function runs in an infinite loop until a stop is requested by setting running to false. Every microsecond,
+     * the values of the current_frame and old_frame are compared. If they are not equal, the current_frame is read from
+     * the file. This operation is memory locked to avoid simultaneous read and write operations on the frame array.
+     */
     while(running)
     {
         if(current_frame != old_frame && fp)
@@ -144,6 +164,7 @@ void buffer_handler::getFrame()
 }
 void buffer_handler::stop()
 {
+    /*! \brief Ends the event loop. */
     running = false;
 }
 void buffer_handler::debug()
@@ -274,31 +295,37 @@ playback_widget::~playback_widget()
 // public functions
 bool playback_widget::isPlaying()
 {
+    /*! \brief Returns the status of whether or not the video is playing. */
     return play;
 }
 double playback_widget::getCeiling()
 {
+    /*! \brief Return the value of the ceiling for this widget as a double */
     return ceiling;
 }
 double playback_widget::getFloor()
 {
+    /*! \brief Return the value of the floor for this widget as a double */
     return floor;
 }
 
 //public slots
 void playback_widget::toggleUseDSF(bool t)
 {
+    /*! \brief Toggles the use of the dark mask for the playback widget only */
     useDSF = t;
     bh->old_frame = -1;
     handleFrame(bh->current_frame);
 }
 void playback_widget::loadDSF(QString f, unsigned int e, long o)
 {
+    /*! \brief A function that shoots through information from ControlsBox to buffer_handler */
     bh->loadDSF(f, e, o);
 }
 void playback_widget::stop()
 {
-    // taking advantage of our clunky corner case catching code
+    /*! \brief Stops playback and returnsto the first frame. */
+    // ...taking advantage of our clunky corner case catching code
 
     bh->current_frame = 1;
     if(bh->hasFP())
@@ -310,6 +337,11 @@ void playback_widget::stop()
 }
 void playback_widget::colorMapScrolledX(const QCPRange &newRange)
 {
+    /*! \brief Controls the behavior of zooming the plot.
+     * \paragraph
+     *
+     * Color Maps must not allow the user to zoom past the dimensions of the frame.
+     */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
     double upperRangeBound = frWidth;
@@ -337,6 +369,11 @@ void playback_widget::colorMapScrolledX(const QCPRange &newRange)
 }
 void playback_widget::colorMapScrolledY(const QCPRange &newRange)
 {
+    /*! \brief Controls the behavior of zooming the plot.
+     * \paragraph
+     *
+     * Color Maps must not allow the user to zoom past the dimensions of the frame.
+     */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
     double upperRangeBound = frHeight;
@@ -362,23 +399,34 @@ void playback_widget::colorMapScrolledY(const QCPRange &newRange)
 }
 void playback_widget::updateCeiling(int c)
 {
+    /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
     ceiling = (double)c;
     colorScale->setDataRange(QCPRange(floor,ceiling));
-    qcp->replot();
+    qcp->replot(); // We need to replot in these versions because we cannot count on a new frame to instantly display the changes.
 }
 void playback_widget::updateFloor(int f)
 {
+    /*! \brief Change the value of the floor for this widget to the input parameter and replot the color scale. */
     floor = (double)f;
     colorScale->setDataRange(QCPRange(floor,ceiling));
     qcp->replot();
 }
 void playback_widget::rescaleRange()
 {
+    /*! \brief Set the color scale of the display to the last used values for this widget */
     colorScale->setDataRange(QCPRange(floor,ceiling));
     qcp->replot();
 }
 void playback_widget::playPause()
 {
+    /*! \brief Toggles the playback of a video.
+     * \paragraph
+     *
+     * Inverts the value of the play variable. Handles the behavior of frame sequencing for playing forward or backward.
+     * Connections handle the sequencing of the frames. A QTimer set to a frame display period of 50 time units renders the
+     * frames at a regular interval during playback, but also frees up some CPU utilization in the GUI thread to enable commands
+     * from the buttons to still be recognized.
+     */
     play = !play;
     if(play && playBackward) // clunky corner case catching code
     {
@@ -426,6 +474,7 @@ void playback_widget::playPause()
 }
 void playback_widget::moveForward()
 {
+    /*! Sequences the frames in ascending order. */
     bh->old_frame = -1;
     bh->current_frame += interval;
     if(bh->current_frame > bh->num_frames)
@@ -436,6 +485,7 @@ void playback_widget::moveForward()
 }
 void playback_widget::moveBackward()
 {
+    /*! Sequences the frames in descending order. */
     bh->old_frame = -1;
     bh->current_frame -= interval;
     if(bh->current_frame < 1)
@@ -446,6 +496,7 @@ void playback_widget::moveBackward()
 }
 void playback_widget::fastForward()
 {
+    /*! Increases the frameskip by a factor of two for each call. Will reverse theplay direction if necessary. */
     if( interval == 1 )
         interval++;
     else if(interval <= 32 && play)
@@ -459,6 +510,8 @@ void playback_widget::fastForward()
 }
 void playback_widget::fastRewind()
 {
+    /*! Increases the frameskip in reverse by a factor of two for each call. Will reverse the play direction if
+     * necessary. */
     if(interval == 1)
         interval++;
     else if(interval <= 32 && playBackward)
@@ -501,6 +554,12 @@ void playback_widget::dropEvent(QDropEvent* event)
 //private slots
 void playback_widget::loadFile()
 {
+    /*! \brief Begins the process of loading in data.
+     * \paragraph
+     *
+     * Opens a dialog to select a file, then passes it to the backend. The only check is to see if the file name is empty, which would
+     * correspond to the cancel button being pressed or a similar case. We also want to make sure the video is not playing while this
+     * dialog is open. */
     if(this->isPlaying() || playBackward == true)
     {
         play = true;
@@ -519,6 +578,8 @@ void playback_widget::loadFile()
 }
 void playback_widget::finishLoading(err_code e)
 {
+    /*! Checks the result of the error_t enum and returns an appropriate error message. Otherwise, queues the controls and renders the
+     * first frame. */
     switch(e)
     {
     case NO_LOAD:
@@ -555,11 +616,13 @@ void playback_widget::finishLoading(err_code e)
 }
 void playback_widget::loadMaskIn(float* mask_arr)
 {
+    /*! \brief Accepts a mask array and loads it into the dark subtraction filter. */
     dark->load_mask(mask_arr);
     free(mask_arr);
 }
 void playback_widget::updateStatus(int frameNum)
 {
+    /*! \brief Updates the statusLabel to the current frame number, and displays the total number frames. */
     if(bh->frame)
     {
         if( interval == 1 )
@@ -574,6 +637,11 @@ void playback_widget::updateStatus(int frameNum)
 }
 void playback_widget::handleFrame(int frameNum)
 {
+    /*! \brief Renders a frame at a position within a file.
+     * \param frameNum Requested frame to render.
+     * This function updates the value of the current_frame, which will trigger the buffer_handler getFrame() process.
+     * The process then waits 50 microseconds to ensure that the mutex lock at the backend has triggered. The rendering of
+     * the data will then be serialized to occur after the frame has been read into the array. The y-axis is reversed. */
     bh->current_frame = frameNum;
     usleep(50);
     if(bh->current_frame == bh->old_frame)

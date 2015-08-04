@@ -6,6 +6,14 @@
 
 preferenceWindow::preferenceWindow(frameWorker* fw, QTabWidget* qtw, QWidget* parent) : QWidget(parent)
 {   
+    /*! \brief Generates the preferenceWindow layout and tabs.
+     * \paragraph
+     *
+     * We need a copy of the QTabWidget from the main window so that we can determine the current view window. Certain hardware controls
+     * are only applicable to certain tabs in the main application and may cause issues if activated in the wrong tab.
+     * \param qtw Used to create pointers to the current viewing widget.
+     * \author JP Ryan
+     */
     this->fw = fw;
     this->mainWinTab = qtw;
     frHeight = fw->getFrameHeight();
@@ -32,6 +40,11 @@ preferenceWindow::preferenceWindow(frameWorker* fw, QTabWidget* qtw, QWidget* pa
 }
 void preferenceWindow::createLogFileTab()
 {
+    /*! \brief Generate the Log File browser.
+     * \paragraph
+     *
+     * Currently unused. May be fully implemented for testing at a later date.
+     */
     logFileTab = new QWidget;
 
     browseButton = new QPushButton( tr("&Browse...") );
@@ -51,6 +64,7 @@ void preferenceWindow::createLogFileTab()
 }
 void preferenceWindow::createRenderingTab()
 {
+    /*! \brief Generate the controls and layout for the main preference window tab. */
     renderingTab = new QWidget;
 
     QLabel* dataRangePrompt = new QLabel(tr("Display data from:"));
@@ -124,11 +138,16 @@ void preferenceWindow::createRenderingTab()
 }
 void preferenceWindow::getFilePath()
 {
+    /*! \brief Test slot for saving log files. */
     QString directory = QFileDialog::getExistingDirectory(this,tr("Pick a directory"),"/home/jryan/NGIS_DATA/");
     filePath->setText(directory);
 }
 void preferenceWindow::enableControls( int ndx )
 {
+    /*! \brief Changes the active controls based on the current view widget.
+     * \paragraph
+     * Profile widgets and FFT widgets make use of the ignore first row and ignore last row check boxes while other widgets do not.
+     */
     ppw = NULL;
     ffw = NULL;
     index = ndx;
@@ -151,6 +170,7 @@ void preferenceWindow::enableControls( int ndx )
 }
 void preferenceWindow::invertRange()
 {
+    /*! \brief Set the inversion factor of the image and communicate the value to the backend. */
     uint factor = 65535; // (2^16) - 1;
     if( invert14bitButton->isChecked() )
     {
@@ -171,6 +191,7 @@ void preferenceWindow::invertRange()
 }
 void preferenceWindow::ignoreFirstRow( bool checked )
 {
+    /*! \brief Ignore first row data for the purpose of averaging. */
     if ( ppw )
     {
         if( checked )
@@ -188,6 +209,7 @@ void preferenceWindow::ignoreFirstRow( bool checked )
 }
 void preferenceWindow::ignoreLastRow( bool checked )
 {
+    /*! \brief Ignore last row data for the purposes of averaging. */
     if( ppw )
     {
         if( checked )
@@ -202,9 +224,9 @@ void preferenceWindow::ignoreLastRow( bool checked )
         else
             ffw->fw->to.update_end_row( frHeight );
     }
-
 }
 void preferenceWindow::enableChromaPixMap( bool checked )
 {
+    /*! \brief Enables or Diables the Chroma Pixel Mapping based on the check box in the Rendering Tab */
     fw->to.chromaPixRemap( checked );
 }

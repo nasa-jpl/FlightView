@@ -7,17 +7,12 @@
 frameWorker::frameWorker(QObject *parent) :
     QObject(parent)
 {
-    /*! \brief Communicates with the backend and connects public information between widgets.
-     * The framWorker class contains backend and analysis information that must be shared between classes in the GUI.
-     * Structurally, frameWorker is a worker object tied to a QThread started in main. The main event loop in this object
-     * may therefore be considered the function handleNewFrame() which periodically grabs a frame from the backend
-     * and checks for asynchronous signals from the filters about the status of the data processing. A frame may still
-     * be displayed even if analysis functions associated with it time out for the loop.
-     * In general, the frameWorker is the only object with a copy of the take_object and should exclusively handle
-     * communication with cuda_take.
-     *
-     * \author Noah Levy
+    /*! \brief Launches cuda_take using the take_object.
+     * \paragraph
+     * Also gathers the frame geometry from the backend. These values are used by all other members of Live View.
+     * Determines the default ceiling to use based on the camera type (14-bit or 16-bit systems)
      * \author JP Ryan
+     * \author Noah Levy
      */
 
     to.start(); // begin cuda_take
@@ -63,10 +58,12 @@ unsigned int frameWorker::getDataHeight()
 }
 unsigned int frameWorker::getFrameWidth()
 {
+    /*! \brief Returns the number of columns as an unsigned int */
     return frWidth;
 }
 bool frameWorker::dsfMaskCollected()
 {
+    /*! \brief Returns whether or not a dark mask is loaded into cuda_take. */
     return to.dsfMaskCollected;
 }
 
@@ -75,8 +72,17 @@ void frameWorker::captureFrames()
 {
     /*!
      * \brief The backend communication with take object is handled for each frame in this loop.
-     *
-     *
+     * \paragraph
+     * This event loop determines which processing elements have been completed for a frame in cuda_take.
+     * First, all other events in the thread are completed, then the process sleeps for 50 microseconds to add wait time to the loop.
+     * The backend frame, workingFrame is incremented based on the framecount. The framecount indexes the cuda_take ring buffer data
+     * structure which contains 1500 arriving images from the camera link at a time.
+     * \paragraph
+     * Standard Deviation processing and Asynchronous processing are sent as signals from cuda_take. As cuda_take is a non-Qt project,
+     * the signals are handled as status ints. If the asynchronous processing takes longer than a single loop through the backend, it
+     * is skipped at the frontend. This prevents access to bad data by the plots. curFrames are therefore the frames which are used by
+     * the frontend. Additionally, the backend frame saving is communicated between Live View and cuda_take in this loop.
+     * \author Noah Levy
      */
     unsigned int last_savenum = 0;
     frame_c* workingFrame;
@@ -123,45 +129,58 @@ void frameWorker::captureFrames()
 }
 void frameWorker::startCapturingDSFMask()
 {
+    /*! \brief Calls to start collecting dark frames in cuda_take. */
     qDebug() << "Starting to record Dark Frames";
     to.startCapturingDSFMask();
 }
 void frameWorker::finishCapturingDSFMask()
 {
+    /*! \brief Communicates to cuda_take to stop collecting dark frames. */
     qDebug() << "Stop recording Dark Frames";
     to.finishCapturingDSFMask();
 }
 void frameWorker::toggleUseDSF(bool t)
 {
+    /*! \brief Switches the boolean variable to use the DSF mask in the front and backend.
+     * \param t State variable for the "Use Dark Subtraction Filter" checkbox. */
     to.useDSF = t;
     crosshair_useDSF = t;
 }
 void frameWorker::startSavingRawData(unsigned int framenum, QString name)
 {
+    /*! \brief Calls to start saving frames in cuda_take at a specified location
+     * \param framenum Number of frames to save
+     * \param name Location of target file */
     qDebug() << "Start Saving Frames @ " << name;
 
     to.startSavingRaws(name.toUtf8().constData(), framenum);
 }
 void frameWorker::stopSavingRawData()
 {
+    /*! \brief Calls to stop saving frames in cuda_take. */
     to.stopSavingRaws();
 }
 void frameWorker::updateCrossDiplay( bool checked )
 {
+    /*! \brief Communicates whether or not to display the crosshair on the frame to all frameviews. */
     displayCross = checked;
 }
 void frameWorker::setStdDev_N(int newN)
 {
+    /*! \brief Communicates changes in the standard deviation boxcar length to cuda_take.
+     *  \param newN Value from the Std. Dev. N slider */
     to.setStdDev_N(newN);
 }
 
 void frameWorker::updateDelta()
 {
+    /*! \brief Calculates the framerate and emits updateFPS() to display. */
     delta = (float)(c * 1000) / (float)(deltaTimer.elapsed());
     emit updateFPS();
 }
 void frameWorker::stop()
 {
+    /*! \brief Ends the event loop and sets up the workerThread to be deallocated later. */
 #ifdef VERBOSE
     qDebug() << "stop frameWorker";
 #endif

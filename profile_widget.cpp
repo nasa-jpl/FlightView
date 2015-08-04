@@ -4,6 +4,10 @@
 
 profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *parent) : QWidget(parent)
 {
+    /*! \brief Establishes a plot for a specified image type.
+     * \param image_type Determines the type of graph that will be output by profile_widget
+     * \author JP Ryan
+     * \author Noah Levy */
     itype = image_type;
     qcp = NULL;
     this->fw = fw;
@@ -57,8 +61,28 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
+
+// public functions
+double profile_widget::getFloor()
+{
+    /*! \brief Return the value of the floor for this widget as a double */
+    return floor;
+}
+double profile_widget::getCeiling()
+{
+    /*! \brief Return the value of the ceiling for this widget as a double */
+    return ceiling;
+}
+
+// public slots
 void profile_widget::handleNewFrame()
 {
+    /*! \brief Plots a specific dimension profile.
+     * \paragraph
+     * The switch statement is a bit silly here, I only use it to differentiate the plot title and the type of profile array to use.
+     * The y-axis data is reversed in these images.
+     * \author JP Ryan
+     */
     if(fw->crosshair_x != -1 && fw->crosshair_y != -1)
     {
         if(!this->isHidden() &&  fw->curFrame != NULL)
@@ -120,24 +144,20 @@ void profile_widget::handleNewFrame()
 }
 void profile_widget::updateCeiling(int c)
 {
+    /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
     ceiling = (double)c;
     qcp->yAxis->setRangeUpper(ceiling);
 }
 void profile_widget::updateFloor(int f)
 {
+    /*! \brief Change the value of the floor for this widget to the input parameter and replot the color scale. */
     floor = (double)f;
     qcp->yAxis->setRangeLower(floor);
 }
-double profile_widget::getFloor()
-{
-    return floor;
-}
-double profile_widget::getCeiling()
-{
-    return ceiling;
-}
+
 void profile_widget::rescaleRange()
 {
+    /*! \brief Set the color scale of the display to the last used values for this widget */
     qcp->yAxis->setRange(QCPRange(ceiling,floor));
 }
 void profile_widget::updateStartRow( int sr )
@@ -150,14 +170,25 @@ void profile_widget::updateStartRow( int sr )
 }
 void profile_widget::updateEndRow( int er )
 {
+    /*! \brief Calls to ignore the last row of the image.
+     * \param er In the current situation, this is set to one less than the number of rows in the frame.
+     * This function works differently depending on the image type. For Vertical Profiles, the last row is only ignored in the frontend plot
+     * by adjusting the axes. In the horizontal profiles, the last row is ignored in the backend.
+     * \author JP Ryan */
     endRow = er;
     if( itype == VERTICAL_MEAN || itype == VERTICAL_CROSS )
         qcp->xAxis->setRange(startRow,endRow);
-    else if( itype == HORIZONTAL_MEAN )
+    else if( itype == HORIZONTAL_MEAN || itype == HORIZONTAL_CROSS )
         fw->to.update_end_row( endRow );
 }
 void profile_widget::updateCrossRange( int linesToAverage )
 {
+    /*! \brief Communicates the range of coordinates to average in the backend.
+     * \param linesToAverage Number of rows or columns to average in the backend.
+     * The linesToAverage parameter is used to determine the start and end coordinates for the mean filter at the backend. The initial conditions are set to
+     * average the entire image, then are adjusted based on the image type and the location of the crosshair.
+     * \author JP Ryan
+     */
     int startCol = 0;
     int startRow = 0;
     int endCol = frWidth;

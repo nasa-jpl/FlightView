@@ -587,7 +587,7 @@ void ControlsBox::getMaskFile()
      * able to receive the signal maskSelected(QString filename, unsigned int elem_to_read, long offset)
      * \author JP Ryan
      */
-    // Step 1: Open a dialog to select the mask file location
+    /*! Step 1: Open a dialog to select the mask file location */
     QFileDialog location_dialog(0);
     location_dialog.setFilter(QDir::Writable | QDir::Files);
     QString fileName = location_dialog.getOpenFileName(this, tr("Select mask file"),"",tr("Files (*.raw)"));
@@ -596,10 +596,10 @@ void ControlsBox::getMaskFile()
         return;
     }
 
-    // Step 2: Calculate the number of frames
+    /*! Step 2: Calculate the number of frames */
     FILE* mask_file;
     unsigned long mask_size = 0;
-    unsigned long frame_size = fw->getFrameHeight()*fw->getFrameWidth();
+    unsigned long frame_size = fw->getDataHeight()*fw->getFrameWidth();
     unsigned long num_frames = 0;
     mask_file = fopen(fileName.toStdString().c_str(), "rb");
     if(!mask_file)
@@ -617,7 +617,7 @@ void ControlsBox::getMaskFile()
         return;
     }
 
-    // Step 3: Open a new dialog to select which frames to read
+    /*! Step 3: Open a new dialog to select which frames to read */
     QDialog bytes_dialog;
     bytes_dialog.setWindowTitle("Select Read Area");
     QLabel status_label;
@@ -650,7 +650,7 @@ void ControlsBox::getMaskFile()
     bytes_dialog.show();
     int result = bytes_dialog.exec();
 
-    // Step 4: Check that the given range is acceptable
+    /*! Step 4: Check that the given range is acceptable */
     if(result == QDialog::Accepted)
     {
         int lo_val = left_bound.value();

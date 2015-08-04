@@ -22,7 +22,7 @@
 **             Date: 07.04.14                                             **
 **          Version: 1.2.1                                                **
 ****************************************************************************/
-
+#ifndef DOXYGEN_SKIP
 #include "qcustomplot.h"
 
 
@@ -21367,4 +21367,5 @@ QPen QCPItemBracket::mainPen() const
 {
     return mSelected ? mSelectedPen : mPen;
 }
+#endif // DOXYGEN_SKIP
 

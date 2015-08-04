@@ -1,13 +1,18 @@
-#include "frameview_widget.h"
+/* Qt includes */
 #include <QSize>
 #include <QDebug>
 #include <QtGlobal>
 #include <QRect>
 #include <QApplication>
 #include <QMainWindow>
+
+/* standard includes */
 #include <iostream>
 #include <fstream>
 #include <stdint.h>
+
+/* Live View includes */
+#include "frameview_widget.h"
 #include "qcustomplot.h"
 #include "settings.h"
 
@@ -27,8 +32,6 @@ frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget*
     count=0;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
-
-
 
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);
@@ -104,6 +107,8 @@ frameview_widget::frameview_widget(frameWorker* fw, image_t image_type, QWidget*
 }
 frameview_widget::~frameview_widget()
 {
+    /*! \brief Deallocate QCustomPlot elements
+     * \bug JP: The deallocation process causes a segmentation violation on the end of QCustomPlot. */
     delete colorScale;
     delete colorMap;
     delete qcp;
@@ -112,20 +117,45 @@ frameview_widget::~frameview_widget()
 // public functions
 double frameview_widget::getCeiling()
 {
+    /*! \brief Return the value of the ceiling for this widget as a double */
     return ceiling;
 }
 double frameview_widget::getFloor()
 {
+    /*! \brief Return the value of the floor for this widget as a double */
     return floor;
 }
 void frameview_widget::toggleDisplayCrosshair()
 {
+    /*! \brief Turn on or off the rendering of the crosshair */
     displayCrosshairCheck.setChecked(!displayCrosshairCheck.isChecked());
 }
 
 // public slots
 void frameview_widget::handleNewFrame()
 {
+    /*! \brief Rendering function for a frameview
+     * \paragraph
+     *
+     * frameview_widget plots a color map using data from the curFrame in the backend conditionally selected using the image_t.
+     * frameWorker contains a local copy of a frame from cuda_take with all processed data that can be read from directly.
+     * \paragraph
+     *
+     * For BASE type images, image_data_ptr is used, which has the type uint16_t (2 bytes/pixel). BASE images may display crosshairs,
+     * so we should check for the coordinates of these elements. Additionally, the image data is y-axis reversed, so our indexing should
+     * start from the top row, work left to right across a row, then down.
+     * \paragraph
+     *
+     * For DSF type images, dark_subtracted_data is used, which has the type float. DSF images may also display crosshairs. As with BASE
+     * images, the y-axis is reversed.
+     * \paragraph
+     *
+     * For STD_DEV type images, the current std_dev_frame in frameWorker is used rather than the curFrame. As calculating the standard deviation proceeds
+     * on the GPU regardless of CPU timing, the device must send back a signal whenever it has completed the most recent image. STD_DEV images will
+     * display at a lower framerate than other frameviews, especially on weaker graphics cards. They do not render crosshairs.
+     * \author JP Ryan
+     * \author Noah Levy
+     */
     if(!this->isHidden() && fw->curFrame)
     {
         if(image_type == BASE)
@@ -145,7 +175,7 @@ void frameview_widget::handleNewFrame()
                     else
                     {
                         // display normally
-                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]); // y-axis reversed
                     }
                 }
             }
@@ -168,7 +198,7 @@ void frameview_widget::handleNewFrame()
                     else
                     {
                         // display normally
-                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+                        colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]); // y-axis reversed
                     }
                 }
             }
@@ -181,7 +211,7 @@ void frameview_widget::handleNewFrame()
             {
                 for(int row = 0; row < frHeight; row++)
                 {
-                    colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]);
+                    colorMap->data()->setCell(col,row,local_image_ptr[(frHeight-row-1)*frWidth + col]); // y-axis reversed
                 }
             }
 
@@ -192,6 +222,7 @@ void frameview_widget::handleNewFrame()
 }
 void frameview_widget::updateFPS()
 {
+    /*! \brief Updates the FPS of Display label */
     seconds_elapsed++;
 
     if(seconds_elapsed < 5)
@@ -207,6 +238,11 @@ void frameview_widget::updateFPS()
 }
 void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
 {
+    /*! \brief Controls the behavior of zooming the plot.
+     * \paragraph
+     *
+     * Color Maps must not allow the user to zoom past the dimensions of the frame.
+     */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
     double upperRangeBound = frHeight;
@@ -232,6 +268,11 @@ void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
 
 void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
 {
+    /*! \brief Controls the behavior of zooming the plot.
+     * \paragraph
+     *
+     * Color Maps must not allow the user to zoom past the dimensions of the frame.
+     */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
     double upperRangeBound = frWidth;
@@ -256,22 +297,32 @@ void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
 }
 void frameview_widget::updateCeiling(int c)
 {
+    /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
     ceiling = (double)c;
     colorScale->setDataRange(QCPRange(floor,ceiling));
 }
 void frameview_widget::updateFloor(int f)
 {
+    /*! \brief Change the value of the floor for this widget to the input parameter and replot the color scale. */
     floor = (double)f;
     colorScale->setDataRange(QCPRange(floor,ceiling));
 }
 void frameview_widget::rescaleRange()
 {
+    /*! \brief Set the color scale of the display to the last used values for this widget */
     colorScale->setDataRange(QCPRange(floor,ceiling));
 }
 void frameview_widget::setCrosshairs(QMouseEvent* event)
-{ // lol ;) ;) ;) This is a stupid bugfix
+{
+    /*! \brief Sets the value of the crosshair and lines to average selection for rendering
+     * \author JP Ryan */
+    // lol ;) ;) ;) This is a stupid bugfix
     int currentVDiff = fw->crossStartRow - fw->crossHeight;
     int currentHDiff = fw->crossStartCol - fw->crossWidth;
+
+    /*! \bug Occasionally, the frame will render with ghost crosshair data or graphical errors.
+     * I do not know why this occurs, but it could be due to a logical error or a QCustomPlot issue.
+     * Both Noah and I have found this issue. -JP */
 
     fw->crosshair_x = qcp->xAxis->pixelToCoord(event->pos().x());
     fw->crosshair_y = qcp->yAxis->pixelToCoord(event->pos().y());

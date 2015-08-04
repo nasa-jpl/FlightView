@@ -22,9 +22,9 @@
 **             Date: 07.04.14                                             **
 **          Version: 1.2.1                                                **
 ****************************************************************************/
-
 #ifndef QCUSTOMPLOT_H
 #define QCUSTOMPLOT_H
+#ifndef DOXYGEN_SKIP
 
 #include <QObject>
 #include <QPointer>
@@ -3521,5 +3521,7 @@ protected:
   QPen mainPen() const;
 };
 
+#endif // DOXYGEN SKIP
 #endif // QCUSTOMPLOT_H
+
 

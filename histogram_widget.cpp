@@ -47,8 +47,26 @@ histogram_widget::histogram_widget(frameWorker *fw, QWidget *parent) :
     connect(&rendertimer,SIGNAL(timeout()),this,SLOT(handleNewFrame()));
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
+
+// public functions
+double histogram_widget::getCeiling()
+{
+    /*! \brief Return the value of the ceiling for this widget as a double */
+    return ceiling;
+}
+double histogram_widget::getFloor()
+{
+    /*! \brief Return the value of the floor for this widget as a double */
+    return floor;
+}
+
+// public slots
 void histogram_widget::handleNewFrame()
 {
+    /*! \brief Render the bars of histogram data
+     * \paragraph
+     *
+     * As the histogram relies on standard deviation data, it must use the std_dev_frame rather than the curFrame. */
     if(!this->isHidden())
     {
         uint32_t * histogram_data_ptr = fw->std_dev_frame->std_dev_histogram;
@@ -65,10 +83,23 @@ void histogram_widget::handleNewFrame()
 }
 void histogram_widget::histogramScrolledY(const QCPRange &newRange)
 {
+    /*! \brief Defines behavior for zooming the Y Axis of the histogram in and out.
+     * \paragraph
+     *
+     * There is no special behavior for scrolling the Y Axis of the histogram. This function may
+     * be deprecated in future versions.
+     * \param newRange Unused. */
     qcp->yAxis->setRange(QCPRange(floor,ceiling));
 }
 void histogram_widget::histogramScrolledX(const QCPRange &newRange)
 {
+    /*! \brief Defines behavior for zooming the Y Axis of the histogram in and out.
+     * \paragraph
+     *
+     * The X Axis is log scale, but it must stay within the bounded range from 0 to 8192. Additionally, the bars must be
+     * rescaled with the axis.
+     * \param newRange Passed in as the new scroll position on the X axis.
+     */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
 
@@ -96,27 +127,23 @@ void histogram_widget::histogramScrolledX(const QCPRange &newRange)
 }
 void histogram_widget::updateCeiling(int c)
 {
+    /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
     ceiling = (double)c;
     qcp->yAxis->setRange(QCPRange(floor,ceiling));
 }
 void histogram_widget::updateFloor(int f)
 {
+    /*! \brief Change the value of the floor for this widget to the input parameter and replot the color scale. */
     floor = (double)f;
     qcp->yAxis->setRange(QCPRange(floor,ceiling));
 }
-double histogram_widget::getCeiling()
-{
-    return ceiling;
-}
-double histogram_widget::getFloor()
-{
-    return floor;
-}
 void histogram_widget::rescaleRange()
 {
+    /*! \brief Set the color scale of the display to the last used values for this widget */
     qcp->yAxis->setRange(QCPRange(floor,ceiling));
 }
 void histogram_widget::resetRange()
 {
+    /*! \brief Reset the range of the xAxis of the histogram to the initial parameters - 1 to 8192. */
     qcp->xAxis->setRange(QCPRange(1,histo_bins[histo_bins.size()-1]));
 }
