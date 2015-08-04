@@ -55,7 +55,7 @@ OTHER_FILES += \
 RESOURCES += \
     images.qrc
 
-QMAKE_CXXFLAGS += -std=c++11 -O3 -march=corei7-avx
+QMAKE_CXXFLAGS += -std=c++11 -O3 -march=corei7-avx -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter
 #RC_FILE = liveview2.rc
 
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff
