@@ -41,11 +41,6 @@ HEADERS  += mainwindow.h \
     saveserver.h \
     playback_widget.h
 
-BACKEND_HEADERS += edtinc.h \
-    take_object.hpp\
-    camera_types.h
-
-HEADERS += BACKEND_HEADERS
 OTHER_FILES += \
     aviris-ng-logo.png \
     aviris-logo-transparent.png \
@@ -58,17 +53,18 @@ RESOURCES += \
 QMAKE_CXXFLAGS += -std=c++11 -O3 -march=corei7-avx -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter
 #RC_FILE = liveview2.rc
 
-#NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff
-# Tell the qcustomplot header that it will be used as library:
+# Used for build tracking:
 DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 
-# make a nice folder containing what is needed in a release:
-QMAKE_POST_LINK += mkdir -p ../lv2_release;
-QMAKE_POST_LINK += cp liveview2 ../lv2_release/;
-#QMAKE_POST_LINK += cp ../liveview2/liveview2_icon.png ../lv2_release/;
-#QMAKE_POST_LINK += cp ../liveview2/liveview2.desktop ../lv2_release/;
+# qmake will create this directory automatically:
+DESTDIR = ../lv2_release
+# Copy files into DESTDIR for potential releases:
+QMAKE_POST_LINK += cp ../liveview2/liveview2_icon.png $$DESTDIR;
+QMAKE_POST_LINK += cp ../liveview2/liveview2.desktop $$DESTDIR;
 
 
+#NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff
+# Tell the qcustomplot header that it will be used as library:
 # Link with debug version of qcustomplot if compiling in debug mode, else with release library:
 #CONFIG(debug, release|debug) {
 #  win32:QCPLIB = qcustomplotd1
