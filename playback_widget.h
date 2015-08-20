@@ -17,7 +17,7 @@
 #include "frame_worker.h"
 #include "qcustomplot.h"
 
-enum err_code { SUCCESS, NO_LOAD, NO_DATA, NO_FILE, READ_FAIL, NO_MASK };
+enum err_code {SUCCESS, NO_LOAD, NO_DATA, NO_FILE, READ_FAIL, NO_MASK};
 
 /*! \file
  * \brief Enables the playback of image data in a video player environment.
@@ -40,7 +40,7 @@ class buffer_handler : public QObject
 {
     Q_OBJECT
 
-    FILE* fp;
+    FILE *fp;
 
     int fr_height, fr_width;
     unsigned int pixel_size = sizeof(uint16_t);
@@ -49,7 +49,7 @@ class buffer_handler : public QObject
     bool running;
 
 public:
-    buffer_handler(int height, int width, QObject* parent = 0);
+    buffer_handler(int height, int width, QObject *parent = 0);
     virtual ~buffer_handler();
 
     bool hasFP();
@@ -59,14 +59,15 @@ public:
     int current_frame;
     int old_frame = 1;
     int num_frames;
-    uint16_t* frame; // Array of raw data
-    float* dark_data; // Array of dark subtracted data
+    uint16_t *frame; // Array of raw data
+    float *dark_data; // Array of dark subtracted data
 
 public slots:
     void loadFile(QString file_name);
     void loadDSF(QString file_name, unsigned int elements_to_read, long offset);
 
     void getFrame();
+    uint16_t *tapPixelRemap();
     void stop();
 
     void debug();
@@ -76,7 +77,7 @@ signals:
     void loaded(err_code e);
     /*! \brief This signal is emitted when a new dark mask has been generated and is ready to be loaded into the
      * dark subtraction filter. */
-    void loadMask(float*);
+    void loadMask(float *mask);
     /*! \brief This signal calls to stop the class event loop and deallocate the thread later. */
     void finished();
 
@@ -86,10 +87,10 @@ class playback_widget : public QWidget
 {
     Q_OBJECT
 
-    frameWorker* fw;
-    dark_subtraction_filter* dark;
+    frameWorker *fw;
+    dark_subtraction_filter *dark;
     QTimer render_timer; // Enables us to have time between handling frames for manipulating GUI elements
-    QThread* buffer_thread;
+    QThread *buffer_thread;
 
     /* GUI elements */
     QGridLayout qgl;
@@ -99,29 +100,29 @@ class playback_widget : public QWidget
     /* These buttons all have a dual purpose and change their function simultaneously.
      * When the playback is paused, the forward and backward buttons function as frameskip keys
      * When it is playing, they function as fast forward and rewind. */
-    QPushButton* playPauseButton;
-    QPushButton* forwardButton;
-    QPushButton* backwardButton;
-    QPushButton* openFileButton;
-    QSpinBox* frame_value;
-    QSlider* progressBar;
+    QPushButton *playPauseButton;
+    QPushButton *forwardButton;
+    QPushButton *backwardButton;
+    QPushButton *openFileButton;
+    QSpinBox *frame_value;
+    QSlider *progressBar;
 
     /* This label displays errors, shows the current progress through the file (current frame / total frames),
      * and gives intermediate status messages (e.g, "Loading file...") */
-    QLabel* statusLabel;
+    QLabel *statusLabel;
 
     bool play = false;
     bool playBackward = false;
     int interval = 1;
 
     /* Plot elements */
-    QCustomPlot* qcp;
-    QCPColorMap* colorMap;
-    QCPColorMapData* colorMapData;
-    QCPColorScale* colorScale;
+    QCustomPlot *qcp;
+    QCPColorMap *colorMap;
+    QCPColorMapData *colorMapData;
+    QCPColorScale *colorScale;
 
     /* Plot rendering elements */
-    unsigned int pixel_size = sizeof(uint16_t);
+    const unsigned int pixel_size = sizeof(uint16_t);
     unsigned int frame_size;
     int frHeight, frWidth;
 
@@ -133,7 +134,7 @@ class playback_widget : public QWidget
     volatile double ceiling;
 
 public:
-    explicit playback_widget(frameWorker* fw, QWidget *parent = 0);
+    explicit playback_widget(frameWorker *fw, QWidget *parent = 0);
     ~playback_widget();
 
     /*! \addtogroup getters
@@ -145,7 +146,7 @@ public:
 
     buffer_handler* bh; // public copy of playback_widget's backend
 
-    unsigned int slider_max = (1<<16) * 1.1;
+    const unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
 
 public slots:
@@ -173,8 +174,8 @@ public slots:
     /*! @} */
 
 protected:
-    void dragEnterEvent(QDragEnterEvent* event);
-    void dropEvent(QDropEvent* event);
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dropEvent(QDropEvent *event);
 
 signals:
     /*! \brief This signal is emitted when a frame has finished rendering. */
@@ -183,9 +184,9 @@ signals:
 private slots:
     void loadFile();
     void finishLoading(err_code e);
-    void loadMaskIn(float*);
-    void updateStatus(int);
-    void handleFrame(int);
+    void loadMaskIn(float *mask_arr);
+    void updateStatus(int frameNum);
+    void handleFrame(int frameNum);
 
 };
 #endif // PLAYBACK_WIDGET_H

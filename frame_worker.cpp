@@ -4,6 +4,9 @@
 #include <QMutexLocker>
 #include <QSharedPointer>
 #include <QDebug>
+
+static const char notAllowedChars[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`' ";
+
 frameWorker::frameWorker(QObject *parent) :
     QObject(parent)
 {
@@ -30,7 +33,7 @@ frameWorker::frameWorker(QObject *parent) :
     else
         base_ceiling = (1<<16) - 1;
 
-    deltaTimer.start(); // this is the backend timer which is tied to the collection of new frames from take_object
+
 }
 frameWorker::~frameWorker()
 {
@@ -84,43 +87,41 @@ void frameWorker::captureFrames()
      * the frontend. Additionally, the backend frame saving is communicated between Live View and cuda_take in this loop.
      * \author Noah Levy
      */
+    unsigned long count = 0;
+    QTime clock;
+    clock.start();
     unsigned int last_savenum = 0;
-    frame_c* workingFrame;
+    unsigned int save_num;
+    frame_c *workingFrame;
 
-    while(doRun)
-    {
+    while(doRun) {
         QCoreApplication::processEvents();
         usleep(50); //So that CPU utilization is not 100%
-        workingFrame = &to.frame_ring_buffer[c%CPU_FRAME_BUFFER_SIZE];
-
-        if(std_dev_processing_frame != NULL)
-        {
-            if(std_dev_processing_frame->has_valid_std_dev == 2)
-            {
+        workingFrame = &to.frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+        if(std_dev_processing_frame != NULL) {
+            if(std_dev_processing_frame->has_valid_std_dev == 2) {
                 std_dev_frame = std_dev_processing_frame;
             }
         }
-        if(workingFrame->async_filtering_done != 0)
-        {
+        if(workingFrame->async_filtering_done != 0) {
             curFrame = workingFrame;
-            if(curFrame->has_valid_std_dev==1)
-            {
+            if (curFrame->has_valid_std_dev == 1) {
                 std_dev_processing_frame = curFrame;
             }
-            unsigned int save_num = to.save_framenum.load(std::memory_order_relaxed);
-            if(!to.saving_list.empty())
-            {
+            save_num = to.save_framenum.load(std::memory_order_relaxed);
+            if (!to.saving_list.empty()) {
                 save_num = 1;
             }
             if(save_num != last_savenum)
                 emit savingFrameNumChanged(to.save_framenum);
             last_savenum = save_num;
-            c++;
+            count++;
+            if (count % 50 == 0 && count != 0) {
+                delta = 50.0 / clock.restart() * 1000.0;
+                emit updateFPS();
+            }
         }
-        if( c%framecount_window == 0 && c != 0 )
-        {
-            updateDelta();
-        }
+
     }
 #ifdef VERBOSE
     qDebug() << "emitting finished";
@@ -146,21 +147,198 @@ void frameWorker::toggleUseDSF(bool t)
     to.useDSF = t;
     crosshair_useDSF = t;
 }
-void frameWorker::startSavingRawData(unsigned int framenum, QString name)
+void frameWorker::startSavingRawData(unsigned int framenum, QString unverifiedName)
 {
     /*! \brief Calls to start saving frames in cuda_take at a specified location
      * \param framenum Number of frames to save
      * \param name Location of target file */
-    qDebug() << "Start Saving Frames @ " << name;
-
-    to.startSavingRaws(name.toUtf8().constData(), framenum);
+    qDebug() << "Start Saving Frames @ " << unverifiedName;
+    to.startSavingRaws(unverifiedName.toUtf8().constData(), framenum);
 }
 void frameWorker::stopSavingRawData()
 {
     /*! \brief Calls to stop saving frames in cuda_take. */
     to.stopSavingRaws();
 }
-void frameWorker::updateCrossDiplay( bool checked )
+bool frameWorker::validateFileName(const QString &name, QString *errorMessage = 0)
+{
+    // No filename
+    if (name.isEmpty()) {
+        if(errorMessage)
+            *errorMessage = tr("File name is empty.");
+        return false;
+    }
+
+    // Characters
+    for (const char *c = notAllowedChars; *c; c++) {
+        if (name.contains(QLatin1Char(*c))) {
+            if (errorMessage) {
+                const QChar qc = QLatin1Char(*c);
+                *errorMessage = tr("Invalid character \"%1\" in file name.").arg(qc);
+            }
+            return false;
+        }
+    }
+
+    // Starts with slash
+    if (name.at(0) != '/') {
+        if (errorMessage)
+            *errorMessage = tr("File name must specify a path. Please specify the directory from root at which "
+                           " to save the file."); // Upper case code
+        return false;
+    }
+    return true;
+}
+
+void frameWorker::skipFirstRow(bool checked)
+{
+    /*! \brief Selects whether or not to skip the last row for profiles.
+     * \param checked True skips the first row, false uses it.
+     * Using the first row or not means to include it in the range of the mean profile at
+     * the backend. If the first row of the image contains metadata, it may throw off the
+     * average of a horizontal profile if included.
+     */
+    isSkippingFirst = checked;
+    if (isSkippingFirst && crossStartRow < 1)
+        crossStartRow = 1;
+    else if (!isSkippingFirst && crossStartRow == 1)
+        crossStartRow = 0;
+    to.updateVertRange(crossStartRow, crossHeight);
+}
+void frameWorker::skipLastRow(bool checked)
+{
+    /*! \brief Selects whether or not to skip the last row for profiles.
+     * \param checked True skips the last row, false uses it.
+     * Using the last row or not means to include it in the range of the mean profile at
+     * the backend. If the last row of the image contains metadata, it may throw off the
+     * average of a horizontal profile if included.
+     */
+    isSkippingLast = checked;
+    if (isSkippingLast && (crossHeight == int(frHeight) || crossHeight < 0))
+        crossHeight = frHeight - 1;
+    else if (!isSkippingLast && crossHeight == int(frHeight - 1))
+        crossHeight = frHeight;
+    to.updateVertRange(crossStartRow, crossHeight);
+}
+void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
+{
+    /*! \brief Communicates the range of coordinates to average in the backend.
+     * \param linesToAverage Number of rows or columns to average in the backend.
+     * The linesToAverage parameter is used to determine the start and end coordinates for the mean filter at the backend. The initial conditions are set to
+     * average the entire image, then are adjusted based on the image type and the location of the crosshair.
+     * \author JP Ryan
+     */
+    crossStartCol = 0;
+    crossStartRow = 0;
+    crossWidth = frWidth;
+    crossHeight = frHeight;
+    if (profile == VERTICAL_CROSS) {
+        horizLinesAvgd = linesToAverage;
+        if ((crosshair_x + (linesToAverage / 2)) > (int)frWidth) {
+            crossStartCol = frWidth - linesToAverage;
+            crossWidth = frWidth;
+        } else if ((crosshair_x - (linesToAverage / 2)) < 0) {
+            crossWidth = linesToAverage;
+        } else {
+            crossStartCol = crosshair_x - (linesToAverage/2);
+            crossWidth = crosshair_x + (linesToAverage/2);
+        }
+    } else if (profile == HORIZONTAL_CROSS) {
+        vertLinesAvgd = linesToAverage;
+        if (crosshair_y + (linesToAverage / 2) > (int)frHeight) {
+            crossStartRow = frHeight - linesToAverage;
+            crossHeight = frHeight;
+        } else if (crosshair_y - (linesToAverage / 2) < 0) {
+            crossHeight = linesToAverage;
+        } else {
+            crossStartRow = crosshair_y - (linesToAverage / 2);
+            crossHeight = crosshair_y + (linesToAverage / 2);
+        }  
+    }
+    crossStartRow = isSkippingFirst && crossStartRow == 0 ? 1 : crossStartRow;
+    crossHeight = isSkippingLast && crossHeight == int(frHeight) ? frHeight - 1 : frHeight;
+    to.updateVertRange(crossStartRow, crossHeight);
+    to.updateHorizRange(crossStartCol, crossWidth);
+}
+void frameWorker::setCrosshairBackend(int pos_x, int pos_y)
+{
+    /*! \brief Determines the range of values to render when a new crosshair is selected.
+     * \param pos_x The x position of the crosshair.
+     * \param pos_y The y position of the crosshair.
+     * The crosshair must be within the bounds of the image. It must also only transmit its value when
+     * a new crosshair is selected, and only when it is on the screen (not equal to -1).
+     * The cross range must not display when there are not multiple lines to average. The range must also account for whether
+     * or not the option to skip the first or last row has been selected. Ranges will adjust automatically at the edge of the
+     * frame to preserve the same number of lines to average.
+     */
+    bool repeat = crosshair_x == pos_x && crosshair_y == pos_y;
+    crosshair_x = pos_x;
+    crosshair_y = pos_y;    
+    if (!(crosshair_x == -1 && crosshair_y == -1) && !repeat) {
+        crosshair_x = crosshair_x < -1 ? 0 : crosshair_x;
+        crosshair_x = crosshair_x >= (int)frWidth ? frWidth : crosshair_x;
+        crosshair_y = crosshair_y < -1 ? 0 : crosshair_y;
+        crosshair_y = crosshair_y >= (int)frHeight ? frHeight : crosshair_y;
+        qDebug()<<"x="<<crosshair_x<<"y="<<crosshair_y;
+    }
+
+    crossStartCol = -1;
+    crossStartRow = isSkippingFirst ? 1 : -1;
+    crossWidth = frWidth;
+    crossHeight = isSkippingLast ? frHeight - 1 : frHeight;
+
+    if ((crosshair_x + (horizLinesAvgd / 2)) > (int)frWidth) {
+        crossStartCol = frWidth - horizLinesAvgd;
+        crossWidth = frWidth;
+    } else if ((crosshair_x - (horizLinesAvgd / 2)) < 0) {
+        crossWidth = horizLinesAvgd;
+    } else {
+        crossStartCol = crosshair_x - (horizLinesAvgd / 2);
+        crossWidth = crosshair_x + (horizLinesAvgd / 2);
+    }
+
+    if(crosshair_y + (vertLinesAvgd / 2) > (int)frHeight) {
+        crossStartRow = frHeight - vertLinesAvgd;
+        crossHeight = isSkippingLast ? frHeight - 1 : frHeight;
+    } else if(crosshair_y - (vertLinesAvgd / 2) < 0) {
+        crossHeight = vertLinesAvgd;
+    } else {
+        crossStartRow = crosshair_y - (vertLinesAvgd / 2);
+        crossHeight = crosshair_y + (vertLinesAvgd / 2);
+    }
+    if(crosshair_x == -1 && crosshair_y == -1)
+        displayCross = false;
+}
+void frameWorker::update_FFT_range(FFT_t type, int tapNum)
+{
+    to.changeFFTtype(type);
+    switch (type) {
+    case PLANE_MEAN:
+        crossStartRow = isSkippingFirst ? 1 : 0;
+        crossHeight = isSkippingLast ? frHeight - 1 : frHeight;
+        crossStartCol = 0;
+        crossWidth = frWidth;
+        to.updateHorizRange(crossStartCol, crossWidth);
+        to.updateVertRange(crossStartRow, crossHeight);
+        break;
+    case VERT_CROSS:
+        updateMeanRange(horizLinesAvgd, VERTICAL_CROSS);
+        break;
+    case TAP_PROFIL:
+        tapPrfChanged(tapNum);
+        break;
+    }
+}
+void frameWorker::tapPrfChanged(int tapNum)
+{
+    crossStartCol = tapNum * TAP_WIDTH;
+    crossWidth = (tapNum + 1) * TAP_WIDTH;
+    crossStartRow = isSkippingFirst ? 1 : 0;
+    crossHeight = isSkippingLast ? frHeight - 1 : frHeight;
+    to.updateHorizRange(crossStartCol, crossWidth);
+    to.updateVertRange(crossStartRow, crossHeight);
+}
+void frameWorker::updateCrossDiplay(bool checked)
 {
     /*! \brief Communicates whether or not to display the crosshair on the frame to all frameviews. */
     displayCross = checked;
@@ -170,13 +348,6 @@ void frameWorker::setStdDev_N(int newN)
     /*! \brief Communicates changes in the standard deviation boxcar length to cuda_take.
      *  \param newN Value from the Std. Dev. N slider */
     to.setStdDev_N(newN);
-}
-
-void frameWorker::updateDelta()
-{
-    /*! \brief Calculates the framerate and emits updateFPS() to display. */
-    delta = (float)(c * 1000) / (float)(deltaTimer.elapsed());
-    emit updateFPS();
 }
 void frameWorker::stop()
 {

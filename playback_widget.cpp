@@ -7,24 +7,24 @@
 /* ========================================================================= */
 // BUFFER HANDLER
 
-buffer_handler::buffer_handler(int height, int width, QObject* parent) :
+buffer_handler::buffer_handler(int height, int width, QObject *parent) :
     QObject(parent)
 {
     this->fr_height = height;
     this->fr_width = width;
-    this->fr_size = fr_height*fr_width;
+    this->fr_size = fr_height * fr_width;
     this->fp = NULL;
     this->running = true;
     this->current_frame = 1;
 }
 buffer_handler::~buffer_handler()
 {
-    if(fp)
-    {
+    if (fp) {
         fclose(fp);
         free(frame);
     }
 }
+
 // public function(s)
 bool buffer_handler::hasFP()
 {
@@ -40,33 +40,31 @@ void buffer_handler::loadFile(QString file_name)
      */
     /*! Step 1: Open the file specified in the parameter */
     fp = fopen(file_name.toStdString().c_str(), "rb");
-    if(!fp)
-    {
+    if (!fp) {
         emit loaded(NO_LOAD);
         return;
     }
 
-    /*! Step 2: Find the size of the raw file */
+    /* Step 2: Find the size of the raw file */
     fseek(fp, 0, SEEK_END);
     unsigned int filesize = ftell(fp);
     fseek(fp, 0, SEEK_SET);
-    num_frames = filesize / (fr_size*pixel_size);
-    if(!filesize)
-    {
+    num_frames = filesize / (fr_size * pixel_size);
+    if (!filesize) {
         emit loaded(NO_DATA);
         return;
     }
 
-    /*! Step 3: Allocate the memory for the frames */
-    frame = (uint16_t*) malloc(pixel_size*fr_size);
-    dark_data = (float*) calloc(fr_size,sizeof(float));
+    /* Step 3: Allocate the memory for the frames */
+    frame = (uint16_t*) malloc(pixel_size * fr_size);
+    dark_data = (float*) calloc(fr_size, sizeof(float));
 
-    /*! Step 4: Populate data for the first frame */
+    /* Step 4: Populate data for the first frame */
     current_frame = 1;
-    fseek(fp,(current_frame-1)*fr_size*pixel_size,SEEK_SET);
-    fread(frame,pixel_size,fr_size,fp);
+    fseek(fp, (current_frame - 1) * fr_size * pixel_size, SEEK_SET);
+    fread(frame, pixel_size, fr_size, fp);
 
-    /*! Step 5: Pass back the handling of the data to the playback_widget */
+    /* Step 5: Pass back the handling of the data to the playback_widget */
     emit loaded(SUCCESS);
 }
 void buffer_handler::loadDSF(QString file_name, unsigned int elements_to_read, long offset)
@@ -78,61 +76,52 @@ void buffer_handler::loadDSF(QString file_name, unsigned int elements_to_read, l
     unsigned int ndx = 0;
     float frames_in_mask = 0;
 
-    /*! Step 0: Check that there is a file loaded first... */
-    if(!frame)
-    {
+    /* Step 0: Check that there is a file loaded first... */
+    if (!frame) {
         emit loaded(NO_FILE);
         return;
     }
 
-    /*! Step 1: Allocate some memory and attempt to open the file */
-    float* mask_in = (float*) calloc(fr_size, sizeof(float));
-    FILE* mask_file;
+    /* Step 1: Allocate some memory and attempt to open the file */
+    float *mask_in = (float*) calloc(fr_size, sizeof(float));
+    FILE *mask_file;
     mask_file = fopen(file_name.toStdString().c_str(), "rb");
 
-    /*! Step 1.5: Check that the file is valid */
-    if(mask_file)
-    {
-        /*! Step 2: Offset the file pointer to the requested frame */
-        if(fseek(mask_file, offset, SEEK_SET) >= 0)
-        {
-            /*! Step 3: Read the data into a temporary buffer, then copy it into an unsigned int buffer which we can use to
-             * process the whole file at the same time */
-            uint16_t* temp_buffer = (uint16_t*) malloc(elements_to_read*sizeof(uint16_t));
-            unsigned int* pic_buffer = (unsigned int*) malloc(elements_to_read*sizeof(unsigned int));
-            fread(temp_buffer, sizeof(uint16_t), elements_to_read, mask_file);
-            for( ; ndx < elements_to_read; ndx++) { pic_buffer[ndx] = (unsigned int)temp_buffer[ndx]; }
-            free(temp_buffer);
+    /* Step 1.5: Check that the file is valid */
+    if (mask_file) {
+        /* Step 2: Offset the file pointer to the requested frame */
+        fseek (mask_file, offset, SEEK_SET);
 
-            /*! Step 4: For each frame, begin collecting the value at each position. */
-            for(unsigned int* pic_in = pic_buffer; pic_in <= (pic_buffer + elements_to_read - fr_size); pic_in += fr_size)
-            {
-                for(ndx = 0; ndx <= fr_size; ndx++)
-                    mask_in[ndx] += (float)pic_in[ndx];
-                frames_in_mask++;
-            }
+        /* Step 3: Read the data into a temporary buffer, then copy it into an unsigned int buffer which we can use to
+         * process the whole file at the same time */
+        uint16_t *temp_buffer = (uint16_t*) malloc(elements_to_read * sizeof(*temp_buffer));
+        unsigned int *pic_buffer = (unsigned int*) malloc(elements_to_read * sizeof(*pic_buffer));
+        fread(temp_buffer, sizeof(uint16_t), elements_to_read, mask_file);
+        for ( ; ndx < elements_to_read; ndx++)
+            pic_buffer[ndx] = (unsigned int)temp_buffer[ndx];
+        free(temp_buffer);
 
-            /*! Step 5: Average the collected values and close the file */
-            for(ndx = 0; ndx < fr_size; ndx++) { mask_in[ndx] /= frames_in_mask; }
-            free(pic_buffer);
+        /* Step 4: For each frame, begin collecting the value at each position. */
+        for (unsigned int *pic_in = pic_buffer; pic_in <= (pic_buffer + elements_to_read - fr_size); pic_in += fr_size) {
+            for (ndx = 0; ndx <= fr_size; ndx++)
+                mask_in[ndx] += (float)pic_in[ndx];
+            frames_in_mask++;
         }
-        else
-        {
-            emit loaded(READ_FAIL);
-            return;
-        }
-    }
-    else
-    {
+
+        /* Step 5: Average the collected values and close the file */
+        for (ndx = 0; ndx < fr_size; ndx++)
+            mask_in[ndx] /= frames_in_mask;
+        free(pic_buffer);
+    } else {
         emit loaded(NO_MASK);
         return;
     }
 
-    /*! Step 6: Load the mask, then free the memory we allocated */
+    /* Step 6: Load the mask, then free the memory we allocated */
     emit loadMask(mask_in);
     fclose (mask_file);
 
-    /*! Step 7: Call playback_widget to finish loading the file */
+    /* Step 7: Call playback_widget to finish loading the file */
     emit loaded(SUCCESS);
 }
 void buffer_handler::getFrame()
@@ -144,23 +133,35 @@ void buffer_handler::getFrame()
      * the values of the current_frame and old_frame are compared. If they are not equal, the current_frame is read from
      * the file. This operation is memory locked to avoid simultaneous read and write operations on the frame array.
      */
-    while(running)
-    {
-        if(current_frame != old_frame && fp)
-        {
+    while (running) {
+        if (current_frame != old_frame && fp) {
             buf_access.lock();
-                fseek(fp,(current_frame-1)*fr_size*pixel_size,SEEK_SET);
-                fread(frame,pixel_size,fr_size,fp);
+                fseek(fp, (current_frame - 1) * fr_size * pixel_size, SEEK_SET);
+                fread(frame, pixel_size, fr_size, fp);
             buf_access.unlock();
 
             old_frame = current_frame;
-        }
-        else
-        {
+        } else {
             usleep(1);
         }
     }
     emit finished();
+}
+uint16_t* buffer_handler::tapPixelRemap()
+{
+    uint16_t pic_buffer[fr_size];
+    unsigned int div;
+    unsigned int mod;
+    for(unsigned int i = 0; i < fr_size; i++)
+        pic_buffer[i] = frame[i];
+    for (int row = 0; row < fr_height; row++) {
+        for (int col = 0; col < fr_width; col++) {
+            div = col / num_taps;
+            mod = col % 4;
+            frame[div + TAP_WIDTH * mod + row * fr_width] = pic_buffer[col + row * fr_width];
+        }
+    }
+    return frame;
 }
 void buffer_handler::stop()
 {
@@ -175,14 +176,14 @@ void buffer_handler::debug()
 /* ========================================================================= */
 // PLAYBACK WIDGET
 
-playback_widget::playback_widget(frameWorker* fw, QWidget* parent) :
+playback_widget::playback_widget(frameWorker *fw, QWidget *parent) :
     QWidget(parent)
 {
     this->fw = fw;
     this->frHeight = fw->getDataHeight();
     this->frWidth = fw->getFrameWidth();
 
-    frame_size = frHeight*frWidth;
+    frame_size = frHeight * frWidth;
     bh = new buffer_handler(frHeight, frWidth);
     buffer_thread = new QThread();
     bh->moveToThread(buffer_thread);
@@ -213,16 +214,16 @@ playback_widget::playback_widget(frameWorker* fw, QWidget* parent) :
     // making the viewing window
     qcp = new QCustomPlot();
     qcp->setNotAntialiasedElement(QCP::aeAll);
-    QSizePolicy qsp(QSizePolicy::Preferred,QSizePolicy::Preferred);
+    QSizePolicy qsp(QSizePolicy::Preferred, QSizePolicy::Preferred);
     qsp.setHeightForWidth(true);
     qcp->setSizePolicy(qsp);
     qcp->heightForWidth(200);
-    qcp->setInteractions(QCP::iRangeDrag|QCP::iRangeZoom);
+    qcp->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
     qcp->axisRect()->setupFullAxesBox(true);
     qcp->xAxis->setLabel("x");
     qcp->yAxis->setLabel("y");
 
-    colorMap = new QCPColorMap(qcp->xAxis,qcp->yAxis);
+    colorMap = new QCPColorMap(qcp->xAxis, qcp->yAxis);
     colorMapData = NULL;
     qcp->addPlottable(colorMap);
 
@@ -231,18 +232,18 @@ playback_widget::playback_widget(frameWorker* fw, QWidget* parent) :
     colorScale->setType(QCPAxis::atRight);
 
     colorMap->setColorScale(colorScale);
-    colorMap->data()->setValueRange(QCPRange(frHeight,0));
-    colorMap->data()->setKeyRange(QCPRange(0,frWidth));
-    colorMap->setDataRange(QCPRange(floor,ceiling));
+    colorMap->data()->setValueRange(QCPRange(frHeight, 0));
+    colorMap->data()->setKeyRange(QCPRange(0, frWidth));
+    colorMap->setDataRange(QCPRange(floor, ceiling));
     colorMap->setGradient(QCPColorGradient::gpJet);
     colorMap->setInterpolate(false);
     colorMap->setAntialiased(false);
 
     QCPMarginGroup *marginGroup = new QCPMarginGroup(qcp);
-    qcp->axisRect()->setMarginGroup(QCP::msBottom|QCP::msTop,marginGroup);
-    colorScale->setMarginGroup(QCP::msBottom|QCP::msTop,marginGroup);
+    qcp->axisRect()->setMarginGroup(QCP::msBottom | QCP::msTop, marginGroup);
+    colorScale->setMarginGroup(QCP::msBottom | QCP::msTop, marginGroup);
 
-    colorMapData = new QCPColorMapData(frWidth,frHeight,QCPRange(0,frWidth),QCPRange(0,frHeight));
+    colorMapData = new QCPColorMapData(frWidth, frHeight, QCPRange(0, frWidth), QCPRange(0, frHeight));
     colorMap->setData(colorMapData);
 
     updateFloor(0);
@@ -253,28 +254,28 @@ playback_widget::playback_widget(frameWorker* fw, QWidget* parent) :
     dark = new dark_subtraction_filter(frWidth,frHeight);
 
     // connecting the buttons to slots
-    connect(openFileButton,SIGNAL(clicked()),this,SLOT(loadFile()));
-    connect(playPauseButton,SIGNAL(clicked()),this,SLOT(playPause()));
-    connect(forwardButton,SIGNAL(clicked()),this,SLOT(moveForward()));
-    connect(backwardButton,SIGNAL(clicked()),this,SLOT(moveBackward()));
-    connect(progressBar,SIGNAL(valueChanged(int)),this,SLOT(handleFrame(int)));
-    connect(qcp->yAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledY(QCPRange)));
-    connect(qcp->xAxis,SIGNAL(rangeChanged(QCPRange)),this,SLOT(colorMapScrolledX(QCPRange)));
-    connect(buffer_thread,SIGNAL(started()),bh,SLOT(getFrame()));
-    connect(bh,SIGNAL(finished()),buffer_thread,SLOT(deleteLater()));
-    connect(bh,SIGNAL(loaded(err_code)),this,SLOT(finishLoading(err_code)));
-    connect(bh,SIGNAL(loadMask(float*)),this,SLOT(loadMaskIn(float*)));
-    connect(this,SIGNAL(frameDone(int)),progressBar,SLOT(setValue(int)));
-    connect(this,SIGNAL(frameDone(int)),this,SLOT(updateStatus(int)));
+    connect(openFileButton, SIGNAL(clicked()), this, SLOT(loadFile()));
+    connect(playPauseButton, SIGNAL(clicked()), this, SLOT(playPause()));
+    connect(forwardButton, SIGNAL(clicked()), this, SLOT(moveForward()));
+    connect(backwardButton, SIGNAL(clicked()), this, SLOT(moveBackward()));
+    connect(progressBar, SIGNAL(valueChanged(int)), this, SLOT(handleFrame(int)));
+    connect(qcp->yAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(colorMapScrolledY(QCPRange)));
+    connect(qcp->xAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(colorMapScrolledX(QCPRange)));
+    connect(buffer_thread, SIGNAL(started()), bh, SLOT(getFrame()));
+    connect(bh, SIGNAL(finished()), buffer_thread, SLOT(deleteLater()));
+    connect(bh, SIGNAL(loaded(err_code)), this, SLOT(finishLoading(err_code)));
+    connect(bh, SIGNAL(loadMask(float*)), this, SLOT(loadMaskIn(float*)));
+    connect(this, SIGNAL(frameDone(int)), progressBar, SLOT(setValue(int)));
+    connect(this, SIGNAL(frameDone(int)), this, SLOT(updateStatus(int)));
 
     // setting the layout
-    qgl.addWidget(qcp,0,0,7,8);
-    qgl.addWidget(progressBar,7,0,1,8);
-    qgl.addWidget(openFileButton,8,0,1,1);
-    qgl.addWidget(backwardButton,8,2,1,1);
-    qgl.addWidget(playPauseButton,8,3,1,1);
-    qgl.addWidget(forwardButton,8,4,1,1);
-    qgl.addWidget(statusLabel,8,5,1,3);
+    qgl.addWidget(qcp, 0, 0, 7, 8);
+    qgl.addWidget(progressBar, 7, 0, 1, 8);
+    qgl.addWidget(openFileButton, 8, 0, 1, 1);
+    qgl.addWidget(backwardButton, 8, 2, 1, 1);
+    qgl.addWidget(playPauseButton, 8, 3, 1, 1);
+    qgl.addWidget(forwardButton, 8, 4, 1, 1);
+    qgl.addWidget(statusLabel, 8, 5, 1, 3);
     this->setLayout(&qgl);
 
     buffer_thread->start();
@@ -282,13 +283,9 @@ playback_widget::playback_widget(frameWorker* fw, QWidget* parent) :
 playback_widget::~playback_widget()
 {
     bh->stop();
+    usleep(1000);
     delete bh;
-    buffer_thread->exit(0);
-    buffer_thread->wait();
-    delete buffer_thread;
     delete dark;
-    delete colorScale;
-    delete colorMap;
     delete qcp;
 }
 
@@ -338,31 +335,23 @@ void playback_widget::stop()
 void playback_widget::colorMapScrolledX(const QCPRange &newRange)
 {
     /*! \brief Controls the behavior of zooming the plot.
-     * \paragraph
-     *
+     * \param newRange Mouse wheel scrolled range.
      * Color Maps must not allow the user to zoom past the dimensions of the frame.
      */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
     double upperRangeBound = frWidth;
-    if (boundedRange.size() > upperRangeBound-lowerRangeBound)
-    {
+    if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
         boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
-    }
-    else
-    {
+    } else {
         double oldSize = boundedRange.size();
-        if (boundedRange.lower < lowerRangeBound)
-        {
+        if (boundedRange.lower < lowerRangeBound) {
             boundedRange.lower = lowerRangeBound;
-            boundedRange.upper = lowerRangeBound+oldSize;
+            boundedRange.upper = lowerRangeBound + oldSize;
         }
-        if (boundedRange.upper > upperRangeBound)
-        {    if(this->isPlaying() || playBackward)
-            {
-            boundedRange.lower = upperRangeBound-oldSize;
+        if (boundedRange.upper > upperRangeBound) {
+            boundedRange.lower = upperRangeBound - oldSize;
             boundedRange.upper = upperRangeBound;
-            }
         }
     }
     qcp->xAxis->setRange(boundedRange);
@@ -370,28 +359,22 @@ void playback_widget::colorMapScrolledX(const QCPRange &newRange)
 void playback_widget::colorMapScrolledY(const QCPRange &newRange)
 {
     /*! \brief Controls the behavior of zooming the plot.
-     * \paragraph
-     *
+     * \param newRange Mouse wheel scrolled range.
      * Color Maps must not allow the user to zoom past the dimensions of the frame.
      */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
     double upperRangeBound = frHeight;
-    if (boundedRange.size() > upperRangeBound-lowerRangeBound)
-    {
+    if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
         boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
-    }
-    else
-    {
+    } else {
         double oldSize = boundedRange.size();
-        if (boundedRange.lower < lowerRangeBound)
-        {
+        if (boundedRange.lower < lowerRangeBound) {
             boundedRange.lower = lowerRangeBound;
-            boundedRange.upper = lowerRangeBound+oldSize;
+            boundedRange.upper = lowerRangeBound + oldSize;
         }
-        if (boundedRange.upper > upperRangeBound)
-        {
-            boundedRange.lower = upperRangeBound-oldSize;
+        if (boundedRange.upper > upperRangeBound) {
+            boundedRange.lower = upperRangeBound - oldSize;
             boundedRange.upper = upperRangeBound;
         }
     }
@@ -401,108 +384,93 @@ void playback_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
     ceiling = (double)c;
-    colorScale->setDataRange(QCPRange(floor,ceiling));
-    qcp->replot(); // We need to replot in these versions because we cannot count on a new frame to instantly display the changes.
+    rescaleRange();
 }
 void playback_widget::updateFloor(int f)
 {
     /*! \brief Change the value of the floor for this widget to the input parameter and replot the color scale. */
     floor = (double)f;
-    colorScale->setDataRange(QCPRange(floor,ceiling));
-    qcp->replot();
+    rescaleRange();
 }
-void playback_widget::rescaleRange()
+inline void playback_widget::rescaleRange()
 {
     /*! \brief Set the color scale of the display to the last used values for this widget */
-    colorScale->setDataRange(QCPRange(floor,ceiling));
-    qcp->replot();
+    colorScale->setDataRange(QCPRange(floor, ceiling));
+    qcp->replot(); // We need to replot in this version because there are discrete frames, so the floor and ceiling are not updated automatically.
 }
 void playback_widget::playPause()
 {
     /*! \brief Toggles the playback of a video.
      * \paragraph
      *
-     * Inverts the value of the play variable. Handles the behavior of frame sequencing for playing forward or backward.
-     * Connections handle the sequencing of the frames. A QTimer set to a frame display period of 50 time units renders the
-     * frames at a regular interval during playback, but also frees up some CPU utilization in the GUI thread to enable commands
-     * from the buttons to still be recognized.
+     * Allows playback to proceed in the backwards or forward direction depending on the commands entered by the user. Stops
+     * playback when pause is activated.
      */
     play = !play;
-    if(play && playBackward) // clunky corner case catching code
-    {
+    if (play && playBackward) {
+        // clunkcy corner-case catching code
         play = false;
         playBackward = false;
     }
-    if(play || playBackward)
-    {
+    if (play || playBackward) {
         // We need to disconnect each button from any possible connected states before we can make new connections
-        disconnect(forwardButton,SIGNAL(clicked()),this,SLOT(moveForward()));
-        disconnect(backwardButton,SIGNAL(clicked()),this,SLOT(moveBackward()));
-        disconnect(forwardButton,SIGNAL(clicked()),this,SLOT(fastForward()));
-        disconnect(backwardButton,SIGNAL(clicked()),this,SLOT(fastRewind()));
-        connect(forwardButton,SIGNAL(clicked()),this,SLOT(fastForward()));
-        connect(backwardButton,SIGNAL(clicked()),this,SLOT(fastRewind()));
+        disconnect(forwardButton,  SIGNAL(clicked()), this, SLOT(moveForward()));
+        disconnect(backwardButton, SIGNAL(clicked()), this, SLOT(moveBackward()));
+        disconnect(forwardButton,  SIGNAL(clicked()), this, SLOT(fastForward()));
+        disconnect(backwardButton, SIGNAL(clicked()), this, SLOT(fastRewind()));
+        connect(forwardButton,  SIGNAL(clicked()), this, SLOT(fastForward()));
+        connect(backwardButton, SIGNAL(clicked()), this, SLOT(fastRewind()));
 
         playPauseButton->setIcon(pauseIcon);
 
-        if(play)
-        {
-            disconnect(&render_timer,SIGNAL(timeout()),this,SLOT(moveBackward()));
-            connect(&render_timer,SIGNAL(timeout()),this,SLOT(moveForward()));
+        if (play) {
+            disconnect(&render_timer, SIGNAL(timeout()), this, SLOT(moveBackward()));
+            connect(   &render_timer, SIGNAL(timeout()), this, SLOT(moveForward()));
+        } else if (playBackward) {
+            disconnect(&render_timer, SIGNAL(timeout()), this, SLOT(moveForward()));
+            connect(   &render_timer, SIGNAL(timeout()), this, SLOT(moveBackward()));
         }
-        else if(playBackward)
-        {
-            disconnect(&render_timer,SIGNAL(timeout()),this,SLOT(moveForward()));
-            connect(&render_timer,SIGNAL(timeout()),this,SLOT(moveBackward()));
-        }
-        render_timer.start(50);
-    }
-    else
-    {
+        render_timer.start(75);
+    } else {
         render_timer.stop();
         interval = 1;
         bh->old_frame = -1;
         handleFrame(bh->current_frame);
 
-        disconnect(forwardButton,SIGNAL(clicked()),this,SLOT(fastForward()));
-        disconnect(backwardButton,SIGNAL(clicked()),this,SLOT(fastRewind()));
-        connect(forwardButton,SIGNAL(clicked()),this,SLOT(moveForward()));
-        connect(backwardButton,SIGNAL(clicked()),this,SLOT(moveBackward()));
+        disconnect(forwardButton,  SIGNAL(clicked()), this, SLOT(fastForward()));
+        disconnect(backwardButton, SIGNAL(clicked()), this, SLOT(fastRewind()));
+        connect(forwardButton,  SIGNAL(clicked()), this, SLOT(moveForward()));
+        connect(backwardButton, SIGNAL(clicked()), this, SLOT(moveBackward()));
 
         playPauseButton->setIcon(playIcon);
     }
 }
 void playback_widget::moveForward()
 {
-    /*! Sequences the frames in ascending order. */
+    /*! \brief Sequences the frames in ascending order. */
     bh->old_frame = -1;
     bh->current_frame += interval;
-    if(bh->current_frame > bh->num_frames)
-    {
-        bh->current_frame = 1 + (bh->current_frame-bh->num_frames-1);
-    }
+    if (bh->current_frame > bh->num_frames)
+        bh->current_frame = 1 + (bh->current_frame - bh->num_frames - 1);
     handleFrame(bh->current_frame);
 }
 void playback_widget::moveBackward()
 {
-    /*! Sequences the frames in descending order. */
+    /*! \brief Sequences the frames in descending order. */
     bh->old_frame = -1;
     bh->current_frame -= interval;
-    if(bh->current_frame < 1)
-    {
+    if (bh->current_frame < 1)
         bh->current_frame = bh->num_frames + bh->current_frame;
-    }
     handleFrame(bh->current_frame);
 }
 void playback_widget::fastForward()
 {
-    /*! Increases the frameskip by a factor of two for each call. Will reverse theplay direction if necessary. */
-    if( interval == 1 )
+    /*! \brief Increases the frameskip by a factor of two for each call. Will reverse the play direction if necessary. */
+    if (interval == 1)
         interval++;
-    else if(interval <= 32 && play)
+    else if (interval <= 32 && play)
         interval *= 2;
-    if(!play)
-    {
+    if (!play) {
         interval = 1;
         playBackward = false;
         playPause();
@@ -512,20 +480,16 @@ void playback_widget::fastRewind()
 {
     /*! Increases the frameskip in reverse by a factor of two for each call. Will reverse the play direction if
      * necessary. */
-    if(interval == 1)
+    if (interval == 1)
         interval++;
-    else if(interval <= 32 && playBackward)
+    else if (interval <= 32 && playBackward)
         interval *= 2;
-    if(!playBackward)
-    {
-        if(!play)
-        {
+    if (!playBackward) {
+        if (!play) {
             play = true;
             playBackward = true;
             playPause();
-        }
-        else
-        {
+        } else {
             interval = 1;
             playBackward = true;
             playPause();
@@ -534,15 +498,14 @@ void playback_widget::fastRewind()
 }
 
 // protected
-void playback_widget::dragEnterEvent(QDragEnterEvent* event)
+void playback_widget::dragEnterEvent(QDragEnterEvent *event)
 {
-    if(event->mimeData()->hasUrls())
+    if (event->mimeData()->hasUrls())
         event->acceptProposedAction();
 }
-void playback_widget::dropEvent(QDropEvent* event)
+void playback_widget::dropEvent(QDropEvent *event)
 {
-    foreach (const QUrl &url, event->mimeData()->urls())
-    {
+    foreach (const QUrl &url, event->mimeData()->urls()) {
         const QString &fileName = url.toLocalFile();
 #ifdef VERBOSE
         qDebug() << "Dropped file:" << fileName;
@@ -560,17 +523,14 @@ void playback_widget::loadFile()
      * Opens a dialog to select a file, then passes it to the backend. The only check is to see if the file name is empty, which would
      * correspond to the cancel button being pressed or a similar case. We also want to make sure the video is not playing while this
      * dialog is open. */
-    if(this->isPlaying() || playBackward == true)
-    {
-        play = true;
+    if (play || playBackward) {
+        play = true; // ew
         playBackward = false;
         playPause();
     }
     statusLabel->setText("Error: No file selected. Please open a .raw file or drop one in the window.");
-
     QString fname = QFileDialog::getOpenFileName(this, "Please Select a Raw File", "/home/jryan/NGIS_DATA/jryan/",tr("Raw (*.raw *.bin *.hsi *.img)"));
-    if(fname.isEmpty()) // if the cancel button is pressed
-    {
+    if (fname.isEmpty()) {
         updateStatus(bh->current_frame);
         return;
     }
@@ -580,8 +540,7 @@ void playback_widget::finishLoading(err_code e)
 {
     /*! Checks the result of the error_t enum and returns an appropriate error message. Otherwise, queues the controls and renders the
      * first frame. */
-    switch(e)
-    {
+    switch (e) {
     case NO_LOAD:
         statusLabel->setText("Error: Selected file could not be opened.");
         break;
@@ -598,7 +557,6 @@ void playback_widget::finishLoading(err_code e)
         statusLabel->setText("Error: Could not load Dark Mask");
         break;
     default: /* SUCCESS */
-
         // Queue up the controls
         playPauseButton->setEnabled(true);
         forwardButton->setEnabled(true);
@@ -606,15 +564,13 @@ void playback_widget::finishLoading(err_code e)
         progressBar->setEnabled(true);
         progressBar->setMinimum(1);
         progressBar->setMaximum(bh->num_frames);
-
         // Process the newly loaded frame
         bh->old_frame = -1; // shhhhhh... don't tell anyone how janky this is ;)
         handleFrame(bh->current_frame);
-
         break;
     }
 }
-void playback_widget::loadMaskIn(float* mask_arr)
+void playback_widget::loadMaskIn(float *mask_arr)
 {
     /*! \brief Accepts a mask array and loads it into the dark subtraction filter. */
     dark->load_mask(mask_arr);
@@ -623,18 +579,16 @@ void playback_widget::loadMaskIn(float* mask_arr)
 void playback_widget::updateStatus(int frameNum)
 {
     /*! \brief Updates the statusLabel to the current frame number, and displays the total number frames. */
-    if(bh->frame)
-    {
-        if( interval == 1 )
+    if (bh->frame) {
+        if ( interval == 1 )
             statusLabel->setText(tr("Frame: %1 / %2").arg(frameNum).arg(bh->num_frames));
         else if( interval > 1 )
             statusLabel->setText(tr("Frame: %1 / %2  (x%3)").arg(frameNum).arg(bh->num_frames).arg(interval));
-    }
-    else
-    {
+    } else {
         statusLabel->setText("Error: No file selected. Please open a .raw file or drop one in the window.");
     }
 }
+
 void playback_widget::handleFrame(int frameNum)
 {
     /*! \brief Renders a frame at a position within a file.
@@ -649,20 +603,16 @@ void playback_widget::handleFrame(int frameNum)
 
     bh->buf_access.lock();
         dark->update_dark_subtraction(bh->frame, bh->dark_data);
-        for(int col = 0; col < frWidth; col++)
+
+        for (int col = 0; col < frWidth; col++)
         {
-            for(int row = 0; row < frHeight; row++)
-            {
-                if(useDSF)
-                {
-                    colorMap->data()->setCell(col,row, \
-                                            bh->dark_data[(frHeight-row-1)*frWidth + col]);
-                }
+            for(int row = 0; row < frHeight; row++) {
+                if (useDSF)
+                    colorMap->data()->setCell(col, row, \
+                                            bh->dark_data[(frHeight-row-1) * frWidth + col]);
                 else
-                {
                     colorMap->data()->setCell(col,row, \
-                                            bh->frame[(frHeight-row-1)*frWidth + col]);
-                }
+                                            bh->frame[(frHeight - row - 1) * frWidth + col]);
             }
         }
     bh->buf_access.unlock();

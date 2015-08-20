@@ -2,19 +2,21 @@
 #define FRAME_WORKER_H
 
 /* Qt includes */
-#include <QElapsedTimer>
 #include <QObject>
 #include <QMutex>
 #include <QSharedPointer>
 #include <QThread>
+#include <QTime>
 #include <QVector>
 
 /* standard include */
 #include <memory>
+// include <atomic>
 
 /* cuda_take includes */
 #include "take_object.hpp"
 #include "frame_c_meta.h"
+#include "image_type.h"
 
 /*! \file
  * \brief Communicates with the backend and connects public information between widgets.
@@ -36,21 +38,16 @@ class frameWorker : public QObject
 {
     Q_OBJECT
 
-    frame_c* std_dev_processing_frame = NULL;
+    frame_c *std_dev_processing_frame = NULL;
 
     unsigned int dataHeight;
     unsigned int frHeight;
     unsigned int frWidth;
 
-    unsigned long c = 0;
-    unsigned long framecount_window = 50; //we measure elapsed time for the backend fps every 50 frames
-
-    float * histogram_bins;
+    float *histogram_bins;
 
     bool crosshair_useDSF = false;
     bool doRun = true;
-
-    QElapsedTimer deltaTimer;
 
 public:
     explicit frameWorker(QObject *parent = 0);
@@ -58,8 +55,8 @@ public:
 
     take_object to;
 
-    frame_c* curFrame  = NULL;
-    frame_c* std_dev_frame = NULL;
+    frame_c *curFrame  = NULL;
+    frame_c *std_dev_frame = NULL;
 
     float delta;
 
@@ -67,14 +64,16 @@ public:
     bool displayCross = true;
 
     /* Used for profile widgets */
-    int horizLinesAvgd = 1;
-    int vertLinesAvgd = 1;
+    int horizLinesAvgd = -1;
+    int vertLinesAvgd = -1;
     int crosshair_x = -1;
     int crosshair_y = -1;
     int crossStartRow = -1;
     int crossHeight = -1;
     int crossStartCol = -1;
     int crossWidth = -1;
+    bool isSkippingFirst = false;
+    bool isSkippingLast = false;
 
     /*! Determines the default ceiling for all raw data based widgets based on the camera_t */
     int base_ceiling;
@@ -97,6 +96,12 @@ signals:
      * \param n New number of frames left to save */
     void savingFrameNumChanged(unsigned int n);
 
+    /*! \brief Calls to skip the first row of profile data.
+     * \param skip Whether or not to skip the row. */
+
+    /*! \brief Calls to skip the last row of profile data.
+     * \param skip Whether or not to skip the last row. */
+
     /*! \brief Closes the class event loop and calls to deallocate the workerThread. */
     void finished();
 
@@ -115,13 +120,19 @@ public slots:
 
     /*! \addtogroup savingfunc
      * @{ */
-    void startSavingRawData(unsigned int framenum,QString name);
+    void startSavingRawData(unsigned int framenum, QString unverifiedName);
     void stopSavingRawData();
+    bool validateFileName(const QString &name, QString *errorMessage);
     /*! @} */
 
+    void skipFirstRow(bool skip);
+    void skipLastRow(bool skip);
+    void updateMeanRange(int linesToAverage, image_t profile);
+    void update_FFT_range(FFT_t type, int tapNum = 0);
+    void tapPrfChanged(int tapNum);
+    void setCrosshairBackend(int pos_x, int pos_y);
     void updateCrossDiplay(bool checked);
     void setStdDev_N(int newN);
-    void updateDelta();
     void stop();
 
 };

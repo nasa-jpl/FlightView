@@ -28,15 +28,15 @@ class histogram_widget : public QWidget
 {
     Q_OBJECT
 
-    frameWorker * fw;
+    frameWorker *fw;
     QTimer rendertimer;
 
     /*! GUI elements */
     QVBoxLayout qvbl;
 
     /*! Plot elements */
-    QCustomPlot* qcp;
-    QCPBars* histogram;
+    QCustomPlot *qcp;
+    QCPBars *histogram;
 
     /*! Plot rendering elements */
     int frHeight, frWidth;
@@ -49,7 +49,7 @@ class histogram_widget : public QWidget
     unsigned int count = 0;
 
 public:
-    explicit histogram_widget(frameWorker * fw, QWidget *parent = 0);
+    explicit histogram_widget(frameWorker *fw, QWidget *parent = 0);
 
     /*! \addtogroup getters
      * @{ */
@@ -57,8 +57,8 @@ public:
     double getFloor();
     /*! @} */
 
-    unsigned int slider_max = 300000;
     bool slider_low_inc = false;
+    const unsigned int slider_max = 100000;
 
 public slots:
     /*! \addtogroup renderfunc
@@ -70,8 +70,8 @@ public slots:
      * @{ */
     void histogramScrolledY(const QCPRange &newRange);
     void histogramScrolledX(const QCPRange &newRange);
-    void updateCeiling(int);
-    void updateFloor(int);
+    void updateCeiling(int c);
+    void updateFloor(int f);
     void rescaleRange();
     void resetRange();
     /*! @} */

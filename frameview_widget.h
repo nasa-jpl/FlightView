@@ -38,15 +38,15 @@ class frameview_widget : public QWidget
 {
     Q_OBJECT
 
-    frameWorker* fw;
+    frameWorker *fw;
     QTimer rendertimer;
 
     /* QCustomPlot elements
      * Contains the necessary QCustomPlot components to create the plots for the widget. */
-    QCustomPlot* qcp;
-    QCPColorMap* colorMap;
-    QCPColorMapData* colorMapData;
-    QCPColorScale* colorScale;
+    QCustomPlot *qcp;
+    QCPColorMap *colorMap;
+    QCPColorMapData *colorMapData;
+    QCPColorScale *colorScale;
 
     /* GUI elements
      * Contains elements of the GUI specific to a widget */
@@ -64,15 +64,13 @@ class frameview_widget : public QWidget
     /* Frame Timing elements
      * Contains the variables used to keep track of framerate and fps, as well the program time elapsed, which is used
      * to calculate the render FPS. */
-    QTimer fpstimer;
-    unsigned int count = 0;
-    unsigned int old_count = 0;
+    QTime clock;
+    unsigned int count;
     double fps;
-    unsigned long seconds_elapsed = 0;
 
 
 public:
-    explicit frameview_widget(frameWorker* fw, image_t image_type , QWidget* parent = 0);
+    explicit frameview_widget(frameWorker *fw, image_t image_type , QWidget *parent = 0);
     ~frameview_widget();
 
     /*! \addtogroup getters Getter Functions
@@ -85,7 +83,7 @@ public:
     void toggleDisplayCrosshair();
 
     image_t image_type;
-    unsigned int slider_max = (1<<16) * 1.1;
+    const unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
 
 public slots:
@@ -94,7 +92,6 @@ public slots:
      * @{ */
     void handleNewFrame();
     /*! @} */
-    void updateFPS();
 
     /*! \addtogroup plotfunc Plotting Controls
      * Contains slots which adjust the display of the plots.
@@ -104,7 +101,7 @@ public slots:
     void updateCeiling(int c);
     void updateFloor(int f);
     void rescaleRange();
-    void setCrosshairs(QMouseEvent* event);
+    void setCrosshairs(QMouseEvent *event);
     /*! @} */
 };
 

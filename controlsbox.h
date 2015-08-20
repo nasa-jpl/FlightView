@@ -24,12 +24,16 @@
 #include "boost/shared_array.hpp"
 
 /* liveview includes */
+#include "fft_widget.h"
 #include "frameview_widget.h"
+#include "histogram_widget.h"
+#include "playback_widget.h"
+#include "profile_widget.h"
 #include "pref_window.h"
 
 /* regular slider range */
 const static int BIG_MAX = (1<<16) - 1;
-const static int BIG_MIN = -1*BIG_MAX;
+const static int BIG_MIN = -1 * BIG_MAX / 4;
 const static int BIG_TICK = 400;
 
 /* slider low increment range */
@@ -54,14 +58,14 @@ class ControlsBox : public QGroupBox
     Q_OBJECT
 
 public:
-    explicit ControlsBox(frameWorker* fw, QTabWidget* tw, QWidget* parent = 0);
+    explicit ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent = 0);
 
-    frameWorker* fw;
-    preferenceWindow* prefWindow;
+    frameWorker *fw;
+    preferenceWindow *prefWindow;
     QHBoxLayout controls_layout;
 
     /* LEFT SIDE BUTTONS (Collections) */
-    QGridLayout collections_layout;
+    QGridLayout *collections_layout;
     QWidget CollectionButtonsBox;
     QPushButton collect_dark_frames_button;
     QPushButton stop_dark_collection_button;
@@ -73,23 +77,23 @@ public:
     QLabel server_port_label;
 
     /* MIDDLE BUTTONS (Sliders) */
-    QGridLayout sliders_layout;
+    QGridLayout *sliders_layout;
     QWidget ThresholdingSlidersBox;
-    QSlider std_dev_N_slider;
-    QSlider lines_slider;
+    QSlider *std_dev_N_slider;
+    QSlider *lines_slider;
     QSlider ceiling_slider;
     QSlider floor_slider;
-    QSpinBox std_dev_N_edit;
-    QSpinBox line_average_edit;
+    QSpinBox *std_dev_N_edit;
+    QSpinBox *line_average_edit;
     QSpinBox ceiling_edit;
     QSpinBox floor_edit;
-    QLabel std_dev_n_label;
-    QLabel lines_label;
+    QLabel *std_dev_n_label;
+    QLabel *lines_label;
     QCheckBox low_increment_cbox;
     QCheckBox use_DSF_cbox;
 
     /* RIGHT SIDE BUTTONS (save) */
-    QGridLayout save_layout;
+    QGridLayout *save_layout;
     QWidget SaveButtonsBox;
     QPushButton save_finite_button;
     QPushButton start_saving_frames_button;
@@ -99,11 +103,19 @@ public:
     QLineEdit filename_edit;
     QPushButton set_filename_button;
 
-    QElapsedTimer backendDeltaTimer;
+    frameview_widget *p_frameview;
+    histogram_widget *p_histogram;
+    profile_widget *p_profile;
+    fft_widget *p_fft;
+    playback_widget *p_playback;
+
+protected:
+    void closeEvent(QCloseEvent *e);
 
 private:
     QTabWidget *qtw;
-    QWidget * cur_frameview;
+    QWidget *old_tab;
+    QWidget *current_tab;
     int ceiling_maximum;
 
 signals:
@@ -132,6 +144,10 @@ public slots:
 
 private slots:
     void increment_slot(bool t);
+    void attempt_pointers(QWidget *tab);
+    void disconnect_old_tab();
+    void display_std_dev_slider();
+    void display_lines_slider();
     void update_backend_delta();
 
     /*! \addtogroup savingfunc Frame saving functions
@@ -150,10 +166,12 @@ private slots:
     void getMaskFile();
     void start_dark_collection_slot();
     void stop_dark_collection_slot();
-    void use_DSF_general(bool);
+    void use_DSF_general(bool checked);
     /*! @} */
 
     void load_pref_window();
+    void transmitChange(int linesToAverage);
+    void fft_slider_enable(bool toggled);
 
 };
 
