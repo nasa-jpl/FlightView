@@ -16,8 +16,6 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     floor = 0;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
-    startRow = 0;
-    endRow = frHeight;
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);
 
@@ -28,11 +26,11 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
     if (itype == VERTICAL_MEAN || itype == VERTICAL_CROSS) {
         x = QVector<double>(frHeight);
-        for(int r = startRow; r < endRow; r++)
+        for (int r = 0; r < frHeight; r++)
             x[r] = (double)r;
         y = QVector<double>(frHeight);
         qcp->xAxis->setLabel("Y index");
-        qcp->xAxis->setRange(QCPRange(startRow,endRow)); //From 0 to 2^16
+        qcp->xAxis->setRange(QCPRange(0, frHeight)); //From 0 to 2^16
     } else if (itype == HORIZONTAL_MEAN || itype == HORIZONTAL_CROSS) {
         x = QVector<double>(frWidth);
         for(int c = 0; c < frWidth; c++)

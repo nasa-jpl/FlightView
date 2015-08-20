@@ -238,7 +238,7 @@ void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
             boundedRange.upper = lowerRangeBound + oldSize;
         }
         if (boundedRange.upper > upperRangeBound) {
-            boundedRange.lower = upperRangeBound-oldSize;
+            boundedRange.lower = upperRangeBound - oldSize;
             boundedRange.upper = upperRangeBound;
         }
     }

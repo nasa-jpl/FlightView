@@ -48,7 +48,6 @@ class profile_widget : public QWidget//, public view_widget_interface
     volatile double ceiling;
     volatile double floor;
 
-    int startRow,endRow;
     QVector<double> x;
     QVector<double> y;
 
