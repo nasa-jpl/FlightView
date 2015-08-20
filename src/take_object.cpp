@@ -323,7 +323,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
         else
             curFrame->image_data_ptr = curFrame->raw_data_ptr;
-        if( inverted )
+        if(inverted)
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
             for(uint i = 0; i < frHeight*frWidth; i++ )
                 curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
