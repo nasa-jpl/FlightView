@@ -28,8 +28,15 @@ enum FFT_t {PLANE_MEAN, VERT_CROSS, TAP_PROFIL};
 
 class mean_filter {
 public:
-    mean_filter(frame_c * frame,unsigned long frame_count,int startCol,int endCol,int startRow,int endRow,int actualWidth, \
-                bool useDSF, FFT_t FFTtype);
+    mean_filter(frame_c * frame,
+                unsigned long frame_count,
+                int startCol,
+                int endCol,
+                int startRow,
+                int endRow,
+                int actualWidth,
+                bool useDSF,
+                FFT_t FFTtype);
     // Ridiculous parameter list lol :P
 
 	void start_mean();

@@ -37,7 +37,7 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight)
 }
 std_dev_filter::~std_dev_filter()
 {
-    /*! Free all devices and allocated memory (except the current and picture, and set the device strame to be destroyed. */
+    /*! Free all devices and allocated memory (except the current picture), and set the device stream to be destroyed. */
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
     HANDLE_ERROR(cudaFree(pictures_device)); // Do not free current picture because it points to a location inside pictures_device
 	HANDLE_ERROR(cudaFree(picture_out_device));
@@ -55,13 +55,13 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 	static int count = 0;
 
     // Synchronous
-    /*! Step 1: Set the device, get the status, and create a pointer to the current position on the device ring buffer. */
+    /* Step 1: Set the device, get the status, and create a pointer to the current position on the device ring buffer. */
 	HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
 	cudaError std_dev_stream_status = cudaStreamQuery(std_dev_stream);
     char *device_ptr = ((char *)(pictures_device)) + (gpu_buffer_head*width*height*sizeof(uint16_t));
 
     // Asynchronous
-    /*! Step 2: Copy the current image on the host to the device ring buffer. */
+    /* Step 2: Copy the current image on the host to the device ring buffer. */
     HANDLE_ERROR(cudaMemcpyAsync(device_ptr,frame->image_data_ptr,width*height*sizeof(uint16_t),cudaMemcpyHostToDevice,std_dev_stream)); // Incrementally copies data to device (as each frame comes in it gets copied)
 
     if(cudaSuccess == cudaStreamQuery(std_dev_stream) && DEBUG)
@@ -71,7 +71,7 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 
 	if(cudaSuccess == std_dev_stream_status)
 	{
-        /*! Step 3: If there are no errors, check that there are std. dev. frames ready to be displayed */
+        /* Step 3: If there are no errors, check that there are std. dev. frames ready to be displayed */
 		if(prevFrame != NULL)
 		{
             prevFrame->has_valid_std_dev = 2; // Ready to display
@@ -80,17 +80,17 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
         frame->has_valid_std_dev = 1; // is processing
 		prevFrame = frame;
 
-        /*! Step 4: Set the number of blocks and the number of threads per block */
+        /* Step 4: Set the number of blocks and the number of threads per block */
         dim3 blockDims(BLOCK_SIZE,BLOCK_SIZE,1); // We have 2-dimensional blocks of 20x20 threads... These threads will share their "block_histogram" array on the device
         dim3 gridDims(width/blockDims.x, height/blockDims.y,1); // Determine the number of blocks needed for the image
 
-        /*! Step 5: Initialize the histogram output array. */
+        /* Step 5: Initialize the histogram output array. */
 		HANDLE_ERROR(cudaMemsetAsync(histogram_out_device,0,NUMBER_OF_BINS*sizeof(uint32_t),std_dev_stream));
 
-        /*! Step 6: Launch the kernel using the wrapper function defined in the device code. */
+        /* Step 6: Launch the kernel using the wrapper function defined in the device code. */
 		std_dev_filter_kernel_wrapper(gridDims,blockDims,0,std_dev_stream,pictures_device, picture_out_device, histogram_bins_device, histogram_out_device, width, height, gpu_buffer_head, N);
 
-        /*! Step 7: Check for errors and copy the output arrays off the device. */
+        /* Step 7: Check for errors and copy the output arrays off the device. */
         HANDLE_ERROR(cudaPeekAtLastError());
 		HANDLE_ERROR(cudaMemcpyAsync(frame->std_dev_data,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream)); //Despite the name, these calls are synchronous w/ respect to the CPU
 		HANDLE_ERROR(cudaMemcpyAsync(frame->std_dev_histogram,histogram_out_device,NUMBER_OF_BINS*sizeof(uint32_t),cudaMemcpyDeviceToHost,std_dev_stream));
