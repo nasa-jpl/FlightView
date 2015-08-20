@@ -67,6 +67,7 @@ class frameview_widget : public QWidget
     QTime clock;
     unsigned int count;
     double fps;
+    QString fps_string;
 
 
 public:

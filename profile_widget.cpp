@@ -23,7 +23,6 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
     qcp->plotLayout()->insertRow(0);
     plotTitle = new QCPPlotTitle(qcp);
-    plotTitle->setText("No crosshair designated");
     qcp->plotLayout()->addElement(0, 0, plotTitle);
     qcp->addGraph();
 
@@ -76,49 +75,34 @@ void profile_widget::handleNewFrame()
      * The y-axis data is reversed in these images.
      * \author JP Ryan
      */
-    if (fw->crosshair_x != -1 && fw->crosshair_y != -1) {
-        if (!this->isHidden() &&  fw->curFrame != NULL) {
-            float *local_image_ptr;
-            switch (itype) {
-            case VERTICAL_MEAN:
-                plotTitle->setText(QString("Vertical Mean Profile"));
-                local_image_ptr = fw->curFrame->vertical_mean_profile;
-                for(int r = startRow;r < endRow; r++) //Y Axis is reversed
-                    y[r] = (double) local_image_ptr[frHeight - r];
-                break;
-            case HORIZONTAL_MEAN:
-                plotTitle->setText(QString("Horizontal Mean Profile"));
-                local_image_ptr = fw->curFrame->horizontal_mean_profile;
-                for(int c = 0;c < frWidth; c++)
-                    y[c] = (double) local_image_ptr[c];
-                break;
-            case VERTICAL_CROSS:
-                plotTitle->setText(QString("Vertical Profile Centered @ x=%1").arg(fw->crosshair_x));
+    float *local_image_ptr;
+    bool whichDim = itype == VERTICAL_CROSS || itype == VERTICAL_MEAN; // vertical profiles are true, horizontal profiles are false
+    bool isMeanProfile = itype == VERTICAL_MEAN || itype == HORIZONTAL_MEAN;
+    if (!this->isHidden() &&  fw->curFrame != NULL && ((fw->crosshair_x != -1 && fw->crosshair_y) || isMeanProfile)) {
+        local_image_ptr = whichDim ? fw->curFrame->vertical_mean_profile : fw->curFrame->horizontal_mean_profile;
+        if (whichDim)
+            // vertical profiles
 
-                local_image_ptr = fw->curFrame->vertical_mean_profile;
-                for(int r = startRow; r < endRow; r++)
-                {
-                    y[r] = (double) local_image_ptr[frHeight - r];
-                }
-                break;
-            case HORIZONTAL_CROSS:
-                plotTitle->setText(QString("Horizontal Profile Centered @ y=%1").arg(fw->crosshair_y));
-                local_image_ptr = fw->curFrame->horizontal_mean_profile;
-                for(int c = 0; c < frWidth; c++)
-                    y[c] = (double) local_image_ptr[c];
-                break;
-            default:
-                break;
-            }
-            qcp->graph(0)->setData(x, y);
-            qcp->replot();
-        } else {
-            plotTitle->setText("No Crosshair designated");
-            qcp->graph(0)->clearData();
-            qcp->replot();
+            for (int r = 0; r < frHeight; r++)
+                y[r] = double(local_image_ptr[frHeight - r]);
+        else
+            // horizontal profiles
+            for (int c = 0; c < frWidth; c++)
+                y[c] = double(local_image_ptr[c]);
+        qcp->graph(0)->setData(x, y);
+        qcp->replot();
+        switch (itype) {
+        case HORIZONTAL_MEAN: plotTitle->setText(QString("Horizontal Mean Profile")); break;
+        case HORIZONTAL_CROSS: plotTitle->setText(QString("Horizontal Profile centered @ y = %1").arg(fw->crosshair_y)); break;
+        case VERTICAL_MEAN: plotTitle->setText(QString("Vertical Mean Profile")); break;
+        case VERTICAL_CROSS: plotTitle->setText(QString("Vertical Profile centered @ x = %1").arg(fw->crosshair_x)); break;
         }
-        count++;
+    } else {
+        plotTitle->setText("No Crosshair designated");
+        qcp->graph(0)->clearData();
+        qcp->replot();
     }
+
 }
 void profile_widget::updateCeiling(int c)
 {

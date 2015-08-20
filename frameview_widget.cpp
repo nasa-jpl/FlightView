@@ -23,10 +23,15 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     this->image_type = image_type;
 
     switch(image_type) {
-    case BASE: ceiling = fw->base_ceiling; break;
-    case DSF: ceiling = 100; break;
-    case STD_DEV: ceiling = 100; break;
-    default: break; // to remove annoying warnings on compilation
+    case BASE:
+        ceiling = fw->base_ceiling;
+        break;
+    case DSF:
+        ceiling = 100;
+        break;
+    case STD_DEV:
+        ceiling = 100;
+        break;
     }
     floor = 0;
     frHeight = fw->getFrameHeight();
@@ -163,8 +168,7 @@ void frameview_widget::handleNewFrame()
                         colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
             qcp->replot();
         }
-        if(image_type == DSF)
-        {
+        if(image_type == DSF) {
             float *local_image_ptr = fw->curFrame->dark_subtracted_data;
             for(int col = 0; col < frWidth; col++)
                 for(int row = 0; row < frHeight; row++)
@@ -177,8 +181,7 @@ void frameview_widget::handleNewFrame()
                         colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
             qcp->replot();
         }
-        if(image_type == STD_DEV && fw->std_dev_frame != NULL)
-        {
+        if(image_type == STD_DEV && fw->std_dev_frame != NULL) {
             float * local_image_ptr = fw->std_dev_frame->std_dev_data;
             for (int col = 0; col < frWidth; col++)
                 for (int row = 0; row < frHeight; row++)
@@ -189,7 +192,8 @@ void frameview_widget::handleNewFrame()
     count++;
     if (count % 20 == 0 && count != 0) {
         fps = 20.0 / clock.restart() * 1000.0;
-        fpsLabel.setText(QString("fps of display: %1").arg(fps));
+        fps_string = QString::number(fps, 'f', 1);
+        fpsLabel.setText(QString("fps of display: %1").arg(fps_string));
     }
 }
 void frameview_widget::colorMapScrolledY(const QCPRange &newRange)

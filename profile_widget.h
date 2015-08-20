@@ -52,8 +52,6 @@ class profile_widget : public QWidget//, public view_widget_interface
     QVector<double> x;
     QVector<double> y;
 
-    unsigned int count = 0;
-
 public:
     explicit profile_widget(frameWorker *fw, image_t image_type , QWidget *parent = 0);
 
