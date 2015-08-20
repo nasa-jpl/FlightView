@@ -135,7 +135,7 @@ void preferenceWindow::createRenderingTab()
 void preferenceWindow::getFilePath()
 {
     /*! \brief Test slot for saving log files. */
-    QString directory = QFileDialog::getExistingDirectory(this,tr("Pick a directory"),"/home/jryan/NGIS_DATA/");
+    QString directory = QFileDialog::getExistingDirectory(this, tr("Pick a directory"));
     filePath->setText(directory);
 }
 void preferenceWindow::enableControls(int ndx)

@@ -529,7 +529,7 @@ void playback_widget::loadFile()
         playPause();
     }
     statusLabel->setText("Error: No file selected. Please open a .raw file or drop one in the window.");
-    QString fname = QFileDialog::getOpenFileName(this, "Please Select a Raw File", "/home/jryan/NGIS_DATA/jryan/",tr("Raw (*.raw *.bin *.hsi *.img)"));
+    QString fname = QFileDialog::getOpenFileName(this, tr("Please Select a Raw File"), tr("/"), tr("Raw (*.raw *.bin *.hsi *.img)"));
     if (fname.isEmpty()) {
         updateStatus(bh->current_frame);
         return;
