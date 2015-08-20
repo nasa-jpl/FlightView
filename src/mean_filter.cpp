@@ -3,13 +3,12 @@
 #include <atomic>
 
 mean_filter::mean_filter(frame_c * frame,unsigned long frame_count,int startCol,int endCol,int startRow,int endRow,int actualWidth, \
-                         bool useDSF,int FFTtype)
+                         bool useDSF,FFT_t FFTtype)
 {
     beginCol = startCol;
     width = endCol;
     beginRow = startRow;
     height = endRow;
-
     frWidth = actualWidth;
 
 	this->frame = frame;
@@ -17,12 +16,6 @@ mean_filter::mean_filter(frame_c * frame,unsigned long frame_count,int startCol,
 	this->useDSF = useDSF;
     this->FFTtype = FFTtype;
 }
-/*mean_filter::~mean_filter()
-{
-    //delete mean_thread;
-	//printf("mf delete\n");
-}*/
-//void mean_filter::start_mean(uint16_t * pic_in, float * vert_out, float * horiz_out, float * fft_out)
 void mean_filter::start_mean()
 {
 	mean_thread = boost::thread(&mean_filter::calculate_means, this);

@@ -1,10 +1,3 @@
-/*
- * takeobject.hpp
- *
- *  Created on: May 27, 2014
- *      Author: nlevy
- */
-
 #ifndef TAKEOBJECT_HPP_
 #define TAKEOBJECT_HPP_
 
@@ -33,7 +26,6 @@
 //These Macros set the hardware type that take_object will use to collect data
 #define EDT
 //#define OPALKELLY
-
 
 #ifdef OPALKELLY
 //OpalKelly Device Support
@@ -87,7 +79,7 @@ class take_object {
 
     //Filter-specific variables
 	int std_dev_filter_N;
-    dark_subtraction_filter* dsf;
+
     std_dev_filter* sdvf;
     int meanStartRow, meanHeight, meanStartCol, meanWidth; // dimensions used by the mean filter
 
@@ -103,13 +95,14 @@ public:
     virtual ~take_object();
 	void start();
 
+    dark_subtraction_filter* dsf;
     camera_t cam_type;
     frame_c * frame_ring_buffer;
     unsigned long count = 0; // frame count
 
-    //Frame filters that affect everything - at the raw data level
-    void setInversion( bool, unsigned int );
-    void chromaPixRemap( bool );
+    //Frame filters that affect everything at the raw data level
+    void setInversion(bool checked, unsigned int factor);
+    void paraPixRemap(bool checked);
 
     //DSF mask functions
 	void startCapturingDSFMask();
@@ -118,30 +111,28 @@ public:
     bool dsfMaskCollected;
     bool useDSF = false;
 
-    //Std Dev Filter functions
-    void setStdDev_N( int s );
+    // Std Dev Filter functions
+    void setStdDev_N(int s);
 
-    //Mean filter functions
-    void updateVertRange( int, int );
-    void updateHorizRange( int, int );
-    void update_start_row( int );
-    void update_end_row( int );
-    void changeFFTtype( int );
+    // Mean filter functions
+    void updateVertRange(int br, int er);
+    void updateHorizRange(int bc, int ec);
+    void changeFFTtype(FFT_t t);
 
-    //Frame saving functions
-    void startSavingRaws( std::string, unsigned int );
+    // Frame saving functions
+    void startSavingRaws(std::string raw_file_name, unsigned int frames_to_save);
 	void stopSavingRaws();
-    //void panicSave( std::string );
+    //void panicSave(std::string);
     std::list<uint16_t *> saving_list;
 	std::atomic <uint_fast32_t> save_framenum;
 
-    //Getter functions / variablessdf
+    //Getter functions / variables
     unsigned int getDataHeight();
     unsigned int getFrameHeight();
     unsigned int getFrameWidth();
     bool std_dev_ready();
     std::vector<float> * getHistogramBins();
-    int getFFTtype();
+    FFT_t getFFTtype();
 
 private:
 	void pdv_loop();
@@ -160,9 +151,9 @@ private:
     // variables needed by the Raw Filters
     unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
     bool inverted = false;
-    bool chromaPix = false; // Enable Chroma Pixel Mapping (Chroma Translate filter)
+    bool pixRemap = false; // Enable Parallel Pixel Mapping (Chroma Translate filter)
 
-    int whichFFT;
+    FFT_t whichFFT;
 };
 
 #endif /* TAKEOBJECT_HPP_ */

@@ -1,28 +1,28 @@
 #include "chroma_translate_filter.hpp"
 #include <iostream>
-#include "constants.h"
+#include "camera_types.h"
 
-//MAKING ASSUMPTIONS BECAUSE CHROMA!
-
-
-#define UINT16_MAX_NEW 0xffff
-
-
-static uint16_t pic_buffer[MAX_SIZE];
-
-uint16_t * apply_chroma_translate_filter(uint16_t * picture_in)
+void setup_filter(camera_t camera_type)
 {
-    for(unsigned int row = 0; row < HEIGHT; row++)
+	hardware = camera_type;
+	frHeight = height[hardware];
+	frWidth = width[hardware];
+	num_taps = number_of_taps[hardware];
+	MAX_VAL = max_val[hardware];
+}
+uint16_t* apply_chroma_translate_filter(uint16_t *picture_in)
+{
+	unsigned int row, col, div, mod;
+    for(row = 0; row < frHeight; row++)
 	{
-        for(unsigned int col = 0; col<WIDTH; col++)
+        for(col = 0; col< frWidth; col++)
 		{
-            unsigned int div = col/8;
-            unsigned int mod = col%8;
-            pic_buffer[div + TAP_WIDTH*mod + row*WIDTH] = (UINT16_MAX_NEW - picture_in[col + row*WIDTH]);
+            div = col/num_taps;
+            mod = col%num_taps;
+            pic_buffer[div + TAP_WIDTH*mod + row*frWidth] = (MAX_VAL - picture_in[col + row*frWidth]);
 		}
 	}
 	memcpy(picture_in,pic_buffer,MAX_SIZE*sizeof(uint16_t));
 	return picture_in;
-
 }
 

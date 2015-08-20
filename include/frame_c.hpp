@@ -15,6 +15,13 @@
 
 #define USE_PINNED_MEMORY
 
+/*! \brief The data structure which contains all data for a frame.
+ *
+ * The memory for a frame is page-locked at the host to save time during memory transfers to the device. By defining the macro
+ * USE_PINNED_MEMORY, we are specifying to use heap arrays for the raw data and standard deviation data (which is filtered on the
+ * device) using a page-locked format. The GPU uses this format by default. The other memory can be allocated as static arrays.
+ * This procedure is standard as defined by the CUDA manual.
+ */
 
 struct frame_c{
 #ifdef USE_PINNED_MEMORY
@@ -61,6 +68,5 @@ struct frame_c{
 
 	}
 };
-
 
 #endif /* FRAME_C_HPP_ */

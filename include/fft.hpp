@@ -1,9 +1,3 @@
-/*
- * fft.h
- *
- *  Created on: Jul 7, 2014
- *      Author: nlevy
- */
 #include <cstdio>
 #include <cstdlib>
 #define _USE_MATH_DEFINES
@@ -12,6 +6,13 @@
 #include "constants.h"
 #ifndef FFT_H_
 #define FFT_H_
+
+/*! \file
+ * \brief Calulates the fast fourier transform of a time series.
+ *
+ * The FFT is calculated using the complex value of the time series, using the bit twiddling method. It is then converted back to its real
+ * magnitude only.
+ */
 
 class fft {
 	std::complex<float> * CFFT;

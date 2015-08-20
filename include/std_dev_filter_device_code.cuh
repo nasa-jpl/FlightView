@@ -13,7 +13,6 @@ static const int STD_DEV_DEBUG = false;
 #define STD_DEV_FILTER_DEVICE_CODE_CUH_
 __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_device, float * histogram_bins, uint32_t * histogram_out, int width, int height, int gpu_buffer_head, int N);
 
-
 void std_dev_filter_kernel_wrapper(dim3 gd, dim3 bd, unsigned int shm_size, cudaStream_t strm, uint16_t * pic_d, float * picture_out_device, float * histogram_bins, uint32_t * histogram_out, int width, int height, int gpu_buffer_head, int N);
 
 #endif /* STD_DEV_FILTER_DEVICE_CODE_CUH_ */

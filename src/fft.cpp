@@ -34,6 +34,7 @@ static const unsigned char BitReverseTable256[] =
 };
 fft::fft()
 {
+    /*! \brief Allocates memory for the complex array copy of the input series. */
 	CFFT = new std::complex<float>[MAX_FFT_SIZE];
 }
 fft::~fft() {
@@ -41,7 +42,8 @@ fft::~fft() {
 }
 void fft::bitReverseOrder(std::complex<float> * arr, unsigned int len) //Overloaded for
 {
-
+    /*! \brief Standard method for reversing the bits of a 2-byte number.
+     */
 	unsigned int base = (int)ceil(log10((float)len)/log10(2.0));
 	unsigned int i = 0;
 	//printf("base %u\n",base);
@@ -58,6 +60,11 @@ void fft::bitReverseOrder(std::complex<float> * arr, unsigned int len) //Overloa
 
 void fft::doRealFFT(float * real_arr, unsigned int ring_head,float *fft_real_result)
 {
+    /*! \brief Topmost function for calculating the FFT of the time series.
+     * \param real_arr The input series to the function.
+     * \param ring_head The current position in the ring buffer, if applicable.
+     * \param fft_real_result The output of real FFT magnitudes.
+     */
 	CFFT  =  doFFT(real_arr, ring_head);
 	double max = 0;
 
@@ -76,7 +83,11 @@ void fft::doRealFFT(float * real_arr, unsigned int ring_head,float *fft_real_res
 }
 std::complex<float> * fft::doFFT(float * real_arr, unsigned int ring_head)
 {
-
+    /*! \brief Middle layer function which converts the series to a complex-valued array.
+     *
+     * Also passes the array to the method which actually calculates the FFT of the complex input
+     * array.
+     */
 	for(unsigned int i = 0; i < FFT_INPUT_LENGTH; i++)
 	{
         CFFT[i] = std::complex<float>(real_arr[(ring_head+i) % FFT_MEAN_BUFFER_LENGTH],0);
@@ -85,6 +96,13 @@ std::complex<float> * fft::doFFT(float * real_arr, unsigned int ring_head)
 }
 std::complex<float> * fft::doFFT(std::complex<float> * arr, unsigned int len)
 {
+    /*! \brief Calculate the FFT on the complex input array
+     *
+     * This is a textbook method for calculating the FFT. The function asserts that the input array has a length that
+     * is a power of 2 and the length is less than the maximum allowed length.
+     * \param arr Complex form of the input time series.
+     * \param len Number of elements in the array parameter, here set to the FFT_INPUT_LENGTH macro.
+     */
     assert(IS_POW2(len));
     assert(len <= MAX_FFT_SIZE);
 	bitReverseOrder(arr,len);
@@ -102,10 +120,10 @@ std::complex<float> * fft::doFFT(std::complex<float> * arr, unsigned int len)
 		{
 			for(unsigned int r = 0; r < N/2; r++)
 			{
-				std::complex<float> a = arr[index+r]; //Save temp values to avoid data availability probrem
+				std::complex<float> a = arr[index+r]; //Save temp values to avoid data availability problem
 				std::complex<float> b = arr[index+r+N/2];
 				std::complex<float> exponent =(len/N)*r;
-				std::complex<float> twiddle = std::pow(Wn,exponent); //This twiddle is equivalent to global N twiddle seen in smoe books (i.e. W_8^2 = W_4^1)
+				std::complex<float> twiddle = std::pow(Wn,exponent); //This twiddle is equivalent to global N twiddle seen in some books (i.e. W_8^2 = W_4^1)
 				arr[index+r] = a + b*twiddle;
 				arr[index+r+N/2] = a - b*twiddle;
 			}

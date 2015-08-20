@@ -1,10 +1,3 @@
-/*
- * takeobject.cpp
- *
- *  Created on: May 27, 2014
- *     Authors: nlevy, jryan
- */
-
 #include "take_object.hpp"
 #include "fft.hpp"
 
@@ -30,18 +23,14 @@ take_object::take_object(int channel_num, int number_of_buffers, int frf)
 }
 take_object::~take_object()
 {
-    if(pdv_thread_run!=0)
-    {
+    if(pdv_thread_run != 0) {
         pdv_thread_run = 0;
-        pdv_thread.join(); //Wait for thread to end
 
 #ifdef EDT
         int dummy;
         pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
         pdv_close(pdv_p);
 #endif
-
-        sleep(1);
 
 #ifdef VERBOSE
         printf("about to delete filters!\n");
@@ -57,8 +46,7 @@ take_object::~take_object()
     printf("reseting GPUs!\n");
     int count;
     cudaGetDeviceCount(&count);
-    for(int i = 0; i < count; i++)
-    {
+    for(int i = 0; i < count; i++) {
         printf("resetting GPU#%i",i);
         cudaSetDevice(i);
         cudaDeviceReset(); //Dump all the bad stuff from each of our GPUs.
@@ -77,8 +65,7 @@ void take_object::start()
 #ifdef EDT
     this->pdv_p = NULL;
     this->pdv_p = pdv_open_channel(EDT_INTERFACE,0,this->channel);
-    if(pdv_p == NULL)
-    {
+    if(pdv_p == NULL) {
         std::cerr << "Could not open device channel. Is one connected?" << std::endl;
         return;
     }
@@ -89,38 +76,35 @@ void take_object::start()
 #endif
 #ifdef OPALKELLY
     // Step 1: Check that the Opal Kelly DLL is loaded
-    if(!okFrontPanelDLL_LoadLib(NULL))
-    {
+    if(!okFrontPanelDLL_LoadLib(NULL)) {
         std::cerr << "Front Panel DLL could not be loaded." << std::endl;
         return;
     }
 
     // Step 2: Initialize the device, and check that the initialization was valid
     xem = initializeFPGA();
-    if(xem == NULL)
-    {
+    if(!xem)
         return;
-    }
 
     // Step 3: Initialize some values that we will need to hardcode for this device
     frWidth = NCOL;
     frHeight = NROW;
     dataHeight = frHeight;
-    size = frHeight*frWidth*sizeof(uint16_t);
-    framelen = 2*frWidth*frHeight/NCHUNX;
+    size = frHeight * frWidth * sizeof(uint16_t);
+    framelen = 2 * frWidth * frHeight / NCHUNX;
     blocklen = BLOCK_LEN;
 
     // Step 4: Begin writing values to the pipe
     ok_init_pipe();
 #endif
 
-    switch(size)
-    {
+    switch(size) {
     case 481*640*sizeof(uint16_t): cam_type = CL_6604A; break;
     case 285*640*sizeof(uint16_t): cam_type = CL_6604A; break;
-    case 480*640*sizeof(uint16_t): cam_type = CL_6604A; break;
-    default: cam_type = CL_6604B; chromaPix = true; break;
+    case 480*640*sizeof(uint16_t): cam_type = FPGA; pixRemap = true; break;
+    default: cam_type = CL_6604B; pixRemap = true; break;
     }
+	setup_filter(cam_type);
 
 #ifdef EDT
     frHeight = cam_type == CL_6604A ? dataHeight - 1 : dataHeight;
@@ -150,14 +134,14 @@ void take_object::start()
     pdv_thread = boost::thread(&take_object::pdv_loop, this);
     //saving_thread = boost::thread(&take_object::savingLoop, this); //For some reason this doesn't work atm
 }
-void take_object::setInversion( bool checked, unsigned int factor )
+void take_object::setInversion(bool checked, unsigned int factor)
 {
     inverted = checked;
     invFactor = factor;
 }
-void take_object::chromaPixRemap( bool checked )
+void take_object::paraPixRemap(bool checked )
 {
-    chromaPix = checked;
+    pixRemap = checked;
 }
 void take_object::startCapturingDSFMask()
 {
@@ -166,13 +150,15 @@ void take_object::startCapturingDSFMask()
 }
 void take_object::finishCapturingDSFMask()
 {
+    dsf->mask_mutex.lock();
     dsf->finish_mask_collection();
+    dsf->mask_mutex.unlock();
     dsfMaskCollected = true;
 }
 void take_object::loadDSFMask(std::string file_name)
 {
-    float * mask_in = new float[frWidth*frHeight];
-    FILE * pFile;
+    float *mask_in = new float[frWidth*frHeight];
+    FILE *pFile;
     unsigned long size = 0;
     pFile  = fopen(file_name.c_str(), "rb");
     if(pFile == NULL) std::cerr << "error opening raw file" << std::endl;
@@ -187,7 +173,7 @@ void take_object::loadDSFMask(std::string file_name)
             return;
         }
         rewind(pFile);   // go back to beginning
-        fread(mask_in,sizeof(float),frWidth*frHeight,pFile);
+        fread(mask_in,sizeof(float),frWidth * frHeight,pFile);
         fclose (pFile);
 #ifdef VERBOSE
         std::cout << file_name << " read in "<< size << " bytes successfully " <<  std::endl;
@@ -199,7 +185,7 @@ void take_object::setStdDev_N(int s)
 {
     this->std_dev_filter_N = s;
 }
-void take_object::updateVertRange( int br, int er )
+void take_object::updateVertRange(int br, int er)
 {
     meanStartRow = br;
     meanHeight = er;
@@ -207,7 +193,7 @@ void take_object::updateVertRange( int br, int er )
     std::cout << "meanStartRow: " << meanStartRow << " meanHeight: " << meanHeight << std::endl;
 #endif
 }
-void take_object::updateHorizRange( int bc, int ec )
+void take_object::updateHorizRange(int bc, int ec)
 {
     meanStartCol = bc;
     meanWidth = ec;
@@ -215,21 +201,13 @@ void take_object::updateHorizRange( int bc, int ec )
     std::cout << "meanStartCol: " << meanStartCol << " meanWidth: " << meanWidth << std::endl;
 #endif
 }
-void take_object::update_start_row( int sr )
-{ // these will only trigger for vertical mean profiles
-    meanStartRow = sr;
-}
-void take_object::update_end_row( int er )
-{
-    meanHeight = er;
-}
-void take_object::changeFFTtype(int t)
+void take_object::changeFFTtype(FFT_t t)
 {
     whichFFT = t;
 }
 void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames_to_save)
 {
-    save_framenum.store(0,std::memory_order_seq_cst);
+    save_framenum.store(0, std::memory_order_seq_cst);
 #ifdef VERBOSE
     printf("ssr called\n");
 #endif
@@ -279,7 +257,7 @@ std::vector<float> * take_object::getHistogramBins()
 {
     return sdvf->getHistogramBins();
 }
-int take_object::getFFTtype()
+FFT_t take_object::getFFTtype()
 {
     return whichFFT;
 }
@@ -291,9 +269,11 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 
     uint16_t framecount = 1;
     uint16_t last_framecount = 0;
-    unsigned char* wait_ptr;
+#ifdef EDT
+	unsigned char* wait_ptr;
+#endif
 #ifdef OPALKELLY
-    wait_ptr = (unsigned char*) malloc(sizeof(unsigned char)*framelen);
+    unsigned char wait_ptr[framelen];
 #endif
 
     while(pdv_thread_run == 1)
@@ -301,10 +281,28 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
         curFrame->reset();
 #ifdef EDT
+        pdv_start_image(pdv_p); //Start another
         wait_ptr = pdv_wait_image(pdv_p);
 #endif
 #ifdef OPALKELLY
-        ok_read_frame(wait_ptr);
+        xem->UpdateWireOuts();
+        if(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_FULL_MASK)
+        {
+            std::cerr << "WARNING: MISSED FRAME" << std::endl;
+
+            // Reset the buffer
+            xem->ActivateTriggerIn(FIFO_RESET_TRIG, 0);
+            usleep(1000);
+            xem->ActivateTriggerIn(ACQ_TRIG, 0);
+        }
+        //Check for FIFO_WRITE
+        while( !(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_WRITE_MASK) )
+        {
+            xem->UpdateWireOuts();
+            usleep(1);
+        }
+        long result = xem->ReadFromBlockPipeOut(0xA0, blocklen, framelen, wait_ptr);
+        std::cout << "Result of ReadFromBlockPipeOut = " << result << std::endl;
 #endif
         /* In this section of the code, after we have copied the memory from the camera link
          * buffer into the raw_data_ptr, we will check various parameters to see if we need to
@@ -313,26 +311,18 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
          * First, the data is stored differently depending on the type of camera, 6604A or B.
          *
          * Second, we may have to apply a filter to pixels which remaps the image based on the
-         * way information is sent by the Chroma detector.
+         * way information is sent by some detectors.
          *
          * Third, we may need to invert the data range if a cable is inverting the magnitudes
          * that arrive from the ADC. This feature is also modified from the preference window.
          */
-
         memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
-
+        if(pixRemap)
+            apply_chroma_translate_filter(curFrame->raw_data_ptr);
         if(cam_type == CL_6604A)
-        {
             curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
-        }
         else
-        {
-            if( chromaPix )
-            {
-                apply_chroma_translate_filter(curFrame->raw_data_ptr);
-            }
             curFrame->image_data_ptr = curFrame->raw_data_ptr;
-        }
         if( inverted )
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
             for(uint i = 0; i < frHeight*frWidth; i++ )
@@ -355,7 +345,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         }
 
 #ifdef EDT
-        pdv_start_image(pdv_p); //Start another
+
 #endif
 
         framecount = *(curFrame->raw_data_ptr + 160); // The framecount is stored 160 bytes offset from the beginning of the data
@@ -369,9 +359,6 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         last_framecount = framecount;
         count++;
     }
-#ifdef OPALKELLY
-    free(wait_ptr);
-#endif
 }
 void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thread)
 {
@@ -400,8 +387,8 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 /*void take_object::saveFramesInBuffer()
 {
     register int ndx = count % CPU_FRAME_BUFFER_SIZE;
-    // So! We need to make a copy of the frame ring buffer so that we can
-    // take the raws out of the frames. So we need to copy starting from the current framecount
+    // We need to make a copy of the frame ring buffer so that we can
+    // take the raws out of the frames. So we should copy frames starting from the current framecount
     // to the end of the array then from the beginning of the array to the current framecount.
 
     frame_c* buf_copy = new frame_c[CPU_FRAME_BUFFER_SIZE];
@@ -425,9 +412,8 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 okCFrontPanel* take_object::initializeFPGA()
 {
     // Open the first XEM - try all board types.
-    okCFrontPanel* dev = new okCFrontPanel;
-    if (okCFrontPanel::NoError != dev->OpenBySerial())
-    {
+    okCFrontPanel *dev = new okCFrontPanel;
+    if (okCFrontPanel::NoError != dev->OpenBySerial()) {
         std::cerr << "Could not open device through serial port. Is one connected?" << std::endl;
         delete dev;
         return NULL;
@@ -445,8 +431,7 @@ okCFrontPanel* take_object::initializeFPGA()
     std::cout << "Device device ID: " << str.c_str() << std::endl;
 
     // Download the configuration file.
-    if(okCFrontPanel::NoError != dev->ConfigureFPGA(FPGA_CONFIG_FILE))
-    {
+    if(okCFrontPanel::NoError != dev->ConfigureFPGA(FPGA_CONFIG_FILE)) {
         std::cerr << "FPGA configuration failed." << std::endl;
         delete dev;
         return(NULL);
@@ -472,12 +457,11 @@ void take_object::ok_init_pipe()
     xem->ActivateTriggerIn(FIFO_RESET_TRIG, 0);
     xem->ActivateTriggerIn(ACQ_TRIG, 0);
 }
-void take_object::ok_read_frame(unsigned char* wait_ptr)
+void take_object::ok_read_frame(unsigned char *wait_ptr)
 {
     xem->UpdateWireOuts();
-    if(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_FULL_MASK)
-    {
-        //std::cerr << "WARNING: MISSED FRAME" << std::endl;
+    if(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_FULL_MASK) {
+        std::cerr << "WARNING: MISSED FRAME" << std::endl;
 
         // Reset the buffer
         xem->ActivateTriggerIn(FIFO_RESET_TRIG, 0);
@@ -485,11 +469,11 @@ void take_object::ok_read_frame(unsigned char* wait_ptr)
         xem->ActivateTriggerIn(ACQ_TRIG, 0);
     }
     //Check for FIFO_WRITE
-    while( !(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_WRITE_MASK) )
-    {
+    while(!(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_WRITE_MASK)) {
         xem->UpdateWireOuts();
         usleep(1);
     }
     long result = xem->ReadFromBlockPipeOut(0xA0, blocklen, framelen, wait_ptr);
+    std::cout << "Result of ReadFromBlockPipeOut = " << result << std::endl;
 }
 #endif
