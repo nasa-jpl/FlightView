@@ -16,7 +16,12 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     floor = 0;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
+    x_coord = -1;
+    y_coord = -1;
+
     qcp = new QCustomPlot(this);
+    qcp->addLayer("Plot Layer");
+    qcp->setCurrentLayer("Plot Layer");
     qcp->setNotAntialiasedElement(QCP::aeAll);
 
     qcp->plotLayout()->insertRow(0);
@@ -25,22 +30,45 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     qcp->addGraph();
 
     if (itype == VERTICAL_MEAN || itype == VERTICAL_CROSS) {
-        x = QVector<double>(frHeight);
-        for (int r = 0; r < frHeight; r++)
-            x[r] = (double)r;
-        y = QVector<double>(frHeight);
+        xAxisMax = frHeight;
         qcp->xAxis->setLabel("Y index");
-        qcp->xAxis->setRange(QCPRange(0, frHeight)); //From 0 to 2^16
     } else if (itype == HORIZONTAL_MEAN || itype == HORIZONTAL_CROSS) {
-        x = QVector<double>(frWidth);
-        for(int c = 0; c < frWidth; c++)
-            x[c] = (double)c;
-        y = QVector<double>(frWidth);
+        xAxisMax = frWidth;
         qcp->xAxis->setLabel("X index");
-        qcp->xAxis->setRange(QCPRange(0, frWidth)); //From 0 to 2^16
     }
+    x = QVector<double>(xAxisMax);
+    for (int i = 0; i < xAxisMax; i++)
+        x[i] = double(i);
+    y = QVector<double>(xAxisMax);
+    qcp->xAxis->setRange(QCPRange(0, xAxisMax));
 
-    qcp->yAxis->setLabel("Average Magnitude");
+    qcp->addLayer("Box Layer", qcp->currentLayer());
+    qcp->setCurrentLayer("Box Layer");
+    callout = new QCPItemText(qcp);
+    qcp->addItem(callout);
+    callout->position->setCoords(xAxisMax / 2, ceiling - 1000);
+    callout->setText("test");
+    callout->setFont(QFont(font().family(), 16));
+    callout->setPen(QPen(Qt::black));
+    callout->setBrush(Qt::white);
+    callout->setClipToAxisRect(false);
+    qcp->setSelectionTolerance(50);
+    callout->setSelectedBrush(Qt::white);
+    callout->setSelectedFont(QFont(font().family(), 16));
+    callout->setSelectedPen(QPen(Qt::black));
+    callout->setVisible(false);
+    qcp->addLayer("Arrow Layer", qcp->currentLayer(), QCustomPlot::limBelow);
+    qcp->setCurrentLayer("Arrow Layer");
+    arrow = new QCPItemLine(qcp);
+    qcp->addItem(arrow);
+    arrow->start->setParentAnchor(callout->bottom);
+    arrow->setHead(QCPLineEnding::esSpikeArrow);
+    arrow->setClipToAxisRect(false);
+    arrow->setSelectable(false);
+    arrow->setVisible(false);
+    qcp->setInteractions(QCP::iRangeZoom | QCP::iSelectItems);
+
+    qcp->yAxis->setLabel("Pixel Magnitude [DN]");
     qcp->yAxis->setRange(QCPRange(0, fw->base_ceiling)); //From 0 to 2^16
 
     qcp->graph(0)->setData(x, y);
@@ -48,7 +76,12 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     qvbl.addWidget(qcp);
     this->setLayout(&qvbl);
 
+    connect(qcp, SIGNAL(mouseMove(QMouseEvent*)), this, SLOT(moveCallout(QMouseEvent*)));
+    connect(qcp, SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(setCallout(QMouseEvent*)));
+    connect(qcp->xAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(profileScrolledX(QCPRange)));
+    connect(qcp->yAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(profileScrolledY(QCPRange)));
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
+
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
 
@@ -62,6 +95,16 @@ double profile_widget::getCeiling()
 {
     /*! \brief Return the value of the ceiling for this widget as a double */
     return ceiling;
+}
+void profile_widget::hide_callout()
+{
+    if (callout->visible()) {
+        callout->setVisible(false);
+        arrow->setVisible(false);
+    } else {
+        callout->setVisible(true);
+        arrow->setVisible(true);
+    }
 }
 
 // public slots
@@ -89,18 +132,68 @@ void profile_widget::handleNewFrame()
                 y[c] = double(local_image_ptr[c]);
         qcp->graph(0)->setData(x, y);
         qcp->replot();
+        if (callout->visible()) {
+            update();
+        }
         switch (itype) {
         case HORIZONTAL_MEAN: plotTitle->setText(QString("Horizontal Mean Profile")); break;
         case HORIZONTAL_CROSS: plotTitle->setText(QString("Horizontal Profile centered @ y = %1").arg(fw->crosshair_y)); break;
         case VERTICAL_MEAN: plotTitle->setText(QString("Vertical Mean Profile")); break;
         case VERTICAL_CROSS: plotTitle->setText(QString("Vertical Profile centered @ x = %1").arg(fw->crosshair_x)); break;
+        default: break;
         }
     } else {
         plotTitle->setText("No Crosshair designated");
         qcp->graph(0)->clearData();
         qcp->replot();
     }
-
+}
+void profile_widget::profileScrolledY(const QCPRange &newRange)
+{
+    /*! \brief Controls the behavior of zooming the plot.
+     * \param newRange Mouse wheel scrolled range.
+     * Profiles must not allow the user to zoom past the dimensions of the frame.
+     */
+    QCPRange boundedRange = newRange;
+    double lowerRangeBound = floor;
+    double upperRangeBound = ceiling;
+    if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
+        boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+    } else {
+        double oldSize = boundedRange.size();
+        if (boundedRange.lower < lowerRangeBound) {
+            boundedRange.lower = lowerRangeBound;
+            boundedRange.upper = lowerRangeBound+oldSize;
+        } if (boundedRange.upper > upperRangeBound) {
+            boundedRange.lower = upperRangeBound - oldSize;
+            boundedRange.upper = upperRangeBound;
+        }
+    }
+    qcp->yAxis->setRange(boundedRange);
+}
+void profile_widget::profileScrolledX(const QCPRange &newRange)
+{
+    /*! \brief Controls the behavior of zooming the plot.
+     * \param newRange Mouse wheel scrolled range.
+     * Profiles must not allow the user to zoom past the dimensions of the frame.
+     */
+    QCPRange boundedRange = newRange;
+    double lowerRangeBound = 0;
+    double upperRangeBound = xAxisMax;
+    if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
+        boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+    } else {
+        double oldSize = boundedRange.size();
+        if (boundedRange.lower < lowerRangeBound) {
+            boundedRange.lower = lowerRangeBound;
+            boundedRange.upper = lowerRangeBound + oldSize;
+        }
+        if (boundedRange.upper > upperRangeBound) {
+            boundedRange.lower = upperRangeBound - oldSize;
+            boundedRange.upper = upperRangeBound;
+        }
+    }
+    qcp->xAxis->setRange(boundedRange);
 }
 void profile_widget::updateCeiling(int c)
 {
@@ -119,3 +212,32 @@ void profile_widget::rescaleRange()
     /*! \brief Set the color scale of the display to the last used values for this widget */
     qcp->yAxis->setRange(QCPRange(floor, ceiling));
 }
+void profile_widget::setCallout(QMouseEvent *e)
+{
+    x_coord = qcp->xAxis->pixelToCoord(e->pos().x());
+    x_coord = x_coord < 0 ? 0 : x_coord;
+    x_coord = x_coord > xAxisMax ? xAxisMax : x_coord;
+    y_coord = y[x_coord];
+    arrow->end->setCoords(x_coord, y_coord);
+    callout->setText(QString(" x: %1 \n y: %2 ").arg(x_coord).arg(y_coord));
+    callout->setVisible(true);
+    arrow->setVisible(true);
+}
+void profile_widget::moveCallout(QMouseEvent *e)
+{
+
+    if ((callout->selectTest(e->posF(), true) < (0.99 * qcp->selectionTolerance())) && (e->buttons() & Qt::LeftButton)) {
+        callout->position->setPixelPoint(e->posF());
+    } else {
+        return;
+    }
+}
+
+// private slots
+void profile_widget::update()
+{
+    y_coord = y[x_coord];
+    arrow->end->setCoords(x_coord, y_coord);
+    callout->setText(QString(" x: %1 \n y: %2 ").arg(x_coord).arg(y_coord));
+}
+

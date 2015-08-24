@@ -28,12 +28,7 @@ frameWorker::frameWorker(QObject *parent) :
     frWidth = to.getFrameWidth();
     dataHeight = to.getDataHeight();
 
-    if(camera_type() == CL_6604A)
-        base_ceiling = (1<<14) - 1;
-    else
-        base_ceiling = (1<<16) - 1;
-
-
+    base_ceiling = max_val[camera_type()];
 }
 frameWorker::~frameWorker()
 {
@@ -68,6 +63,11 @@ bool frameWorker::dsfMaskCollected()
 {
     /*! \brief Returns whether or not a dark mask is loaded into cuda_take. */
     return to.dsfMaskCollected;
+}
+bool frameWorker::usingDSF()
+{
+    /*! \brief Returns whether or not the dark subtraction filter is being used. */
+    return to.useDSF;
 }
 
 // public slots
@@ -145,15 +145,13 @@ void frameWorker::toggleUseDSF(bool t)
     /*! \brief Switches the boolean variable to use the DSF mask in the front and backend.
      * \param t State variable for the "Use Dark Subtraction Filter" checkbox. */
     to.useDSF = t;
-    crosshair_useDSF = t;
 }
-void frameWorker::startSavingRawData(unsigned int framenum, QString unverifiedName)
+void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName)
 {
     /*! \brief Calls to start saving frames in cuda_take at a specified location
      * \param framenum Number of frames to save
      * \param name Location of target file */
-    qDebug() << "Start Saving Frames @ " << unverifiedName;
-    to.startSavingRaws(unverifiedName.toUtf8().constData(), framenum);
+    to.startSavingRaws(verifiedName.toUtf8().constData(), framenum);
 }
 void frameWorker::stopSavingRawData()
 {
@@ -189,7 +187,6 @@ bool frameWorker::validateFileName(const QString &name, QString *errorMessage = 
     }
     return true;
 }
-
 void frameWorker::skipFirstRow(bool checked)
 {
     /*! \brief Selects whether or not to skip the last row for profiles.

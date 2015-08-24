@@ -143,6 +143,7 @@ public:
     double getCeiling();
     double getFloor();
     /*! @} */
+    bool usingDSF();
 
     buffer_handler* bh; // public copy of playback_widget's backend
 

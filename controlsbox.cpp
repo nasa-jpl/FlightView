@@ -1,5 +1,7 @@
 #include "controlsbox.h"
 
+#include <QStyle>
+
 static const char notAllowedCharsSubDir[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`' ";
 
 ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
@@ -17,7 +19,6 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
      * \author JP Ryan
      * \author Noah Levy
      */
-    /* Unofficial notes: Good luck. This may be one of the ugliest pieces of code either of us has ever written. */
     this->fw = fw;
     qtw = tw;
     current_tab = qobject_cast<frameview_widget*>(qtw->widget(qtw->currentIndex()));
@@ -190,6 +191,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
 }
 void ControlsBox::closeEvent(QCloseEvent *e)
 {
+    /* Note: minor hack below */
     Q_UNUSED(e);
     prefWindow->close();
 }
@@ -212,8 +214,8 @@ void ControlsBox::tab_changed_slot(int index)
     if (p_profile) {
         int frameMax, startVal;
         bool enable;
-
         use_DSF_cbox.setEnabled(true);
+        use_DSF_cbox.setChecked(fw->usingDSF());
         ceiling_maximum = p_profile->slider_max;
         low_increment_cbox.setChecked(p_profile->slider_low_inc);
         increment_slot(low_increment_cbox.isChecked());
@@ -238,6 +240,7 @@ void ControlsBox::tab_changed_slot(int index)
         p_profile->rescaleRange();
     } else if (p_fft) {
         use_DSF_cbox.setEnabled(true);
+        use_DSF_cbox.setChecked(fw->usingDSF());
         ceiling_maximum = p_fft->slider_max;
         low_increment_cbox.setChecked(p_fft->slider_low_inc);
         increment_slot(low_increment_cbox.isChecked());
@@ -282,6 +285,7 @@ void ControlsBox::tab_changed_slot(int index)
                 std_dev_N_edit->setEnabled(false);
             }
             use_DSF_cbox.setEnabled(false);
+            use_DSF_cbox.setChecked(fw->usingDSF());
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_frameview->rescaleRange();
         } else if (p_histogram) {
@@ -295,6 +299,7 @@ void ControlsBox::tab_changed_slot(int index)
             std_dev_N_slider->setEnabled(true);
             std_dev_N_edit->setEnabled(true);
             use_DSF_cbox.setEnabled(false);
+            use_DSF_cbox.setChecked(fw->usingDSF());
             p_histogram->rescaleRange();
         } else if (p_playback) {
             ceiling_maximum = p_playback->slider_max;
@@ -309,6 +314,7 @@ void ControlsBox::tab_changed_slot(int index)
             load_mask_from_file.setEnabled(true);
             connect(this, SIGNAL(mask_selected(QString, unsigned int, long)), p_playback, SLOT(loadDSF(QString, unsigned int, long)));
             use_DSF_cbox.setEnabled(true);
+            use_DSF_cbox.setChecked(p_playback->usingDSF());
             p_playback->rescaleRange();
         }
     }
@@ -441,7 +447,7 @@ void ControlsBox::show_save_dialog()
     /*! \brief Display the file dialog to specify the path for saving raw frames.
      * \author Noah Levy
      */
-    QString dialog_file_name = QFileDialog::getSaveFileName(this, tr("Save frames as raw"), filename_edit.text(), tr("Raw (*.raw *.bin *.hsi *.img)"));
+    QString dialog_file_name = QFileDialog::getSaveFileName(this, tr("Save frames as raw"), "/home/", tr("Raw (*.raw *.bin *.hsi *.img)"));
     if (!dialog_file_name.isEmpty())
         filename_edit.setText(dialog_file_name);
 }
@@ -454,11 +460,26 @@ void ControlsBox::save_finite_button_slot()
 #ifdef VERBOSE
     qDebug() << "fname: " << filename_edit.text();
 #endif
-    emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text());
-    stop_saving_frames_button.setEnabled(true);
-    start_saving_frames_button.setEnabled(false);
-    save_finite_button.setEnabled(false);
-    frames_save_num_edit.setEnabled(false);
+    QString errorString;
+    if (fw->validateFileName(filename_edit.text(), &errorString)) {
+        emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text());
+        stop_saving_frames_button.setEnabled(true);
+        start_saving_frames_button.setEnabled(false);
+        save_finite_button.setEnabled(false);
+        frames_save_num_edit.setEnabled(false);
+    } else {
+        QDialog *errorDialog = new QDialog(this);
+        QLabel *message = new QLabel(errorString);
+        QPushButton *okButton = new QPushButton("Ok");
+        connect(okButton, SIGNAL(clicked()), errorDialog, SLOT(close()));
+        QVBoxLayout layout;
+        layout.addWidget(message);
+        layout.addWidget(okButton);
+        errorDialog->setLayout(&layout);
+        errorDialog->setWindowTitle("Frame Save Error");
+        errorDialog->setAttribute(Qt::WA_DeleteOnClose);
+        errorDialog->show();
+    }
 }
 void ControlsBox::stop_continous_button_slot()
 {

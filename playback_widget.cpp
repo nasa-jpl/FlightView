@@ -305,6 +305,10 @@ double playback_widget::getFloor()
     /*! \brief Return the value of the floor for this widget as a double */
     return floor;
 }
+bool playback_widget::usingDSF()
+{
+    return useDSF;
+}
 
 //public slots
 void playback_widget::toggleUseDSF(bool t)
@@ -529,7 +533,7 @@ void playback_widget::loadFile()
         playPause();
     }
     statusLabel->setText("Error: No file selected. Please open a .raw file or drop one in the window.");
-    QString fname = QFileDialog::getOpenFileName(this, tr("Please Select a Raw File"), tr("/"), tr("Raw (*.raw *.bin *.hsi *.img)"));
+    QString fname = QFileDialog::getOpenFileName(this, tr("Please Select a Raw File"), tr("/home/"), tr("Raw (*.raw *.bin *.hsi *.img)"));
     if (fname.isEmpty()) {
         updateStatus(bh->current_frame);
         return;

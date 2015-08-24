@@ -28,7 +28,7 @@
  * \author Noah Levy
  */
 
-class profile_widget : public QWidget//, public view_widget_interface
+class profile_widget : public QWidget
 {
     Q_OBJECT
 
@@ -37,6 +37,8 @@ class profile_widget : public QWidget//, public view_widget_interface
 
     /* GUI elements */
     QVBoxLayout qvbl;
+    QCPItemText *callout;
+    QCPItemLine *arrow;
 
     /* Plot elements */
     QCustomPlot *qcp;
@@ -44,12 +46,16 @@ class profile_widget : public QWidget//, public view_widget_interface
 
     /* Frame rendering elements */
     int frWidth, frHeight;
+    int xAxisMax = 0;
 
     volatile double ceiling;
     volatile double floor;
 
     QVector<double> x;
     QVector<double> y;
+
+    int x_coord;
+    volatile int y_coord;
 
 public:
     explicit profile_widget(frameWorker *fw, image_t image_type , QWidget *parent = 0);
@@ -59,6 +65,7 @@ public:
     double getCeiling();
     double getFloor();
     /*! @} */
+    void hide_callout();
 
     const unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
@@ -73,10 +80,19 @@ public slots:
 
     /*! \addtogroup plotfunc
      * @{ */
+    void profileScrolledY(const QCPRange &newRange);
+    void profileScrolledX(const QCPRange &newRange);
     void updateCeiling(int c);
     void updateFloor(int f);
     void rescaleRange();
     /*! @} */
+
+    void setCallout(QMouseEvent *e);
+    void moveCallout(QMouseEvent *e);
+
+private:
+    void update();
+
 };
 
 #endif // MEAN_PROFILE_WIDGET_H

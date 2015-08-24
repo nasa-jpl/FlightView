@@ -93,10 +93,7 @@ void preferenceWindow::createRenderingTab()
     leftBound =  new QLineEdit();
     rightBound = new QLineEdit();
     leftBound->setText("0");
-    if(fw->to.cam_type == CL_6604A)
-        base_scale = 16383;
-    else
-        base_scale = 65535;
+    base_scale = max_val[camera];
     rightBound->setText(tr("%1").arg(base_scale));
 
     /* If the data range needs to be adjustable later, uncomment this and the #include and definition line in the header

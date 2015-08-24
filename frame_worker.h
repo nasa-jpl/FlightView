@@ -34,6 +34,16 @@
  * \author JP Ryan
  */
 
+/* regular slider range */
+const static int BIG_MAX = (1<<16) - 1;
+const static int BIG_MIN = -1 * BIG_MAX / 4;
+const static int BIG_TICK = 400;
+
+/* slider low increment range */
+const static int LIL_MAX = 2000;
+const static int LIL_MIN = -2000;
+const static int LIL_TICK = 1;
+
 class frameWorker : public QObject
 {
     Q_OBJECT
@@ -45,8 +55,6 @@ class frameWorker : public QObject
     unsigned int frWidth;
 
     float *histogram_bins;
-
-    bool crosshair_useDSF = false;
     bool doRun = true;
 
 public:
@@ -83,6 +91,7 @@ public:
     unsigned int getDataHeight();
     unsigned int getFrameWidth();
     bool dsfMaskCollected();
+    bool usingDSF();
 
 signals:
     /*! \brief Calls to update the value of the backend FPS label */
@@ -120,7 +129,7 @@ public slots:
 
     /*! \addtogroup savingfunc
      * @{ */
-    void startSavingRawData(unsigned int framenum, QString unverifiedName);
+    void startSavingRawData(unsigned int framenum, QString verifiedName);
     void stopSavingRawData();
     bool validateFileName(const QString &name, QString *errorMessage);
     /*! @} */

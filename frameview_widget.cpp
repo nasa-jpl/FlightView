@@ -219,7 +219,6 @@ void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
     }
     qcp->yAxis->setRange(boundedRange);
 }
-
 void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
 {
     /*! \brief Controls the behavior of zooming the plot.

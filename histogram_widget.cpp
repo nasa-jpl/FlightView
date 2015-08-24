@@ -99,8 +99,6 @@ void histogram_widget::histogramScrolledX(const QCPRange &newRange)
      */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
-
-
     double upperRangeBound = histo_bins[histo_bins.size()-1];
 
     if (boundedRange.size() > upperRangeBound - lowerRangeBound) {

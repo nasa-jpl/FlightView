@@ -137,80 +137,85 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
      *
      * \author JP Ryan
      */
-    playback_widget *pbw = qobject_cast<playback_widget*>(tabWidget->widget(tabWidget->currentIndex()));
-    frameview_widget *fvw = qobject_cast<frameview_widget*>(tabWidget->widget(tabWidget->currentIndex()));
-    histogram_widget *hgw = qobject_cast<histogram_widget*>(tabWidget->widget(tabWidget->currentIndex()));
-    if(!c->modifiers()) {
-        if(pbw) {
-            if(c->key() == Qt::Key_Space || c->key() == Qt::Key_Return) {
-                pbw->playPause();
+    QWidget* current_tab = tabWidget->widget(tabWidget->currentIndex());
+    profile_widget *ppw;
+    frameview_widget *fvw;
+    if (!c->modifiers()) {
+        if (current_tab == raw_play_widget) {
+            if (c->key() == Qt::Key_Space || c->key() == Qt::Key_Return) {
+                raw_play_widget->playPause();
                 c->accept();
                 return;
             }
-            if(c->key() == Qt::Key_A)
+            if (c->key() == Qt::Key_A)
             {
-                pbw->moveBackward();
+                raw_play_widget->moveBackward();
                 c->accept();
                 return;
             }
-            if(c->key() == Qt::Key_D) {
-                pbw->moveForward();
+            if (c->key() == Qt::Key_D) {
+                raw_play_widget->moveForward();
                 c->accept();
                 return;
             }
-            if(c->key() == Qt::Key_S) {
-                pbw->stop();
+            if (c->key() == Qt::Key_S) {
+                raw_play_widget->stop();
                 c->accept();
                 return;
             }
-            if(c->key() == Qt::Key_R) {
-                pbw->fastRewind();
+            if (c->key() == Qt::Key_R) {
+                raw_play_widget->fastRewind();
                 c->accept();
                 return;
             }
-            if(c->key() == Qt::Key_F) {
-                pbw->fastForward();
+            if (c->key() == Qt::Key_F) {
+                raw_play_widget->fastForward();
                 c->accept();
                 return;
             }
             // More key mappings can be provided here
-        } else if(fvw) {
-            if(fvw->image_type == BASE || fvw->image_type == DSF) {
-                if(c->key() == Qt::Key_Escape) {
-                    fw->crosshair_x = -1;
-                    fw->crosshair_y = -1;
-                    fw->crossStartCol = -1;
-                    fw->crossWidth = -1;
-                    fw->crossStartRow = -1;
-                    fw->crossHeight = -1;
+        } else if (current_tab == unfiltered_widget || current_tab == dsf_widget) {
+            fvw = qobject_cast<frameview_widget*>(current_tab);
+            if (c->key() == Qt::Key_Escape) {
+                fw->crosshair_x = -1;
+                fw->crosshair_y = -1;
+                fw->crossStartCol = -1;
+                fw->crossWidth = -1;
+                fw->crossStartRow = -1;
+                fw->crossHeight = -1;
 
-                    c->accept();
-                    return;
-                } else if(c->key() == Qt::Key_D) {
-                    fvw->toggleDisplayCrosshair();
-                    c->accept();
-                    return;
-                }
-            }
-        } else if(hgw) {
-            /*! \example How to add a keyboard shortcut to Live View
-         * @{ */
-            if(c->key() == Qt::Key_R) {
-                hgw->resetRange();
+                c->accept();
+                return;
+            } else if (c->key() == Qt::Key_D) {
+                fvw->toggleDisplayCrosshair();
                 c->accept();
                 return;
             }
-            /*! @} */
+        } else if (current_tab == hist_widget) {
+        /*! \example How to add a keyboard shortcut to Live View
+         * @{ */
+            if(c->key() == Qt::Key_R) {
+                hist_widget->resetRange();
+                c->accept();
+                return;
+            }
+        /*! @} */
+        } else if (ppw = qobject_cast<profile_widget*>(current_tab)) {
+            if (c->key() == Qt::Key_Escape) {
+                ppw->hide_callout();
+                c->accept();
+                return;
+            }
         }
-        if(c->key() == Qt::Key_P) {
+        if (c->key() == Qt::Key_P) {
             controlbox->low_increment_cbox.setChecked(!controlbox->low_increment_cbox.isChecked());
             c->accept();
             return;
-        } else if((controlbox->use_DSF_cbox.isEnabled()) && (c->key() == Qt::Key_M)) {
+        } else if ((controlbox->use_DSF_cbox.isEnabled()) && (c->key() == Qt::Key_M)) {
             controlbox->use_DSF_cbox.setChecked(!controlbox->use_DSF_cbox.isChecked());
-        } else if(c->key() == Qt::Key_Comma) {
+        } else if (c->key() == Qt::Key_Comma) {
             controlbox->collect_dark_frames_button.click();
-        } else if(c->key() == Qt::Key_Period) {
+        } else if (c->key() == Qt::Key_Period) {
             controlbox->stop_dark_collection_button.click();
         }
     }

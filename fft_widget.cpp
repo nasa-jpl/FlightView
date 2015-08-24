@@ -23,22 +23,11 @@ fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
     tapPrfButton->setChecked(false);
 
     tapToProfile.setMinimum(0);
-    switch((int)fw->camera_type()) {
-    case CL_6604A:
-        tapToProfile.setMaximum(3);
-        break;
-    case CL_6604B:
-        tapToProfile.setMaximum(7);
-        break;
-    default:
-        tapToProfile.setMaximum(7);
-        break;
-    }
+    tapToProfile.setMaximum(number_of_taps[fw->camera_type()]);
     tapToProfile.setSingleStep(1);
     tapToProfile.setEnabled(false);
     connect(tapPrfButton, SIGNAL(toggled(bool)), &tapToProfile, SLOT(setEnabled(bool)));
     connect(&tapToProfile, SIGNAL(valueChanged(int)), fw, SLOT(tapPrfChanged(int)));
-
     connect(plMeanButton, SIGNAL(clicked()), this, SLOT(updateFFT()));
     connect(vCrossButton, SIGNAL(clicked()), this, SLOT(updateFFT()));
     connect(tapPrfButton, SIGNAL(clicked()), this, SLOT(updateFFT()));
