@@ -5,8 +5,6 @@
 #include <QSharedPointer>
 #include <QDebug>
 
-static const char notAllowedChars[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`' ";
-
 frameWorker::frameWorker(QObject *parent) :
     QObject(parent)
 {
@@ -158,35 +156,7 @@ void frameWorker::stopSavingRawData()
     /*! \brief Calls to stop saving frames in cuda_take. */
     to.stopSavingRaws();
 }
-bool frameWorker::validateFileName(const QString &name, QString *errorMessage = 0)
-{
-    // No filename
-    if (name.isEmpty()) {
-        if(errorMessage)
-            *errorMessage = tr("File name is empty.");
-        return false;
-    }
 
-    // Characters
-    for (const char *c = notAllowedChars; *c; c++) {
-        if (name.contains(QLatin1Char(*c))) {
-            if (errorMessage) {
-                const QChar qc = QLatin1Char(*c);
-                *errorMessage = tr("Invalid character \"%1\" in file name.").arg(qc);
-            }
-            return false;
-        }
-    }
-
-    // Starts with slash
-    if (name.at(0) != '/') {
-        if (errorMessage)
-            *errorMessage = tr("File name must specify a path. Please specify the directory from root at which "
-                           " to save the file."); // Upper case code
-        return false;
-    }
-    return true;
-}
 void frameWorker::skipFirstRow(bool checked)
 {
     /*! \brief Selects whether or not to skip the last row for profiles.
@@ -273,9 +243,9 @@ void frameWorker::setCrosshairBackend(int pos_x, int pos_y)
     crosshair_y = pos_y;    
     if (!(crosshair_x == -1 && crosshair_y == -1) && !repeat) {
         crosshair_x = crosshair_x < -1 ? 0 : crosshair_x;
-        crosshair_x = crosshair_x >= (int)frWidth ? frWidth : crosshair_x;
+        crosshair_x = crosshair_x >= int(frWidth) ? frWidth : crosshair_x;
         crosshair_y = crosshair_y < -1 ? 0 : crosshair_y;
-        crosshair_y = crosshair_y >= (int)frHeight ? frHeight : crosshair_y;
+        crosshair_y = crosshair_y >= int(frHeight) ? frHeight : crosshair_y;
         qDebug()<<"x="<<crosshair_x<<"y="<<crosshair_y;
     }
 

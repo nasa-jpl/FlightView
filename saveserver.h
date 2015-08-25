@@ -24,25 +24,30 @@ class saveServer : public QTcpServer
 {
     Q_OBJECT
 
-public:
-    saveServer(frameWorker *fw, QObject *parent = 0);
+    frameWorker *reference;
+
+    QTcpSocket *clientConnection;
+    uint16_t blockSize;
+    uint16_t commandType;
 
     uint16_t framesToSave;
     QString fname;
+
+public:
+    saveServer(frameWorker *fw, QObject *parent = 0);
+
     QHostAddress ipAddress;
     int port;
-    frameWorker *reference;
 
 protected:
     void incomingConnection(int socketDescriptor);
 
+signals:
+    void startSavingRemote(const QString &unverifiedName, unsigned int nFrames);
+
 private slots:
     void readCommand();
 
-private:
-    QTcpSocket *clientConnection;
-    uint16_t blockSize;
-    uint16_t commandType;
 };
 
 #endif // SAVESERVER_H

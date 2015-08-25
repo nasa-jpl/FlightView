@@ -183,6 +183,8 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
                 fw->crossWidth = -1;
                 fw->crossStartRow = -1;
                 fw->crossHeight = -1;
+                vert_cross_widget->hide_callout();
+                horiz_cross_widget->hide_callout();
 
                 c->accept();
                 return;

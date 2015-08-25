@@ -2,7 +2,7 @@
 
 #include <QStyle>
 
-static const char notAllowedCharsSubDir[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`' ";
+static const char notAllowedChars[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`' ";
 
 ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     QGroupBox(parent)
@@ -451,8 +451,13 @@ void ControlsBox::show_save_dialog()
     if (!dialog_file_name.isEmpty())
         filename_edit.setText(dialog_file_name);
 }
+void ControlsBox::save_remote_slot(const QString &unverifiedName, unsigned int nFrames)
+{
+    filename_edit.setText(unverifiedName);
+    frames_save_num_edit.setValue(nFrames);
+    save_finite_button.click();
+}
 void ControlsBox::save_finite_button_slot()
-
 {
     /*! \brief Emit the signal to save frames at the backend.
      * \author Noah Levy
@@ -461,8 +466,9 @@ void ControlsBox::save_finite_button_slot()
     qDebug() << "fname: " << filename_edit.text();
 #endif
     QString errorString;
-    if (fw->validateFileName(filename_edit.text(), &errorString)) {
+    if (validateFileName(filename_edit.text(), &errorString)) {
         emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text());
+        previousNumSaved = frames_save_num_edit.value();
         stop_saving_frames_button.setEnabled(true);
         start_saving_frames_button.setEnabled(false);
         save_finite_button.setEnabled(false);
@@ -491,6 +497,7 @@ void ControlsBox::stop_continous_button_slot()
     start_saving_frames_button.setEnabled(true);
     save_finite_button.setEnabled(true);
     frames_save_num_edit.setEnabled(true);
+    frames_save_num_edit.setValue(previousNumSaved);
 }
 void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
 {
@@ -505,6 +512,35 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
         frames_save_num_edit.setEnabled(true);
     }
     frames_save_num_edit.setValue(n);
+}
+bool ControlsBox::validateFileName(const QString &name, QString *errorMessage)
+{
+    // No filename
+    if (name.isEmpty()) {
+        if(errorMessage)
+            *errorMessage = tr("File name is empty.");
+        return false;
+    }
+
+    // Characters
+    for (const char *c = notAllowedChars; *c; c++) {
+        if (name.contains(QLatin1Char(*c))) {
+            if (errorMessage) {
+                const QChar qc = QLatin1Char(*c);
+                *errorMessage = tr("Invalid character \"%1\" in file name.").arg(qc);
+            }
+            return false;
+        }
+    }
+
+    // Starts with slash
+    if (name.at(0) != '/') {
+        if (errorMessage)
+            *errorMessage = tr("File name must specify a path. \nPlease specify the directory from root \nat which"
+                           " to save the file."); // Upper case code
+        return false;
+    }
+    return true;
 }
 void ControlsBox::start_dark_collection_slot()
 { /*! \brief Begins recording dark frames in the backend

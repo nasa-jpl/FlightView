@@ -88,6 +88,7 @@ void histogram_widget::histogramScrolledY(const QCPRange &newRange)
      * There is no special behavior for scrolling the Y Axis of the histogram. This function may
      * be deprecated in future versions (can be replaced with qcp->replot()).
      */
+    Q_UNUSED(newRange);
     rescaleRange();
 }
 void histogram_widget::histogramScrolledX(const QCPRange &newRange)

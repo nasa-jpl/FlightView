@@ -107,6 +107,7 @@ private:
     QWidget *old_tab;
     QWidget *current_tab;
     int ceiling_maximum;
+    int previousNumSaved;
 
 signals:
     /*! \brief Passes the message to save raw frames at the backend.
@@ -144,9 +145,11 @@ private slots:
      * Contains functions which control the processes needed to save frames.
      * @{ */
     void show_save_dialog();
+    void save_remote_slot(const QString &unverifiedName, unsigned int nFrames);
     void save_finite_button_slot();
     void stop_continous_button_slot();
     void updateSaveFrameNum_slot(unsigned int n);
+    bool validateFileName(const QString &name, QString *errorMessage = 0);
     /*! @} */
 
     /*! \addtogroup maskfunc Mask recording functions

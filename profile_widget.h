@@ -56,6 +56,7 @@ class profile_widget : public QWidget
 
     int x_coord;
     volatile int y_coord;
+    bool allow_callouts = true;
 
 public:
     explicit profile_widget(frameWorker *fw, image_t image_type , QWidget *parent = 0);
@@ -80,18 +81,18 @@ public slots:
 
     /*! \addtogroup plotfunc
      * @{ */
-    void profileScrolledY(const QCPRange &newRange);
-    void profileScrolledX(const QCPRange &newRange);
     void updateCeiling(int c);
     void updateFloor(int f);
     void rescaleRange();
+    void profileScrolledX(const QCPRange &newRange);
+    void profileScrolledY(const QCPRange &newRange);
     /*! @} */
 
     void setCallout(QMouseEvent *e);
     void moveCallout(QMouseEvent *e);
 
 private:
-    void update();
+    void updateCalloutValue();
 
 };
 

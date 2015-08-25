@@ -131,7 +131,6 @@ public slots:
      * @{ */
     void startSavingRawData(unsigned int framenum, QString verifiedName);
     void stopSavingRawData();
-    bool validateFileName(const QString &name, QString *errorMessage);
     /*! @} */
 
     void skipFirstRow(bool skip);
