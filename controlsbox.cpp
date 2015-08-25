@@ -7,7 +7,7 @@ static const char notAllowedChars[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`' ";
 ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     QGroupBox(parent)
 {
-    /*! \brief The main controls for liveview2
+    /*! \brief The main controls for LiveView
      * The ControlsBox is a wrapper GUI class which contains the (mostly) static controls between widgets.
      * After establishing the buttons in the constructor, the class will call the function tab_changed_slot(int index)
      * to establish widget-specific controls and settings. For instance, all profile widgets and FFTs make use

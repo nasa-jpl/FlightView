@@ -83,7 +83,7 @@ void fft_widget::handleNewFrame()
      * \author Noah Levy
      * \author JP Ryan
      */
-    if (!this->isHidden()) {
+    if (!this->isHidden() && fw->curFrame->fftMagnitude != NULL) {
         double nyquist_freq;
         switch (fw->to.getFFTtype()) {
         case PLANE_MEAN:

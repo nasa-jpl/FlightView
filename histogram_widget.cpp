@@ -67,7 +67,7 @@ void histogram_widget::handleNewFrame()
      * \paragraph
      *
      * As the histogram relies on standard deviation data, it must use the std_dev_frame rather than the curFrame. */
-    if(!this->isHidden())
+    if(!this->isHidden() && fw->std_dev_frame != NULL)
     {
         uint32_t *histogram_data_ptr = fw->std_dev_frame->std_dev_histogram;
         for(unsigned int b = 0; b < NUMBER_OF_BINS;b++)

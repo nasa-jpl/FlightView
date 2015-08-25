@@ -153,9 +153,9 @@ void frameview_widget::handleNewFrame()
      * \author Noah Levy
      */
 
-    if(!this->isHidden() && fw->curFrame) {
+    if(!this->isHidden() && (fw->curFrame->image_data_ptr != NULL)) {
         if(image_type == BASE) {
-            uint16_t * local_image_ptr = fw->curFrame->image_data_ptr;
+            uint16_t *local_image_ptr = fw->curFrame->image_data_ptr;
             for(int col = 0; col < frWidth; col++)
                 for(int row = 0; row < frHeight; row++ )
                     // this will blank out the part of the frame where the crosshair is pointing so that it is

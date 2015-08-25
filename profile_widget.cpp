@@ -124,7 +124,7 @@ void profile_widget::handleNewFrame()
         if (whichDim)
             // vertical profiles
 
-            for (int r = 0; r < frHeight; r++)
+            for (int r = 1; r < frHeight; r++)
                 y[r] = double(local_image_ptr[frHeight - r]);
         else
             // horizontal profiles

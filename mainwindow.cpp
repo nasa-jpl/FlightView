@@ -99,7 +99,7 @@ void MainWindow::enableStdDevTabs()
 // protected
 void MainWindow::keyPressEvent(QKeyEvent *c)
 {
-    /*! \brief Contains all keyboard shortcuts for liveview2.
+    /*! \brief Contains all keyboard shortcuts for LiveView.
      * \param c The key from the keyboard buffer.
      * \paragraph
      *

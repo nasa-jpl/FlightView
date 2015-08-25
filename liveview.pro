@@ -9,7 +9,7 @@ QT       += network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
 
-TARGET = liveview2
+TARGET = liveview
 TEMPLATE = app
 
 
@@ -46,22 +46,22 @@ OTHER_FILES += \
     aviris-ng-logo.png \
     aviris-logo-transparent.png \
     icon.png \
-    liveview2.rc
+    liveview.rc
 
 RESOURCES += \
     images.qrc
 
 QMAKE_CXXFLAGS += -O3 -std=c++11 -march=corei7-avx -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter
-#RC_FILE = liveview2.rc
+#RC_FILE = liveview.rc
 
 # Used for build tracking:
 DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 
 # qmake will create this directory automatically:
-DESTDIR = ../lv2_release
+DESTDIR = ./lv_release
 # Copy files into DESTDIR for potential releases:
-#QMAKE_POST_LINK += cp ../liveview2/liveview2_icon.png $$DESTDIR;
-#QMAKE_POST_LINK += cp ../liveview2/liveview2.desktop $$DESTDIR;
+QMAKE_POST_LINK += cp liveview_icon.png $$DESTDIR;
+QMAKE_POST_LINK += cp liveview.desktop $$DESTDIR;
 
 
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff

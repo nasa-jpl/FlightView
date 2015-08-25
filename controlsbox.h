@@ -23,7 +23,7 @@
 /* boost includes - is this still needed? */
 #include "boost/shared_array.hpp"
 
-/* liveview includes */
+/* LiveView includes */
 #include "fft_widget.h"
 #include "frameview_widget.h"
 #include "histogram_widget.h"

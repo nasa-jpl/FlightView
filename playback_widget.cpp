@@ -246,8 +246,8 @@ playback_widget::playback_widget(frameWorker *fw, QWidget *parent) :
     colorMapData = new QCPColorMapData(frWidth, frHeight, QCPRange(0, frWidth), QCPRange(0, frHeight));
     colorMap->setData(colorMapData);
 
-    updateFloor(0);
-    updateCeiling(fw->base_ceiling);
+    floor = 0;
+    ceiling = fw->base_ceiling;
     qcp->rescaleAxes();
     qcp->axisRect()->setBackgroundScaled(false);
 
@@ -396,7 +396,7 @@ void playback_widget::updateFloor(int f)
     floor = (double)f;
     rescaleRange();
 }
-inline void playback_widget::rescaleRange()
+void playback_widget::rescaleRange()
 {
     /*! \brief Set the color scale of the display to the last used values for this widget */
     colorScale->setDataRange(QCPRange(floor, ceiling));
@@ -412,7 +412,7 @@ void playback_widget::playPause()
      */
     play = !play;
     if (play && playBackward) {
-        // clunkcy corner-case catching code
+        // clunky corner-case catching code
         play = false;
         playBackward = false;
     }
