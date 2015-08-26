@@ -37,6 +37,7 @@ class profile_widget : public QWidget
 
     /* GUI elements */
     QVBoxLayout qvbl;
+    QCheckBox *showCalloutCheck;
     QCPItemText *callout;
     QCPItemLine *arrow;
 
@@ -66,7 +67,6 @@ public:
     double getCeiling();
     double getFloor();
     /*! @} */
-    void hide_callout();
 
     const unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
@@ -90,6 +90,7 @@ public slots:
 
     void setCallout(QMouseEvent *e);
     void moveCallout(QMouseEvent *e);
+    void hideCallout();
 
 private:
     void updateCalloutValue();

@@ -71,13 +71,18 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
     qcp->graph(0)->setData(x, y);
 
+    showCalloutCheck = new QCheckBox("Display Callout");
+    showCalloutCheck->setChecked(false);
+
     qvbl.addWidget(qcp);
+    qvbl.addWidget(showCalloutCheck);
     this->setLayout(&qvbl);
 
     connect(qcp, SIGNAL(mouseMove(QMouseEvent*)), this, SLOT(moveCallout(QMouseEvent*)));
     connect(qcp, SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(setCallout(QMouseEvent*)));
     connect(qcp->xAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(profileScrolledX(QCPRange)));
     connect(qcp->yAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(profileScrolledY(QCPRange)));
+    connect(showCalloutCheck, SIGNAL(clicked()), this, SLOT(hideCallout()));
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
 
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
@@ -93,17 +98,6 @@ double profile_widget::getCeiling()
 {
     /*! \brief Return the value of the ceiling for this widget as a double */
     return ceiling;
-}
-void profile_widget::hide_callout()
-{
-    if (callout->visible() || fw->crosshair_x == -1) {
-        callout->setVisible(false);
-        arrow->setVisible(false);
-    } else {
-
-        callout->setVisible(true);
-        arrow->setVisible(true);
-    }
 }
 
 // public slots
@@ -123,7 +117,6 @@ void profile_widget::handleNewFrame()
         local_image_ptr = whichDim ? fw->curFrame->vertical_mean_profile : fw->curFrame->horizontal_mean_profile;
         if (whichDim)
             // vertical profiles
-
             for (int r = 1; r < frHeight; r++)
                 y[r] = double(local_image_ptr[frHeight - r]);
         else
@@ -208,12 +201,13 @@ void profile_widget::setCallout(QMouseEvent *e)
     y_coord = y[x_coord];
     if (callout->position->coords().y() > ceiling || callout->position->coords().y() < floor)
         callout->position->setCoords(callout->position->coords().x(), (ceiling - floor) * 0.9 + floor);
-    arrow->end->setCoords(x_coord, y_coord);
     callout->setText(QString(" x: %1 \n y: %2 ").arg(x_coord).arg(y_coord));
     if(allow_callouts) {
+        arrow->end->setCoords(x_coord, y_coord);
         callout->setVisible(true);
         arrow->setVisible(true);
     }
+    showCalloutCheck->setChecked(callout->visible());
 }
 void profile_widget::moveCallout(QMouseEvent *e)
 {
@@ -222,6 +216,17 @@ void profile_widget::moveCallout(QMouseEvent *e)
     } else {
         return;
     }
+}
+void profile_widget::hideCallout()
+{
+    if (callout->visible() || !allow_callouts) {
+        callout->setVisible(false);
+        arrow->setVisible(false);
+    } else {
+        callout->setVisible(true);
+        arrow->setVisible(true);
+    }
+    showCalloutCheck->setChecked(callout->visible());
 }
 
 // private slots

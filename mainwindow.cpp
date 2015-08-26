@@ -183,8 +183,8 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
                 fw->crossWidth = -1;
                 fw->crossStartRow = -1;
                 fw->crossHeight = -1;
-                vert_cross_widget->hide_callout();
-                horiz_cross_widget->hide_callout();
+                vert_cross_widget->hideCallout();
+                horiz_cross_widget->hideCallout();
 
                 c->accept();
                 return;
@@ -202,9 +202,14 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
                 return;
             }
         /*! @} */
-        } else if (ppw = qobject_cast<profile_widget*>(current_tab)) {
+        } else if ((ppw = qobject_cast<profile_widget*>(current_tab))) {
             if (c->key() == Qt::Key_Escape) {
-                ppw->hide_callout();
+                ppw->hideCallout();
+                c->accept();
+                return;
+            } else if (c->key() == Qt::Key_R) {
+                ppw->updateCeiling(fw->base_ceiling);
+                ppw->updateFloor(0);
                 c->accept();
                 return;
             }

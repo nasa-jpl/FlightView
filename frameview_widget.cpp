@@ -32,6 +32,8 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     case STD_DEV:
         ceiling = 100;
         break;
+    default:
+        break;
     }
     floor = 0;
     frHeight = fw->getFrameHeight();

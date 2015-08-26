@@ -1,7 +1,5 @@
 #include "controlsbox.h"
 
-#include <QStyle>
-
 static const char notAllowedChars[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`' ";
 
 ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
@@ -184,7 +182,6 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     connect(&floor_slider, SIGNAL(valueChanged(int)), &floor_edit, SLOT(setValue(int)));
     connect(&use_DSF_cbox, SIGNAL(toggled(bool)), this, SLOT(use_DSF_general(bool)));
     connect(&low_increment_cbox, SIGNAL(toggled(bool)), this, SLOT(increment_slot(bool)));
-
     connect(&save_finite_button, SIGNAL(clicked()), this, SLOT(save_finite_button_slot()));
     connect(&stop_saving_frames_button, SIGNAL(clicked()), this, SLOT(stop_continous_button_slot()));
     connect(&select_save_location, SIGNAL(clicked()), this, SLOT(show_save_dialog()));
@@ -453,6 +450,7 @@ void ControlsBox::show_save_dialog()
 }
 void ControlsBox::save_remote_slot(const QString &unverifiedName, unsigned int nFrames)
 {
+    checkForOverwrites = false;
     filename_edit.setText(unverifiedName);
     frames_save_num_edit.setValue(nFrames);
     save_finite_button.click();
@@ -465,26 +463,13 @@ void ControlsBox::save_finite_button_slot()
 #ifdef VERBOSE
     qDebug() << "fname: " << filename_edit.text();
 #endif
-    QString errorString;
-    if (validateFileName(filename_edit.text(), &errorString)) {
+    if (validateFileName(filename_edit.text()) == QDialog::Accepted) {
         emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text());
         previousNumSaved = frames_save_num_edit.value();
         stop_saving_frames_button.setEnabled(true);
         start_saving_frames_button.setEnabled(false);
         save_finite_button.setEnabled(false);
         frames_save_num_edit.setEnabled(false);
-    } else {
-        QDialog *errorDialog = new QDialog(this);
-        QLabel *message = new QLabel(errorString);
-        QPushButton *okButton = new QPushButton("Ok");
-        connect(okButton, SIGNAL(clicked()), errorDialog, SLOT(close()));
-        QVBoxLayout layout;
-        layout.addWidget(message);
-        layout.addWidget(okButton);
-        errorDialog->setLayout(&layout);
-        errorDialog->setWindowTitle("Frame Save Error");
-        errorDialog->setAttribute(Qt::WA_DeleteOnClose);
-        errorDialog->show();
     }
 }
 void ControlsBox::stop_continous_button_slot()
@@ -513,35 +498,72 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
     }
     frames_save_num_edit.setValue(n);
 }
-bool ControlsBox::validateFileName(const QString &name, QString *errorMessage)
+int ControlsBox::validateFileName(const QString &name)
 {
+    save_err errorCode = NONE;
+    QString message;
     // No filename
     if (name.isEmpty()) {
-        if(errorMessage)
-            *errorMessage = tr("File name is empty.");
-        return false;
+        errorCode = IS_EMPTY;
     }
 
     // Characters
     for (const char *c = notAllowedChars; *c; c++) {
         if (name.contains(QLatin1Char(*c))) {
-            if (errorMessage) {
-                const QChar qc = QLatin1Char(*c);
-                *errorMessage = tr("Invalid character \"%1\" in file name.").arg(qc);
-            }
-            return false;
+            const QChar qc = QLatin1Char(*c);
+            message = tr("Invalid character \"%1\" in file name.").arg(qc);
+            errorCode = BAD_CHAR;
         }
     }
 
     // Starts with slash
     if (name.at(0) != '/') {
-        if (errorMessage)
-            *errorMessage = tr("File name must specify a path. \nPlease specify the directory from root \nat which"
-                           " to save the file."); // Upper case code
-        return false;
+        errorCode = NO_PATH;
     }
-    return true;
+
+    // File exists
+    QFileInfo checkFile(name);
+    if (checkFile.exists() && checkFile.isFile() && checkForOverwrites) {
+        errorCode = FILE_EXISTS;
+    }
+
+    return handleError(errorCode, message);
 }
+int ControlsBox::handleError(save_err errorType, const QString &message)
+{
+    // Behold my lazy, hackish attempt at reimplementing the QDialog result codes
+    QErrorMessage *dialog = new QErrorMessage(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setWindowTitle("Frame Save Error");
+    dialog->setModal(true);
+    switch (errorType) {
+    case IS_EMPTY:
+        dialog->showMessage(tr("Filename is empty.\nPlease select a valid location to save data."));
+        dialog->setResult(QDialog::Rejected);
+        break;
+    case BAD_CHAR:
+        dialog->showMessage(message);
+        dialog->setResult(QDialog::Rejected);
+        break;
+    case FILE_EXISTS:
+        dialog->showMessage("File name already exists.\nOverwrite it?");
+        dialog->setResult(QDialog::Accepted);
+        break;
+    case NO_PATH:
+        dialog->showMessage(tr("File name does not specify a valid path.\nPlease include the path to the folder in which to save data."));
+        dialog->setResult(QDialog::Rejected);
+        break;
+    case BAD_PERMISSIONS:
+       dialog->showMessage(tr("User does not have permission to access this folder.\nPlease select a different location to save data."));
+       dialog->setResult(QDialog::Rejected);
+        break;
+    default:
+        dialog->setResult(QDialog::Accepted);
+        break;
+    }
+    return dialog->result();
+}
+
 void ControlsBox::start_dark_collection_slot()
 { /*! \brief Begins recording dark frames in the backend
    *  \author JP Ryan
@@ -575,7 +597,7 @@ void ControlsBox::getMaskFile()
         return;
 
     /* Step 2: Calculate the number of frames */
-    FILE * mask_file;
+    FILE *mask_file;
     unsigned long mask_size = 0;
     unsigned long frame_size = fw->getDataHeight() * fw->getFrameWidth();
     unsigned long num_frames = 0;
@@ -673,12 +695,14 @@ void ControlsBox::load_pref_window()
 }
 void ControlsBox::transmitChange(int linesToAverage)
 {
-    if (p_profile)
+    if (p_profile) {
         fw->updateMeanRange(linesToAverage, p_profile->itype);
-    else if (p_fft)
-        fw->updateMeanRange(linesToAverage, VERTICAL_CROSS);
-    else
+    } else if (p_fft) {
+        if (p_fft->vCrossButton->isChecked())
+            fw->updateMeanRange(linesToAverage, VERTICAL_CROSS);
+    } else {
         fw->updateMeanRange(linesToAverage, BASE);
+    }
 }
 void ControlsBox::fft_slider_enable(bool toggled)
 {
