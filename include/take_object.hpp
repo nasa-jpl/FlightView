@@ -33,7 +33,7 @@
 #include "ok_addresses.h"
 
 // the location of the OpalKelly bit file which configures the  FPGA
-#define FPGA_CONFIG_FILE "/home/jryan/NGIS_DATA/jryan/projects/cuda_take/top4ch.bit"
+#define FPGA_CONFIG_FILE "/home/jryan/NGIS_DATA/jryan/top4ch.bit"
 #endif
 
 //#define RESET_GPUS // will reset the GPU hardware on closing the program
@@ -145,7 +145,7 @@ private:
 #ifdef OPALKELLY
     okCFrontPanel* initializeFPGA();
     void ok_init_pipe();
-    void ok_read_frame(unsigned char*);
+    long ok_read_frame(unsigned char *wait_ptr, long prev_result);
 #endif
 
     // variables needed by the Raw Filters

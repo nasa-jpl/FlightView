@@ -19,7 +19,7 @@ uint16_t* apply_chroma_translate_filter(uint16_t *picture_in)
 		{
             div = col/num_taps;
             mod = col%num_taps;
-            pic_buffer[div + TAP_WIDTH*mod + row*frWidth] = (MAX_VAL - picture_in[col + row*frWidth]);
+            pic_buffer[div + TAP_WIDTH * mod + row * frWidth] = (MAX_VAL - picture_in[col + row * frWidth]);
 		}
 	}
 	memcpy(picture_in,pic_buffer,MAX_SIZE*sizeof(uint16_t));

@@ -26,6 +26,10 @@ take_object::~take_object()
     if(pdv_thread_run != 0) {
         pdv_thread_run = 0;
 
+#ifdef OPALKELLY
+        usleep(1000);
+#endif
+
 #ifdef EDT
         int dummy;
         pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
@@ -274,6 +278,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 #endif
 #ifdef OPALKELLY
     unsigned char wait_ptr[framelen];
+    long prev_result = 0;
 #endif
 
     while(pdv_thread_run == 1)
@@ -285,24 +290,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         wait_ptr = pdv_wait_image(pdv_p);
 #endif
 #ifdef OPALKELLY
-        xem->UpdateWireOuts();
-        if(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_FULL_MASK)
-        {
-            std::cerr << "WARNING: MISSED FRAME" << std::endl;
-
-            // Reset the buffer
-            xem->ActivateTriggerIn(FIFO_RESET_TRIG, 0);
-            usleep(1000);
-            xem->ActivateTriggerIn(ACQ_TRIG, 0);
-        }
-        //Check for FIFO_WRITE
-        while( !(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_WRITE_MASK) )
-        {
-            xem->UpdateWireOuts();
-            usleep(1);
-        }
-        long result = xem->ReadFromBlockPipeOut(0xA0, blocklen, framelen, wait_ptr);
-        std::cout << "Result of ReadFromBlockPipeOut = " << result << std::endl;
+        prev_result = ok_read_frame(wait_ptr, prev_result);
 #endif
         /* In this section of the code, after we have copied the memory from the camera link
          * buffer into the raw_data_ptr, we will check various parameters to see if we need to
@@ -454,18 +442,18 @@ void take_object::ok_init_pipe()
         xem->UpdateWireOuts();
         usleep(250);
     } while(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_WRITE_MASK);
+}
+long take_object::ok_read_frame(unsigned char *wait_ptr, long prev_result)
+{
     xem->ActivateTriggerIn(FIFO_RESET_TRIG, 0);
     xem->ActivateTriggerIn(ACQ_TRIG, 0);
-}
-void take_object::ok_read_frame(unsigned char *wait_ptr)
-{
     xem->UpdateWireOuts();
-    if(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_FULL_MASK) {
+    if((xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_FULL_MASK) || (prev_result != framelen)) {
         std::cerr << "WARNING: MISSED FRAME" << std::endl;
 
         // Reset the buffer
         xem->ActivateTriggerIn(FIFO_RESET_TRIG, 0);
-        usleep(1000);
+        usleep(10000);
         xem->ActivateTriggerIn(ACQ_TRIG, 0);
     }
     //Check for FIFO_WRITE
@@ -474,6 +462,7 @@ void take_object::ok_read_frame(unsigned char *wait_ptr)
         usleep(1);
     }
     long result = xem->ReadFromBlockPipeOut(0xA0, blocklen, framelen, wait_ptr);
-    std::cout << "Result of ReadFromBlockPipeOut = " << result << std::endl;
+    // std::cout << "Result of ReadFromBlockPipeOut = " << result << std::endl;
+    return result;
 }
 #endif
