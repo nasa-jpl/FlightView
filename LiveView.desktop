@@ -1,0 +1,13 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Icon=/opt/EDTpdv/liveview2_icon.png
+Icon[en_US]=/opt/EDTpdv/liveview2_icon.png
+Name[en_US]=liveview2
+Comment[en_US]=Live CameraLink Data Visualization and Analytics using CUDA GPUs
+Exec=/opt/EDTpdv/liveview2
+Name=liveview2
+Comment=Live CameraLink Data Visualization and Analytics using CUDA GPUs
