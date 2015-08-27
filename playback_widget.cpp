@@ -325,7 +325,7 @@ void playback_widget::loadDSF(QString f, unsigned int e, long o)
 }
 void playback_widget::stop()
 {
-    /*! \brief Stops playback and returnsto the first frame. */
+    /*! \brief Stops playback and returns to the first frame. */
     // ...taking advantage of our clunky corner case catching code
 
     bh->current_frame = 1;
@@ -606,19 +606,16 @@ void playback_widget::handleFrame(int frameNum)
         return;
 
     bh->buf_access.lock();
-        dark->update_dark_subtraction(bh->frame, bh->dark_data);
-
-        for (int col = 0; col < frWidth; col++)
-        {
-            for(int row = 0; row < frHeight; row++) {
-                if (useDSF)
-                    colorMap->data()->setCell(col, row, \
+        if(bh->frame != NULL && bh->dark_data != NULL)
+            dark->update_dark_subtraction(bh->frame, bh->dark_data);
+            for (int col = 0; col < frWidth; col++)
+                for(int row = 0; row < frHeight; row++)
+                    if (useDSF)
+                        colorMap->data()->setCell(col, row, \
                                             bh->dark_data[(frHeight-row-1) * frWidth + col]);
-                else
-                    colorMap->data()->setCell(col,row, \
+                    else
+                        colorMap->data()->setCell(col,row, \
                                             bh->frame[(frHeight - row - 1) * frWidth + col]);
-            }
-        }
     bh->buf_access.unlock();
 
     qcp->replot();

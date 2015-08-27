@@ -13,8 +13,8 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     : QMainWindow(parent)
 {
     qRegisterMetaType<frame_c*>("frame_c*");
-    qRegisterMetaType<QVector<double>>("QVector<double>");
-    qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");
+    //qRegisterMetaType<QVector<double>>("QVector<double>");
+    //qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");
 
     this->fw = fw;
 

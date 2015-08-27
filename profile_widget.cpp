@@ -30,10 +30,10 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     qcp->addGraph();
 
     if (itype == VERTICAL_MEAN || itype == VERTICAL_CROSS) {
-        xAxisMax = fw->getDataHeight() - 1;
+        xAxisMax = frHeight;
         qcp->xAxis->setLabel("Y index");
     } else if (itype == HORIZONTAL_MEAN || itype == HORIZONTAL_CROSS) {
-        xAxisMax = frWidth - 1;
+        xAxisMax = frWidth;
         qcp->xAxis->setLabel("X index");
     }
     x = QVector<double>(xAxisMax);
@@ -89,7 +89,6 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 }
 profile_widget::~profile_widget()
 {
-
 }
 
 // public functions

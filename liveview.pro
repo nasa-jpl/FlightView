@@ -61,7 +61,7 @@ DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 DESTDIR = ./lv_release
 # Copy files into DESTDIR for potential releases:
 QMAKE_POST_LINK += cp ../liveview/liveview_icon.png $$DESTDIR;
-QMAKE_POST_LINK += cp ../liveview/liveview.desktop $$DESTDIR;
+QMAKE_POST_LINK += cp ../liveview/LiveView.desktop $$DESTDIR;
 
 
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff
