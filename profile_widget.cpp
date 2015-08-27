@@ -29,18 +29,20 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     qcp->plotLayout()->addElement(0, 0, plotTitle);
     qcp->addGraph();
 
+    int start = 0;
     if (itype == VERTICAL_MEAN || itype == VERTICAL_CROSS) {
+        start = 1;
         xAxisMax = frHeight;
         qcp->xAxis->setLabel("Y index");
     } else if (itype == HORIZONTAL_MEAN || itype == HORIZONTAL_CROSS) {
-        xAxisMax = frWidth;
+        xAxisMax = frWidth - 1;
         qcp->xAxis->setLabel("X index");
     }
     x = QVector<double>(xAxisMax);
     for (int i = 0; i < xAxisMax; i++)
         x[i] = double(i);
     y = QVector<double>(xAxisMax);
-    qcp->xAxis->setRange(QCPRange(0, xAxisMax));
+    qcp->xAxis->setRange(QCPRange(start, xAxisMax));
 
     qcp->addLayer("Box Layer", qcp->currentLayer());
     qcp->setCurrentLayer("Box Layer");
@@ -110,19 +112,18 @@ void profile_widget::handleNewFrame()
      * \author JP Ryan
      */
     float *local_image_ptr;
-    bool whichDim = itype == VERTICAL_CROSS || itype == VERTICAL_MEAN; // vertical profiles are true, horizontal profiles are false
     bool isMeanProfile = itype == VERTICAL_MEAN || itype == HORIZONTAL_MEAN;
     if (!this->isHidden() &&  fw->curFrame != NULL && ((fw->crosshair_x != -1 && fw->crosshair_y) || isMeanProfile)) {
         allow_callouts = true;
-        local_image_ptr = whichDim ? fw->curFrame->vertical_mean_profile : fw->curFrame->horizontal_mean_profile;
-        if (whichDim)
-            // vertical profiles
-            for (int r = 1; r < frHeight; r++)
+        if (itype == VERTICAL_CROSS || itype == VERTICAL_MEAN) {
+            local_image_ptr = fw->curFrame->vertical_mean_profile; // vertical profiles
+            for (int r = 1; r <= frHeight; r++)
                 y[r] = double(local_image_ptr[frHeight - r]);
-        else
-            // horizontal profiles
+        } else {
+            local_image_ptr = fw->curFrame->horizontal_mean_profile; // horizontal profiles
             for (int c = 0; c < frWidth; c++)
                 y[c] = double(local_image_ptr[c]);
+        }
         qcp->graph(0)->setData(x, y);
         qcp->replot();
         if (callout->visible())

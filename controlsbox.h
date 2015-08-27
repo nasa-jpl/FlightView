@@ -5,7 +5,6 @@
 #include <QButtonGroup>
 #include <QCheckBox>
 #include <QDialogButtonBox>
-#include <QErrorMessage>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QGridLayout>
@@ -13,6 +12,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QSlider>
 #include <QSpinBox>
@@ -44,8 +44,6 @@
  * updateFloor(int f), and any other widget specfic action within its case in tab_slot_changed(int index). The beginning of this function
  * specifies the behavior for when tabs are exited - all connections made must be disconnected.
 */
-
-enum save_err {IS_EMPTY, BAD_CHAR, FILE_EXISTS, NO_PATH, BAD_PERMISSIONS, NONE};
 
 class ControlsBox : public QGroupBox
 {
@@ -155,7 +153,6 @@ private slots:
     void stop_continous_button_slot();
     void updateSaveFrameNum_slot(unsigned int n);
     int validateFileName(const QString &name);
-    int handleError(save_err errorType, const QString &message = 0);
     /*! @} */
 
     /*! \addtogroup maskfunc Mask recording functions

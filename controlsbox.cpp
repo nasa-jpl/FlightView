@@ -500,70 +500,40 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
 }
 int ControlsBox::validateFileName(const QString &name)
 {
-    save_err errorCode = NONE;
-    QString message;
+    int result = QDialog::Accepted;
+
     // No filename
-    if (name.isEmpty()) {
-        errorCode = IS_EMPTY;
-    }
+    if (name.isEmpty())
+        result = QMessageBox::critical(this, "Frame Save Error", \
+                              tr("Filename is empty.\nPlease select a valid location to save data."), \
+                              QMessageBox::Cancel);
 
     // Characters
+    QString qs;
     for (const char *c = notAllowedChars; *c; c++) {
-        if (name.contains(QLatin1Char(*c))) {
-            const QChar qc = QLatin1Char(*c);
-            message = tr("Invalid character \"%1\" in file name.").arg(qc);
-            errorCode = BAD_CHAR;
-        }
+        if (name.contains(QLatin1Char(*c)))
+            qs.append(QLatin1Char(*c));
     }
+    if (!qs.isEmpty())
+        result = QMessageBox::critical(this, "Frame Save Error", \
+                                       tr("Invalid character(s) \"%1\" in file name.").arg(qs), \
+                              QMessageBox::Cancel);
 
     // Starts with slash
-    if (name.at(0) != '/') {
-        errorCode = NO_PATH;
-    }
+    if (name.at(0) != '/')
+        result = QMessageBox::critical(this, "Frame Save Error", \
+                              tr("File name does not specify a valid path.\nPlease include the path to the folder in which to save data."), \
+                              QMessageBox::Cancel);
 
     // File exists
     QFileInfo checkFile(name);
-    if (checkFile.exists() && checkFile.isFile() && checkForOverwrites) {
-        errorCode = FILE_EXISTS;
-    }
+    if (checkFile.exists() && checkFile.isFile() && checkForOverwrites)
+        result = QMessageBox::warning(this, "Frame Save Warning", \
+                             tr("File name already exists.\nOverwrite it?"), \
+                             QMessageBox::Save, QMessageBox::Cancel);
 
-    return handleError(errorCode, message);
+    return result;
 }
-int ControlsBox::handleError(save_err errorType, const QString &message)
-{
-    // Behold my lazy, hackish attempt at reimplementing the QDialog result codes
-    QErrorMessage *dialog = new QErrorMessage(this);
-    dialog->setAttribute(Qt::WA_DeleteOnClose);
-    dialog->setWindowTitle("Frame Save Error");
-    dialog->setModal(true);
-    switch (errorType) {
-    case IS_EMPTY:
-        dialog->showMessage(tr("Filename is empty.\nPlease select a valid location to save data."));
-        dialog->setResult(QDialog::Rejected);
-        break;
-    case BAD_CHAR:
-        dialog->showMessage(message);
-        dialog->setResult(QDialog::Rejected);
-        break;
-    case FILE_EXISTS:
-        dialog->showMessage("File name already exists.\nOverwrite it?");
-        dialog->setResult(QDialog::Accepted);
-        break;
-    case NO_PATH:
-        dialog->showMessage(tr("File name does not specify a valid path.\nPlease include the path to the folder in which to save data."));
-        dialog->setResult(QDialog::Rejected);
-        break;
-    case BAD_PERMISSIONS:
-       dialog->showMessage(tr("User does not have permission to access this folder.\nPlease select a different location to save data."));
-       dialog->setResult(QDialog::Rejected);
-        break;
-    default:
-        dialog->setResult(QDialog::Accepted);
-        break;
-    }
-    return dialog->result();
-}
-
 void ControlsBox::start_dark_collection_slot()
 { /*! \brief Begins recording dark frames in the backend
    *  \author JP Ryan
