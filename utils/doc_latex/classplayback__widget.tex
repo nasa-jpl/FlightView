@@ -1,0 +1,105 @@
+\hypertarget{classplayback__widget}{\section{playback\+\_\+widget Class Reference}
+\label{classplayback__widget}\index{playback\+\_\+widget@{playback\+\_\+widget}}
+}
+
+
+Inheritance diagram for playback\+\_\+widget\+:
+
+
+Collaboration diagram for playback\+\_\+widget\+:
+\subsection*{Public Slots}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{classplayback__widget_a8015df0d0df7cba593227506f2363454}{load\+D\+S\+F} (Q\+String f, unsigned int e, long o)
+\item 
+void \hyperlink{classplayback__widget_acc2446121a9253d0bf375535f5376b4f}{toggle\+Use\+D\+S\+F} (bool t)
+\item 
+void \hyperlink{group__plotfunc_gac31ae6a43fc74935f3464cc745ddd295}{color\+Map\+Scrolled\+Y} (const Q\+C\+P\+Range \&new\+Range)
+\item 
+void \hyperlink{group__plotfunc_gac8bc93f4d7ac6c29990147f901ce21f9}{color\+Map\+Scrolled\+X} (const Q\+C\+P\+Range \&new\+Range)
+\item 
+void \hyperlink{group__plotfunc_ga69e639dbe803f1a6ce375e6669c7299c}{update\+Ceiling} (int c)
+\item 
+void \hyperlink{group__plotfunc_ga4289b12c3b445a24b0c70a4d38f3eff4}{update\+Floor} (int f)
+\item 
+void \hyperlink{group__plotfunc_gabe98b74caa29f3d46d1061b87dd6490f}{rescale\+Range} ()
+\item 
+void \hyperlink{group__playback_ga29ce224165d692b1747805631445559d}{play\+Pause} ()
+\item 
+void \hyperlink{group__playback_gac7dc7d508c0369527e824690b855bedb}{stop} ()
+\item 
+void \hyperlink{group__playback_gae6c7dc764a8923173ba073a439e6c1d0}{move\+Forward} ()
+\item 
+void \hyperlink{group__playback_gaaac6b8a27b81f2d431840f8ffa8f7c72}{move\+Backward} ()
+\item 
+void \hyperlink{group__playback_gaef6f962616f5e88be9dd73d08201eee3}{fast\+Forward} ()
+\item 
+void \hyperlink{group__playback_ga852358db15af739882adc86c17383152}{fast\+Rewind} ()
+\end{DoxyCompactItemize}
+\subsection*{Signals}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classplayback__widget_aea2a79a747ca2a8690481ad9fbd30ad4}{void \hyperlink{classplayback__widget_aea2a79a747ca2a8690481ad9fbd30ad4}{frame\+Done} (int)}\label{classplayback__widget_aea2a79a747ca2a8690481ad9fbd30ad4}
+
+\begin{DoxyCompactList}\small\item\em This signal is emitted when a frame has finished rendering. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classplayback__widget_a2d182d191c21f8167357d78a473c19b7}{{\bfseries playback\+\_\+widget} (\hyperlink{classframeWorker}{frame\+Worker} $\ast$fw, Q\+Widget $\ast$parent=0)}\label{classplayback__widget_a2d182d191c21f8167357d78a473c19b7}
+
+\item 
+bool \hyperlink{group__getters_ga601167298dbe870b1f2e9591f9372a75}{is\+Playing} ()
+\item 
+double \hyperlink{group__getters_gab47096c65caf5ac4f58049350a7a8289}{get\+Ceiling} ()
+\item 
+double \hyperlink{group__getters_gaf9c55fffe8aebf0cfb7c00b33b1e1a04}{get\+Floor} ()
+\item 
+\hypertarget{classplayback__widget_ae40db438ff07e5b5462a2f33ce067674}{bool {\bfseries using\+D\+S\+F} ()}\label{classplayback__widget_ae40db438ff07e5b5462a2f33ce067674}
+
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classplayback__widget_a92eeaf4eac0a78442cafb7975ac796a3}{\hyperlink{classbuffer__handler}{buffer\+\_\+handler} $\ast$ {\bfseries bh}}\label{classplayback__widget_a92eeaf4eac0a78442cafb7975ac796a3}
+
+\item 
+\hypertarget{classplayback__widget_ab460aa8fe5d007b2964f39bd57e10c43}{const unsigned int {\bfseries slider\+\_\+max} = (1$<$$<$16) $\ast$ 1.\+1}\label{classplayback__widget_ab460aa8fe5d007b2964f39bd57e10c43}
+
+\item 
+\hypertarget{classplayback__widget_ae591005a7d541ed23def727d85701b8c}{bool {\bfseries slider\+\_\+low\+\_\+inc} = false}\label{classplayback__widget_ae591005a7d541ed23def727d85701b8c}
+
+\end{DoxyCompactItemize}
+\subsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classplayback__widget_a8be29439f7101a58c7ae78ef694592bf}{void {\bfseries drag\+Enter\+Event} (Q\+Drag\+Enter\+Event $\ast$event)}\label{classplayback__widget_a8be29439f7101a58c7ae78ef694592bf}
+
+\item 
+\hypertarget{classplayback__widget_ab7d7766f65aeb7755cae63a045bca861}{void {\bfseries drop\+Event} (Q\+Drop\+Event $\ast$event)}\label{classplayback__widget_ab7d7766f65aeb7755cae63a045bca861}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Member Function Documentation}
+\hypertarget{classplayback__widget_a8015df0d0df7cba593227506f2363454}{\index{playback\+\_\+widget@{playback\+\_\+widget}!load\+D\+S\+F@{load\+D\+S\+F}}
+\index{load\+D\+S\+F@{load\+D\+S\+F}!playback\+\_\+widget@{playback\+\_\+widget}}
+\subsubsection[{load\+D\+S\+F}]{\setlength{\rightskip}{0pt plus 5cm}void playback\+\_\+widget\+::load\+D\+S\+F (
+\begin{DoxyParamCaption}
+\item[{Q\+String}]{f, }
+\item[{unsigned int}]{e, }
+\item[{long}]{o}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classplayback__widget_a8015df0d0df7cba593227506f2363454}
+A function that shoots through information from \hyperlink{classControlsBox}{Controls\+Box} to \hyperlink{classbuffer__handler}{buffer\+\_\+handler} \hypertarget{classplayback__widget_acc2446121a9253d0bf375535f5376b4f}{\index{playback\+\_\+widget@{playback\+\_\+widget}!toggle\+Use\+D\+S\+F@{toggle\+Use\+D\+S\+F}}
+\index{toggle\+Use\+D\+S\+F@{toggle\+Use\+D\+S\+F}!playback\+\_\+widget@{playback\+\_\+widget}}
+\subsubsection[{toggle\+Use\+D\+S\+F}]{\setlength{\rightskip}{0pt plus 5cm}void playback\+\_\+widget\+::toggle\+Use\+D\+S\+F (
+\begin{DoxyParamCaption}
+\item[{bool}]{t}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classplayback__widget_acc2446121a9253d0bf375535f5376b4f}
+Toggles the use of the dark mask for the playback widget only 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{playback__widget_8h}{playback\+\_\+widget.\+h}\item 
+playback\+\_\+widget.\+cpp\end{DoxyCompactItemize}

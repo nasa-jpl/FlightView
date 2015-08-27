@@ -1,0 +1,34 @@
+\hypertarget{profile__widget_8h}{\section{profile\+\_\+widget.\+h File Reference}
+\label{profile__widget_8h}\index{profile\+\_\+widget.\+h@{profile\+\_\+widget.\+h}}
+}
+
+
+Widget which displays a line plot of two dimensions of image data.  
+
+
+{\ttfamily \#include $<$atomic$>$}\\*
+{\ttfamily \#include $<$Q\+Check\+Box$>$}\\*
+{\ttfamily \#include $<$Q\+Mutex$>$}\\*
+{\ttfamily \#include $<$Q\+Timer$>$}\\*
+{\ttfamily \#include $<$Q\+V\+Box\+Layout$>$}\\*
+{\ttfamily \#include $<$Q\+Widget$>$}\\*
+{\ttfamily \#include \char`\"{}qcustomplot.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}frame\+\_\+worker.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}image\+\_\+type.\+h\char`\"{}}\\*
+Include dependency graph for profile\+\_\+widget.\+h\+:
+This graph shows which files directly or indirectly include this file\+:
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classprofile__widget}{profile\+\_\+widget}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Widget which displays a line plot of two dimensions of image data. 
+
+\hyperlink{classprofile__widget}{profile\+\_\+widget} accepts processed mean data with adjustable parameters. That is, the user may select to view the mean of all rows across a specific column (vertical mean profile), or of all columns across a specific row (horizontal mean profile). Additionally, there is the option to have Vertical or Horizontal Crosshair Profiles which offer flexibility in the number of rows or columns to average. For example, a vertical crosshair profile centered at x = 300 would contain the image data for column 300 averaged with the data for any number of other columns up to the width of the frame. \begin{DoxyAuthor}{Author}
+J\+P Ryan 
+
+Noah Levy 
+\end{DoxyAuthor}

@@ -6,6 +6,7 @@
 
 /* Qt includes */
 #include <QCheckBox>
+#include <QMutex>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -54,6 +55,7 @@ class profile_widget : public QWidget
 
     QVector<double> x;
     QVector<double> y;
+    QMutex y_mutex;
 
     int x_coord;
     volatile int y_coord;
@@ -61,6 +63,7 @@ class profile_widget : public QWidget
 
 public:
     explicit profile_widget(frameWorker *fw, image_t image_type , QWidget *parent = 0);
+    virtual ~profile_widget();
 
     /*! \addtogroup getters
      * @{ */

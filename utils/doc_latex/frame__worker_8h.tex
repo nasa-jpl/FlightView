@@ -1,0 +1,37 @@
+\hypertarget{frame__worker_8h}{\section{frame\+\_\+worker.\+h File Reference}
+\label{frame__worker_8h}\index{frame\+\_\+worker.\+h@{frame\+\_\+worker.\+h}}
+}
+
+
+Communicates with the backend and connects public information between widgets.  
+
+
+{\ttfamily \#include $<$Q\+Object$>$}\\*
+{\ttfamily \#include $<$Q\+Mutex$>$}\\*
+{\ttfamily \#include $<$Q\+Shared\+Pointer$>$}\\*
+{\ttfamily \#include $<$Q\+Thread$>$}\\*
+{\ttfamily \#include $<$Q\+Time$>$}\\*
+{\ttfamily \#include $<$Q\+Vector$>$}\\*
+{\ttfamily \#include $<$memory$>$}\\*
+{\ttfamily \#include \char`\"{}take\+\_\+object.\+hpp\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}frame\+\_\+c\+\_\+meta.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}image\+\_\+type.\+h\char`\"{}}\\*
+Include dependency graph for frame\+\_\+worker.\+h\+:
+This graph shows which files directly or indirectly include this file\+:
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classframeWorker}{frame\+Worker}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Communicates with the backend and connects public information between widgets. 
+
+The fram\+Worker class contains backend and analysis information that must be shared between classes in the G\+U\+I. Structurally, \hyperlink{classframeWorker}{frame\+Worker} is a worker object tied to a Q\+Thread started in main. The main event loop in this object may therefore be considered the function handle\+New\+Frame() which periodically grabs a frame from the backend and checks for asynchronous signals from the filters about the status of the data processing. A frame may still be displayed even if analysis functions associated with it time out for the loop. In general, the \hyperlink{classframeWorker}{frame\+Worker} is the only object with a copy of the take\+\_\+object and should exclusively handle communication with cuda\+\_\+take.
+
+\begin{DoxyAuthor}{Author}
+Noah Levy 
+
+J\+P Ryan 
+\end{DoxyAuthor}

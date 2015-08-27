@@ -1,0 +1,42 @@
+\hypertarget{classpreferenceWindow}{\section{preference\+Window Class Reference}
+\label{classpreferenceWindow}\index{preference\+Window@{preference\+Window}}
+}
+
+
+Inheritance diagram for preference\+Window\+:
+
+
+Collaboration diagram for preference\+Window\+:
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classpreferenceWindow_a5dbebb67611b560f199b1a01dec147a1}{preference\+Window} (\hyperlink{classframeWorker}{frame\+Worker} $\ast$fw, Q\+Tab\+Widget $\ast$qtw, Q\+Widget $\ast$parent=0)
+\end{DoxyCompactItemize}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classpreferenceWindow_a5dbebb67611b560f199b1a01dec147a1}{\index{preference\+Window@{preference\+Window}!preference\+Window@{preference\+Window}}
+\index{preference\+Window@{preference\+Window}!preference\+Window@{preference\+Window}}
+\subsubsection[{preference\+Window}]{\setlength{\rightskip}{0pt plus 5cm}preference\+Window\+::preference\+Window (
+\begin{DoxyParamCaption}
+\item[{{\bf frame\+Worker} $\ast$}]{fw, }
+\item[{Q\+Tab\+Widget $\ast$}]{qtw, }
+\item[{Q\+Widget $\ast$}]{parent = {\ttfamily 0}}
+\end{DoxyParamCaption}
+)}}\label{classpreferenceWindow_a5dbebb67611b560f199b1a01dec147a1}
+Generates the \hyperlink{classpreferenceWindow}{preference\+Window} layout and tabs. 
+
+We need a copy of the Q\+Tab\+Widget from the main window so that we can determine the current view window. Certain hardware controls are only applicable to certain tabs in the main application and may cause issues if activated in the wrong tab. 
+\begin{DoxyParams}{Parameters}
+{\em qtw} & Used to create pointers to the current viewing widget. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyAuthor}{Author}
+J\+P Ryan
+\end{DoxyAuthor}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{pref__window_8h}{pref\+\_\+window.\+h}\item 
+pref\+\_\+window.\+cpp\end{DoxyCompactItemize}

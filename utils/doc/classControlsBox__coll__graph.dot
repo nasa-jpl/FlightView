@@ -1,0 +1,36 @@
+digraph "ControlsBox"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="ControlsBox",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="QGroupBox",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node3 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" p_playback" ,fontname="Helvetica"];
+  Node3 [label="playback_widget",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classplayback__widget.html"];
+  Node4 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="QWidget",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node5 -> Node3 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" bh" ,fontname="Helvetica"];
+  Node5 [label="buffer_handler",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classbuffer__handler.html"];
+  Node6 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="QObject",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node7 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" p_histogram" ,fontname="Helvetica"];
+  Node7 [label="histogram_widget",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classhistogram__widget.html"];
+  Node4 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" fw" ,fontname="Helvetica"];
+  Node8 [label="frameWorker",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classframeWorker.html"];
+  Node6 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" p_frameview" ,fontname="Helvetica"];
+  Node9 [label="frameview_widget",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classframeview__widget.html"];
+  Node4 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" prefWindow" ,fontname="Helvetica"];
+  Node10 [label="preferenceWindow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classpreferenceWindow.html"];
+  Node4 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" p_profile" ,fontname="Helvetica"];
+  Node11 [label="profile_widget",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classprofile__widget.html"];
+  Node4 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" p_fft" ,fontname="Helvetica"];
+  Node12 [label="fft_widget",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classfft__widget.html"];
+  Node4 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 -> Node12 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" fw" ,fontname="Helvetica"];
+}

@@ -1,0 +1,34 @@
+\hypertarget{pref__window_8h}{\section{pref\+\_\+window.\+h File Reference}
+\label{pref__window_8h}\index{pref\+\_\+window.\+h@{pref\+\_\+window.\+h}}
+}
+
+
+Adjusts hardware settings in the backend.  
+
+
+{\ttfamily \#include $<$Q\+Widget$>$}\\*
+{\ttfamily \#include $<$Q\+Label$>$}\\*
+{\ttfamily \#include $<$Q\+Push\+Button$>$}\\*
+{\ttfamily \#include $<$Q\+Check\+Box$>$}\\*
+{\ttfamily \#include $<$Q\+Radio\+Button$>$}\\*
+{\ttfamily \#include $<$Q\+Line\+Edit$>$}\\*
+{\ttfamily \#include $<$Q\+File\+Dialog$>$}\\*
+{\ttfamily \#include $<$Q\+Tab\+Widget$>$}\\*
+{\ttfamily \#include \char`\"{}frame\+\_\+worker.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}profile\+\_\+widget.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}fft\+\_\+widget.\+h\char`\"{}}\\*
+Include dependency graph for pref\+\_\+window.\+h\+:
+This graph shows which files directly or indirectly include this file\+:
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classpreferenceWindow}{preference\+Window}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Adjusts hardware settings in the backend. 
+
+The \hyperlink{classpreferenceWindow}{preference\+Window} offers control over the hardware conditions of the current camera. Many of the command options in this window directly affect the raw data as it is received at the back end. Parallel Pixel Remapping may be turned on or off for cameras with 6604\+B geometry (1280x480 resolution). On other cameras, this option is disabled. Options for 14-\/ and 16-\/bit bright-\/dark swapping are also included. All data arriving on the data bus will be inverted by the specified factor. As a sanity check, the expected data range is displayed above this option. The assumed camera type and geometry are listed at the top of the window. Additionally, the first or last row data in the raw image may be excluded from the image. This option only applies to linear profiles. Log files are not currently an implemented feature. \begin{DoxyAuthor}{Author}
+J\+P Ryan 
+\end{DoxyAuthor}

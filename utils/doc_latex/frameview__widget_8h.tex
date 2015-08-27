@@ -1,0 +1,37 @@
+\hypertarget{frameview__widget_8h}{\section{frameview\+\_\+widget.\+h File Reference}
+\label{frameview__widget_8h}\index{frameview\+\_\+widget.\+h@{frameview\+\_\+widget.\+h}}
+}
+
+
+Widget which plots live color maps of image data.  
+
+
+{\ttfamily \#include $<$Q\+Widget$>$}\\*
+{\ttfamily \#include $<$Q\+Thread$>$}\\*
+{\ttfamily \#include $<$Q\+Image$>$}\\*
+{\ttfamily \#include $<$Q\+Grid\+Layout$>$}\\*
+{\ttfamily \#include $<$Q\+Check\+Box$>$}\\*
+{\ttfamily \#include $<$Q\+Label$>$}\\*
+{\ttfamily \#include $<$Q\+Timer$>$}\\*
+{\ttfamily \#include $<$Q\+Push\+Button$>$}\\*
+{\ttfamily \#include $<$Q\+Mutex$>$}\\*
+{\ttfamily \#include $<$atomic$>$}\\*
+{\ttfamily \#include \char`\"{}frame\+\_\+c\+\_\+meta.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}frame\+\_\+worker.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}image\+\_\+type.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}qcustomplot.\+h\char`\"{}}\\*
+Include dependency graph for frameview\+\_\+widget.\+h\+:
+This graph shows which files directly or indirectly include this file\+:
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classframeview__widget}{frameview\+\_\+widget}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Widget which plots live color maps of image data. 
+
+The \hyperlink{classframeview__widget}{frameview\+\_\+widget} is the first view which is displayed on opening Live View. There are three main image types which are categorized as frameviews. The \char`\"{}\+Live View\char`\"{} is considered a B\+A\+S\+E image. This is the image\+\_\+data\+\_\+ptr array of the frame\+\_\+c data structure. The D\+S\+F image type is contains dark subtracted data if a mask has been collected. Otherwise it displays zero. Both B\+A\+S\+E and D\+S\+F image types accept mouse events as a method for selecting the crosshair. The S\+T\+D\+\_\+\+D\+E\+V image type displays the standard deviation calculation from cuda\+\_\+take. 
+
+When constructing a copy of this widget, you must select one of the above three members of the image\+\_\+t enum. 

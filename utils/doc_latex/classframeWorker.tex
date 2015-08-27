@@ -1,0 +1,328 @@
+\hypertarget{classframeWorker}{\section{frame\+Worker Class Reference}
+\label{classframeWorker}\index{frame\+Worker@{frame\+Worker}}
+}
+
+
+Inheritance diagram for frame\+Worker\+:
+
+
+Collaboration diagram for frame\+Worker\+:
+\subsection*{Public Slots}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{group__renderfunc_gadba11cf8b60c455d857f8400fee7ca7d}{capture\+Frames} ()
+\item 
+void \hyperlink{group__maskfunc_ga491bd33995f96dc7ba226385af68fcde}{start\+Capturing\+D\+S\+F\+Mask} ()
+\item 
+void \hyperlink{group__maskfunc_gabb47faca8ced962d58dd3e155944405c}{finish\+Capturing\+D\+S\+F\+Mask} ()
+\item 
+void \hyperlink{group__maskfunc_ga0c60552b1b0aedbfd7091ce71a16c718}{toggle\+Use\+D\+S\+F} (bool t)
+\item 
+void \hyperlink{group__savingfunc_ga3b93022717727f137956e74db96090b2}{start\+Saving\+Raw\+Data} (unsigned int framenum, Q\+String verified\+Name)
+\item 
+void \hyperlink{group__savingfunc_ga0bc169f3c9b7144eca0409d78a8698fa}{stop\+Saving\+Raw\+Data} ()
+\item 
+void \hyperlink{classframeWorker_a47846c824a232e83fb14b5619957bcba}{skip\+First\+Row} (bool skip)
+\item 
+void \hyperlink{classframeWorker_abe9de2a81eb692d11998f60e4058f5b8}{skip\+Last\+Row} (bool skip)
+\item 
+void \hyperlink{classframeWorker_ae69ad875e1383b1bdde2b27dea185c2e}{update\+Mean\+Range} (int lines\+To\+Average, image\+\_\+t profile)
+\item 
+\hypertarget{classframeWorker_a3f4a350d514984941f05944339a46086}{void {\bfseries update\+\_\+\+F\+F\+T\+\_\+range} (F\+F\+T\+\_\+t type, int tap\+Num=0)}\label{classframeWorker_a3f4a350d514984941f05944339a46086}
+
+\item 
+\hypertarget{classframeWorker_ad58eb08aa59eca1231032df8e8fccb78}{void {\bfseries tap\+Prf\+Changed} (int tap\+Num)}\label{classframeWorker_ad58eb08aa59eca1231032df8e8fccb78}
+
+\item 
+void \hyperlink{classframeWorker_ab337c05c334bc311d3d7300dc64c59d2}{set\+Crosshair\+Backend} (int pos\+\_\+x, int pos\+\_\+y)
+\item 
+void \hyperlink{classframeWorker_a708fee8143c541114a5e1c2ccda83887}{update\+Cross\+Diplay} (bool checked)
+\item 
+void \hyperlink{classframeWorker_a65002170252d83e9ba5fb80979f1501c}{set\+Std\+Dev\+\_\+\+N} (int new\+N)
+\item 
+void \hyperlink{classframeWorker_af344ae781877ed9744a9c71223f3b9a9}{stop} ()
+\end{DoxyCompactItemize}
+\subsection*{Signals}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classframeWorker_af999825f30430a102aa1c50d739e7f59}{void \hyperlink{classframeWorker_af999825f30430a102aa1c50d739e7f59}{update\+F\+P\+S} ()}\label{classframeWorker_af999825f30430a102aa1c50d739e7f59}
+
+\begin{DoxyCompactList}\small\item\em Calls to update the value of the backend F\+P\+S label. \end{DoxyCompactList}\item 
+void \hyperlink{classframeWorker_aadb9de42063c57313039892dcf07bbb0}{new\+Frame\+Available} ()
+\begin{DoxyCompactList}\small\item\em Calls to render a new frame at the frontend. \end{DoxyCompactList}\item 
+void \hyperlink{classframeWorker_a91f559364b595696d947ecb5934676a1}{saving\+Frame\+Num\+Changed} (unsigned int n)
+\begin{DoxyCompactList}\small\item\em Calls to update the value of the Frames to Save label. \end{DoxyCompactList}\item 
+void \hyperlink{classframeWorker_a056281a50b738f9ae8ca27db60cdc5e7}{finished} ()
+\begin{DoxyCompactList}\small\item\em Calls to skip the first row of profile data. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classframeWorker_ad49e6fa82d24435f7276915760166c5e}{frame\+Worker} (Q\+Object $\ast$parent=0)
+\item 
+camera\+\_\+t \hyperlink{classframeWorker_a0f693e8095e3762ec668333cd21196b9}{camera\+\_\+type} ()
+\item 
+unsigned int \hyperlink{classframeWorker_ad58cd846bf92a4a7314ed2623ffc2795}{get\+Frame\+Height} ()
+\item 
+unsigned int \hyperlink{classframeWorker_ae24f12f19234487e1c0ab0df1c3b39f0}{get\+Data\+Height} ()
+\item 
+unsigned int \hyperlink{classframeWorker_abf23aee1d3247658063f18fb8a72f4be}{get\+Frame\+Width} ()
+\item 
+bool \hyperlink{classframeWorker_a1291aade7043f70655e0b364e3c7c948}{dsf\+Mask\+Collected} ()
+\item 
+bool \hyperlink{classframeWorker_a9ca4f22277326f54df18f815356b0456}{using\+D\+S\+F} ()
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classframeWorker_aa2c60d0df60e344c1c3dd4693eb66715}{take\+\_\+object {\bfseries to}}\label{classframeWorker_aa2c60d0df60e344c1c3dd4693eb66715}
+
+\item 
+\hypertarget{classframeWorker_a55a43cc86cdfc2601d44733da8933f79}{frame\+\_\+c $\ast$ {\bfseries cur\+Frame} = N\+U\+L\+L}\label{classframeWorker_a55a43cc86cdfc2601d44733da8933f79}
+
+\item 
+\hypertarget{classframeWorker_ae46583be000ff6bd27fc4f4c4e8f6c9f}{frame\+\_\+c $\ast$ {\bfseries std\+\_\+dev\+\_\+frame} = N\+U\+L\+L}\label{classframeWorker_ae46583be000ff6bd27fc4f4c4e8f6c9f}
+
+\item 
+\hypertarget{classframeWorker_a291ee09bf02801c1f674c6d6a9970f93}{float {\bfseries delta}}\label{classframeWorker_a291ee09bf02801c1f674c6d6a9970f93}
+
+\item 
+\hypertarget{classframeWorker_a2fc4d1db515db48254318515e1540684}{bool {\bfseries display\+Cross} = true}\label{classframeWorker_a2fc4d1db515db48254318515e1540684}
+
+\item 
+\hypertarget{classframeWorker_ae376617e4851cae905a083ec7ac69317}{int {\bfseries horiz\+Lines\+Avgd} = -\/1}\label{classframeWorker_ae376617e4851cae905a083ec7ac69317}
+
+\item 
+\hypertarget{classframeWorker_ab0df53a41f956371904c774036e7891d}{int {\bfseries vert\+Lines\+Avgd} = -\/1}\label{classframeWorker_ab0df53a41f956371904c774036e7891d}
+
+\item 
+\hypertarget{classframeWorker_a7d3eeeef72727f9081183a96e3dcce88}{int {\bfseries crosshair\+\_\+x} = -\/1}\label{classframeWorker_a7d3eeeef72727f9081183a96e3dcce88}
+
+\item 
+\hypertarget{classframeWorker_acac9bced4d63764a75d0c5ee76e08704}{int {\bfseries crosshair\+\_\+y} = -\/1}\label{classframeWorker_acac9bced4d63764a75d0c5ee76e08704}
+
+\item 
+\hypertarget{classframeWorker_ab406fcd100750775d51c1f276503db2c}{int {\bfseries cross\+Start\+Row} = -\/1}\label{classframeWorker_ab406fcd100750775d51c1f276503db2c}
+
+\item 
+\hypertarget{classframeWorker_ac79bb874fd756f7f3468ec334e16ec45}{int {\bfseries cross\+Height} = -\/1}\label{classframeWorker_ac79bb874fd756f7f3468ec334e16ec45}
+
+\item 
+\hypertarget{classframeWorker_a1a3f18cb3f85ac9b344c8bd88b62d02d}{int {\bfseries cross\+Start\+Col} = -\/1}\label{classframeWorker_a1a3f18cb3f85ac9b344c8bd88b62d02d}
+
+\item 
+\hypertarget{classframeWorker_a380ecaa28555e84ae38cb98dcf7bb996}{int {\bfseries cross\+Width} = -\/1}\label{classframeWorker_a380ecaa28555e84ae38cb98dcf7bb996}
+
+\item 
+\hypertarget{classframeWorker_ad6dd5377f532e67f46462dc7838fba7e}{bool {\bfseries is\+Skipping\+First} = false}\label{classframeWorker_ad6dd5377f532e67f46462dc7838fba7e}
+
+\item 
+\hypertarget{classframeWorker_a0c4353680e465b70dac3e5894f241413}{bool {\bfseries is\+Skipping\+Last} = false}\label{classframeWorker_a0c4353680e465b70dac3e5894f241413}
+
+\item 
+int \hyperlink{classframeWorker_ae67eb4482896935784cc9c0f8cc03537}{base\+\_\+ceiling}
+\end{DoxyCompactItemize}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classframeWorker_ad49e6fa82d24435f7276915760166c5e}{\index{frame\+Worker@{frame\+Worker}!frame\+Worker@{frame\+Worker}}
+\index{frame\+Worker@{frame\+Worker}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{frame\+Worker}]{\setlength{\rightskip}{0pt plus 5cm}frame\+Worker\+::frame\+Worker (
+\begin{DoxyParamCaption}
+\item[{Q\+Object $\ast$}]{parent = {\ttfamily 0}}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [explicit]}}}\label{classframeWorker_ad49e6fa82d24435f7276915760166c5e}
+Launches cuda\+\_\+take using the take\+\_\+object. 
+
+Determines the default ceiling to use based on the camera type (14-\/bit or 16-\/bit systems) \begin{DoxyAuthor}{Author}
+J\+P Ryan 
+
+Noah Levy
+\end{DoxyAuthor}
+
+
+\subsection{Member Function Documentation}
+\hypertarget{classframeWorker_a0f693e8095e3762ec668333cd21196b9}{\index{frame\+Worker@{frame\+Worker}!camera\+\_\+type@{camera\+\_\+type}}
+\index{camera\+\_\+type@{camera\+\_\+type}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{camera\+\_\+type}]{\setlength{\rightskip}{0pt plus 5cm}camera\+\_\+t frame\+Worker\+::camera\+\_\+type (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classframeWorker_a0f693e8095e3762ec668333cd21196b9}
+Returns the value of the camera\+\_\+type enum for the current hardware. \hypertarget{classframeWorker_a1291aade7043f70655e0b364e3c7c948}{\index{frame\+Worker@{frame\+Worker}!dsf\+Mask\+Collected@{dsf\+Mask\+Collected}}
+\index{dsf\+Mask\+Collected@{dsf\+Mask\+Collected}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{dsf\+Mask\+Collected}]{\setlength{\rightskip}{0pt plus 5cm}bool frame\+Worker\+::dsf\+Mask\+Collected (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classframeWorker_a1291aade7043f70655e0b364e3c7c948}
+Returns whether or not a dark mask is loaded into cuda\+\_\+take. \hypertarget{classframeWorker_a056281a50b738f9ae8ca27db60cdc5e7}{\index{frame\+Worker@{frame\+Worker}!finished@{finished}}
+\index{finished@{finished}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{finished}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::finished (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [signal]}}}\label{classframeWorker_a056281a50b738f9ae8ca27db60cdc5e7}
+
+
+Calls to skip the first row of profile data. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em skip} & Whether or not to skip the row.\\
+\hline
+\end{DoxyParams}
+Calls to skip the last row of profile data. 
+\begin{DoxyParams}{Parameters}
+{\em skip} & Whether or not to skip the last row.\\
+\hline
+\end{DoxyParams}
+Closes the class event loop and calls to deallocate the worker\+Thread. \hypertarget{classframeWorker_ae24f12f19234487e1c0ab0df1c3b39f0}{\index{frame\+Worker@{frame\+Worker}!get\+Data\+Height@{get\+Data\+Height}}
+\index{get\+Data\+Height@{get\+Data\+Height}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{get\+Data\+Height}]{\setlength{\rightskip}{0pt plus 5cm}unsigned int frame\+Worker\+::get\+Data\+Height (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classframeWorker_ae24f12f19234487e1c0ab0df1c3b39f0}
+Reutrns the value of the number of rows of raw data as an unsigned int (including any metadata) \hypertarget{classframeWorker_ad58cd846bf92a4a7314ed2623ffc2795}{\index{frame\+Worker@{frame\+Worker}!get\+Frame\+Height@{get\+Frame\+Height}}
+\index{get\+Frame\+Height@{get\+Frame\+Height}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{get\+Frame\+Height}]{\setlength{\rightskip}{0pt plus 5cm}unsigned int frame\+Worker\+::get\+Frame\+Height (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classframeWorker_ad58cd846bf92a4a7314ed2623ffc2795}
+Returns the value of the frame height dimension as an unsigned int (480 for most geometries) \hypertarget{classframeWorker_abf23aee1d3247658063f18fb8a72f4be}{\index{frame\+Worker@{frame\+Worker}!get\+Frame\+Width@{get\+Frame\+Width}}
+\index{get\+Frame\+Width@{get\+Frame\+Width}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{get\+Frame\+Width}]{\setlength{\rightskip}{0pt plus 5cm}unsigned int frame\+Worker\+::get\+Frame\+Width (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classframeWorker_abf23aee1d3247658063f18fb8a72f4be}
+Returns the number of columns as an unsigned int \hypertarget{classframeWorker_aadb9de42063c57313039892dcf07bbb0}{\index{frame\+Worker@{frame\+Worker}!new\+Frame\+Available@{new\+Frame\+Available}}
+\index{new\+Frame\+Available@{new\+Frame\+Available}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{new\+Frame\+Available}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::new\+Frame\+Available (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [signal]}}}\label{classframeWorker_aadb9de42063c57313039892dcf07bbb0}
+
+
+Calls to render a new frame at the frontend. 
+
+\begin{DoxyRefDesc}{Deprecated}
+\item[\hyperlink{deprecated__deprecated000001}{Deprecated}]This signal may be deprecated in future versions. It is connected to the rendering slot in \hyperlink{classframeview__widget}{frameview\+\_\+widget}, but not emitted. \end{DoxyRefDesc}
+\hypertarget{classframeWorker_a91f559364b595696d947ecb5934676a1}{\index{frame\+Worker@{frame\+Worker}!saving\+Frame\+Num\+Changed@{saving\+Frame\+Num\+Changed}}
+\index{saving\+Frame\+Num\+Changed@{saving\+Frame\+Num\+Changed}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{saving\+Frame\+Num\+Changed}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::saving\+Frame\+Num\+Changed (
+\begin{DoxyParamCaption}
+\item[{unsigned int}]{n}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [signal]}}}\label{classframeWorker_a91f559364b595696d947ecb5934676a1}
+
+
+Calls to update the value of the Frames to Save label. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em n} & New number of frames left to save \\
+\hline
+\end{DoxyParams}
+\hypertarget{classframeWorker_ab337c05c334bc311d3d7300dc64c59d2}{\index{frame\+Worker@{frame\+Worker}!set\+Crosshair\+Backend@{set\+Crosshair\+Backend}}
+\index{set\+Crosshair\+Backend@{set\+Crosshair\+Backend}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{set\+Crosshair\+Backend}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::set\+Crosshair\+Backend (
+\begin{DoxyParamCaption}
+\item[{int}]{pos\+\_\+x, }
+\item[{int}]{pos\+\_\+y}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classframeWorker_ab337c05c334bc311d3d7300dc64c59d2}
+Determines the range of values to render when a new crosshair is selected. 
+\begin{DoxyParams}{Parameters}
+{\em pos\+\_\+x} & The x position of the crosshair. \\
+\hline
+{\em pos\+\_\+y} & The y position of the crosshair. The crosshair must be within the bounds of the image. It must also only transmit its value when a new crosshair is selected, and only when it is on the screen (not equal to -\/1). The cross range must not display when there are not multiple lines to average. The range must also account for whether or not the option to skip the first or last row has been selected. Ranges will adjust automatically at the edge of the frame to preserve the same number of lines to average.\\
+\hline
+\end{DoxyParams}
+\hypertarget{classframeWorker_a65002170252d83e9ba5fb80979f1501c}{\index{frame\+Worker@{frame\+Worker}!set\+Std\+Dev\+\_\+\+N@{set\+Std\+Dev\+\_\+\+N}}
+\index{set\+Std\+Dev\+\_\+\+N@{set\+Std\+Dev\+\_\+\+N}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{set\+Std\+Dev\+\_\+\+N}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::set\+Std\+Dev\+\_\+\+N (
+\begin{DoxyParamCaption}
+\item[{int}]{new\+N}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classframeWorker_a65002170252d83e9ba5fb80979f1501c}
+Communicates changes in the standard deviation boxcar length to cuda\+\_\+take. 
+\begin{DoxyParams}{Parameters}
+{\em new\+N} & Value from the Std. Dev. N slider \\
+\hline
+\end{DoxyParams}
+\hypertarget{classframeWorker_a47846c824a232e83fb14b5619957bcba}{\index{frame\+Worker@{frame\+Worker}!skip\+First\+Row@{skip\+First\+Row}}
+\index{skip\+First\+Row@{skip\+First\+Row}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{skip\+First\+Row}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::skip\+First\+Row (
+\begin{DoxyParamCaption}
+\item[{bool}]{skip}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classframeWorker_a47846c824a232e83fb14b5619957bcba}
+Selects whether or not to skip the last row for profiles. 
+\begin{DoxyParams}{Parameters}
+{\em checked} & True skips the first row, false uses it. Using the first row or not means to include it in the range of the mean profile at the backend. If the first row of the image contains metadata, it may throw off the average of a horizontal profile if included.\\
+\hline
+\end{DoxyParams}
+\hypertarget{classframeWorker_abe9de2a81eb692d11998f60e4058f5b8}{\index{frame\+Worker@{frame\+Worker}!skip\+Last\+Row@{skip\+Last\+Row}}
+\index{skip\+Last\+Row@{skip\+Last\+Row}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{skip\+Last\+Row}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::skip\+Last\+Row (
+\begin{DoxyParamCaption}
+\item[{bool}]{skip}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classframeWorker_abe9de2a81eb692d11998f60e4058f5b8}
+Selects whether or not to skip the last row for profiles. 
+\begin{DoxyParams}{Parameters}
+{\em checked} & True skips the last row, false uses it. Using the last row or not means to include it in the range of the mean profile at the backend. If the last row of the image contains metadata, it may throw off the average of a horizontal profile if included.\\
+\hline
+\end{DoxyParams}
+\hypertarget{classframeWorker_af344ae781877ed9744a9c71223f3b9a9}{\index{frame\+Worker@{frame\+Worker}!stop@{stop}}
+\index{stop@{stop}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{stop}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::stop (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classframeWorker_af344ae781877ed9744a9c71223f3b9a9}
+Ends the event loop and sets up the worker\+Thread to be deallocated later. \hypertarget{classframeWorker_a708fee8143c541114a5e1c2ccda83887}{\index{frame\+Worker@{frame\+Worker}!update\+Cross\+Diplay@{update\+Cross\+Diplay}}
+\index{update\+Cross\+Diplay@{update\+Cross\+Diplay}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{update\+Cross\+Diplay}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::update\+Cross\+Diplay (
+\begin{DoxyParamCaption}
+\item[{bool}]{checked}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classframeWorker_a708fee8143c541114a5e1c2ccda83887}
+Communicates whether or not to display the crosshair on the frame to all frameviews. \hypertarget{classframeWorker_ae69ad875e1383b1bdde2b27dea185c2e}{\index{frame\+Worker@{frame\+Worker}!update\+Mean\+Range@{update\+Mean\+Range}}
+\index{update\+Mean\+Range@{update\+Mean\+Range}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{update\+Mean\+Range}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::update\+Mean\+Range (
+\begin{DoxyParamCaption}
+\item[{int}]{lines\+To\+Average, }
+\item[{image\+\_\+t}]{profile}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classframeWorker_ae69ad875e1383b1bdde2b27dea185c2e}
+Communicates the range of coordinates to average in the backend. 
+\begin{DoxyParams}{Parameters}
+{\em lines\+To\+Average} & Number of rows or columns to average in the backend. The lines\+To\+Average parameter is used to determine the start and end coordinates for the mean filter at the backend. The initial conditions are set to average the entire image, then are adjusted based on the image type and the location of the crosshair. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyAuthor}{Author}
+J\+P Ryan
+\end{DoxyAuthor}
+\hypertarget{classframeWorker_a9ca4f22277326f54df18f815356b0456}{\index{frame\+Worker@{frame\+Worker}!using\+D\+S\+F@{using\+D\+S\+F}}
+\index{using\+D\+S\+F@{using\+D\+S\+F}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{using\+D\+S\+F}]{\setlength{\rightskip}{0pt plus 5cm}bool frame\+Worker\+::using\+D\+S\+F (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classframeWorker_a9ca4f22277326f54df18f815356b0456}
+Returns whether or not the dark subtraction filter is being used. 
+
+\subsection{Member Data Documentation}
+\hypertarget{classframeWorker_ae67eb4482896935784cc9c0f8cc03537}{\index{frame\+Worker@{frame\+Worker}!base\+\_\+ceiling@{base\+\_\+ceiling}}
+\index{base\+\_\+ceiling@{base\+\_\+ceiling}!frame\+Worker@{frame\+Worker}}
+\subsubsection[{base\+\_\+ceiling}]{\setlength{\rightskip}{0pt plus 5cm}int frame\+Worker\+::base\+\_\+ceiling}}\label{classframeWorker_ae67eb4482896935784cc9c0f8cc03537}
+Determines the default ceiling for all raw data based widgets based on the camera\+\_\+t 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{frame__worker_8h}{frame\+\_\+worker.\+h}\item 
+frame\+\_\+worker.\+cpp\end{DoxyCompactItemize}

@@ -1,0 +1,43 @@
+\hypertarget{fft__widget_8h}{\section{fft\+\_\+widget.\+h File Reference}
+\label{fft__widget_8h}\index{fft\+\_\+widget.\+h@{fft\+\_\+widget.\+h}}
+}
+
+
+Plots a bar graph of the F\+F\+T of a time series.  
+
+
+{\ttfamily \#include $<$Q\+Shared\+Pointer$>$}\\*
+{\ttfamily \#include $<$Q\+Widget$>$}\\*
+{\ttfamily \#include $<$Q\+Grid\+Layout$>$}\\*
+{\ttfamily \#include $<$Q\+Check\+Box$>$}\\*
+{\ttfamily \#include $<$Q\+Radio\+Button$>$}\\*
+{\ttfamily \#include $<$Q\+Spin\+Box$>$}\\*
+{\ttfamily \#include $<$Q\+Timer$>$}\\*
+{\ttfamily \#include \char`\"{}qcustomplot.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}frame\+\_\+worker.\+h\char`\"{}}\\*
+Include dependency graph for fft\+\_\+widget.\+h\+:
+This graph shows which files directly or indirectly include this file\+:
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classfft__widget}{fft\+\_\+widget}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Plots a bar graph of the F\+F\+T of a time series. 
+
+The F\+F\+T Widget displays the Fourier Transform of three different types of data in a bar graph format. There are three sampling types which may be selected using the buttons underneath the plot. From the cuda\+\_\+take documentation, here are the three different types of time series input by cuda\+\_\+take\+: 
+
+
+\begin{DoxyEnumerate}
+\item Frame Mean (Frame Rate sampling) -\/ the average of all pixels in one frame is determined and used as a single value in the series. Thus, all the frame means combine to make a series with a length of 1500 frames in time.
+\item Vertical Crosshair Profile (Row Clock sampling) -\/ The vertical profile contains the data for all pixels in one column. This vertical profile is used as the time series input and the F\+F\+T is calculated each frame. Therefore, the image data is being sampled at the rate that rows of data are sent along the data bus, which is approximately 48 k\+Hz (Pixel Clock / Number of Rows)
+\item Tap Profile (Pixel Clock sampling) -\/ All the pixels in a tap with dimensions 160cols x 480 rows is concatenated into a time series which is input to the F\+F\+T. This enables detection of periodic signals at the pixel level. The sampling rate is equal to the pixel clock, which usually runs at 10\+M\+Hz. If this value is changed at the hardware level, the value of the pixel clock must be re-\/entered, and the program recompiled. (jk -\/ I think this depends on resolution) 
+\end{DoxyEnumerate}
+
+In vertical crosshair F\+F\+Ts, the number of columns to be binned may be selected using the slider in the controls box. In the tap profile, the tap that is being sampled may be selected using the numbered display next to the button. \begin{DoxyAuthor}{Author}
+J\+P Ryan 
+
+Noah Levy 
+\end{DoxyAuthor}

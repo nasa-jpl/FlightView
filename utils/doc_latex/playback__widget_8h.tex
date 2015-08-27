@@ -1,0 +1,53 @@
+\hypertarget{playback__widget_8h}{\section{playback\+\_\+widget.\+h File Reference}
+\label{playback__widget_8h}\index{playback\+\_\+widget.\+h@{playback\+\_\+widget.\+h}}
+}
+
+
+Enables the playback of image data in a video player environment.  
+
+
+{\ttfamily \#include $<$Q\+Grid\+Layout$>$}\\*
+{\ttfamily \#include $<$Q\+Icon$>$}\\*
+{\ttfamily \#include $<$Q\+Label$>$}\\*
+{\ttfamily \#include $<$Q\+Mutex$>$}\\*
+{\ttfamily \#include $<$Q\+Push\+Button$>$}\\*
+{\ttfamily \#include $<$Q\+Slider$>$}\\*
+{\ttfamily \#include $<$Q\+Spin\+Box$>$}\\*
+{\ttfamily \#include $<$Q\+Timer$>$}\\*
+{\ttfamily \#include $<$Q\+Widget$>$}\\*
+{\ttfamily \#include \char`\"{}dark\+\_\+subtraction\+\_\+filter.\+hpp\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}frame\+\_\+worker.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}qcustomplot.\+h\char`\"{}}\\*
+Include dependency graph for playback\+\_\+widget.\+h\+:
+This graph shows which files directly or indirectly include this file\+:
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classbuffer__handler}{buffer\+\_\+handler}
+\item 
+class \hyperlink{classplayback__widget}{playback\+\_\+widget}
+\end{DoxyCompactItemize}
+\subsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{playback__widget_8h_a08b18ac8af0f3462354240d9732f3852}{enum {\bfseries err\+\_\+code} \{ \\*
+{\bfseries S\+U\+C\+C\+E\+S\+S}, 
+{\bfseries N\+O\+\_\+\+L\+O\+A\+D}, 
+{\bfseries N\+O\+\_\+\+D\+A\+T\+A}, 
+{\bfseries N\+O\+\_\+\+F\+I\+L\+E}, 
+\\*
+{\bfseries R\+E\+A\+D\+\_\+\+F\+A\+I\+L}, 
+{\bfseries N\+O\+\_\+\+M\+A\+S\+K}
+ \}}\label{playback__widget_8h_a08b18ac8af0f3462354240d9732f3852}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Enables the playback of image data in a video player environment. 
+
+The Playback Widget offers self-\/contained playback of data. It is assumed that the data being viewed has the same geometry as the currently loaded camera hardware. Playback is handled using V\+C\+R-\/like controls. Users may drag and drop data onto the viewing window to load a file, or use the folder icon on the left side of the window. 
+
+The widget is split into two main classes\+: the \hyperlink{classbuffer__handler}{buffer\+\_\+handler} and the \hyperlink{classplayback__widget}{playback\+\_\+widget}. The buffer class is a worker type class which runs in a parallel thread to the main G\+U\+I. It controls the file read operations for the Just-\/\+In-\/\+Time (J\+I\+T) buffer which handles frame data for the playback. Whenever a new frame needs to be loaded, it is read from the file several microseconds before being plotted. A mutex handles serialization of the image data between the two threads. In the playback widget, all the G\+U\+I components, frame movement, and plotting are handled. \begin{DoxyAuthor}{Author}
+All classes and their members -\/ J\+P Ryan 
+\end{DoxyAuthor}

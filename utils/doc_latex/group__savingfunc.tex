@@ -1,0 +1,39 @@
+\hypertarget{group__savingfunc}{\section{Frame saving functions}
+\label{group__savingfunc}\index{Frame saving functions@{Frame saving functions}}
+}
+\subsection*{Public Slots}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{group__savingfunc_ga3b93022717727f137956e74db96090b2}{frame\+Worker\+::start\+Saving\+Raw\+Data} (unsigned int framenum, Q\+String verified\+Name)
+\item 
+void \hyperlink{group__savingfunc_ga0bc169f3c9b7144eca0409d78a8698fa}{frame\+Worker\+::stop\+Saving\+Raw\+Data} ()
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Contains functions which control the processes needed to save frames. 
+
+\subsection{Public Slots}
+\hypertarget{group__savingfunc_ga3b93022717727f137956e74db96090b2}{\index{Frame saving functions@{Frame saving functions}!start\+Saving\+Raw\+Data@{start\+Saving\+Raw\+Data}}
+\index{start\+Saving\+Raw\+Data@{start\+Saving\+Raw\+Data}!Frame saving functions@{Frame saving functions}}
+\subsubsection[{start\+Saving\+Raw\+Data}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::start\+Saving\+Raw\+Data (
+\begin{DoxyParamCaption}
+\item[{unsigned int}]{framenum, }
+\item[{Q\+String}]{verified\+Name}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{group__savingfunc_ga3b93022717727f137956e74db96090b2}
+Calls to start saving frames in cuda\+\_\+take at a specified location 
+\begin{DoxyParams}{Parameters}
+{\em framenum} & Number of frames to save \\
+\hline
+{\em name} & Location of target file \\
+\hline
+\end{DoxyParams}
+\hypertarget{group__savingfunc_ga0bc169f3c9b7144eca0409d78a8698fa}{\index{Frame saving functions@{Frame saving functions}!stop\+Saving\+Raw\+Data@{stop\+Saving\+Raw\+Data}}
+\index{stop\+Saving\+Raw\+Data@{stop\+Saving\+Raw\+Data}!Frame saving functions@{Frame saving functions}}
+\subsubsection[{stop\+Saving\+Raw\+Data}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::stop\+Saving\+Raw\+Data (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{group__savingfunc_ga0bc169f3c9b7144eca0409d78a8698fa}
+Calls to stop saving frames in cuda\+\_\+take. 

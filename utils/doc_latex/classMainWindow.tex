@@ -1,0 +1,52 @@
+\hypertarget{classMainWindow}{\section{Main\+Window Class Reference}
+\label{classMainWindow}\index{Main\+Window@{Main\+Window}}
+}
+
+
+Inheritance diagram for Main\+Window\+:
+
+
+Collaboration diagram for Main\+Window\+:
+\subsection*{Public Slots}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classMainWindow_a2c19745d0ec8910c8ad65e772e9d00da}{void {\bfseries enable\+Std\+Dev\+Tabs} ()}\label{classMainWindow_a2c19745d0ec8910c8ad65e772e9d00da}
+
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classMainWindow_a5f25d4e03143f73e241791a6f5583227}{Main\+Window} (Q\+Thread $\ast$qth, \hyperlink{classframeWorker}{frame\+Worker} $\ast$fw, Q\+Widget $\ast$parent=0)
+\end{DoxyCompactItemize}
+\subsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classMainWindow_ad860bc2288783517dccabc60a9741258}{void \hyperlink{classMainWindow_ad860bc2288783517dccabc60a9741258}{key\+Press\+Event} (Q\+Key\+Event $\ast$c)}\label{classMainWindow_ad860bc2288783517dccabc60a9741258}
+
+\begin{DoxyCompactList}\small\item\em Defines keyboard controls for all components of Live View. \end{DoxyCompactList}\item 
+\hypertarget{classMainWindow_a8a5bf36f9544ed3ec3a9eea9b7154564}{void {\bfseries close\+Event} (Q\+Close\+Event $\ast$e)}\label{classMainWindow_a8a5bf36f9544ed3ec3a9eea9b7154564}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classMainWindow_a5f25d4e03143f73e241791a6f5583227}{\index{Main\+Window@{Main\+Window}!Main\+Window@{Main\+Window}}
+\index{Main\+Window@{Main\+Window}!Main\+Window@{Main\+Window}}
+\subsubsection[{Main\+Window}]{\setlength{\rightskip}{0pt plus 5cm}Main\+Window\+::\+Main\+Window (
+\begin{DoxyParamCaption}
+\item[{Q\+Thread $\ast$}]{qth, }
+\item[{{\bf frame\+Worker} $\ast$}]{fw, }
+\item[{Q\+Widget $\ast$}]{parent = {\ttfamily 0}}
+\end{DoxyParamCaption}
+)}}\label{classMainWindow_a5f25d4e03143f73e241791a6f5583227}
+The main window must be passed a Q\+Thread to ensure that G\+U\+I commands are handled separately from backend commands. This improves the overall responsiveness of the software. start the worker\+Thread from main
+
+\begin{DoxyNote}{Note}
+Care should be taken to ensure that tabbed widgets are ordered by the value of their image\+\_\+type enum signals/slots (current\+Changed) make use of this relation 
+\end{DoxyNote}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{mainwindow_8h}{mainwindow.\+h}\item 
+mainwindow.\+cpp\end{DoxyCompactItemize}

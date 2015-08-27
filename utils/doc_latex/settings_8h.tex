@@ -1,0 +1,15 @@
+\hypertarget{settings_8h}{\section{settings.\+h File Reference}
+\label{settings_8h}\index{settings.\+h@{settings.\+h}}
+}
+
+
+Defines frame rate rendering constants for Live View.  
+
+
+This graph shows which files directly or indirectly include this file\+:
+
+
+\subsection{Detailed Description}
+Defines frame rate rendering constants for Live View. 
+
+The settings contain three main constants -\/ the frameskip factor, the target framerate and the frame draw period. The backend generates frames at a significantly faster rate than Q\+Custom\+Plot can handle (100fps for 6604-\/\+A, and 118fps for 6604\+B). Therefore we should only draw every frame modulo 10 to improve graphical performance. The target framerate sets the ideal fps for the frontend display, particularly for the \hyperlink{classframeview__widget}{frameview\+\_\+widget}. 

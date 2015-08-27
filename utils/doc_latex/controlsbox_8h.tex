@@ -1,0 +1,45 @@
+\hypertarget{controlsbox_8h}{\section{controlsbox.\+h File Reference}
+\label{controlsbox_8h}\index{controlsbox.\+h@{controlsbox.\+h}}
+}
+
+
+Widget which contains the G\+U\+I elements common to several or all plotting widgets.  
+
+
+{\ttfamily \#include $<$Q\+Button\+Group$>$}\\*
+{\ttfamily \#include $<$Q\+Check\+Box$>$}\\*
+{\ttfamily \#include $<$Q\+Dialog\+Button\+Box$>$}\\*
+{\ttfamily \#include $<$Q\+File\+Dialog$>$}\\*
+{\ttfamily \#include $<$Q\+File\+Info$>$}\\*
+{\ttfamily \#include $<$Q\+Grid\+Layout$>$}\\*
+{\ttfamily \#include $<$Q\+Group\+Box$>$}\\*
+{\ttfamily \#include $<$Q\+H\+Box\+Layout$>$}\\*
+{\ttfamily \#include $<$Q\+Label$>$}\\*
+{\ttfamily \#include $<$Q\+Line\+Edit$>$}\\*
+{\ttfamily \#include $<$Q\+Message\+Box$>$}\\*
+{\ttfamily \#include $<$Q\+Push\+Button$>$}\\*
+{\ttfamily \#include $<$Q\+Slider$>$}\\*
+{\ttfamily \#include $<$Q\+Spin\+Box$>$}\\*
+{\ttfamily \#include $<$Q\+Tab\+Widget$>$}\\*
+{\ttfamily \#include $<$Q\+V\+Box\+Layout$>$}\\*
+{\ttfamily \#include $<$stdint.\+h$>$}\\*
+{\ttfamily \#include \char`\"{}boost/shared\+\_\+array.\+hpp\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}fft\+\_\+widget.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}frameview\+\_\+widget.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}histogram\+\_\+widget.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}playback\+\_\+widget.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}profile\+\_\+widget.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}pref\+\_\+window.\+h\char`\"{}}\\*
+Include dependency graph for controlsbox.\+h\+:
+This graph shows which files directly or indirectly include this file\+:
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classControlsBox}{Controls\+Box}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Widget which contains the G\+U\+I elements common to several or all plotting widgets. 
+
+The \hyperlink{classControlsBox}{Controls\+Box} is a wrapper G\+U\+I class which contains the (mostly) static controls between widgets. After establishing the buttons in the constructor, the class will call the function tab\+\_\+slot\+\_\+changed(int index) to establish widget-\/specific controls and settings. For instance, all profile widgets and F\+F\+Ts make use of the Lines To Average slider rather than the disabled Std Dev N slider. As Qt does not support a pure virtual interface for widgets, each widget must make a connection to its own version of update\+Ceiling(int c), update\+Floor(int f), and any other widget specfic action within its case in tab\+\_\+slot\+\_\+changed(int index). The beginning of this function specifies the behavior for when tabs are exited -\/ all connections made must be disconnected. 

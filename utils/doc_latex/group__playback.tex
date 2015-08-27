@@ -1,0 +1,69 @@
+\hypertarget{group__playback}{\section{Playback functions}
+\label{group__playback}\index{Playback functions@{Playback functions}}
+}
+\subsection*{Public Slots}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{group__playback_ga29ce224165d692b1747805631445559d}{playback\+\_\+widget\+::play\+Pause} ()
+\item 
+void \hyperlink{group__playback_gac7dc7d508c0369527e824690b855bedb}{playback\+\_\+widget\+::stop} ()
+\item 
+void \hyperlink{group__playback_gae6c7dc764a8923173ba073a439e6c1d0}{playback\+\_\+widget\+::move\+Forward} ()
+\item 
+void \hyperlink{group__playback_gaaac6b8a27b81f2d431840f8ffa8f7c72}{playback\+\_\+widget\+::move\+Backward} ()
+\item 
+void \hyperlink{group__playback_gaef6f962616f5e88be9dd73d08201eee3}{playback\+\_\+widget\+::fast\+Forward} ()
+\item 
+void \hyperlink{group__playback_ga852358db15af739882adc86c17383152}{playback\+\_\+widget\+::fast\+Rewind} ()
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Functions which control the frame sequencing of data requests to the \hyperlink{classbuffer__handler}{buffer\+\_\+handler}. 
+
+\subsection{Public Slots}
+\hypertarget{group__playback_gaef6f962616f5e88be9dd73d08201eee3}{\index{Playback functions@{Playback functions}!fast\+Forward@{fast\+Forward}}
+\index{fast\+Forward@{fast\+Forward}!Playback functions@{Playback functions}}
+\subsubsection[{fast\+Forward}]{\setlength{\rightskip}{0pt plus 5cm}void playback\+\_\+widget\+::fast\+Forward (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{group__playback_gaef6f962616f5e88be9dd73d08201eee3}
+Increases the frameskip by a factor of two for each call. Will reverse the play direction if necessary. \hypertarget{group__playback_ga852358db15af739882adc86c17383152}{\index{Playback functions@{Playback functions}!fast\+Rewind@{fast\+Rewind}}
+\index{fast\+Rewind@{fast\+Rewind}!Playback functions@{Playback functions}}
+\subsubsection[{fast\+Rewind}]{\setlength{\rightskip}{0pt plus 5cm}void playback\+\_\+widget\+::fast\+Rewind (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{group__playback_ga852358db15af739882adc86c17383152}
+Increases the frameskip in reverse by a factor of two for each call. Will reverse the play direction if necessary. \hypertarget{group__playback_gaaac6b8a27b81f2d431840f8ffa8f7c72}{\index{Playback functions@{Playback functions}!move\+Backward@{move\+Backward}}
+\index{move\+Backward@{move\+Backward}!Playback functions@{Playback functions}}
+\subsubsection[{move\+Backward}]{\setlength{\rightskip}{0pt plus 5cm}void playback\+\_\+widget\+::move\+Backward (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{group__playback_gaaac6b8a27b81f2d431840f8ffa8f7c72}
+Sequences the frames in descending order. \hypertarget{group__playback_gae6c7dc764a8923173ba073a439e6c1d0}{\index{Playback functions@{Playback functions}!move\+Forward@{move\+Forward}}
+\index{move\+Forward@{move\+Forward}!Playback functions@{Playback functions}}
+\subsubsection[{move\+Forward}]{\setlength{\rightskip}{0pt plus 5cm}void playback\+\_\+widget\+::move\+Forward (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{group__playback_gae6c7dc764a8923173ba073a439e6c1d0}
+Sequences the frames in ascending order. \hypertarget{group__playback_ga29ce224165d692b1747805631445559d}{\index{Playback functions@{Playback functions}!play\+Pause@{play\+Pause}}
+\index{play\+Pause@{play\+Pause}!Playback functions@{Playback functions}}
+\subsubsection[{play\+Pause}]{\setlength{\rightskip}{0pt plus 5cm}void playback\+\_\+widget\+::play\+Pause (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{group__playback_ga29ce224165d692b1747805631445559d}
+Toggles the playback of a video. 
+
+Allows playback to proceed in the backwards or forward direction depending on the commands entered by the user. Stops playback when pause is activated.\hypertarget{group__playback_gac7dc7d508c0369527e824690b855bedb}{\index{Playback functions@{Playback functions}!stop@{stop}}
+\index{stop@{stop}!Playback functions@{Playback functions}}
+\subsubsection[{stop}]{\setlength{\rightskip}{0pt plus 5cm}void playback\+\_\+widget\+::stop (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{group__playback_gac7dc7d508c0369527e824690b855bedb}
+Stops playback and returnsto the first frame. 

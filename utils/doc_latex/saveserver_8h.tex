@@ -1,0 +1,33 @@
+\hypertarget{saveserver_8h}{\section{saveserver.\+h File Reference}
+\label{saveserver_8h}\index{saveserver.\+h@{saveserver.\+h}}
+}
+
+
+Establishes a server which can accept remote frame saving commands.  
+
+
+{\ttfamily \#include $<$Qt\+Network/\+Q\+Tcp\+Server$>$}\\*
+{\ttfamily \#include $<$Qt\+Network/\+Q\+Tcp\+Socket$>$}\\*
+{\ttfamily \#include \char`\"{}frame\+\_\+worker.\+h\char`\"{}}\\*
+Include dependency graph for saveserver.\+h\+:
+This graph shows which files directly or indirectly include this file\+:
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classsaveServer}{save\+Server}
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{saveserver_8h_a4c87de5b0baf789baefb7dcf90862661}{const quint16 {\bfseries S\+T\+A\+R\+T\+\_\+\+S\+A\+V\+I\+N\+G} = 2}\label{saveserver_8h_a4c87de5b0baf789baefb7dcf90862661}
+
+\item 
+\hypertarget{saveserver_8h_a05ae06314d6d2915dc58aebac1c2d1e2}{const quint16 {\bfseries S\+T\+A\+T\+U\+S} = 3}\label{saveserver_8h_a05ae06314d6d2915dc58aebac1c2d1e2}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Establishes a server which can accept remote frame saving commands. 
+
+The \hyperlink{classsaveServer}{save\+Server} class processes incoming Q\+Tcp\+Sockets and accepts messages in Tcp format as a Q\+Byte\+Stream. There are message codes defined as macros in this header, where the command to start saving a finite number of frames is specified by the message type 2. I didn't use an enum because I wanted the software to be sufficiently modular that if the client was not aware of these macros they could still send messages using the code. The quint16 type was chosen because Qt offers cross-\/platform support for their internal types, allowing greater portability of any potential client software. 

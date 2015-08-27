@@ -1,0 +1,32 @@
+\hypertarget{histogram__widget_8h}{\section{histogram\+\_\+widget.\+h File Reference}
+\label{histogram__widget_8h}\index{histogram\+\_\+widget.\+h@{histogram\+\_\+widget.\+h}}
+}
+
+
+Plots a histogram of the spatial frequency of pixel standard deviations.  
+
+
+{\ttfamily \#include $<$Q\+Widget$>$}\\*
+{\ttfamily \#include $<$Q\+V\+Box\+Layout$>$}\\*
+{\ttfamily \#include $<$Q\+Timer$>$}\\*
+{\ttfamily \#include \char`\"{}qcustomplot.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}frame\+\_\+worker.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}image\+\_\+type.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}std\+\_\+dev\+\_\+filter.\+hpp\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}settings.\+h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}constants.\+h\char`\"{}}\\*
+Include dependency graph for histogram\+\_\+widget.\+h\+:
+This graph shows which files directly or indirectly include this file\+:
+\subsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classhistogram__widget}{histogram\+\_\+widget}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Plots a histogram of the spatial frequency of pixel standard deviations. 
+
+The histogram displays the spacial frequency of the standard deviations calculated for the standard deviation frame. Each bar represents a range of sigma (in D\+N) that the individual pixel sigmas are binned within. These data are plotted with a logarithmic x-\/axis. Scrolling on the mouse wheel will zoom in and out. The standard viewing scale omits dead pixel bars, but these can be viewed by zooming out. \begin{DoxyAuthor}{Author}
+Noah Levy 
+\end{DoxyAuthor}

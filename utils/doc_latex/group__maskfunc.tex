@@ -1,0 +1,44 @@
+\hypertarget{group__maskfunc}{\section{Mask recording functions}
+\label{group__maskfunc}\index{Mask recording functions@{Mask recording functions}}
+}
+\subsection*{Public Slots}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{group__maskfunc_ga491bd33995f96dc7ba226385af68fcde}{frame\+Worker\+::start\+Capturing\+D\+S\+F\+Mask} ()
+\item 
+void \hyperlink{group__maskfunc_gabb47faca8ced962d58dd3e155944405c}{frame\+Worker\+::finish\+Capturing\+D\+S\+F\+Mask} ()
+\item 
+void \hyperlink{group__maskfunc_ga0c60552b1b0aedbfd7091ce71a16c718}{frame\+Worker\+::toggle\+Use\+D\+S\+F} (bool t)
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Contains the functions which control the processes needed to record and use Dark Subtraction Filters 
+
+\subsection{Public Slots}
+\hypertarget{group__maskfunc_gabb47faca8ced962d58dd3e155944405c}{\index{Mask recording functions@{Mask recording functions}!finish\+Capturing\+D\+S\+F\+Mask@{finish\+Capturing\+D\+S\+F\+Mask}}
+\index{finish\+Capturing\+D\+S\+F\+Mask@{finish\+Capturing\+D\+S\+F\+Mask}!Mask recording functions@{Mask recording functions}}
+\subsubsection[{finish\+Capturing\+D\+S\+F\+Mask}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::finish\+Capturing\+D\+S\+F\+Mask (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{group__maskfunc_gabb47faca8ced962d58dd3e155944405c}
+Communicates to cuda\+\_\+take to stop collecting dark frames. \hypertarget{group__maskfunc_ga491bd33995f96dc7ba226385af68fcde}{\index{Mask recording functions@{Mask recording functions}!start\+Capturing\+D\+S\+F\+Mask@{start\+Capturing\+D\+S\+F\+Mask}}
+\index{start\+Capturing\+D\+S\+F\+Mask@{start\+Capturing\+D\+S\+F\+Mask}!Mask recording functions@{Mask recording functions}}
+\subsubsection[{start\+Capturing\+D\+S\+F\+Mask}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::start\+Capturing\+D\+S\+F\+Mask (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{group__maskfunc_ga491bd33995f96dc7ba226385af68fcde}
+Calls to start collecting dark frames in cuda\+\_\+take. \hypertarget{group__maskfunc_ga0c60552b1b0aedbfd7091ce71a16c718}{\index{Mask recording functions@{Mask recording functions}!toggle\+Use\+D\+S\+F@{toggle\+Use\+D\+S\+F}}
+\index{toggle\+Use\+D\+S\+F@{toggle\+Use\+D\+S\+F}!Mask recording functions@{Mask recording functions}}
+\subsubsection[{toggle\+Use\+D\+S\+F}]{\setlength{\rightskip}{0pt plus 5cm}void frame\+Worker\+::toggle\+Use\+D\+S\+F (
+\begin{DoxyParamCaption}
+\item[{bool}]{t}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{group__maskfunc_ga0c60552b1b0aedbfd7091ce71a16c718}
+Switches the boolean variable to use the D\+S\+F mask in the front and backend. 
+\begin{DoxyParams}{Parameters}
+{\em t} & State variable for the \char`\"{}\+Use Dark Subtraction Filter\char`\"{} checkbox. \\
+\hline
+\end{DoxyParams}

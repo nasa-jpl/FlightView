@@ -1,0 +1,129 @@
+\hypertarget{classbuffer__handler}{\section{buffer\+\_\+handler Class Reference}
+\label{classbuffer__handler}\index{buffer\+\_\+handler@{buffer\+\_\+handler}}
+}
+
+
+Inheritance diagram for buffer\+\_\+handler\+:
+
+
+Collaboration diagram for buffer\+\_\+handler\+:
+\subsection*{Public Slots}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{classbuffer__handler_ac97c1ebcbff716e0d5467f7ad77f4915}{load\+File} (Q\+String file\+\_\+name)
+\item 
+void \hyperlink{classbuffer__handler_abcbc11a150d139947d26120a1fa57c2c}{load\+D\+S\+F} (Q\+String file\+\_\+name, unsigned int elements\+\_\+to\+\_\+read, long offset)
+\item 
+void \hyperlink{classbuffer__handler_a1412418c0a320346f610a8853be22ec4}{get\+Frame} ()
+\item 
+\hypertarget{classbuffer__handler_a7ab8efaad9af8428fd9b1a83ffe84641}{uint16\+\_\+t $\ast$ {\bfseries tap\+Pixel\+Remap} ()}\label{classbuffer__handler_a7ab8efaad9af8428fd9b1a83ffe84641}
+
+\item 
+void \hyperlink{classbuffer__handler_ac6b3633ed160c4579fb18f1424def852}{stop} ()
+\item 
+\hypertarget{classbuffer__handler_aeb21354e643369851e723df4488ce4c4}{void {\bfseries debug} ()}\label{classbuffer__handler_aeb21354e643369851e723df4488ce4c4}
+
+\end{DoxyCompactItemize}
+\subsection*{Signals}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classbuffer__handler_accc4e4bd263c96a5e12fbb853cd7fee2}{void \hyperlink{classbuffer__handler_accc4e4bd263c96a5e12fbb853cd7fee2}{loaded} (err\+\_\+code e)}\label{classbuffer__handler_accc4e4bd263c96a5e12fbb853cd7fee2}
+
+\begin{DoxyCompactList}\small\item\em This signal is emitted when a new data file is loaded in. \end{DoxyCompactList}\item 
+\hypertarget{classbuffer__handler_a67f5bfb1fe3530720805baf40b62b91e}{void \hyperlink{classbuffer__handler_a67f5bfb1fe3530720805baf40b62b91e}{load\+Mask} (float $\ast$mask)}\label{classbuffer__handler_a67f5bfb1fe3530720805baf40b62b91e}
+
+\begin{DoxyCompactList}\small\item\em This signal is emitted when a new dark mask has been generated and is ready to be loaded into the dark subtraction filter. \end{DoxyCompactList}\item 
+\hypertarget{classbuffer__handler_a16fd2e21aed6d5781475bbc05f64b65a}{void \hyperlink{classbuffer__handler_a16fd2e21aed6d5781475bbc05f64b65a}{finished} ()}\label{classbuffer__handler_a16fd2e21aed6d5781475bbc05f64b65a}
+
+\begin{DoxyCompactList}\small\item\em This signal calls to stop the class event loop and deallocate the thread later. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classbuffer__handler_aeb99886dc23eab7a824f29720cfe1df9}{{\bfseries buffer\+\_\+handler} (int height, int width, Q\+Object $\ast$parent=0)}\label{classbuffer__handler_aeb99886dc23eab7a824f29720cfe1df9}
+
+\item 
+bool \hyperlink{classbuffer__handler_a1ffb6a45954985e0b7fc07dad61e1fc2}{has\+F\+P} ()
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classbuffer__handler_ab4dee787a02029055377cfeaf99bacf9}{Q\+Mutex {\bfseries buf\+\_\+access}}\label{classbuffer__handler_ab4dee787a02029055377cfeaf99bacf9}
+
+\item 
+\hypertarget{classbuffer__handler_a17d586275a6f10ef40e1ddfbe5fb898b}{int {\bfseries current\+\_\+frame}}\label{classbuffer__handler_a17d586275a6f10ef40e1ddfbe5fb898b}
+
+\item 
+\hypertarget{classbuffer__handler_aac912fec2f3272c8e75fb40897a32910}{int {\bfseries old\+\_\+frame} = 1}\label{classbuffer__handler_aac912fec2f3272c8e75fb40897a32910}
+
+\item 
+\hypertarget{classbuffer__handler_ad015f39c69474d4873e947d0b5cc6257}{int {\bfseries num\+\_\+frames}}\label{classbuffer__handler_ad015f39c69474d4873e947d0b5cc6257}
+
+\item 
+\hypertarget{classbuffer__handler_a3366832bca5cd6536484b9ba335406a4}{uint16\+\_\+t $\ast$ {\bfseries frame}}\label{classbuffer__handler_a3366832bca5cd6536484b9ba335406a4}
+
+\item 
+\hypertarget{classbuffer__handler_a254f0e3974dfce1bec3a55815f554d4c}{float $\ast$ {\bfseries dark\+\_\+data}}\label{classbuffer__handler_a254f0e3974dfce1bec3a55815f554d4c}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Member Function Documentation}
+\hypertarget{classbuffer__handler_a1412418c0a320346f610a8853be22ec4}{\index{buffer\+\_\+handler@{buffer\+\_\+handler}!get\+Frame@{get\+Frame}}
+\index{get\+Frame@{get\+Frame}!buffer\+\_\+handler@{buffer\+\_\+handler}}
+\subsubsection[{get\+Frame}]{\setlength{\rightskip}{0pt plus 5cm}void buffer\+\_\+handler\+::get\+Frame (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classbuffer__handler_a1412418c0a320346f610a8853be22ec4}
+The main event loop of the \hyperlink{classbuffer__handler}{buffer\+\_\+handler} class. 
+
+The function runs in an infinite loop until a stop is requested by setting running to false. Every microsecond, the values of the current\+\_\+frame and old\+\_\+frame are compared. If they are not equal, the current\+\_\+frame is read from the file. This operation is memory locked to avoid simultaneous read and write operations on the frame array.\hypertarget{classbuffer__handler_a1ffb6a45954985e0b7fc07dad61e1fc2}{\index{buffer\+\_\+handler@{buffer\+\_\+handler}!has\+F\+P@{has\+F\+P}}
+\index{has\+F\+P@{has\+F\+P}!buffer\+\_\+handler@{buffer\+\_\+handler}}
+\subsubsection[{has\+F\+P}]{\setlength{\rightskip}{0pt plus 5cm}bool buffer\+\_\+handler\+::has\+F\+P (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}\label{classbuffer__handler_a1ffb6a45954985e0b7fc07dad61e1fc2}
+Returns whether or not there is a loaded file pointer. \hypertarget{classbuffer__handler_abcbc11a150d139947d26120a1fa57c2c}{\index{buffer\+\_\+handler@{buffer\+\_\+handler}!load\+D\+S\+F@{load\+D\+S\+F}}
+\index{load\+D\+S\+F@{load\+D\+S\+F}!buffer\+\_\+handler@{buffer\+\_\+handler}}
+\subsubsection[{load\+D\+S\+F}]{\setlength{\rightskip}{0pt plus 5cm}void buffer\+\_\+handler\+::load\+D\+S\+F (
+\begin{DoxyParamCaption}
+\item[{Q\+String}]{file\+\_\+name, }
+\item[{unsigned int}]{elements\+\_\+to\+\_\+read, }
+\item[{long}]{offset}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classbuffer__handler_abcbc11a150d139947d26120a1fa57c2c}
+Generates a dark mask the size of one frame from a range within a file. 
+\begin{DoxyParams}{Parameters}
+{\em file\+\_\+name} & The file name as specified by the G\+U\+I in \hyperlink{classControlsBox}{Controls\+Box}. \\
+\hline
+{\em elements\+\_\+to\+\_\+read} & The number of words to read in the file. \\
+\hline
+{\em offset} & The number of words to offset before beginning to read the file. \\
+\hline
+\end{DoxyParams}
+\hypertarget{classbuffer__handler_ac97c1ebcbff716e0d5467f7ad77f4915}{\index{buffer\+\_\+handler@{buffer\+\_\+handler}!load\+File@{load\+File}}
+\index{load\+File@{load\+File}!buffer\+\_\+handler@{buffer\+\_\+handler}}
+\subsubsection[{load\+File}]{\setlength{\rightskip}{0pt plus 5cm}void buffer\+\_\+handler\+::load\+File (
+\begin{DoxyParamCaption}
+\item[{Q\+String}]{file\+\_\+name}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classbuffer__handler_ac97c1ebcbff716e0d5467f7ad77f4915}
+Prepares a file for read in the backend. 
+\begin{DoxyParams}{Parameters}
+{\em file\+\_\+name} & The filename as received by the G\+U\+I in \hyperlink{classplayback__widget}{playback\+\_\+widget} or from the drag and drop.\\
+\hline
+\end{DoxyParams}
+Step 1\+: Open the file specified in the parameter \hypertarget{classbuffer__handler_ac6b3633ed160c4579fb18f1424def852}{\index{buffer\+\_\+handler@{buffer\+\_\+handler}!stop@{stop}}
+\index{stop@{stop}!buffer\+\_\+handler@{buffer\+\_\+handler}}
+\subsubsection[{stop}]{\setlength{\rightskip}{0pt plus 5cm}void buffer\+\_\+handler\+::stop (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classbuffer__handler_ac6b3633ed160c4579fb18f1424def852}
+Ends the event loop. 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{playback__widget_8h}{playback\+\_\+widget.\+h}\item 
+playback\+\_\+widget.\+cpp\end{DoxyCompactItemize}

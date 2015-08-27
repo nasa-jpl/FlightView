@@ -87,6 +87,10 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
+profile_widget::~profile_widget()
+{
+
+}
 
 // public functions
 double profile_widget::getFloor()

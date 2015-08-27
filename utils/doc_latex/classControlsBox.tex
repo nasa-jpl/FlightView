@@ -1,0 +1,218 @@
+\hypertarget{classControlsBox}{\section{Controls\+Box Class Reference}
+\label{classControlsBox}\index{Controls\+Box@{Controls\+Box}}
+}
+
+
+Inheritance diagram for Controls\+Box\+:
+
+
+Collaboration diagram for Controls\+Box\+:
+\subsection*{Public Slots}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{classControlsBox_a07e278f28564462700e44c9f7b4da850}{tab\+\_\+changed\+\_\+slot} (int index)
+\end{DoxyCompactItemize}
+\subsection*{Signals}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{classControlsBox_ad18a240a7acdf8138ea9b8b97f1f629e}{start\+Saving\+Finite} (unsigned int length, Q\+String fname)
+\begin{DoxyCompactList}\small\item\em Passes the message to save raw frames at the backend. \end{DoxyCompactList}\item 
+\hypertarget{classControlsBox_a493ba8b77f7b521021524920a3f1bcf3}{void \hyperlink{classControlsBox_a493ba8b77f7b521021524920a3f1bcf3}{stop\+Saving} ()}\label{classControlsBox_a493ba8b77f7b521021524920a3f1bcf3}
+
+\begin{DoxyCompactList}\small\item\em Ends the saving loop at the backend. \end{DoxyCompactList}\item 
+\hypertarget{classControlsBox_a764644f969998d3d701af67706ddc9ca}{void \hyperlink{classControlsBox_a764644f969998d3d701af67706ddc9ca}{start\+D\+S\+F\+Mask\+Collection} ()}\label{classControlsBox_a764644f969998d3d701af67706ddc9ca}
+
+\begin{DoxyCompactList}\small\item\em Passes the D\+S\+F the message to begin averaging dark frames for all live widgets. \end{DoxyCompactList}\item 
+\hypertarget{classControlsBox_aac0037d12d7e27afcafdd651e9926551}{void \hyperlink{classControlsBox_aac0037d12d7e27afcafdd651e9926551}{stop\+D\+S\+F\+Mask\+Collection} ()}\label{classControlsBox_aac0037d12d7e27afcafdd651e9926551}
+
+\begin{DoxyCompactList}\small\item\em Averages the collected frames and loads in the mask. \end{DoxyCompactList}\item 
+\hypertarget{classControlsBox_a0c4847caef53224f76b02afe1202b233}{void \hyperlink{classControlsBox_a0c4847caef53224f76b02afe1202b233}{mask\+\_\+selected} (Q\+String file\+\_\+name, unsigned int bytes\+\_\+to\+\_\+read, long offset)}\label{classControlsBox_a0c4847caef53224f76b02afe1202b233}
+
+\begin{DoxyCompactList}\small\item\em Passes the information needed to generate the dark mask and load it into the D\+S\+F in the \hyperlink{classplayback__widget}{playback\+\_\+widget}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classControlsBox_aa477862b3fc7916f8cc0b8d401dba638}{Controls\+Box} (\hyperlink{classframeWorker}{frame\+Worker} $\ast$fw, Q\+Tab\+Widget $\ast$tw, Q\+Widget $\ast$parent=0)
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classControlsBox_ad27bdf2d268ef8b6204a12b703095a38}{\hyperlink{classframeWorker}{frame\+Worker} $\ast$ {\bfseries fw}}\label{classControlsBox_ad27bdf2d268ef8b6204a12b703095a38}
+
+\item 
+\hypertarget{classControlsBox_af847d7f91b0ca524eb5ab9a1847d5ab1}{\hyperlink{classpreferenceWindow}{preference\+Window} $\ast$ {\bfseries pref\+Window}}\label{classControlsBox_af847d7f91b0ca524eb5ab9a1847d5ab1}
+
+\item 
+\hypertarget{classControlsBox_a7734cbb7dab018ee1eb9af7da2c25f4b}{Q\+H\+Box\+Layout {\bfseries controls\+\_\+layout}}\label{classControlsBox_a7734cbb7dab018ee1eb9af7da2c25f4b}
+
+\item 
+\hypertarget{classControlsBox_ad34d036a227162d2cbb7979e80c3cc47}{Q\+Grid\+Layout $\ast$ {\bfseries collections\+\_\+layout}}\label{classControlsBox_ad34d036a227162d2cbb7979e80c3cc47}
+
+\item 
+\hypertarget{classControlsBox_a9056502f261b7c11bd45c2b795bf0806}{Q\+Widget {\bfseries Collection\+Buttons\+Box}}\label{classControlsBox_a9056502f261b7c11bd45c2b795bf0806}
+
+\item 
+\hypertarget{classControlsBox_a732c5c469e545c513a74f286a9711799}{Q\+Push\+Button {\bfseries collect\+\_\+dark\+\_\+frames\+\_\+button}}\label{classControlsBox_a732c5c469e545c513a74f286a9711799}
+
+\item 
+\hypertarget{classControlsBox_aaac7cb93bf092ecaca7a3c3b4edb9660}{Q\+Push\+Button {\bfseries stop\+\_\+dark\+\_\+collection\+\_\+button}}\label{classControlsBox_aaac7cb93bf092ecaca7a3c3b4edb9660}
+
+\item 
+\hypertarget{classControlsBox_a00892f686aa5423d7743504f812c4f1b}{Q\+Push\+Button {\bfseries load\+\_\+mask\+\_\+from\+\_\+file}}\label{classControlsBox_a00892f686aa5423d7743504f812c4f1b}
+
+\item 
+\hypertarget{classControlsBox_aea840f7a145bf5f3373a0d5949606dd9}{Q\+Push\+Button {\bfseries pref\+\_\+button}}\label{classControlsBox_aea840f7a145bf5f3373a0d5949606dd9}
+
+\item 
+\hypertarget{classControlsBox_a4c0f4a0bc26372a58938c3073f2b70e8}{Q\+String {\bfseries fps}}\label{classControlsBox_a4c0f4a0bc26372a58938c3073f2b70e8}
+
+\item 
+\hypertarget{classControlsBox_a8c891afe575566f768aab545e59d05d7}{Q\+Label {\bfseries fps\+\_\+label}}\label{classControlsBox_a8c891afe575566f768aab545e59d05d7}
+
+\item 
+\hypertarget{classControlsBox_ac8e404b3b3d1be744f9cf7741c756fbc}{Q\+Label {\bfseries server\+\_\+ip\+\_\+label}}\label{classControlsBox_ac8e404b3b3d1be744f9cf7741c756fbc}
+
+\item 
+\hypertarget{classControlsBox_aa5bc91e3fb913548256e7eb8d385ffac}{Q\+Label {\bfseries server\+\_\+port\+\_\+label}}\label{classControlsBox_aa5bc91e3fb913548256e7eb8d385ffac}
+
+\item 
+\hypertarget{classControlsBox_a48f1f3bd82e438298587b0caa5d8760c}{Q\+Grid\+Layout $\ast$ {\bfseries sliders\+\_\+layout}}\label{classControlsBox_a48f1f3bd82e438298587b0caa5d8760c}
+
+\item 
+\hypertarget{classControlsBox_af35410351550a3f23c1514d457bc5882}{Q\+Widget {\bfseries Thresholding\+Sliders\+Box}}\label{classControlsBox_af35410351550a3f23c1514d457bc5882}
+
+\item 
+\hypertarget{classControlsBox_a227ba81f9c98db6a6e6bae52a52c8da8}{Q\+Slider $\ast$ {\bfseries std\+\_\+dev\+\_\+\+N\+\_\+slider}}\label{classControlsBox_a227ba81f9c98db6a6e6bae52a52c8da8}
+
+\item 
+\hypertarget{classControlsBox_a03168989ac6f2f8e3c3e6217f23ab56b}{Q\+Slider $\ast$ {\bfseries lines\+\_\+slider}}\label{classControlsBox_a03168989ac6f2f8e3c3e6217f23ab56b}
+
+\item 
+\hypertarget{classControlsBox_a3457555942434ecd61dfab6e4d182f3c}{Q\+Slider {\bfseries ceiling\+\_\+slider}}\label{classControlsBox_a3457555942434ecd61dfab6e4d182f3c}
+
+\item 
+\hypertarget{classControlsBox_ab5101137eeefa592b85daf5096463387}{Q\+Slider {\bfseries floor\+\_\+slider}}\label{classControlsBox_ab5101137eeefa592b85daf5096463387}
+
+\item 
+\hypertarget{classControlsBox_a18c841b9e5d8279744280193c965281d}{Q\+Spin\+Box $\ast$ {\bfseries std\+\_\+dev\+\_\+\+N\+\_\+edit}}\label{classControlsBox_a18c841b9e5d8279744280193c965281d}
+
+\item 
+\hypertarget{classControlsBox_af3fb9aacfbea807233b5939a21446ae6}{Q\+Spin\+Box $\ast$ {\bfseries line\+\_\+average\+\_\+edit}}\label{classControlsBox_af3fb9aacfbea807233b5939a21446ae6}
+
+\item 
+\hypertarget{classControlsBox_a4e69d02aa178c10f63237d34a05f28fa}{Q\+Spin\+Box {\bfseries ceiling\+\_\+edit}}\label{classControlsBox_a4e69d02aa178c10f63237d34a05f28fa}
+
+\item 
+\hypertarget{classControlsBox_a62348d77fa44be92357113d55a17142e}{Q\+Spin\+Box {\bfseries floor\+\_\+edit}}\label{classControlsBox_a62348d77fa44be92357113d55a17142e}
+
+\item 
+\hypertarget{classControlsBox_aed397492ae9308e805724990b98df4c2}{Q\+Label $\ast$ {\bfseries std\+\_\+dev\+\_\+n\+\_\+label}}\label{classControlsBox_aed397492ae9308e805724990b98df4c2}
+
+\item 
+\hypertarget{classControlsBox_a52320fb66b2bd7c665c92455025fe265}{Q\+Label $\ast$ {\bfseries lines\+\_\+label}}\label{classControlsBox_a52320fb66b2bd7c665c92455025fe265}
+
+\item 
+\hypertarget{classControlsBox_a03720a65845bd16957a068ed1c6a7626}{Q\+Check\+Box {\bfseries low\+\_\+increment\+\_\+cbox}}\label{classControlsBox_a03720a65845bd16957a068ed1c6a7626}
+
+\item 
+\hypertarget{classControlsBox_a7b8422eaeee1d28533ab42c0cb3581c5}{Q\+Check\+Box {\bfseries use\+\_\+\+D\+S\+F\+\_\+cbox}}\label{classControlsBox_a7b8422eaeee1d28533ab42c0cb3581c5}
+
+\item 
+\hypertarget{classControlsBox_a1922bf2df397cefaf336c43b97d7b7bb}{Q\+Grid\+Layout $\ast$ {\bfseries save\+\_\+layout}}\label{classControlsBox_a1922bf2df397cefaf336c43b97d7b7bb}
+
+\item 
+\hypertarget{classControlsBox_aac08d47d52e50143a11762e1ea7c5955}{Q\+Widget {\bfseries Save\+Buttons\+Box}}\label{classControlsBox_aac08d47d52e50143a11762e1ea7c5955}
+
+\item 
+\hypertarget{classControlsBox_a0f793a1b00a783bf4000ca75f699afc3}{Q\+Push\+Button {\bfseries save\+\_\+finite\+\_\+button}}\label{classControlsBox_a0f793a1b00a783bf4000ca75f699afc3}
+
+\item 
+\hypertarget{classControlsBox_ab75b3ea023086a9e6f3986307b74c089}{Q\+Push\+Button {\bfseries start\+\_\+saving\+\_\+frames\+\_\+button}}\label{classControlsBox_ab75b3ea023086a9e6f3986307b74c089}
+
+\item 
+\hypertarget{classControlsBox_a7297ec95e7ad47527068d908892866ff}{Q\+Push\+Button {\bfseries stop\+\_\+saving\+\_\+frames\+\_\+button}}\label{classControlsBox_a7297ec95e7ad47527068d908892866ff}
+
+\item 
+\hypertarget{classControlsBox_a11ec9d943dcebc679a513b556a29f9ba}{Q\+Push\+Button {\bfseries select\+\_\+save\+\_\+location}}\label{classControlsBox_a11ec9d943dcebc679a513b556a29f9ba}
+
+\item 
+\hypertarget{classControlsBox_a2cee6fb0729f397f875a6b3b50814d3a}{Q\+Spin\+Box {\bfseries frames\+\_\+save\+\_\+num\+\_\+edit}}\label{classControlsBox_a2cee6fb0729f397f875a6b3b50814d3a}
+
+\item 
+\hypertarget{classControlsBox_abf9afe1c136775ae55dbb41179b2dc0a}{Q\+Line\+Edit {\bfseries filename\+\_\+edit}}\label{classControlsBox_abf9afe1c136775ae55dbb41179b2dc0a}
+
+\item 
+\hypertarget{classControlsBox_a6554680f420e65d6d83b506dfc58f856}{Q\+Push\+Button {\bfseries set\+\_\+filename\+\_\+button}}\label{classControlsBox_a6554680f420e65d6d83b506dfc58f856}
+
+\item 
+\hypertarget{classControlsBox_a4d69022df75b23653f70327c2fea5fdc}{\hyperlink{classframeview__widget}{frameview\+\_\+widget} $\ast$ {\bfseries p\+\_\+frameview}}\label{classControlsBox_a4d69022df75b23653f70327c2fea5fdc}
+
+\item 
+\hypertarget{classControlsBox_ab65eb7bd4acebbe18d7c07601e8d1947}{\hyperlink{classhistogram__widget}{histogram\+\_\+widget} $\ast$ {\bfseries p\+\_\+histogram}}\label{classControlsBox_ab65eb7bd4acebbe18d7c07601e8d1947}
+
+\item 
+\hypertarget{classControlsBox_a16d1414f4ee4de1815c3baded19ee2a9}{\hyperlink{classprofile__widget}{profile\+\_\+widget} $\ast$ {\bfseries p\+\_\+profile}}\label{classControlsBox_a16d1414f4ee4de1815c3baded19ee2a9}
+
+\item 
+\hypertarget{classControlsBox_a9b2b3feae093b0be57fb9cdd472ca080}{\hyperlink{classfft__widget}{fft\+\_\+widget} $\ast$ {\bfseries p\+\_\+fft}}\label{classControlsBox_a9b2b3feae093b0be57fb9cdd472ca080}
+
+\item 
+\hypertarget{classControlsBox_a89b1ed7ff8f77db0c572f3eae6aa539b}{\hyperlink{classplayback__widget}{playback\+\_\+widget} $\ast$ {\bfseries p\+\_\+playback}}\label{classControlsBox_a89b1ed7ff8f77db0c572f3eae6aa539b}
+
+\end{DoxyCompactItemize}
+\subsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classControlsBox_a8c8dc69d47160fbe9e12e3a9ad6f0c17}{void {\bfseries close\+Event} (Q\+Close\+Event $\ast$e)}\label{classControlsBox_a8c8dc69d47160fbe9e12e3a9ad6f0c17}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classControlsBox_aa477862b3fc7916f8cc0b8d401dba638}{\index{Controls\+Box@{Controls\+Box}!Controls\+Box@{Controls\+Box}}
+\index{Controls\+Box@{Controls\+Box}!Controls\+Box@{Controls\+Box}}
+\subsubsection[{Controls\+Box}]{\setlength{\rightskip}{0pt plus 5cm}Controls\+Box\+::\+Controls\+Box (
+\begin{DoxyParamCaption}
+\item[{{\bf frame\+Worker} $\ast$}]{fw, }
+\item[{Q\+Tab\+Widget $\ast$}]{tw, }
+\item[{Q\+Widget $\ast$}]{parent = {\ttfamily 0}}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [explicit]}}}\label{classControlsBox_aa477862b3fc7916f8cc0b8d401dba638}
+The main controls for Live\+View The \hyperlink{classControlsBox}{Controls\+Box} is a wrapper G\+U\+I class which contains the (mostly) static controls between widgets. After establishing the buttons in the constructor, the class will call the function \hyperlink{classControlsBox_a07e278f28564462700e44c9f7b4da850}{tab\+\_\+changed\+\_\+slot(int index)} to establish widget-\/specific controls and settings. For instance, all profile widgets and F\+F\+Ts make use of the Lines To Average slider rather than the disabled Std Dev N slider. As Qt does not support a pure virtual interface for widgets, each widget must make a connection to its own version of update\+Ceiling(int c), update\+Floor(int f), and any other widget specfic action within its case in tab\+\_\+changed\+\_\+slot. The beginning of this function specifies the behavior for when tabs are exited -\/ all connections made must be disconnected to prevent overlap and repetition. \begin{DoxyAuthor}{Author}
+J\+P Ryan 
+
+Noah Levy
+\end{DoxyAuthor}
+
+
+\subsection{Member Function Documentation}
+\hypertarget{classControlsBox_ad18a240a7acdf8138ea9b8b97f1f629e}{\index{Controls\+Box@{Controls\+Box}!start\+Saving\+Finite@{start\+Saving\+Finite}}
+\index{start\+Saving\+Finite@{start\+Saving\+Finite}!Controls\+Box@{Controls\+Box}}
+\subsubsection[{start\+Saving\+Finite}]{\setlength{\rightskip}{0pt plus 5cm}void Controls\+Box\+::start\+Saving\+Finite (
+\begin{DoxyParamCaption}
+\item[{unsigned int}]{length, }
+\item[{Q\+String}]{fname}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [signal]}}}\label{classControlsBox_ad18a240a7acdf8138ea9b8b97f1f629e}
+
+
+Passes the message to save raw frames at the backend. 
+
+Please note that at the time this message is passed, the file name parameter must be valid or the program will experience a segmentation violation. Very little checking of location validity and permissions is done at the backend. \hypertarget{classControlsBox_a07e278f28564462700e44c9f7b4da850}{\index{Controls\+Box@{Controls\+Box}!tab\+\_\+changed\+\_\+slot@{tab\+\_\+changed\+\_\+slot}}
+\index{tab\+\_\+changed\+\_\+slot@{tab\+\_\+changed\+\_\+slot}!Controls\+Box@{Controls\+Box}}
+\subsubsection[{tab\+\_\+changed\+\_\+slot}]{\setlength{\rightskip}{0pt plus 5cm}void Controls\+Box\+::tab\+\_\+changed\+\_\+slot (
+\begin{DoxyParamCaption}
+\item[{int}]{index}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [slot]}}}\label{classControlsBox_a07e278f28564462700e44c9f7b4da850}
+The function which adjusts the controls for the widgets when the tab in the main window is changed Observe the structure before getting confused\+: First, we find the soon-\/to-\/be current widget by attempting to make a non-\/null cast to the widget at the index we just switched to. Then we disconnect the connections that we made setting up the \char`\"{}cur\+\_\+frameview\char`\"{}, i.\+e, the widget we are now leaving. Then we make new connections and adjustments for the widget we just made a valid pointer to. Crucially, the top slider differs depending on the widget. F\+F\+T widgets and Profile Widgets use it, all others use the Std Dev N slider. \begin{DoxyAuthor}{Author}
+Noah Levy 
+
+J\+P Ryan
+\end{DoxyAuthor}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{controlsbox_8h}{controlsbox.\+h}\item 
+controlsbox.\+cpp\end{DoxyCompactItemize}
