@@ -29,10 +29,8 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     qcp->plotLayout()->addElement(0, 0, plotTitle);
     qcp->addGraph();
 
-    int start = 0;
     if (itype == VERTICAL_MEAN || itype == VERTICAL_CROSS) {
-        start = 1;
-        xAxisMax = frHeight;
+        xAxisMax = fw->getDataHeight() - 1;
         qcp->xAxis->setLabel("Y index");
     } else if (itype == HORIZONTAL_MEAN || itype == HORIZONTAL_CROSS) {
         xAxisMax = frWidth - 1;
@@ -42,7 +40,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     for (int i = 0; i < xAxisMax; i++)
         x[i] = double(i);
     y = QVector<double>(xAxisMax);
-    qcp->xAxis->setRange(QCPRange(start, xAxisMax));
+    qcp->xAxis->setRange(QCPRange(0, xAxisMax));
 
     qcp->addLayer("Box Layer", qcp->currentLayer());
     qcp->setCurrentLayer("Box Layer");
