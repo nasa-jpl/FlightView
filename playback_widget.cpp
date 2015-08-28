@@ -606,8 +606,9 @@ void playback_widget::handleFrame(int frameNum)
         return;
 
     bh->buf_access.lock();
-        if(bh->frame != NULL && bh->dark_data != NULL)
-            dark->update_dark_subtraction(bh->frame, bh->dark_data);
+        if(bh->frame != NULL) {
+            if (bh->dark_data != NULL)
+                dark->update_dark_subtraction(bh->frame, bh->dark_data);
             for (int col = 0; col < frWidth; col++)
                 for(int row = 0; row < frHeight; row++)
                     if (useDSF)
@@ -616,6 +617,7 @@ void playback_widget::handleFrame(int frameNum)
                     else
                         colorMap->data()->setCell(col,row, \
                                             bh->frame[(frHeight - row - 1) * frWidth + col]);
+        }
     bh->buf_access.unlock();
 
     qcp->replot();

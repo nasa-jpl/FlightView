@@ -530,7 +530,7 @@ int ControlsBox::validateFileName(const QString &name)
     if (checkFile.exists() && checkFile.isFile() && checkForOverwrites)
         result = QMessageBox::warning(this, "Frame Save Warning", \
                              tr("File name already exists.\nOverwrite it?"), \
-                             QMessageBox::Save, QMessageBox::Cancel);
+                             QMessageBox::Ok, QMessageBox::Cancel);
 
     return result;
 }

@@ -59,8 +59,8 @@ public:
     int current_frame;
     int old_frame = 1;
     int num_frames;
-    uint16_t *frame; // Array of raw data
-    float *dark_data; // Array of dark subtracted data
+    uint16_t *frame = NULL; // Array of raw data
+    float *dark_data = NULL; // Array of dark subtracted data
 
 public slots:
     void loadFile(QString file_name);
