@@ -23,7 +23,7 @@
 #include "camera_types.h"
 #include "constants.h"
 
-//These Macros set the hardware type that take_object will use to collect data
+//** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
 #define EDT
 //#define OPALKELLY
 
@@ -36,6 +36,7 @@
 #define FPGA_CONFIG_FILE "/home/jryan/NGIS_DATA/jryan/top4ch.bit"
 #endif
 
+//** Debug Macros **
 //#define RESET_GPUS // will reset the GPU hardware on closing the program
 //#define VERBOSE  // sets whether or not to compile the program with some debugging diagnostics
 
