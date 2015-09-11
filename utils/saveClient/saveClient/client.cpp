@@ -9,7 +9,7 @@ Client::Client(QWidget *parent) : QDialog(parent), networkSession(0)
 {
     fileLabel = new QLabel(tr("&Save Location:"));
     filenameEntry = new QLineEdit;
-    filenameEntry->setText( "/home/jryan/NGIS_DATA/jryan/" );
+    filenameEntry->setText( "/" );
     fileLabel->setBuddy(filenameEntry);
 
     statusLabel = new QLabel(tr("This example requires that you run "
@@ -86,8 +86,8 @@ void Client::sendMessage()
     out << (quint16)(block.size() - sizeof(quint16));
 
     // hardcoding
-    QHostAddress aviris_cal;
-    aviris_cal.setAddress( "10.0.0.2" );
+    QHostAddress our_host;
+    our_host.setAddress( "10.0.0.1" ); // replace with the ip address of the computer running liveview
     int portNumber = 65000;
 
     tcpSocket->connectToHost( aviris_cal, portNumber );
