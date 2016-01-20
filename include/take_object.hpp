@@ -68,6 +68,7 @@ class take_object {
 
     boost::thread pdv_thread; // this thread controls the data collection
     int pdv_thread_run = 0;
+	bool pdv_thread_start_complete=false;
 
 	unsigned int size;
     int lastfc;

@@ -136,7 +136,8 @@ void take_object::start()
 #endif
 
     pdv_thread = boost::thread(&take_object::pdv_loop, this);
-    //saving_thread = boost::thread(&take_object::savingLoop, this); //For some reason this doesn't work atm
+    //saving_thread = boost::thread(&take_object::savingLoop, this); //For some reason this doesn't work atm	
+	while(!pdv_thread_start_complete) usleep(1);
 }
 void take_object::setInversion(bool checked, unsigned int factor)
 {
@@ -288,6 +289,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 #ifdef EDT
         pdv_start_image(pdv_p); //Start another
         wait_ptr = pdv_wait_image(pdv_p);
+		pdv_thread_start_complete=true;
 #endif
 #ifdef OPALKELLY
         prev_result = ok_read_frame(wait_ptr, prev_result);
