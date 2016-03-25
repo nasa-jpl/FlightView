@@ -353,7 +353,8 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thread)
 {
     FILE * file_target = fopen(fname.c_str(), "wb");
-
+	sv_count = 0;
+	
     while(save_framenum != 0 || !saving_list.empty())
     {
         if(!saving_list.empty())
@@ -364,6 +365,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 	            saving_list.pop_back();
 	            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
+	            sv_count++;
         	}
         	else-if(saving_list.size() >= NUM_AVGS_SAVE)
         	{
@@ -374,21 +376,21 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 					saving_list.pop_back();
 	        		if(i2 = 1)
 	        		{
-		        		for(unsigned int i = 0; i<rWidth*dataHeight; i++)
+		        		for(unsigned int i = 0; i<frWidth*dataHeight; i++)
 						{
 				        	data[i] = (float)data2[i];
 						}
 	        		}
 	        		else-if(i2 = NUM_AVGS_SAVE)
 	        		{
-		        		for(unsigned int i = 0; i<rWidth*dataHeight; i++)
+		        		for(unsigned int i = 0; i<frWidth*dataHeight; i++)
 						{
 				        	data[i] = (data[i] + (float)data2[i])/NUM_AVGS_SAVE;
 						}
 	        		}
 	        		else
 	        		{
-		        		for(unsigned int i = 0; i<rWidth*dataHeight; i++)
+		        		for(unsigned int i = 0; i<frWidth*dataHeight; i++)
 						{
 				        	data[i] += (float)data2[i];
 						}
@@ -397,6 +399,11 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
         		}
 	            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
+	            sv_count++;
+	            if(save_framenum = 0 && saving_list.size() < NUM_AVGS_SAVE)
+	            {
+	            	saving_list.erase(saving_list.begin(),saving_list.end()) 
+	            }
         	}
 	        else
 	        {
