@@ -358,10 +358,51 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
     {
         if(!saving_list.empty())
         {
-            uint16_t * data = saving_list.back();
-            saving_list.pop_back();
-            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
-            delete[] data;
+        	if(NUM_AVGS_SAVE = 1)
+        	{
+	            uint16_t * data = saving_list.back();
+	            saving_list.pop_back();
+	            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
+	            delete[] data;
+        	}
+        	else-if(saving_list.size() >= NUM_AVGS_SAVE)
+        	{
+        		float * data = new float[frWidth*dataHeight];
+        		for(unsigned int i2 = 0, i2<NUM_AVGS_SAVE; i2++)
+        		{
+					uint16_t * data2 = saving_list.back();
+					saving_list.pop_back();
+	        		if(i2 = 1)
+	        		{
+		        		for(unsigned int i = 0; i<rWidth*dataHeight; i++)
+						{
+				        	data[i] = (float)data2[i];
+						}
+	        		}
+	        		else-if(i2 = NUM_AVGS_SAVE)
+	        		{
+		        		for(unsigned int i = 0; i<rWidth*dataHeight; i++)
+						{
+				        	data[i] = (data[i] + (float)data2[i])/NUM_AVGS_SAVE;
+						}
+	        		}
+	        		else
+	        		{
+		        		for(unsigned int i = 0; i<rWidth*dataHeight; i++)
+						{
+				        	data[i] += (float)data2[i];
+						}
+	        		}
+	        		delete[] data;
+        		}
+	            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
+	            delete[] data;
+        	}
+	        else
+	        {
+	            //We're waiting for data to get added to the list...
+	            usleep(250);
+	        }
         }
         else
         {
