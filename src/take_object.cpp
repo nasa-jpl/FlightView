@@ -352,7 +352,14 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 }
 void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thread)
 {
+	std::size_t pos = fname.find(".");      // position of "." in str
+  	fname = fname.substr(0, pos) + ".raw";
+  	
+  	std::string hdr_fname 
+  	hdr_fname = fname.substr(0,fname.size()-3) + "hdr";   
+    
     FILE * file_target = fopen(fname.c_str(), "wb");
+    FILE * file_hdr_target = fopen(hdr_fname.c_str(), "w");
 	sv_count = 0;
 	
     while(save_framenum != 0 || !saving_list.empty())
@@ -421,6 +428,19 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
     //We're done!
     fclose(file_target);
     printf("Frame save complete!\n");
+    std:string hdr_text = "ENVIdescription = {LIVEVIEW raw export file}";
+	hdr_text= hdr_text + "\n" + "samples = 1280";
+	lines   = $fnum
+	bands   = 480
+	header offset = 0
+	file type = ENVI Standard
+	data type = 12
+	interleave = bil
+	sensor type = Unknown
+	byte order = 0
+	wavelength units = Unknown
+	"
+    fwrite()
 }
 /*void take_object::saveFramesInBuffer()
 {
