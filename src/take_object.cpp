@@ -428,19 +428,25 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
     //We're done!
     fclose(file_target);
     printf("Frame save complete!\n");
-    std:string hdr_text = "ENVIdescription = {LIVEVIEW raw export file}";
-	hdr_text= hdr_text + "\n" + "samples = 1280";
-	lines   = $fnum
-	bands   = 480
-	header offset = 0
-	file type = ENVI Standard
-	data type = 12
-	interleave = bil
-	sensor type = Unknown
-	byte order = 0
-	wavelength units = Unknown
-	"
-    fwrite()
+    std:string hdr_text = "ENVIdescription = {LIVEVIEW raw export file}\n";
+	hdr_text= hdr_text + "samples = " + std::to_string(frWidth) +"\n";
+	hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n";
+	hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
+	hdr_text= hdr_text + "header offset = 0" +"\n";
+	hdr_text= hdr_text + "file type = ENVI Standard" +"\n";
+	if(NUM_AVGS_SAVE = 1)
+	{
+		hdr_text= hdr_text + "data type = 12" +"\n";
+	}
+	else
+	{
+		hdr_text= hdr_text + "data type = 4" +"\n";
+	}
+	hdr_text= hdr_text + "interleave = bil" +"\n";
+	hdr_text= hdr_text + "sensor type = Unknown" +"\n";
+	hdr_text= hdr_text + "byte order = 0" +"\n";
+	hdr_text= hdr_text + "wavelength units = Unknown" +"\n";
+    fwrite(data,sizeof(float),frWidth*dataHeight,file_hdr_target)
 }
 /*void take_object::saveFramesInBuffer()
 {
