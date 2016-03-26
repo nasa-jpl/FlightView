@@ -352,21 +352,20 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 }
 void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thread)
 {
-	std::size_t pos = fname.find(".");      // position of "." in str
-  	fname = fname.substr(0, pos) + ".raw";
-  	
-  	std::string hdr_fname 
-  	hdr_fname = fname.substr(0,fname.size()-3) + "hdr";   
-    
+	if(fname.find(".")!=std::string::npos)
+	    fname.replace(fname.find("."),50,".raw");
+	else
+	    fname+=".raw";
+	    
+	std::string hdr_fname = fname.substr(0,fname.size()-3) + "hdr";   
     FILE * file_target = fopen(fname.c_str(), "wb");
-    FILE * file_hdr_target = fopen(hdr_fname.c_str(), "w");
-	sv_count = 0;
-	
+	int sv_count = 0;
+
     while(save_framenum != 0 || !saving_list.empty())
     {
         if(!saving_list.empty())
         {
-        	if(NUM_AVGS_SAVE = 1)
+        	if(NUM_AVGS_SAVE == 1)
         	{
 	            uint16_t * data = saving_list.back();
 	            saving_list.pop_back();
@@ -381,14 +380,14 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
         		{
 					uint16_t * data2 = saving_list.back();
 					saving_list.pop_back();
-	        		if(i2 = 1)
+	        		if(i2 == 1)
 	        		{
 		        		for(unsigned int i = 0; i<frWidth*dataHeight; i++)
 						{
 				        	data[i] = (float)data2[i];
 						}
 	        		}
-	        		else-if(i2 = NUM_AVGS_SAVE)
+	        		else-if(i2 == NUM_AVGS_SAVE)
 	        		{
 		        		for(unsigned int i = 0; i<frWidth*dataHeight; i++)
 						{
@@ -407,7 +406,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 	            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
 	            sv_count++;
-	            if(save_framenum = 0 && saving_list.size() < NUM_AVGS_SAVE)
+	            if(save_framenum == 0 && saving_list.size() < NUM_AVGS_SAVE)
 	            {
 	            	saving_list.erase(saving_list.begin(),saving_list.end()) 
 	            }
@@ -424,29 +423,28 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
             usleep(250);
         }
     }
-
     //We're done!
     fclose(file_target);
-    printf("Frame save complete!\n");
-    std:string hdr_text = "ENVIdescription = {LIVEVIEW raw export file}\n";
+    
+	std::string hdr_text = "ENVIdescription = {LIVEVIEW raw export file}\n";
 	hdr_text= hdr_text + "samples = " + std::to_string(frWidth) +"\n";
 	hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n";
 	hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
-	hdr_text= hdr_text + "header offset = 0" +"\n";
-	hdr_text= hdr_text + "file type = ENVI Standard" +"\n";
-	if(NUM_AVGS_SAVE = 1)
-	{
-		hdr_text= hdr_text + "data type = 12" +"\n";
-	}
+	hdr_text+= "header offset = 0\n";
+	hdr_text+= "file type = ENVI Standard\n";
+	if(NUM_AVGS_SAVE != 1)
+	    hdr_text+= "data type = 4\n";
 	else
-	{
-		hdr_text= hdr_text + "data type = 4" +"\n";
-	}
-	hdr_text= hdr_text + "interleave = bil" +"\n";
-	hdr_text= hdr_text + "sensor type = Unknown" +"\n";
-	hdr_text= hdr_text + "byte order = 0" +"\n";
-	hdr_text= hdr_text + "wavelength units = Unknown" +"\n";
-    fwrite(data,sizeof(float),frWidth*dataHeight,file_hdr_target)
+	    hdr_text+= "data type = 12\n";
+	hdr_text+= "interleave = bil\n";
+	hdr_text+="sensor type = Unknown\n";
+	hdr_text+= "byte order = 0\n";
+	hdr_text+= "wavelength units = Unknown\n";
+	//std::cout << hdr_text;
+	std::ofstream hdr_target(hdr_fname);
+	hdr_target << hdr_text;
+	hdr_target.close();
+    printf("Frame save complete!\n");
 }
 /*void take_object::saveFramesInBuffer()
 {
