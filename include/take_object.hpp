@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <ostream>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 //multithreading includes
 #include <atomic>
