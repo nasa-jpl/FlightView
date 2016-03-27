@@ -379,7 +379,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
         	else if(saving_list.size() >= NUM_AVGS_SAVE)
         	{
         		float * data = new float[frWidth*dataHeight];
-        		for(unsigned int i2 = 0, i2 < NUM_AVGS_SAVE; i2++)
+        		for(unsigned int i2 = 0; i2 < NUM_AVGS_SAVE; i2++)
         		{
 					uint16_t * data2 = saving_list.back();
 					saving_list.pop_back();
