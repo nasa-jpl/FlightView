@@ -376,7 +376,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 	            delete[] data;
 	            sv_count++;
         	}
-        	else-if(saving_list.size() >= NUM_AVGS_SAVE)
+        	else if(saving_list.size() >= NUM_AVGS_SAVE)
         	{
         		float * data = new float[frWidth*dataHeight];
         		for(unsigned int i2 = 0, i2<NUM_AVGS_SAVE; i2++)
@@ -390,7 +390,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 				        	data[i] = (float)data2[i];
 						}
 	        		}
-	        		else-if(i2 == NUM_AVGS_SAVE)
+	        		else if(i2 == NUM_AVGS_SAVE)
 	        		{
 		        		for(unsigned int i = 0; i<frWidth*dataHeight; i++)
 						{
