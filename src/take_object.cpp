@@ -411,7 +411,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 	            sv_count++;
 	            if(save_framenum == 0 && saving_list.size() < NUM_AVGS_SAVE)
 	            {
-	            	saving_list.erase(saving_list.begin(),saving_list.end()) 
+	            	saving_list.erase(saving_list.begin(),saving_list.end()); 
 	            }
         	}
 	        else
