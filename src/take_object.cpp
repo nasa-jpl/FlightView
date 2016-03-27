@@ -409,6 +409,10 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 	            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
 	            sv_count++;
+	            std::cout << "save_count" << std::to_string(sv_count) << "\n";
+	            std::cout << "list size" << std::to_string(saving_list.size() ) << "\n";
+	            std::cout << "save_framenum" << std::to_string(save_framenum) << "\n";
+	            
 	            if(save_framenum == 0 && saving_list.size() < NUM_AVGS_SAVE)
 	            {
 	            	saving_list.erase(saving_list.begin(),saving_list.end()); 
