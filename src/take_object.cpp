@@ -409,16 +409,15 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 	            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
 	            sv_count++;
-	            std::cout << "save_count" << std::to_string(sv_count) << "\n";
-	            std::cout << "list size" << std::to_string(saving_list.size() ) << "\n";
-	            std::cout << "save_framenum" << std::to_string(save_framenum) << "\n";
-	            
-	            if(save_framenum == 0 && saving_list.size() < NUM_AVGS_SAVE)
-	            {
-	            	saving_list.erase(saving_list.begin(),saving_list.end()); 
-	            }
+	            //std::cout << "save_count" << std::to_string(sv_count) << "\n";
+	            //std::cout << "list size" << std::to_string(saving_list.size() ) << "\n";
+	            //std::cout << "save_framenum" << std::to_string(save_framenum) << "\n";
         	}
-	        else
+	        else if(save_framenum == 0 && saving_list.size() < NUM_AVGS_SAVE)
+            {
+            	saving_list.erase(saving_list.begin(),saving_list.end()); 
+            }
+            else
 	        {
 	            //We're waiting for data to get added to the list...
 	            usleep(250);
@@ -432,8 +431,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
     }
     //We're done!
     fclose(file_target);
-    
-	std::string hdr_text = "ENVIdescription = {LIVEVIEW raw export file}\n";
+	std::string hdr_text = "ENVIdescription = {LIVEVIEW raw export file," + std::to_string(NUM_AVGS_SAVE) + " frame mean per grab}\n";
 	hdr_text= hdr_text + "samples = " + std::to_string(frWidth) +"\n";
 	hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n";
 	hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
