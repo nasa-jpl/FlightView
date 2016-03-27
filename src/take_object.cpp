@@ -353,10 +353,13 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thread)
 {
 	if(fname.find(".")!=std::string::npos)
+	{
 	    fname.replace(fname.find("."),50,".raw");
+	}
 	else
+	{
 	    fname+=".raw";
-	    
+	}    
 	std::string hdr_fname = fname.substr(0,fname.size()-3) + "hdr";   
     FILE * file_target = fopen(fname.c_str(), "wb");
 	int sv_count = 0;
@@ -433,9 +436,13 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 	hdr_text+= "header offset = 0\n";
 	hdr_text+= "file type = ENVI Standard\n";
 	if(NUM_AVGS_SAVE != 1)
+	{
 	    hdr_text+= "data type = 4\n";
+	}
 	else
+	{
 	    hdr_text+= "data type = 12\n";
+	}
 	hdr_text+= "interleave = bil\n";
 	hdr_text+="sensor type = Unknown\n";
 	hdr_text+= "byte order = 0\n";
