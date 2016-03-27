@@ -376,7 +376,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 	            delete[] data;
 	            sv_count++;
         	}
-        	else if(saving_list.size() >= NUM_AVGS_SAVE)
+        	else if(saving_list.size() >= NUM_AVGS_SAVE && NUM_AVGS_SAVE != 1)
         	{
         		float * data = new float[frWidth*dataHeight];
         		for(unsigned int i2 = 0; i2 < NUM_AVGS_SAVE; i2++)
@@ -404,7 +404,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 				        	data[i] += (float)data2[i];
 						}
 	        		}
-	        		delete[] data;
+	        		delete[] data2;
         		}
 	            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
