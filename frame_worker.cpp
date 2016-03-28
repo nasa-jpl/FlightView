@@ -144,12 +144,12 @@ void frameWorker::toggleUseDSF(bool t)
      * \param t State variable for the "Use Dark Subtraction Filter" checkbox. */
     to.useDSF = t;
 }
-void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName)
+void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName, unsigned int numavgsave)
 {
     /*! \brief Calls to start saving frames in cuda_take at a specified location
      * \param framenum Number of frames to save
      * \param name Location of target file */
-    unsigned int numavgsave = 10;
+    //unsigned int numavgsave = 10;
     to.startSavingRaws(verifiedName.toUtf8().constData(), framenum, numavgsave);
 }
 void frameWorker::stopSavingRawData()
