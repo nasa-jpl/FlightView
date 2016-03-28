@@ -19,6 +19,8 @@ take_object::take_object(int channel_num, int number_of_buffers, int frf)
     //For the frame saving
     this->do_raw_save = false;
     save_framenum = 0;
+    save_count=0;
+    save_num_avgs=1;
     saving_list.clear();
 }
 take_object::~take_object()
@@ -213,6 +215,7 @@ void take_object::changeFFTtype(FFT_t t)
 void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames_to_save, unsigned int num_avgs_save)
 {
     save_framenum.store(0, std::memory_order_seq_cst);
+    save_count.store(0, std::memory_order_seq_cst);
 #ifdef VERBOSE
     printf("ssr called\n");
 #endif
@@ -223,6 +226,8 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 #endif
     }
     save_framenum.store(frames_to_save,std::memory_order_seq_cst);
+    save_count.store(0, std::memory_order_seq_cst);
+    save_num_avgs=num_avgs_save;
 #ifdef VERBOSE
     printf("Begin frame save! @ %s\n", raw_file_name.c_str());
 #endif
@@ -232,6 +237,8 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 void take_object::stopSavingRaws()
 {
     save_framenum.store(0,std::memory_order_relaxed);
+    save_count.store(0,std::memory_order_relaxed);
+    save_num_avgs=1;
 #ifdef VERBOSE
     printf("Stop Saving Raws!");
 #endif
@@ -410,6 +417,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 	            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
 	            sv_count++;
+	            save_count++
 	            //std::cout << "save_count: " << std::to_string(sv_count) << "\n";
 	            //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
 	            //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
