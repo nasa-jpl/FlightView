@@ -145,7 +145,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     save_layout = new QGridLayout();
     //First Row
     save_layout->addWidget(&select_save_location, 1, 1, 1, 1);
-    save_layout->addWidget(new QLabel("#Grabs / #Avg's per Grab:"), 2, 1, 1, 1);
+    save_layout->addWidget(new QLabel("Total #Frames / #Averaged:"), 2, 1, 1, 1);
     save_layout->addWidget(new QLabel("Filename:"), 3, 1, 1, 1);
 
     //Second Row
@@ -458,6 +458,7 @@ void ControlsBox::save_remote_slot(const QString &unverifiedName, unsigned int n
     checkForOverwrites = false;
     filename_edit.setText(unverifiedName);
     frames_save_num_edit.setValue(nFrames);
+    frames_save_num_avgs_edit.setValue(1);
     save_finite_button.click();
 }
 void ControlsBox::save_finite_button_slot()
@@ -469,6 +470,9 @@ void ControlsBox::save_finite_button_slot()
     qDebug() << "fname: " << filename_edit.text();
 #endif
     if (validateFileName(filename_edit.text()) == QDialog::Accepted) {
+        if(frames_save_num_edit.value() < frames_save_num_avgs_edit.value()) {
+            frames_save_num_edit.setValue(frames_save_num_avgs_edit.value())
+        }
         emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text(), frames_save_num_avgs_edit.value());
         previousNumSaved = frames_save_num_edit.value();
         stop_saving_frames_button.setEnabled(true);
