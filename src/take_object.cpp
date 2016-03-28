@@ -210,7 +210,7 @@ void take_object::changeFFTtype(FFT_t t)
 {
     whichFFT = t;
 }
-void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames_to_save)
+void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames_to_save, unsigned int num_avgs_save)
 {
     save_framenum.store(0, std::memory_order_seq_cst);
 #ifdef VERBOSE
@@ -227,7 +227,7 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
     printf("Begin frame save! @ %s\n", raw_file_name.c_str());
 #endif
 
-    saving_thread = boost::thread(&take_object::savingLoop,this,raw_file_name);
+    saving_thread = boost::thread(&take_object::savingLoop,this,raw_file_name,num_avgs_save,frames_to_save);
 }
 void take_object::stopSavingRaws()
 {
@@ -350,7 +350,8 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         count++;
     }
 }
-void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thread)
+void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
+//Frame Save Thread (saving_thread)
 {
 	if(fname.find(".")!=std::string::npos)
 	{
@@ -368,7 +369,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
     {
         if(!saving_list.empty())
         {
-        	if(NUM_AVGS_SAVE == 1)
+        	if(num_avgs == 1)
         	{
 	            uint16_t * data = saving_list.back();
 	            saving_list.pop_back();
@@ -376,10 +377,10 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 	            delete[] data;
 	            sv_count++;
         	}
-        	else if(saving_list.size() >= NUM_AVGS_SAVE && NUM_AVGS_SAVE != 1)
+        	else if(saving_list.size() >= num_avgs && num_avgs != 1)
         	{
         		float * data = new float[frWidth*dataHeight];
-        		for(unsigned int i2 = 0; i2 < NUM_AVGS_SAVE; i2++)
+        		for(unsigned int i2 = 0; i2 < num_avgs; i2++)
         		{
 					uint16_t * data2 = saving_list.back();
 					saving_list.pop_back();
@@ -390,11 +391,11 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 				        	data[i] = (float)data2[i];
 						}
 	        		}
-	        		else if(i2 == NUM_AVGS_SAVE)
+	        		else if(i2 == num_avgs)
 	        		{
 		        		for(unsigned int i = 0; i < frWidth*dataHeight; i++)
 						{
-				        	data[i] = (data[i] + (float)data2[i])/NUM_AVGS_SAVE;
+				        	data[i] = (data[i] + (float)data2[i])/num_avgs;
 						}
 	        		}
 	        		else
@@ -409,11 +410,11 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 	            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
 	            sv_count++;
-	            //std::cout << "save_count" << std::to_string(sv_count) << "\n";
-	            //std::cout << "list size" << std::to_string(saving_list.size() ) << "\n";
-	            //std::cout << "save_framenum" << std::to_string(save_framenum) << "\n";
+	            //std::cout << "save_count: " << std::to_string(sv_count) << "\n";
+	            //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
+	            //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
         	}
-	        else if(save_framenum == 0 && saving_list.size() < NUM_AVGS_SAVE)
+	        else if(save_framenum == 0 && saving_list.size() < num_avgs)
             {
             	saving_list.erase(saving_list.begin(),saving_list.end()); 
             }
@@ -437,7 +438,7 @@ void take_object::savingLoop(std::string fname) //Frame Save Thread (saving_thre
 	hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
 	hdr_text+= "header offset = 0\n";
 	hdr_text+= "file type = ENVI Standard\n";
-	if(NUM_AVGS_SAVE != 1)
+	if(num_avgs != 1)
 	{
 	    hdr_text+= "data type = 4\n";
 	}
