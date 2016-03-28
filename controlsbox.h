@@ -92,6 +92,7 @@ public:
     QPushButton stop_saving_frames_button;
     QPushButton select_save_location;
     QSpinBox frames_save_num_edit;
+    QSpinBox frames_save_num_avgs_edit;
     QLineEdit filename_edit;
     QPushButton set_filename_button;
 
