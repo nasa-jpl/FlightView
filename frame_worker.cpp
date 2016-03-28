@@ -90,6 +90,7 @@ void frameWorker::captureFrames()
     clock.start();
     unsigned int last_savenum = 0;
     unsigned int save_num;
+    unsigned int save_ct;
     frame_c *workingFrame;
 
     while(doRun) {
@@ -110,11 +111,11 @@ void frameWorker::captureFrames()
             save_ct = to.save_count.load(std::memory_order_relaxed);
             //std::cout << "save_framenum: " << std::to_string(save_num) << "\n";
             if (to.saving_list.empty() && save_num==0) {
-                emit savingFrameNumChanged(save_num)
+                emit savingFrameNumChanged(save_num);
             }
             else {
                 if (to.saving_list.size() >= to.save_num_avgs)
-                    save_num=1
+                    save_num=1;
                 if(save_num != last_savenum)
                     emit savingFrameNumChanged(to.save_framenum);
             }
