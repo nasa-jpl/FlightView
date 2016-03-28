@@ -107,6 +107,7 @@ void frameWorker::captureFrames()
                 std_dev_processing_frame = curFrame;
             }
             save_num = to.save_framenum.load(std::memory_order_relaxed);
+            std::cout << "save_framenum: " << std::to_string(save_num) << "\n";
             if (!to.saving_list.empty()) {
                 save_num = 1;
             }
