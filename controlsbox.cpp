@@ -471,7 +471,7 @@ void ControlsBox::save_finite_button_slot()
 #endif
     if (validateFileName(filename_edit.text()) == QDialog::Accepted) {
         if(frames_save_num_edit.value() < frames_save_num_avgs_edit.value()) {
-            frames_save_num_edit.setValue(frames_save_num_avgs_edit.value())
+            frames_save_num_edit.setValue(frames_save_num_avgs_edit.value());
         }
         emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text(), frames_save_num_avgs_edit.value());
         previousNumSaved = frames_save_num_edit.value();
