@@ -417,7 +417,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 	            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
 	            sv_count++;
-	            save_count++
+	            save_count++;
 	            //std::cout << "save_count: " << std::to_string(sv_count) << "\n";
 	            //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
 	            //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
