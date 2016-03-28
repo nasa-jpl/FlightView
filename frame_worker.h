@@ -129,7 +129,7 @@ public slots:
 
     /*! \addtogroup savingfunc
      * @{ */
-    void startSavingRawData(unsigned int framenum, QString verifiedName);
+    void startSavingRawData(unsigned int framenum, QString verifiedName, unsigned int numavgsave);
     void stopSavingRawData();
     /*! @} */
 
