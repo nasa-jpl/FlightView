@@ -119,7 +119,7 @@ signals:
      * Please note that at the time this message is passed, the file name parameter must be valid or the program
      * will experience a segmentation violation. Very little checking of location validity and permissions is done
      * at the backend. */
-    void startSavingFinite(unsigned int length, QString fname);
+    void startSavingFinite(unsigned int length, QString fname, unsigned int navgs);
 
     /*! \brief Ends the saving loop at the backend. */
     void stopSaving();
