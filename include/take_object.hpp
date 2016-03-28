@@ -89,7 +89,7 @@ class take_object {
 
     //frame saving variables
     boost::thread saving_thread; // this thread handles the frame saving, as saving frames should not cause data collection to suspend
-	unsigned int save_count;
+	//unsigned int save_count;
     bool do_raw_save;
 	bool saveFrameAvailable;
 	uint16_t * raw_save_ptr;
@@ -129,6 +129,8 @@ public:
     //void panicSave(std::string);
     std::list<uint16_t *> saving_list;
 	std::atomic <uint_fast32_t> save_framenum;
+	std::atomic <uint_fast32_t> save_count;
+	unsigned int save_num_avgs
 
     //Getter functions / variables
     unsigned int getDataHeight();
