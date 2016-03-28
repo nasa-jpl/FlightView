@@ -149,7 +149,8 @@ void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName
     /*! \brief Calls to start saving frames in cuda_take at a specified location
      * \param framenum Number of frames to save
      * \param name Location of target file */
-    to.startSavingRaws(verifiedName.toUtf8().constData(), framenum);
+    unsigned int numavgsave = 10
+    to.startSavingRaws(verifiedName.toUtf8().constData(), framenum, numavgsave);
 }
 void frameWorker::stopSavingRawData()
 {
