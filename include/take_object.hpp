@@ -130,7 +130,7 @@ public:
     std::list<uint16_t *> saving_list;
 	std::atomic <uint_fast32_t> save_framenum;
 	std::atomic <uint_fast32_t> save_count;
-	unsigned int save_num_avgs
+	unsigned int save_num_avgs;
 
     //Getter functions / variables
     unsigned int getDataHeight();
