@@ -77,7 +77,7 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     connect(fw, SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
     connect(controlbox, SIGNAL(startDSFMaskCollection()), fw,SLOT(startCapturingDSFMask()));
     connect(controlbox, SIGNAL(stopDSFMaskCollection()), fw, SLOT(finishCapturingDSFMask()));
-    connect(controlbox, SIGNAL(startSavingFinite(unsigned int, QString)), fw, SLOT(startSavingRawData(unsigned int, QString)));
+    connect(controlbox, SIGNAL(startSavingFinite(unsigned int, QString, unsigned int)), fw, SLOT(startSavingRawData(unsigned int, QString, unsigned int)));
     connect(controlbox, SIGNAL(stopSaving()),fw,SLOT(stopSavingRawData()));
     connect(controlbox->std_dev_N_slider, SIGNAL(valueChanged(int)), fw, SLOT(setStdDev_N(int)));
     connect(fw, SIGNAL(savingFrameNumChanged(unsigned int)), controlbox, SLOT(updateSaveFrameNum_slot(unsigned int)));
