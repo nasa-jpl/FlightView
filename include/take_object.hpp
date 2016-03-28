@@ -124,7 +124,7 @@ public:
     void changeFFTtype(FFT_t t);
 
     // Frame saving functions
-    void startSavingRaws(std::string raw_file_name, unsigned int frames_to_save);
+    void startSavingRaws(std::string raw_file_name, unsigned int frames_to_save, unsigned int num_avgs_save);
 	void stopSavingRaws();
     //void panicSave(std::string);
     std::list<uint16_t *> saving_list;
@@ -140,7 +140,7 @@ public:
 
 private:
 	void pdv_loop();
-    void savingLoop(std::string);
+    void savingLoop(std::string, unsigned int num_avgs, unsigned int num_frames);
     //void saveFramesInBuffer();
     /* This function will save all the frames currently in the frame_ring_buffer
      * to a pre-specified raw file. For the moment, it stops the take_object loop
