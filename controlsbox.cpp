@@ -136,23 +136,28 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
 
     frames_save_num_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
     frames_save_num_edit.setMinimum(1);
-    frames_save_num_edit.setMaximum(100000);
-
+    frames_save_num_edit.setMaximum(10000000);
+    
+    frames_save_num_avgs_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
+    frames_save_num_avgs_edit.setMinimum(1);
+    frames_save_num_avgs_edit.setMaximum(10000000);
+    
     save_layout = new QGridLayout();
     //First Row
     save_layout->addWidget(&select_save_location, 1, 1, 1, 1);
-    save_layout->addWidget(new QLabel("Frames to save:"), 2, 1, 1, 1);
+    save_layout->addWidget(new QLabel("#Grabs / #Avg's per Grab:"), 2, 1, 1, 1);
     save_layout->addWidget(new QLabel("Filename:"), 3, 1, 1, 1);
 
     //Second Row
     //save_layout.addWidget(&start_saving_frames_button, 1, 2, 1, 1);
     save_layout->addWidget(&save_finite_button, 1, 2, 1, 1);
-    save_layout->addWidget(&frames_save_num_edit, 2, 2, 1, 2);
+    save_layout->addWidget(&frames_save_num_edit, 2, 2, 1, 1);
     save_layout->addWidget(&filename_edit, 3, 2, 1, 2);
 
     //Third Row
     save_layout->addWidget(&stop_saving_frames_button, 1, 3, 1, 1);
-
+    save_layout->addWidget(&frames_save_num_avgs_edit, 2, 3, 1, 1);
+    
     SaveButtonsBox.setLayout(save_layout);
 
 /* =========================================================================== */
@@ -464,12 +469,13 @@ void ControlsBox::save_finite_button_slot()
     qDebug() << "fname: " << filename_edit.text();
 #endif
     if (validateFileName(filename_edit.text()) == QDialog::Accepted) {
-        emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text());
+        emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text(), frames_save_num_avgs_edit.value());
         previousNumSaved = frames_save_num_edit.value();
         stop_saving_frames_button.setEnabled(true);
         start_saving_frames_button.setEnabled(false);
         save_finite_button.setEnabled(false);
         frames_save_num_edit.setEnabled(false);
+        frames_save_num_avgs_edit.setEnabled(false);
     }
 }
 void ControlsBox::stop_continous_button_slot()
@@ -482,6 +488,7 @@ void ControlsBox::stop_continous_button_slot()
     start_saving_frames_button.setEnabled(true);
     save_finite_button.setEnabled(true);
     frames_save_num_edit.setEnabled(true);
+    frames_save_num_avgs_edit.setEnabled(true);
     frames_save_num_edit.setValue(previousNumSaved);
 }
 void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
@@ -494,6 +501,7 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
         stop_saving_frames_button.setEnabled(false);
         start_saving_frames_button.setEnabled(true);
         save_finite_button.setEnabled(true);
+        frames_save_num_avgs_edit.setEnabled(true);
         frames_save_num_edit.setEnabled(true);
     }
     frames_save_num_edit.setValue(n);
