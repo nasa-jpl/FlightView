@@ -89,6 +89,7 @@ void frameWorker::captureFrames()
     QTime clock;
     clock.start();
     unsigned int last_savenum = 0;
+    unsigned int last_savect = 0;
     unsigned int save_num;
     unsigned int save_ct;
     frame_c *workingFrame;
@@ -110,15 +111,13 @@ void frameWorker::captureFrames()
             save_num = to.save_framenum.load(std::memory_order_relaxed);
             save_ct = to.save_count.load(std::memory_order_relaxed);
             //std::cout << "save_framenum: " << std::to_string(save_num) << "\n";
-            if (to.saving_list.empty() && save_num==0) {
-                emit savingFrameNumChanged(save_num);
-            }
-            else {
-                if (to.saving_list.size() >= to.save_num_avgs)
-                    save_num=1;
-                if(save_num != last_savenum)
-                    emit savingFrameNumChanged(to.save_framenum);
-            }
+            //if (to.saving_list.empty() && save_num==0)
+              //  emit savingFrameNumChanged(save_num);
+            //if (to.saving_list.size() >= to.save_num_avgs)
+                //save_num=1;
+            if(save_ct != last_savect)
+                emit savingFrameNumChanged(save_ct*to.save_num_avgs);
+            last_savect = save_ct;
             last_savenum = save_num;
             count++;
             if (count % 50 == 0 && count != 0) {
