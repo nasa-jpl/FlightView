@@ -383,6 +383,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 	            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
 	            sv_count++;
+	            save_count++;
         	}
         	else if(saving_list.size() >= num_avgs && num_avgs != 1)
         	{
