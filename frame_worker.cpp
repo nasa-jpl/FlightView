@@ -110,13 +110,11 @@ void frameWorker::captureFrames()
             }
             save_num = to.save_framenum.load(std::memory_order_relaxed);
             save_ct = to.save_count.load(std::memory_order_relaxed);
-            //std::cout << "save_framenum: " << std::to_string(save_num) << "\n";
-            //if (to.saving_list.empty() && save_num==0)
-              //  emit savingFrameNumChanged(save_num);
-            //if (to.saving_list.size() >= to.save_num_avgs)
-                //save_num=1;
-            if(save_ct != last_savect)
+            if(save_ct != last_savect) {
                 emit savingFrameNumChanged(save_ct*to.save_num_avgs);
+				//std::cout << "----\nsave_framenum: " << std::to_string(save_num) << "\n";
+				//std::cout << "save_count: " << std::to_string(save_ct) << "\n---\n";
+			}
             last_savect = save_ct;
             last_savenum = save_num;
             count++;
