@@ -463,9 +463,9 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 	hdr_target << hdr_text;
 	hdr_target.close();
     printf("Frame save complete!\n");
-    if(sv_count < 20)
-    	sleep(1000);
-    save_count.store(0,std::memory_order_relaxed);
+    if(sv_count == 1)
+    	sleep(500);
+    save_count.store(0, std::memory_order_seq_cst);
 }
 /*void take_object::saveFramesInBuffer()
 {
