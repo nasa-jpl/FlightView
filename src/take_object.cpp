@@ -383,7 +383,12 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 	            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
 	            sv_count++;
-	            save_count++;
+				if(sv_count == 1) {
+					save_count.store(1, std::memory_order_seq_cst);
+				}
+				else {
+	            	save_count++;
+				}
         	}
         	else if(saving_list.size() >= num_avgs && num_avgs != 1)
         	{
@@ -418,8 +423,13 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 	            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
 	            delete[] data;
 	            sv_count++;
-	            save_count++;
-	            //std::cout << "save_count: " << std::to_string(sv_count) << "\n";
+				if(sv_count == 1) {
+					save_count.store(1, std::memory_order_seq_cst);
+				}
+				else {
+	            	save_count++;
+				}
+	            //std::cout << "save_count: " << std::to_string(save_count) << "\n";
 	            //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
 	            //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
         	}
@@ -463,10 +473,13 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 	std::ofstream hdr_target(hdr_fname);
 	hdr_target << hdr_text;
 	hdr_target.close();
-    printf("Frame save complete!\n");
-    if(sv_count == 1)
-    	sleep(500);
+	if(sv_count == 1)
+		usleep(500000);
     save_count.store(0, std::memory_order_seq_cst);
+	//std::cout << "save_count: " << std::to_string(save_count) << "\n";
+	//std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
+	//std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
+    printf("Frame save complete!\n");
 }
 /*void take_object::saveFramesInBuffer()
 {
