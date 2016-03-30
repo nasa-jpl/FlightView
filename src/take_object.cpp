@@ -397,14 +397,14 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
         		{
 					uint16_t * data2 = saving_list.back();
 					saving_list.pop_back();
-	        		if(i2 == 1)
+	        		if(i2 == 0)
 	        		{
 		        		for(unsigned int i = 0; i < frWidth*dataHeight; i++)
 						{
 				        	data[i] = (float)data2[i];
 						}
 	        		}
-	        		else if(i2 == num_avgs)
+	        		else if(i2 == num_avgs-1)
 	        		{
 		        		for(unsigned int i = 0; i < frWidth*dataHeight; i++)
 						{
