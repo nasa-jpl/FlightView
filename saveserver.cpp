@@ -63,7 +63,7 @@ void saveServer::readCommand()
     case START_SAVING:
         in >> framesToSave;
         in >> fname;
-        emit startSavingRemote(fname, framesToSave);
+        reference->startSavingRawData(framesToSave, fname);
         break;
     case STATUS:
         std::cout << "Sending back information!" << std::endl;
