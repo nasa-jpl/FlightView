@@ -507,6 +507,7 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
         save_finite_button.setEnabled(true);
         frames_save_num_avgs_edit.setEnabled(true);
         frames_save_num_edit.setEnabled(true);
+        frames_save_num_edit.setValue(previousNumSaved);
     }
     frames_save_num_edit.setValue(n);
 }
