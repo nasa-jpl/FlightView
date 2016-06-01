@@ -149,7 +149,7 @@ private slots:
      * Contains functions which control the processes needed to save frames.
      * @{ */
     void show_save_dialog();
-    void save_remote_slot(const QString &unverifiedName, unsigned int nFrames);
+    void save_remote_slot(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs);
     void save_finite_button_slot();
     void stop_continous_button_slot();
     void updateSaveFrameNum_slot(unsigned int n);
