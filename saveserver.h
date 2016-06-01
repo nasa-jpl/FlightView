@@ -44,7 +44,7 @@ protected:
     void incomingConnection(int socketDescriptor);
 
 signals:
-    void startSavingRemote(const QString &unverifiedName, unsigned int nFrames);
+    void startSavingRemote(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs);
 
 private slots:
     void readCommand();
