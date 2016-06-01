@@ -32,6 +32,7 @@ class saveServer : public QTcpServer
 
     uint16_t framesToSave;
     QString fname;
+    uint16_t navgs;
 
 public:
     saveServer(frameWorker *fw, QObject *parent = 0);
