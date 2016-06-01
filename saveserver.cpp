@@ -63,7 +63,8 @@ void saveServer::readCommand()
     case START_SAVING:
         in >> framesToSave;
         in >> fname;
-        reference->startSavingRawData(framesToSave, fname);
+        in >> navgs;
+        reference->startSavingRawData(framesToSave, fname, navgs);
         break;
     case STATUS:
         std::cout << "Sending back information!" << std::endl;
