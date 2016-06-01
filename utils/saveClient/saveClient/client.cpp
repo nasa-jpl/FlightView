@@ -82,6 +82,7 @@ void Client::sendMessage()
     out << messageType;
     out << (quint16)100;
     out << fname;
+    out << (quint16)1; //  added number of averages to send to saveserver
     out.device()->seek(0);
     out << (quint16)(block.size() - sizeof(quint16));
 
