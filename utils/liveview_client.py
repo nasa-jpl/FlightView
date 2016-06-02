@@ -19,14 +19,16 @@ class saveClient(QtCore.QObject):
 		self.FRSAVE_CMD = 2
 		self.framesToSave = 0
 		self.fname = QtCore.QString("")
+		self.numAvgs = 1
 
 		#CREATING A SOCKET WITH CONNECTIONS
 		self.socket = QtNetwork.QTcpSocket(self)
 		self.socket.error.connect(self.printError)
 
-	def requestFrames(self, file_name, num_frames):
+	def requestFrames(self, file_name, num_frames, n_avgs):
 		self.fname = file_name
 		self.framesToSave = num_frames
+		self.numAvgs = n_avgs
 		self.blockSize = 0
 		self.socket.abort()
 
@@ -37,6 +39,7 @@ class saveClient(QtCore.QObject):
 		commStream.writeUInt16(self.FRSAVE_CMD)
 		commStream.writeUInt16(self.framesToSave)
 		commStream.writeQString(self.fname)
+		commStream.writeUInt16(self.numAvgs)
 		commStream.device().seek(0)
 		commStream.writeUInt16(block.count() - 2)
 		self.socket.connectToHost(self.ipAddress, self.portNumber)
