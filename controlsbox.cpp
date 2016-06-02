@@ -453,12 +453,12 @@ void ControlsBox::show_save_dialog()
     if (!dialog_file_name.isEmpty())
         filename_edit.setText(dialog_file_name);
 }
-void ControlsBox::save_remote_slot(const QString &unverifiedName, unsigned int nFrames)
+void ControlsBox::save_remote_slot(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs)
 {
     checkForOverwrites = false;
     filename_edit.setText(unverifiedName);
     frames_save_num_edit.setValue(nFrames);
-    frames_save_num_avgs_edit.setValue(1);
+    frames_save_num_avgs_edit.setValue(numAvgs);
     save_finite_button.click();
 }
 void ControlsBox::save_finite_button_slot()
