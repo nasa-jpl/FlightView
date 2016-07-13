@@ -91,6 +91,7 @@ void frameWorker::captureFrames()
     unsigned int last_savenum = 0;
     unsigned int save_num;
     frame_c *workingFrame;
+    // int flags=1;
 
     while(doRun) {
         QCoreApplication::processEvents();

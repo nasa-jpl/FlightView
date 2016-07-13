@@ -51,7 +51,7 @@ OTHER_FILES += \
 RESOURCES += \
     images.qrc
 
-QMAKE_CXXFLAGS += -O3 -std=c++11 -march=corei7-avx -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter
+QMAKE_CXXFLAGS += -O2 -std=c++11 -march=native -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter
 #RC_FILE = liveview.rc
 
 # Used for build tracking:
@@ -76,8 +76,9 @@ QMAKE_POST_LINK += cp ../liveview/LiveView.desktop $$DESTDIR;
 #}
 #LIBS += -L$$PWD/lib/ -l$$QCPLIB
 
+#unix:!macx:!symbian: LIBS += -L$$PWD/../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -lokFrontPanel -ldl # -lGL -lQtOpenGL
 
-unix:!macx:!symbian: LIBS += -L$$PWD/../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -lokFrontPanel -ldl # -lGL -lQtOpenGL
+unix:!macx:!symbian: LIBS += -L$$PWD/../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -ldl # -lGL -lQtOpenGL
 INCLUDEPATH += $$PWD/../cuda_take/include\
 $$PWD/../cuda_take/EDT_include
 DEPENDPATH += $$PWD/../cuda_take

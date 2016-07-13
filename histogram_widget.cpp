@@ -78,6 +78,7 @@ void histogram_widget::handleNewFrame()
         histogram->setData(histo_bins,histo_data_vec);
 
         qcp->replot();
+        
     }
     count++;
 }
