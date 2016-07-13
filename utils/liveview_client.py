@@ -1,6 +1,7 @@
 import sys
 #from time import sleep
-from PyQt4 import QtCore, QtGui, QtNetwork
+from PyQt4 import QtCore, QtNetwork
+#from PyQt4 import QtGui; # only if a GUI is desired
 
 class saveClient(QtCore.QObject):
     def __init__(self, address, port, parent = None):
@@ -93,7 +94,7 @@ class saveClient(QtCore.QObject):
             print message
 
 if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)
+    #app = QtGui.QApplication(sys.argv) # not needed unless you want a GUI
     client = saveClient("127.0.0.1", 65000)
     # Save 1024 frames:
     #client.requestFrames("/tmp/frames.raw", 1024); # returns immediately
