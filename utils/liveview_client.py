@@ -93,7 +93,8 @@ class saveClient(QtCore.QObject):
 
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	client = saveClient("10.0.0.2", 65000)
-	#client.requestFrames("/home/jryan/NGIS_DATA/jryan/hahahaha.raw", 10)
+	# Replace the ip address and filename as needed.
+	client = saveClient("10.0.0.1", 65000)
+	#client.requestFrames("/data/test/filename.raw", 10)
 	status = client.requestStatus()
 	print(status)
