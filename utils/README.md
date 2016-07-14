@@ -1,16 +1,12 @@
-///////////////////////////////////////
-///									///
-///		LIVEVIEW UTILITIES			///
-///									///
-///////////////////////////////////////
+#liveview/utils
 
 
 Contents of this folder:
 
-	doc = The documentation for LiveView
+	doc = The documentation for LiveView. Html format. Seriously, download this folder and open index.html
 	doc_latex = Latex version of the documentation
 	saveClient = prototype C++ GUI client for LiveView networking
-	liveview_client.py = Python API for LiveView networking
+	liveview_client.py = Python API for LiveView networking, has simple example at bottom.
 
 
 How to use doc:
@@ -30,9 +26,8 @@ How to use doc:
 saveClient:
 
 	saveClient contains a small GUI application which contains the option to specify 
-	a file path for saving frames. It will automatically attempt to save 10 frames in
-	LiveView, connecting on the address of AVIRIS-CAL at port 65000. This code is currently
-	in alpha and will need to be edited for use as an API.
+	a file path for saving frames. It will automatically connect to 127.0.0.1 at port 65000. 
+	saveClient can run on thesame machine as liveview or an entirely separate computer, such as a laptop or an embedded machine. 
 
 liveview_client.py:
 
@@ -60,7 +55,7 @@ liveview_client.py:
 	The return values are frames_left which specifies the number of frames left to save in
 	the current operation, and the current backend framerate, fps.
 
-How to change harware types (proprietary code):
+How to change harware types (proprietary code, not supported anymore):
 
 	To switch to different type of data link, the following actions must be taken:
 
