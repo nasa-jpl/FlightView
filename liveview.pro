@@ -51,7 +51,7 @@ OTHER_FILES += \
 RESOURCES += \
     images.qrc
 
-QMAKE_CXXFLAGS += -O2 -std=c++11 -march=native -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter
+QMAKE_CXXFLAGS += -O2 -std=c++11 -march=native -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable
 #RC_FILE = liveview.rc
 
 # Used for build tracking:

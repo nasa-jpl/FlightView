@@ -88,8 +88,10 @@ void frameWorker::captureFrames()
     unsigned long count = 0;
     QTime clock;
     clock.start();
-    unsigned int last_savenum = 0;
+    unsigned int last_savenum = 0; // unused, really?
+    unsigned int last_savect = 0;
     unsigned int save_num;
+    unsigned int save_ct;
     frame_c *workingFrame;
     // int flags=1;
 
@@ -108,11 +110,13 @@ void frameWorker::captureFrames()
                 std_dev_processing_frame = curFrame;
             }
             save_num = to.save_framenum.load(std::memory_order_relaxed);
-            if (!to.saving_list.empty()) {
-                save_num = 1;
-            }
-            if(save_num != last_savenum)
-                emit savingFrameNumChanged(to.save_framenum);
+            save_ct = to.save_count.load(std::memory_order_relaxed);
+            if(save_ct != last_savect) {
+                emit savingFrameNumChanged(save_ct*to.save_num_avgs);
+				//std::cout << "----\nsave_framenum: " << std::to_string(save_num) << "\n";
+				//std::cout << "save_count: " << std::to_string(save_ct) << "\n---\n";
+			}
+            last_savect = save_ct;
             last_savenum = save_num;
             count++;
             if (count % 50 == 0 && count != 0) {
@@ -145,12 +149,13 @@ void frameWorker::toggleUseDSF(bool t)
      * \param t State variable for the "Use Dark Subtraction Filter" checkbox. */
     to.useDSF = t;
 }
-void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName)
+void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName, unsigned int numavgsave)
 {
     /*! \brief Calls to start saving frames in cuda_take at a specified location
      * \param framenum Number of frames to save
      * \param name Location of target file */
-    to.startSavingRaws(verifiedName.toUtf8().constData(), framenum);
+    navgs = numavgsave; // keep this around for statusing
+    to.startSavingRaws(verifiedName.toUtf8().constData(), framenum, numavgsave);
 }
 void frameWorker::stopSavingRawData()
 {

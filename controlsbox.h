@@ -92,6 +92,7 @@ public:
     QPushButton stop_saving_frames_button;
     QPushButton select_save_location;
     QSpinBox frames_save_num_edit;
+    QSpinBox frames_save_num_avgs_edit;
     QLineEdit filename_edit;
     QPushButton set_filename_button;
 
@@ -119,7 +120,7 @@ signals:
      * Please note that at the time this message is passed, the file name parameter must be valid or the program
      * will experience a segmentation violation. Very little checking of location validity and permissions is done
      * at the backend. */
-    void startSavingFinite(unsigned int length, QString fname);
+    void startSavingFinite(unsigned int length, QString fname, unsigned int navgs);
 
     /*! \brief Ends the saving loop at the backend. */
     void stopSaving();
@@ -148,7 +149,7 @@ private slots:
      * Contains functions which control the processes needed to save frames.
      * @{ */
     void show_save_dialog();
-    void save_remote_slot(const QString &unverifiedName, unsigned int nFrames);
+    void save_remote_slot(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs);
     void save_finite_button_slot();
     void stop_continous_button_slot();
     void updateSaveFrameNum_slot(unsigned int n);

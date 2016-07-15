@@ -42,7 +42,7 @@ void saveServer::readCommand()
     in.setVersion(QDataStream::Qt_4_0);
     blockSize = 0;
     if (blockSize == 0) {
-        if (clientConnection->bytesAvailable() < sizeof(quint16)) {
+        if (clientConnection->bytesAvailable() < (qint64) sizeof(quint16)) {
             clientConnection->disconnectFromHost();
             std::cout << "No data received..." << std::endl;
             return;
@@ -63,8 +63,9 @@ void saveServer::readCommand()
     case START_SAVING:
         in >> framesToSave;
         in >> fname;
-        reference->startSavingRawData(framesToSave, fname);
-        // emit startSavingRemote(fname, framesToSave);
+        in >> navgs;
+        reference->navgs = navgs;
+        reference->startSavingRawData(framesToSave, fname, navgs);
         break;
     case STATUS:
         std::cout << "Sending back information!" << std::endl;
@@ -74,6 +75,7 @@ void saveServer::readCommand()
         out << (uint16_t)0;
         out << (uint16_t)reference->to.save_framenum; // send the number of frames left to save, and
         out << (uint16_t)reference->delta;            // send the frames per second
+        out << (uint16_t)reference->navgs;                       // number of averages, new code, bogus
         out.device()->seek(0);
         out << (uint16_t)(block.size() - sizeof(quint16));
 

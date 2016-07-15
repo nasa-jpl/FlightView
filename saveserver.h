@@ -32,6 +32,7 @@ class saveServer : public QTcpServer
 
     uint16_t framesToSave;
     QString fname;
+    uint16_t navgs;
 
 public:
     saveServer(frameWorker *fw, QObject *parent = 0);
@@ -43,7 +44,7 @@ protected:
     void incomingConnection(int socketDescriptor);
 
 signals:
-    void startSavingRemote(const QString &unverifiedName, unsigned int nFrames);
+    void startSavingRemote(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs);
 
 private slots:
     void readCommand();

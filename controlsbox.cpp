@@ -1,6 +1,6 @@
 #include "controlsbox.h"
 
-static const char notAllowedChars[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`' ";
+static const char notAllowedChars[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`'";
 
 ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     QGroupBox(parent)
@@ -136,23 +136,28 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
 
     frames_save_num_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
     frames_save_num_edit.setMinimum(1);
-    frames_save_num_edit.setMaximum(100000);
-
+    frames_save_num_edit.setMaximum(10000000);
+    
+    frames_save_num_avgs_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
+    frames_save_num_avgs_edit.setMinimum(1);
+    frames_save_num_avgs_edit.setMaximum(10000000);
+    
     save_layout = new QGridLayout();
     //First Row
     save_layout->addWidget(&select_save_location, 1, 1, 1, 1);
-    save_layout->addWidget(new QLabel("Frames to save:"), 2, 1, 1, 1);
+    save_layout->addWidget(new QLabel("Total #Frames / #Averaged:"), 2, 1, 1, 1);
     save_layout->addWidget(new QLabel("Filename:"), 3, 1, 1, 1);
 
     //Second Row
     //save_layout.addWidget(&start_saving_frames_button, 1, 2, 1, 1);
     save_layout->addWidget(&save_finite_button, 1, 2, 1, 1);
-    save_layout->addWidget(&frames_save_num_edit, 2, 2, 1, 2);
+    save_layout->addWidget(&frames_save_num_edit, 2, 2, 1, 1);
     save_layout->addWidget(&filename_edit, 3, 2, 1, 2);
 
     //Third Row
     save_layout->addWidget(&stop_saving_frames_button, 1, 3, 1, 1);
-
+    save_layout->addWidget(&frames_save_num_avgs_edit, 2, 3, 1, 1);
+    
     SaveButtonsBox.setLayout(save_layout);
 
 /* =========================================================================== */
@@ -448,11 +453,12 @@ void ControlsBox::show_save_dialog()
     if (!dialog_file_name.isEmpty())
         filename_edit.setText(dialog_file_name);
 }
-void ControlsBox::save_remote_slot(const QString &unverifiedName, unsigned int nFrames)
+void ControlsBox::save_remote_slot(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs)
 {
     checkForOverwrites = false;
     filename_edit.setText(unverifiedName);
     frames_save_num_edit.setValue(nFrames);
+    frames_save_num_avgs_edit.setValue(numAvgs);
     save_finite_button.click();
 }
 void ControlsBox::save_finite_button_slot()
@@ -464,12 +470,16 @@ void ControlsBox::save_finite_button_slot()
     qDebug() << "fname: " << filename_edit.text();
 #endif
     if (validateFileName(filename_edit.text()) == QDialog::Accepted) {
-        emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text());
+        if(frames_save_num_edit.value() < frames_save_num_avgs_edit.value()) {
+            frames_save_num_edit.setValue(frames_save_num_avgs_edit.value());
+        }
+        emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text(), frames_save_num_avgs_edit.value());
         previousNumSaved = frames_save_num_edit.value();
         stop_saving_frames_button.setEnabled(true);
         start_saving_frames_button.setEnabled(false);
         save_finite_button.setEnabled(false);
         frames_save_num_edit.setEnabled(false);
+        frames_save_num_avgs_edit.setEnabled(false);
     }
 }
 void ControlsBox::stop_continous_button_slot()
@@ -482,6 +492,7 @@ void ControlsBox::stop_continous_button_slot()
     start_saving_frames_button.setEnabled(true);
     save_finite_button.setEnabled(true);
     frames_save_num_edit.setEnabled(true);
+    frames_save_num_avgs_edit.setEnabled(true);
     frames_save_num_edit.setValue(previousNumSaved);
 }
 void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
@@ -494,12 +505,16 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
         stop_saving_frames_button.setEnabled(false);
         start_saving_frames_button.setEnabled(true);
         save_finite_button.setEnabled(true);
+        frames_save_num_avgs_edit.setEnabled(true);
         frames_save_num_edit.setEnabled(true);
+        frames_save_num_edit.setValue(previousNumSaved);
     }
     frames_save_num_edit.setValue(n);
 }
 int ControlsBox::validateFileName(const QString &name)
 {
+    // TODO: Supply meaningful result from this function
+    // And accept the result into the calling function, whatever that is
     int result = QDialog::Accepted;
 
     // No filename
@@ -528,10 +543,14 @@ int ControlsBox::validateFileName(const QString &name)
     // File exists
     QFileInfo checkFile(name);
     if (checkFile.exists() && checkFile.isFile() && checkForOverwrites)
-        result = QMessageBox::warning(this, "Frame Save Warning", \
+        result = (quint16) QMessageBox::warning(this, "Frame Save Warning", \
                              tr("File name already exists.\nOverwrite it?"), \
                              QMessageBox::Ok, QMessageBox::Cancel);
-
+        // seems to return 1024 (2^10) if accepted and 4194304 (2^22) if rejected. Hmm... Are we casting incorrectly? Seems like a 32 bit span.
+        // "OK" aka "Accepted" should return a 1, and cancel should return a 0.
+        // HORRIBLE hack: (added casting to quint16 though)
+        if(result == 1024)
+            result = 1;
     return result;
 }
 void ControlsBox::start_dark_collection_slot()

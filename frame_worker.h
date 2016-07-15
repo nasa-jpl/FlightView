@@ -67,6 +67,7 @@ public:
     frame_c *std_dev_frame = NULL;
 
     float delta;
+    quint16 navgs = 1;
 
     /* Used for frameview widgets */
     bool displayCross = true;
@@ -129,7 +130,7 @@ public slots:
 
     /*! \addtogroup savingfunc
      * @{ */
-    void startSavingRawData(unsigned int framenum, QString verifiedName);
+    void startSavingRawData(unsigned int framenum, QString verifiedName, unsigned int numavgsave);
     void stopSavingRawData();
     /*! @} */
 
