@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <ostream>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 //multithreading includes
 #include <atomic>
@@ -87,7 +89,7 @@ class take_object {
 
     //frame saving variables
     boost::thread saving_thread; // this thread handles the frame saving, as saving frames should not cause data collection to suspend
-	unsigned int save_count;
+	//unsigned int save_count;
     bool do_raw_save;
 	bool saveFrameAvailable;
 	uint16_t * raw_save_ptr;
@@ -122,11 +124,13 @@ public:
     void changeFFTtype(FFT_t t);
 
     // Frame saving functions
-    void startSavingRaws(std::string raw_file_name, unsigned int frames_to_save);
+    void startSavingRaws(std::string raw_file_name, unsigned int frames_to_save, unsigned int num_avgs_save);
 	void stopSavingRaws();
     //void panicSave(std::string);
     std::list<uint16_t *> saving_list;
 	std::atomic <uint_fast32_t> save_framenum;
+	std::atomic <uint_fast32_t> save_count;
+	unsigned int save_num_avgs;
 
     //Getter functions / variables
     unsigned int getDataHeight();
@@ -138,7 +142,7 @@ public:
 
 private:
 	void pdv_loop();
-    void savingLoop(std::string);
+    void savingLoop(std::string, unsigned int num_avgs, unsigned int num_frames);
     //void saveFramesInBuffer();
     /* This function will save all the frames currently in the frame_ring_buffer
      * to a pre-specified raw file. For the moment, it stops the take_object loop

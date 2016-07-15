@@ -20,5 +20,6 @@ static const unsigned int CPU_FRAME_BUFFER_SIZE = 1500; // The frame ring buffer
 static const unsigned int GPU_FRAME_BUFFER_SIZE = MAX_N*3/2; //1500
 static const unsigned int BLOCK_SIZE = 20;
 static const unsigned int NUMBER_OF_BINS = 1024; // For histograms
+//static const unsigned int NUM_AVGS_SAVE=10; //# averages for saved frame
 
 #endif /* CONSTANTS_H_ */
