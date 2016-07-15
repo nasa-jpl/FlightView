@@ -361,7 +361,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 {
 	if(fname.find(".")!=std::string::npos)
 	{
-	    fname.replace(fname.find("."),50,".raw");
+	    fname.replace(fname.find("."),std::string::npos,".raw");
 	}
 	else
 	{
@@ -377,6 +377,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
         {
         	if(num_avgs == 1)
         	{
+                // This is the "normal" behavior. 
 	            uint16_t * data = saving_list.back();
 	            saving_list.pop_back();
 	            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
@@ -472,6 +473,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 	std::ofstream hdr_target(hdr_fname);
 	hdr_target << hdr_text;
 	hdr_target.close();
+    // What does this usleep do? --EHL
 	if(sv_count == 1)
 		usleep(500000);
     save_count.store(0, std::memory_order_seq_cst);
@@ -505,6 +507,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     delete[] buf_copy;
 }*/
 #ifdef OPALKELLY
+// depreciated, no longer maintained
 okCFrontPanel* take_object::initializeFPGA()
 {
     // Open the first XEM - try all board types.
