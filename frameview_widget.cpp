@@ -68,7 +68,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     colorMap->data()->setKeyRange(QCPRange(0, frWidth));
     colorMap->setDataRange(QCPRange(floor, ceiling));
 
-    colorMap->setGradient(QCPColorGradient::gpJet);
+    colorMap->setGradient(QCPColorGradient::gpJet); //gpJet for color, gpGrayscale for gray
     colorMap->setInterpolate(false);
     colorMap->setAntialiased(false);
     QCPMarginGroup * marginGroup = new QCPMarginGroup(qcp);
@@ -187,7 +187,7 @@ void frameview_widget::handleNewFrame()
             float * local_image_ptr = fw->std_dev_frame->std_dev_data;
             for (int col = 0; col < frWidth; col++)
                 for (int row = 0; row < frHeight; row++)
-                    colorMap->data()->setCell(col, row, (uint16_t)local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                    colorMap->data()->setCell(col, row, (double_t)local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
             qcp->replot();
         }
     }
