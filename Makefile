@@ -70,7 +70,7 @@ OBJDIR = obj
 IDIR      = -Iinclude -IEDT_include
 
 #SECOND NOTE: ONLY BUILD WITH O1! Somehow, someway, O2 optimizes out things that nvcc needs and O0 has linker redefinition errors. #JankCity <- This has been fixed, but still a good idea
-CFLAGS     = -g -O1 -D HOST=\"`hostname`\" -D UNAME=\"`whoami`\" #This is added to the compilation of every file, enables gdb debugging symbols (-g) and limited optimization (-O1) 
+CFLAGS     = -g -O3 -D HOST=\"`hostname`\" -D UNAME=\"`whoami`\" #This is added to the compilation of every file, enables gdb debugging symbols (-g) and limited optimization (-O1) 
 # and defines some global constants that interact with the operating 
 ifeq ($(HARDWARE),OPALKELLY)
 CFLAGS	   += -I$(okFP_SDK)

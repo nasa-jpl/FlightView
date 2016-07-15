@@ -37,7 +37,10 @@ void mean_filter::calculate_means()
     memset(tap_profile, 0, MAX_HEIGHT*TAP_WIDTH*sizeof(*tap_profile));
     memset(frame->vertical_mean_profile, 0, MAX_HEIGHT*sizeof(*(frame->vertical_mean_profile)));
     memset(frame->horizontal_mean_profile, 0, MAX_WIDTH*sizeof(*(frame->horizontal_mean_profile)));
-    for(int r = beginRow; r < height; r++)
+    
+	//std::cout<<"frWidth " <<frWidth<< std::endl;
+
+	for(int r = beginRow; r < height; r++)
     {
         for(int c = beginCol; c < width; c++)
         {

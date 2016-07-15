@@ -16,6 +16,7 @@ using namespace std;
 
 void simple_sensor_grab()
 {
+	
 	take_object to;
 	to.start();
     cout << "running to" << std::endl;
@@ -47,6 +48,7 @@ void fft_test()
 	fclose(f);
 	//data_in = myFFT.doRealFFT(data_in,1024,0);
 	myFFT.doRealFFT(data_in,0,data_out);
+	//std::cout<<"Ring head"<< std::endl;	
 	FILE * fw = fopen("rfft_out.bin","wb");
 	fwrite(data_out,sizeof(float),FFT_INPUT_LENGTH/2,fw);
 	fclose(fw);
@@ -69,7 +71,7 @@ void simple_pdv_test()
 
 }
 int main()
-{
+{		
 	//simple_pdv_test();
     //fft_test();
 	//sensor_grab_test();

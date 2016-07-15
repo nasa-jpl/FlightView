@@ -67,7 +67,8 @@ void fft::doRealFFT(float * real_arr, unsigned int ring_head,float *fft_real_res
      */
 	CFFT  =  doFFT(real_arr, ring_head);
 	double max = 0;
-
+	
+	//std::cout<<"Ring head late= "<< ring_head<< std::endl;
 	//realFFT[len/2] = (float) std::real(CFFT[len/2]);
 	for(unsigned int i = 0; i < FFT_INPUT_LENGTH/2; i++)
 	{

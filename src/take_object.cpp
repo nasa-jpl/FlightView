@@ -134,9 +134,10 @@ void take_object::start()
     numbufs = 16;
     pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 #endif
-
     pdv_thread = boost::thread(&take_object::pdv_loop, this);
-    //saving_thread = boost::thread(&take_object::savingLoop, this); //For some reason this doesn't work atm
+    //saving_thread = boost::thread(&take_object::savingLoop, this); //For some reason this doesn't work atm	
+	//usleep(350000);	
+	while(!pdv_thread_start_complete) usleep(1); // Added by Michael Bernas 2016. Used to prevent thread error when starting without a camera
 }
 void take_object::setInversion(bool checked, unsigned int factor)
 {
@@ -269,7 +270,7 @@ FFT_t take_object::getFFTtype()
 // private functions
 void take_object::pdv_loop() //Producer Thread (pdv_thread)
 {
-    count = 0;
+	count = 0;
 
     uint16_t framecount = 1;
     uint16_t last_framecount = 0;
@@ -282,12 +283,13 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 #endif
 
     while(pdv_thread_run == 1)
-    {
-        curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+    {	
+		curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
         curFrame->reset();
 #ifdef EDT
-        pdv_start_image(pdv_p); //Start another
-        wait_ptr = pdv_wait_image(pdv_p);
+		pdv_start_image(pdv_p); //Start another
+		wait_ptr = pdv_wait_image(pdv_p);
+		pdv_thread_start_complete=true;
 #endif
 #ifdef OPALKELLY
         prev_result = ok_read_frame(wait_ptr, prev_result);
