@@ -135,7 +135,6 @@ void take_object::start()
     pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 #endif
     pdv_thread = boost::thread(&take_object::pdv_loop, this);
-    //saving_thread = boost::thread(&take_object::savingLoop, this); //For some reason this doesn't work atm	
 	//usleep(350000);	
 	while(!pdv_thread_start_complete) usleep(1); // Added by Michael Bernas 2016. Used to prevent thread error when starting without a camera
 }

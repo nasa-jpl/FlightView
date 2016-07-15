@@ -41,7 +41,7 @@ NB -> If git is already installed, skip step 1. If you are running a version of 
 	a. Debian Wheezy uses v4.2 in its repositories by default, therefore to obtain compatibility with newer versions of cuda you must use wheezy-backports.
 	Append a url to /etc/apt/sources.list with the following command
 
-    	$echo "deb http://http.debian.net/debian wheezy-backports main" >> /etc/apt/sources.list
+    	$echo "deb http://http.debian.net/debian wheezy-backports main non-free contrib" >> /etc/apt/sources.list
 
 	b. Update the libraries
 
