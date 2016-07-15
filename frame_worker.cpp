@@ -25,9 +25,9 @@ frameWorker::frameWorker(QObject *parent) :
     frHeight = to.getFrameHeight();
     frWidth = to.getFrameWidth();
     dataHeight = to.getDataHeight();
-
     base_ceiling = 16383; // max_val[camera_type()];
 }
+
 frameWorker::~frameWorker()
 {
 #ifdef VERBOSE
@@ -322,6 +322,14 @@ void frameWorker::setStdDev_N(int newN)
      *  \param newN Value from the Std. Dev. N slider */
     to.setStdDev_N(newN);
 }
+
+void frameWorker::setColorScheme(int scheme)
+{
+    /*! \brief Passes the color scheme integer through to the frameview_widget slot.
+     *  \param scheme sets the scheme */
+    emit setColorScheme_signal(scheme);
+}
+
 void frameWorker::stop()
 {
     /*! \brief Ends the event loop and sets up the workerThread to be deallocated later. */

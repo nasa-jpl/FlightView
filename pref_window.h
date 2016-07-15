@@ -10,6 +10,9 @@
 #include <QLineEdit>
 #include <QFileDialog>
 #include <QTabWidget>
+#include <QComboBox>
+#include <QLabel>
+
 //#include <QIntValidator>
 
 /* Live View includes */
@@ -64,6 +67,10 @@ class preferenceWindow : public QWidget
     QRadioButton *nativeScaleButton;
     QRadioButton *invert16bitButton;
     QRadioButton *invert14bitButton;
+
+    QLabel *ColorLabel;
+    QComboBox *ColorScalePicker;
+
 public:
     preferenceWindow(frameWorker *fw, QTabWidget *qtw, QWidget *parent = 0);
 
@@ -79,6 +86,7 @@ private slots:
     void invertRange();
     void ignoreFirstRow(bool checked);
     void ignoreLastRow(bool checked);
+    void setColorScheme(int index);
 };
 
 #endif

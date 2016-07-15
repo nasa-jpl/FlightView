@@ -83,6 +83,8 @@ public:
     int crossWidth = -1;
     bool isSkippingFirst = false;
     bool isSkippingLast = false;
+    bool use_gray = false;
+    int color_scheme = 0;
 
     /*! Determines the default ceiling for all raw data based widgets based on the camera_t */
     int base_ceiling;
@@ -115,6 +117,8 @@ signals:
     /*! \brief Closes the class event loop and calls to deallocate the workerThread. */
     void finished();
 
+    void setColorScheme_signal(int scheme);
+
 public slots:
     /*! \addtogroup renderfunc
      * @{ */
@@ -143,6 +147,7 @@ public slots:
     void updateCrossDiplay(bool checked);
     void setStdDev_N(int newN);
     void stop();
+    void setColorScheme(int scheme);
 
 };
 

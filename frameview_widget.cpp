@@ -35,6 +35,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     default:
         break;
     }
+    // Note, this code is only run once, at the initial execution of liveview.
     floor = 0;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
@@ -69,6 +70,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     colorMap->setDataRange(QCPRange(floor, ceiling));
 
     colorMap->setGradient(QCPColorGradient::gpJet); //gpJet for color, gpGrayscale for gray
+
     colorMap->setInterpolate(false);
     colorMap->setAntialiased(false);
     QCPMarginGroup * marginGroup = new QCPMarginGroup(qcp);
@@ -97,6 +99,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     connect(qcp->yAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(colorMapScrolledX(QCPRange)));
     connect(&displayCrosshairCheck, SIGNAL(toggled(bool)), fw, SLOT(updateCrossDiplay(bool)));
+    connect(fw, SIGNAL(setColorScheme_signal(int)), this, SLOT(handleNewColorScheme(int)));
 
     if (image_type==BASE || image_type==DSF) {
         this->setFocusPolicy(Qt::ClickFocus); //Focus accepted via clicking
@@ -130,6 +133,54 @@ void frameview_widget::toggleDisplayCrosshair()
 }
 
 // public slots
+
+void frameview_widget::handleNewColorScheme(int scheme)
+{
+    switch(scheme)
+    {
+    case 0:
+        colorMap->setGradient(QCPColorGradient::gpJet);
+        break;
+    case 1:
+        colorMap->setGradient(QCPColorGradient::gpGrayscale);
+        break;
+    case 2:
+        colorMap->setGradient(QCPColorGradient::gpThermal);
+        break;
+    case 3:
+        colorMap->setGradient(QCPColorGradient::gpHues);
+        break;
+    case 4:
+        colorMap->setGradient(QCPColorGradient::gpPolar);
+        break;
+    case 5:
+        colorMap->setGradient(QCPColorGradient::gpHot);
+        break;
+    case 6:
+        colorMap->setGradient(QCPColorGradient::gpCold);
+        break;
+    case 7:
+        colorMap->setGradient(QCPColorGradient::gpNight);
+        break;
+    case 8:
+        colorMap->setGradient(QCPColorGradient::gpIon);
+        break;
+    case 9:
+        colorMap->setGradient(QCPColorGradient::gpCandy);
+        break;
+    case 10:
+        colorMap->setGradient(QCPColorGradient::gpGeography);
+        break;
+    default:
+        std::cerr << "color scheme not recognized, number: " << fw->color_scheme << std::endl;
+        colorMap->setGradient(QCPColorGradient::gpJet);
+        break;
+    }
+
+
+}
+
+
 void frameview_widget::handleNewFrame()
 {
     /*! \brief Rendering function for a frameview

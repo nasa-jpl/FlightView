@@ -74,10 +74,13 @@ void preferenceWindow::createRenderingTab()
     paraPixCheck   = new QCheckBox(tr("Enable Parallel Pixel Mapping"));
     ignoreFirstCheck = new QCheckBox(tr("Ignore First Row Data"));
     ignoreLastCheck  = new QCheckBox(tr("Ignore Last Row Data"));
+    ignoreFirstCheck->setToolTip("Check if first row contains metadata. Only available on certain liveview tabs (profile and FFT)");
+    ignoreLastCheck->setToolTip("Check if last row contains metadata. Only available on certain liveview tabs (profile and FFT)");
 
     nativeScaleButton = new QRadioButton(tr("Native Scale"));
     invert16bitButton = new QRadioButton(tr("16-bit Bright-Dark Swap"));
     invert14bitButton = new QRadioButton(tr("14-bit Bright-Dark Swap"));
+
     nativeScaleButton->setChecked(true);
 
     camera_label = new QLabel;
@@ -96,6 +99,24 @@ void preferenceWindow::createRenderingTab()
     base_scale = max_val[camera];
     rightBound->setText(tr("%1").arg(base_scale));
 
+    ColorLabel = new QLabel();
+    ColorLabel->setText("Image Color Scheme:");
+
+    ColorScalePicker = new QComboBox();
+    ColorScalePicker->addItem("Jet");
+    ColorScalePicker->addItem("Grayscale");
+    ColorScalePicker->addItem("Thermal");
+    ColorScalePicker->addItem("Hues");
+    ColorScalePicker->addItem("Polar");
+    ColorScalePicker->addItem("Hot");
+    ColorScalePicker->addItem("Cold");
+    ColorScalePicker->addItem("Night");
+    ColorScalePicker->addItem("Ion");
+    ColorScalePicker->addItem("Spectrometer Candy");
+    ColorScalePicker->addItem("Geography");
+    ColorScalePicker->setToolTip("So many to choose from! Use the scroll wheel while hovering over the combo box");
+
+
     /* If the data range needs to be adjustable later, uncomment this and the #include and definition line in the header
      * and commment out the setReadOnly lines below.
     valid = new QIntValidator();
@@ -112,6 +133,10 @@ void preferenceWindow::createRenderingTab()
     connect(invert14bitButton, SIGNAL(clicked()), this, SLOT(invertRange()));
     connect(nativeScaleButton, SIGNAL(clicked()), this, SLOT(invertRange()));
     connect(paraPixCheck, SIGNAL(clicked(bool)), this, SLOT(enableParaPixMap(bool)));
+    connect(ColorScalePicker, SIGNAL(activated(int)), this, SLOT(setColorScheme(int)));
+    //connect(ColorScalePicker, SIGNAL(activated(int)), this, SLOT(fw->setColorScheme(int)));
+
+
 
     QGridLayout *layout = new QGridLayout();
     layout->addWidget(camera_label, 0, 0, 1, 4);
@@ -125,6 +150,8 @@ void preferenceWindow::createRenderingTab()
     layout->addWidget(invert14bitButton, 3, 2, 1, 1);
     layout->addWidget(ignoreFirstCheck, 4, 0, 1, 2);
     layout->addWidget(ignoreLastCheck, 4, 2, 1, 2);
+    layout->addWidget(ColorLabel, 5, 0);
+    layout->addWidget(ColorScalePicker, 5,1);
 
     renderingTab->setLayout(layout);
     //enableControls(mainWinTab->currentIndex());
@@ -164,6 +191,7 @@ void preferenceWindow::invertRange()
     {
         rightBound->setText(tr("65535"));
         fw->to.setInversion(true, factor);
+
     }
     else
     {
@@ -185,4 +213,11 @@ void preferenceWindow::enableParaPixMap(bool checked)
 {
     /*! \brief Enables or Diables the Parallel Pixel Mapping based on the check box in the Rendering Tab */
     fw->to.paraPixRemap(checked);
+}
+
+void preferenceWindow::setColorScheme(int index)
+{
+    //fw->color_scheme = index;
+    fw->setColorScheme(index);
+    //std::cerr << "selected index: " << index << std::endl;
 }

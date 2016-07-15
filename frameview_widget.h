@@ -91,6 +91,7 @@ public slots:
     /*! \addtogroup renderfunc Rendering Functions
      * Functions which are responsible for the rendering of plots in a widget.
      * @{ */
+    void handleNewColorScheme(int scheme);
     void handleNewFrame();
     /*! @} */
 
