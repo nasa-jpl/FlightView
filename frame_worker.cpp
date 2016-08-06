@@ -229,7 +229,7 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
         }  
     }
     crossStartRow = isSkippingFirst && crossStartRow == 0 ? 1 : crossStartRow;
-    crossHeight = isSkippingLast && crossHeight == int(frHeight) ? frHeight - 1 : frHeight;
+    crossHeight = isSkippingLast && crossHeight == int(frHeight) ? frHeight - 1 : crossHeight;
     to.updateVertRange(crossStartRow, crossHeight);
     to.updateHorizRange(crossStartCol, crossWidth);
 }
