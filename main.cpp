@@ -38,7 +38,7 @@
 int main(int argc, char *argv[])
 {
     /* Step 1: Setup this QApplication */
-    QApplication::setGraphicsSystem("raster"); //This is intended to make 2D rendering faster
+    //QApplication::setGraphicsSystem("raster"); //This is intended to make 2D rendering faster
     QApplication a(argc, argv);
 
     /* Step 2: Load the splash screen */

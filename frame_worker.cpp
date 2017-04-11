@@ -25,7 +25,7 @@ frameWorker::frameWorker(QObject *parent) :
     frHeight = to.getFrameHeight();
     frWidth = to.getFrameWidth();
     dataHeight = to.getDataHeight();
-    base_ceiling = 16383; // max_val[camera_type()];
+    base_ceiling = 65536; // max_val[camera_type()];
 }
 
 frameWorker::~frameWorker()

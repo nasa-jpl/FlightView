@@ -282,6 +282,7 @@ void ControlsBox::tab_changed_slot(int index)
             if (p_frameview->image_type == STD_DEV) {
                 std_dev_N_slider->setEnabled(true);
                 std_dev_N_edit->setEnabled(true);
+                low_increment_cbox.setChecked(true);
             } else {
                 std_dev_N_slider->setEnabled(false);
                 std_dev_N_edit->setEnabled(false);
