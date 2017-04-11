@@ -111,6 +111,11 @@ void take_object::start()
     default: cam_type = CL_6604B; pixRemap = true; break;
     }
 	setup_filter(cam_type);
+	if(pixRemap) {
+		std::cout << "2s compliment filter ENABLED" << std::endl;
+	} else {
+		std::cout << "2s compliment filter DISABLED" << std::endl;
+	}
 
 #ifdef EDT
     frHeight = cam_type == CL_6604A ? dataHeight - 1 : dataHeight;
@@ -148,6 +153,12 @@ void take_object::setInversion(bool checked, unsigned int factor)
 void take_object::paraPixRemap(bool checked )
 {
     pixRemap = checked;
+	std::cout << "2s Compliment Filter ";
+	if(pixRemap) {
+		std::cout << "ENABLED" << std::endl;
+	} else {
+		std::cout << "DISABLED" << std::endl;
+	}
 }
 void take_object::startCapturingDSFMask()
 {

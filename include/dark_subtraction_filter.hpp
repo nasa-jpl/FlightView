@@ -55,6 +55,7 @@ private:
 	unsigned int height;
 	unsigned int averaged_samples;
 
+    double mask_accum[MAX_SIZE];
 	float mask[MAX_SIZE];
 
 };

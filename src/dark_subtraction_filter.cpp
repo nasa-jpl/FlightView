@@ -17,6 +17,7 @@ void dark_subtraction_filter::start_mask_collection()
 	for(unsigned int i = 0; i < width*height; i++)
 	{
 		mask[i]=0;
+        mask_accum[i] = 0;
 	}
 }
 void dark_subtraction_filter::finish_mask_collection()
@@ -24,7 +25,9 @@ void dark_subtraction_filter::finish_mask_collection()
     /*! \brief Averages each pixel value in the mask and sends a signal to begin dark subtracting images. */
 	for(unsigned int i = 0; i < width*height; i++)
 	{
-        mask[i] /= averaged_samples;
+        // mask[i] /= averaged_samples;
+        mask[i] = mask_accum[i] / averaged_samples;
+        
 	}
 	mask_collected = true;
 #ifdef VERBOSE
@@ -93,7 +96,8 @@ uint32_t dark_subtraction_filter::update_mask_collection(uint16_t* pic_in)
 	{
     	for(unsigned int i = 0; i<width*height; i++)
 		{
-        	mask[i] = pic_in[i] + mask[i];
+        	//mask[i] = pic_in[i] + mask[i];
+        	mask_accum[i] = pic_in[i] + mask_accum[i];
 		}
 		averaged_samples++;
 	}

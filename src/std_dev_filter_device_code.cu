@@ -11,7 +11,8 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 	int col = blockIdx.x*blockDim.x + threadIdx.x;
 	int row = blockIdx.y*blockDim.y + threadIdx.y;
 	int offset = col + row*width;
-	float sum = 0;
+	//float sum = 0;
+	double sum = 0;
 	double sq_sum = 0;
 	double mean = 0;
 	double std_dev;
@@ -37,8 +38,10 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 			printf("value @ line 100: %i sum: %f sq_sum: %f\n",value,sum,sq_sum);
 		}
 	}
-	mean = (double)sum / (double)N;
-	std_dev = sqrt( ((sq_sum - (double)2*mean*(double)sum) / (double)N ) + mean*mean );
+	// mean = (double)sum / (double)N;
+	mean = sum / (double)N;
+	// std_dev = sqrt( ((sq_sum - (double)2*mean*(double)sum) / (double)N ) + mean*mean );
+	std_dev = sqrt( ((sq_sum - (double)2*mean*sum) / (double)N ) + mean*mean );
     // std_dev = sqrt(sq_sum / N - mean * mean);
 	// std_dev = sqrt( (sq_sum- 2*mean*sum)/ N + mean * mean );
 	if(offset == 100*width && STD_DEV_DEBUG)
