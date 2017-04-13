@@ -114,12 +114,12 @@ void profile_widget::handleNewFrame()
      */
     float *local_image_ptr;
     bool isMeanProfile = itype == VERTICAL_MEAN || itype == HORIZONTAL_MEAN;
-    if (!this->isHidden() &&  fw->curFrame != NULL && ((fw->crosshair_x != -1 && fw->crosshair_y) || isMeanProfile)) {
+    if (!this->isHidden() &&  fw->curFrame != NULL && ((fw->crosshair_x != -1 && fw->crosshair_y != -1) || isMeanProfile)) {
         allow_callouts = true;
         if (itype == VERTICAL_CROSS || itype == VERTICAL_MEAN) {
             local_image_ptr = fw->curFrame->vertical_mean_profile; // vertical profiles
-            for (int r = 1; r <= frHeight; r++)
-                y[r] = double(local_image_ptr[frHeight - r]);
+            for (int r = 0; r < frHeight; r++)
+                y[r] = double(local_image_ptr[r]);
         } else {
             local_image_ptr = fw->curFrame->horizontal_mean_profile; // horizontal profiles
             for (int c = 0; c < frWidth; c++)
