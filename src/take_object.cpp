@@ -462,7 +462,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     }
     //We're done!
     fclose(file_target);
-	std::string hdr_text = "ENVIdescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frame mean per grab}\n";
+	std::string hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frame mean per grab}\n";
 	hdr_text= hdr_text + "samples = " + std::to_string(frWidth) +"\n";
 	hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n";
 	hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
