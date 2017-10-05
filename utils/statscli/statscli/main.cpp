@@ -21,14 +21,6 @@
 
 int main(int argc, char *argv[])
 {
-    unsigned int pixel_size = sizeof(uint16_t);
-    // For AVIRIS-NG and other NGIS instruments:
-    // height = 481
-    // width = 640
-    // For chroma 1280:
-    // height = 480
-    // width = 1280
-
     parser opts = parser(argc, argv);
 
     if(!opts.success)
@@ -37,8 +29,10 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    unsigned int pixel_size = sizeof(uint16_t);
     unsigned int height = opts.height;
     unsigned int width = opts.width;
+    unsigned int skip=0;
 
 
     // unsigned int frame_size_bytes = height*width*pixel_size;
@@ -57,34 +51,6 @@ int main(int argc, char *argv[])
 
     bool is_signed = opts.from_lvds;
     bool zap_first_row = opts.zap_firstrow;
-
-//    if(argc == 1)
-//    {
-//        // arg[0] is program name, so this is the case where no arguments are supplied
-//        std::cout << "statscli compiled at " << __DATE__ << ", " << __TIME__ << " PDT\n";
-//        std::cout << "                  by " << UNAME << "@" << HOST << "\n";
-//        std::cout << "Usage: \n";
-//        std::cout << argv[0] << " input.raw out_mean.raw out_sd.raw stats.txt" << std::endl;
-//        return 0;
-//    }
-
-    // Load the file:
-
-
-    // argument parsing:
-//    if(argc != 5)
-//    {
-//        // wrong number of arguments
-//        std::cout << "ERROR: Must supply all arguments:" <<std::endl;
-//        std::cout << argv[0] << " input.raw out_mean.raw out_sd.raw stats.txt" << std::endl;
-//        return -1;
-//    }
-    /*
-    std::cout << "input arguments: " << argc << std::endl;
-    std::cout << "input file: " << argv[1] << std::endl;
-    std::cout << "mean_out file: " << argv[2] << std::endl;
-    std::cout << "sd_out file: " << argv[3] << std::endl;
-*/
 
     // input file:
     FILE * file = fopen(opts.input.toStdString().c_str(), "r");
@@ -122,6 +88,7 @@ int main(int argc, char *argv[])
     // GSL is written for native unsigned int rather than 16 bit.
     std::cout << "Converting data...";
 
+    // This is where we could convert every row%480==0 to zeros.
     if(is_signed)
     {
         for(unsigned int nth_element = 0; nth_element < frame_size_numel * nframes; nth_element++)
@@ -133,6 +100,20 @@ int main(int argc, char *argv[])
         for(unsigned int nth_element = 0; nth_element < frame_size_numel * nframes; nth_element++)
         {
             input_array[nth_element] = (unsigned int)frames[nth_element];
+        }
+    }
+
+    // untested:
+    if(zap_first_row)
+    {
+        skip = 0;
+        for(unsigned int frame=0; frame < nframes; frames++)
+        {
+            skip = skip + (frame * height * width); // frame start for nth frame
+            for (unsigned int nth_pixel=0; nth_pixel < width; nth_pixel++)
+            {
+                frames[skip + nth_pixel] = 0; // frame start to frame start + width set to zero
+            }
         }
     }
 
@@ -170,7 +151,6 @@ int main(int argc, char *argv[])
     }
 
     std::cout << "Done!\n";
-
 
     std::cout << "Mean value: " << std::fixed << mean_frame_value << std::endl;
     std::cout << "Mean dev  : " << std::fixed << mean_sd_value << std::endl;

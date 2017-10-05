@@ -75,7 +75,7 @@ parser::parser(int argc, char *argv[])
         }
     }
 
-    if(show_help)
+    if(show_help || nargs == 0)
     {
         help();
     }
