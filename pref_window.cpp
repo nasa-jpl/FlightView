@@ -71,7 +71,10 @@ void preferenceWindow::createRenderingTab()
     QLabel* dataRangePrompt = new QLabel(tr("Display data from:"));
     QLabel* to = new QLabel(tr("to"));
 
-    paraPixCheck   = new QCheckBox(tr("Enable Parallel Pixel Mapping"));
+    paraPixCheck   = new QCheckBox(tr("Enable 2s compliment filter"));
+    paraPixCheck->setToolTip("Enable or Disable 2s compliment filter on input data stream. See console output for initial filter state.");
+    paraPixCheck->setChecked(true);
+
     ignoreFirstCheck = new QCheckBox(tr("Ignore First Row Data"));
     ignoreLastCheck  = new QCheckBox(tr("Ignore Last Row Data"));
     ignoreFirstCheck->setToolTip("Check if first row contains metadata. Only available on certain liveview tabs (profile and FFT)");

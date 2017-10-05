@@ -50,12 +50,13 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qcp->axisRect()->setupFullAxesBox(true);
     qcp->xAxis->setLabel("x");
     qcp->yAxis->setLabel("y");
-
+    qcp->yAxis->setRangeReversed(true);
     //If this is uncommented, window size reflects focal plane size, otherwise it scales
     //qcp->setBackgroundScaled(Qt::AspectRatioMode);
 
     colorMap = new QCPColorMap(qcp->xAxis,qcp->yAxis);
     colorMapData = NULL;
+
     qcp->addPlottable(colorMap);
 
     colorScale = new QCPColorScale(qcp);
@@ -64,9 +65,11 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     colorScale->setType(QCPAxis::atRight);
 
     colorMap->setColorScale(colorScale);
-    colorMap->data()->setValueRange(QCPRange(frHeight, 0));
 
-    colorMap->data()->setKeyRange(QCPRange(0, frWidth));
+    colorMap->data()->setValueRange(QCPRange(0, frHeight-1));
+
+    colorMap->data()->setKeyRange(QCPRange(0, frWidth-1));
+
     colorMap->setDataRange(QCPRange(floor, ceiling));
 
     colorMap->setGradient(QCPColorGradient::gpJet); //gpJet for color, gpGrayscale for gray
@@ -105,7 +108,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
         this->setFocusPolicy(Qt::ClickFocus); //Focus accepted via clicking
         connect(qcp, SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(setCrosshairs(QMouseEvent*)));
     }
-    colorMapData = new QCPColorMapData(frWidth, frHeight, QCPRange(0, frWidth), QCPRange(0, frHeight));
+    colorMapData = new QCPColorMapData(frWidth, frHeight, QCPRange(0, frWidth-1), QCPRange(0, frHeight-1));
     colorMap->setData(colorMapData);
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
@@ -130,6 +133,8 @@ void frameview_widget::toggleDisplayCrosshair()
 {
     /*! \brief Turn on or off the rendering of the crosshair */
     displayCrosshairCheck.setChecked(!displayCrosshairCheck.isChecked());
+
+
 }
 
 // public slots
@@ -218,7 +223,8 @@ void frameview_widget::handleNewFrame()
 
                         colorMap->data()->setCell(col, row, NAN);
                     else
-                        colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                        // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                        colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
             qcp->replot();
         }
         if(image_type == DSF) {
@@ -231,14 +237,16 @@ void frameview_widget::handleNewFrame()
                          || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
                         colorMap->data()->setCell(col, row, NAN);
                     else
-                        colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                        // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                        colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
             qcp->replot();
         }
         if(image_type == STD_DEV && fw->std_dev_frame != NULL) {
             float * local_image_ptr = fw->std_dev_frame->std_dev_data;
             for (int col = 0; col < frWidth; col++)
                 for (int row = 0; row < frHeight; row++)
-                    colorMap->data()->setCell(col, row, (double_t)local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                    // colorMap->data()->setCell(col, row, (double_t)local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                    colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
             qcp->replot();
         }
     }
@@ -257,7 +265,7 @@ void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
      */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
-    double upperRangeBound = frHeight;
+    double upperRangeBound = frHeight-1;
     if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
         boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
     } else {
@@ -280,7 +288,7 @@ void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
      */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
-    double upperRangeBound = frWidth;
+    double upperRangeBound = frWidth-1;
     if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
         boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
     } else {

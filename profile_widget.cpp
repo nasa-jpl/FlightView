@@ -114,12 +114,12 @@ void profile_widget::handleNewFrame()
      */
     float *local_image_ptr;
     bool isMeanProfile = itype == VERTICAL_MEAN || itype == HORIZONTAL_MEAN;
-    if (!this->isHidden() &&  fw->curFrame != NULL && ((fw->crosshair_x != -1 && fw->crosshair_y) || isMeanProfile)) {
+    if (!this->isHidden() &&  fw->curFrame != NULL && ((fw->crosshair_x != -1 && fw->crosshair_y != -1) || isMeanProfile)) {
         allow_callouts = true;
         if (itype == VERTICAL_CROSS || itype == VERTICAL_MEAN) {
             local_image_ptr = fw->curFrame->vertical_mean_profile; // vertical profiles
-            for (int r = 1; r <= frHeight; r++)
-                y[r] = double(local_image_ptr[frHeight - r]);
+            for (int r = 0; r < frHeight; r++)
+                y[r] = double(local_image_ptr[r]);
         } else {
             local_image_ptr = fw->curFrame->horizontal_mean_profile; // horizontal profiles
             for (int c = 0; c < frWidth; c++)
@@ -166,8 +166,31 @@ void profile_widget::profileScrolledX(const QCPRange &newRange)
      * \param newRange Unused.
      * Profiles must not allow the user to zoom in the x direction.
      */
-    Q_UNUSED(newRange);
-    qcp->xAxis->setRange(0, xAxisMax);
+    // Q_UNUSED(newRange);
+
+    QCPRange boundedRange = newRange;
+    // LIL_MIN, BIG_MIN, these are based on pixel amplitude range, not frame geometry.
+    double lowerRangeBound = 0;
+    double upperRangeBound = xAxisMax;
+    if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
+        boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+    } else {
+        double oldSize = boundedRange.size();
+        if (boundedRange.lower < lowerRangeBound) {
+            boundedRange.lower = lowerRangeBound;
+            boundedRange.upper = lowerRangeBound + oldSize;
+        }
+        if (boundedRange.upper > upperRangeBound) {
+            boundedRange.lower = upperRangeBound - oldSize;
+            boundedRange.upper = upperRangeBound;
+        }
+    }
+    // floor = boundedRange.lower;
+    // ceiling = boundedRange.upper;
+    // old:
+    // qcp->xAxis->setRange(0, xAxisMax);
+    qcp->xAxis->setRange(boundedRange);
+
 }
 void profile_widget::profileScrolledY(const QCPRange &newRange)
 {
@@ -213,11 +236,13 @@ void profile_widget::setCallout(QMouseEvent *e)
 }
 void profile_widget::moveCallout(QMouseEvent *e)
 {
-    if ((callout->selectTest(e->posF(), true) < (0.99 * qcp->selectionTolerance())) && (e->buttons() & Qt::LeftButton)) {
-        callout->position->setPixelPoint(e->posF());
+    // Note, e->posF() was used for previous QT Library versions.
+    if ((callout->selectTest(e->pos(), true) < (0.99 * qcp->selectionTolerance())) && (e->buttons() & Qt::LeftButton)) {
+        callout->position->setPixelPoint(e->pos());
     } else {
         return;
     }
+
 }
 void profile_widget::hideCallout()
 {

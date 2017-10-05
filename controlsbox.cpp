@@ -282,6 +282,7 @@ void ControlsBox::tab_changed_slot(int index)
             if (p_frameview->image_type == STD_DEV) {
                 std_dev_N_slider->setEnabled(true);
                 std_dev_N_edit->setEnabled(true);
+                low_increment_cbox.setChecked(true);
             } else {
                 std_dev_N_slider->setEnabled(false);
                 std_dev_N_edit->setEnabled(false);
@@ -508,8 +509,9 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
         frames_save_num_avgs_edit.setEnabled(true);
         frames_save_num_edit.setEnabled(true);
         frames_save_num_edit.setValue(previousNumSaved);
-    }
+    } else {
     frames_save_num_edit.setValue(n);
+    }
 }
 int ControlsBox::validateFileName(const QString &name)
 {

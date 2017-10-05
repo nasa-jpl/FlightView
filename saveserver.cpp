@@ -24,20 +24,41 @@ saveServer::saveServer(frameWorker *fw, QObject *parent ) :
         ipAddress = QHostAddress::LocalHost;
 
     connect(clientConnection, SIGNAL(readyRead()), this, SLOT(readCommand()));
-
+    connect(this, SIGNAL(newConnection()), this, SLOT(new_conn_slot())  );
     listen(QHostAddress::Any, port); // This will automatically connect on the IP Address of aviris-cal
 }
 
-void saveServer::incomingConnection(int socketDescriptor)
+void saveServer::incomingConnection(qintptr socketDescriptor)
 {
+    std::cout << "incomingConnection() called!\n";
     if(!clientConnection->setSocketDescriptor(socketDescriptor)) {
         std::cout << "Client Connection refused by host! :(" << std::endl;
         return;
     }
 }
 
+void saveServer::connected_to_client()
+{
+    std::cout << "called connected()\n";
+}
+
+void saveServer::new_conn_slot()
+{
+    std::cout << "new_conn_slot(): A new TCP connection exists.\n";
+    // does not work:
+    // incomingConnection(this->socketDescriptor());
+
+    // Gets to readCommand(), pretty cool, seg faults after that.
+    // Because, clientConnection is set to 0x0
+    // clientConnection = nextPendingConnection();
+    // clientConnection->setSocketDescriptor(socketDescriptor());
+}
+
+
 void saveServer::readCommand()
 {
+    std::cout << "in readCommand()" << std::endl;
+
     QDataStream in(clientConnection);
     in.setVersion(QDataStream::Qt_4_0);
     blockSize = 0;

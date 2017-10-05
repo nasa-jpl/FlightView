@@ -41,13 +41,15 @@ public:
     int port;
 
 protected:
-    void incomingConnection(int socketDescriptor);
+    void incomingConnection(qintptr socketDescriptor);
 
 signals:
     void startSavingRemote(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs);
 
 private slots:
     void readCommand();
+    void connected_to_client();
+    void new_conn_slot();
 
 };
 
