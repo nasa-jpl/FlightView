@@ -17,11 +17,16 @@ public:
 
     unsigned int height;
     unsigned int width;
+    unsigned int byte_offset;
+    unsigned int nframes;
+    bool nframes_supplied;
     bool from_lvds;
     bool zap_firstrow;
     bool ok;
 
     bool success;
+    bool debug_mode;
+    bool verbose_mode;
 
     int nargs;
     void debug();

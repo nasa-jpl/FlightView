@@ -32,7 +32,10 @@ int main(int argc, char *argv[])
     unsigned int pixel_size = sizeof(uint16_t);
     unsigned int height = opts.height;
     unsigned int width = opts.width;
+    unsigned int byte_offset = opts.byte_offset;
     unsigned int skip=0;
+    bool verbose_mode = opts.verbose_mode;
+    bool debug_mode = opts.debug_mode;
 
 
     // unsigned int frame_size_bytes = height*width*pixel_size;
@@ -65,14 +68,33 @@ int main(int argc, char *argv[])
     // Pt 1: how much data is there?
     fseek(file, 0, SEEK_END);
     long int filesize = ftell(file);
-    // std::cout << "File has " << filesize << " bytes\n";
-    // std::cout << "Which is " << filesize/pixel_size << " pixels.\n";
+    if(verbose_mode)
+    {
+        std::cout << "File has " << filesize << " bytes\n";
+        std::cout << "Which may have as many as " << filesize/pixel_size << " pixels.\n";
+    }
     nframes = filesize / pixel_size / (height * width);
-    // std::cout << "nframes: " << nframes << "\n";
+    if(verbose_mode)
+    {
+        std::cout << "nframes potentially in file based on size: " << nframes << " frames\n";
+    }
     fseek(file, 0, SEEK_SET);
     // If you want to load from an offset, computethe offset and put it here:
-    // fseek(file, frame_offset, SEEK_SET);
-    // You will also need to change the 'nframes' variable to reflect loading fewer frames.
+    if(byte_offset)
+    {
+        fseek(file, byte_offset, SEEK_SET);
+        // You will also need to change the 'nframes' variable to reflect loading fewer frames.
+        nframes = (filesize-byte_offset) / pixel_size / (height * width);
+    }
+
+    if(opts.nframes_supplied)
+    {
+        nframes = opts.nframes;
+        if(verbose_mode)
+        {
+            std::cout << "User supplied frame number to read in: " << nframes << std::endl;
+        }
+    }
 
     // Pt 2: malloc space to load file into:
     frames = (uint16_t *) malloc(filesize);
@@ -168,9 +190,11 @@ int main(int argc, char *argv[])
     bytes_written_mean = fwrite(mean_frame, sizeof(double), frame_size_numel, outfile_mean);
     bytes_written_sd = fwrite(sd_frame, sizeof(double), frame_size_numel, outfile_sd);
 
-    // std::cout << "Wrote " << bytes_written_mean << " elements to mean file\n";
-    // std::cout << "Wrote " << bytes_written_sd << " elements to sd file\n";
-
+    if(debug_mode)
+    {
+        std::cout << "Wrote " << bytes_written_mean << " elements to mean file\n";
+        std::cout << "Wrote " << bytes_written_sd << " elements to sd file\n";
+    }
 
     fclose(outfile_mean);
     fclose(outfile_sd);
