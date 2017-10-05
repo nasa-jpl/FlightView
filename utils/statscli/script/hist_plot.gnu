@@ -17,5 +17,4 @@ if( exists("min_x")) {
 set title titletext
 set nokey
 
-
 plot filename binary  format="%double" using (bin(column(1))):(1.0) smooth freq with boxes lt rgb "blue"
