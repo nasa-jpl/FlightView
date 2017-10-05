@@ -14,7 +14,8 @@ CONFIG   -= app_bundle
 
 TEMPLATE = app
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    parser.cpp
 
 LIBS += -lgsl -lgslcblas
 
@@ -23,3 +24,7 @@ DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 QMAKE_CXXFLAGS += -fopenmp -march=native -O3 -Wno-unused-but-set-variable
 QMAKE_LFLAGS += -fopenmp
 QMAKE_CXXFLAGS_RELEASE += -fopenmp -march=native -O3
+
+HEADERS += \
+    main.h \
+    parser.h
