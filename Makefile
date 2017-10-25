@@ -79,7 +79,7 @@ CONLYFLAGS = -std=c99
 CONLYFLAGS += $(CFLAGS)
 
 CPPFLAGS = $(CFLAGS)
-CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-unused-function -Wno-unused-variable#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
+CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-result#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 
 
 
