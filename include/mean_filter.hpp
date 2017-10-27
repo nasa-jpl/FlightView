@@ -46,14 +46,22 @@ public:
 	fft myFFT;
 
 private:
-	boost::thread mean_thread;
-    int beginCol;
-	int width;
-    int beginRow;
-    int height;
-    int frWidth;
-	bool useDSF;
-    int FFTtype;
+        boost::thread mean_thread;
+        int beginCol;
+        int width;
+        int beginRow;
+        int height;
+        int frWidth;
+        bool useDSF;
+        int FFTtype;
+        // overlay parameters:
+        int lh_start;
+        int lh_end;
+        int cent_start;
+        int cent_end;
+        int rh_start;
+        int rh_end;
+
     float tap_profile[TAP_WIDTH*MAX_HEIGHT];
 	float frame_mean;
 	unsigned int mean_ring_buffer_fft_head;

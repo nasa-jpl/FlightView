@@ -11,14 +11,23 @@ mean_filter::mean_filter(frame_c * frame,unsigned long frame_count,int startCol,
     height = endRow;
     frWidth = actualWidth;
 
-	this->frame = frame;
-	this->frame_count = frame_count;
-	this->useDSF = useDSF;
+    this->frame = frame;
+    this->frame_count = frame_count;
+    this->useDSF = useDSF;
     this->FFTtype = FFTtype;
+
+    // copy the latest overlay parameters from the frame:
+    lh_start = frame->lh_start;
+    lh_end = frame->lh_end;
+    cent_start = frame->cent_start;
+    cent_end = frame->cent_end;
+    rh_start = frame->rh_start;
+    rh_end = frame->rh_end;
+
 }
 void mean_filter::start_mean()
 {
-	mean_thread = boost::thread(&mean_filter::calculate_means, this);
+    mean_thread = boost::thread(&mean_filter::calculate_means, this);
 }
 void mean_filter::calculate_means()
 {
@@ -37,10 +46,10 @@ void mean_filter::calculate_means()
     memset(tap_profile, 0, MAX_HEIGHT*TAP_WIDTH*sizeof(*tap_profile));
     memset(frame->vertical_mean_profile, 0, MAX_HEIGHT*sizeof(*(frame->vertical_mean_profile)));
     memset(frame->horizontal_mean_profile, 0, MAX_WIDTH*sizeof(*(frame->horizontal_mean_profile)));
-    
-	//std::cout<<"frWidth " <<frWidth<< std::endl;
+    memset(frame->vertical_mean_profile_lh, 0, MAX_HEIGHT*sizeof(*(frame->vertical_mean_profile_lh)));
+    memset(frame->vertical_mean_profile_rh, 0, MAX_HEIGHT*sizeof(*(frame->vertical_mean_profile_rh)));
 
-	for(int r = beginRow; r < height; r++)
+    for(int r = beginRow; r < height; r++)
     {
         for(int c = beginCol; c < width; c++)
         {
@@ -60,6 +69,25 @@ void mean_filter::calculate_means()
             }
         }
     }
+
+
+    if(!useDSF)
+    {
+        for(int r = 0; r < height; r++)
+        {
+            // for each row, grab the data at UI-selected col=start and col=end
+            frame->vertical_mean_profile_lh[r] = frame->image_data_ptr[r*frWidth + beginCol];
+            frame->vertical_mean_profile_rh[r] = frame->image_data_ptr[r*frWidth + width];
+        }
+    } else {
+        for(int r = 0; r < height; r++)
+        {
+            // for each row, grab the data at UI-selected col=start and col=end
+            frame->vertical_mean_profile_lh[r] = frame->dark_subtracted_data[r*frWidth + beginCol];
+            frame->vertical_mean_profile_rh[r] = frame->dark_subtracted_data[r*frWidth + width];
+        }
+    }
+
     for(int r = beginRow; r < height; r++)
         frame->vertical_mean_profile[r] /= horizDiff;
 
