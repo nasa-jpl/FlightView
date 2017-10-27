@@ -1,4 +1,5 @@
 #include "controlsbox.h"
+#include <QDebug>
 
 static const char notAllowedChars[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`'";
 
@@ -401,11 +402,6 @@ void ControlsBox::tab_changed_slot(int index)
             overlay_rh_width_spin->setEnabled(see_it);
             this->setMaximumHeight(150);
 
-
-            disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
-            disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)));
-
-
         }
 
         p_profile->rescaleRange();
@@ -557,6 +553,11 @@ void ControlsBox::disconnect_old_tab()
     } else if (p_profile) {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile,SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateFloor(int)));
+        if(p_profile->itype == VERT_OVERLAY)
+        {
+            disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
+            disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)));
+        }
     } else if (p_fft) {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_fft,SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_fft, SLOT(updateFloor(int)));
@@ -857,12 +858,32 @@ void ControlsBox::load_pref_window()
 }
 void ControlsBox::transmitChange(int linesToAverage)
 {
+    volatile int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end;
+    volatile int lh_width = 20;
+    volatile int cent_width = 20;
+    volatile int rh_width = 20;
     if (p_profile) {
+        qDebug() << "in the transmit";
+
         fw->updateMeanRange(linesToAverage, p_profile->itype);
         if(p_profile->itype == VERT_OVERLAY)
         {
             // update list of parameters.
-            //fw->updateOverlayParams();
+            lh_start = fw->crossStartCol - lh_width/2;
+            lh_end = lh_start + lh_width/2;
+
+            rh_start = fw->crossStartCol+(int)(fw->crossWidth/2) - rh_width/2;
+            rh_end = rh_start + rh_width/2;
+
+            cent_start = fw->crosshair_x - cent_width/2;
+            cent_end = fw->crosshair_x + cent_width/2;
+
+            // validateOverlayParams(); // TODO: check limits!!
+            qDebug() << "lh_start:   " << lh_start <<   ", lh_end:   " << lh_end;
+            qDebug() << "rh_start:   " << rh_start <<   ", rh_end:   " << rh_end;
+            qDebug() << "cent_start: " << cent_start << ", cent_end: " << cent_end;
+
+            fw->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
         }
     } else if (p_fft) {
         if (p_fft->vCrossButton->isChecked())
