@@ -83,6 +83,14 @@ public:
     int crossWidth = -1;
     bool isSkippingFirst = false;
     bool isSkippingLast = false;
+
+    int lh_start;
+    int lh_end;
+    int cent_start;
+    int cent_end;
+    int rh_start;
+    int rh_end;
+
     bool use_gray = false;
     int color_scheme = 0;
 
@@ -141,6 +149,7 @@ public slots:
     void skipFirstRow(bool skip);
     void skipLastRow(bool skip);
     void updateMeanRange(int linesToAverage, image_t profile);
+    void updateOverlayParams(int lh_start, int lh_end, int cent_start, int cent_end, int rh_start, int rh_end);
     void update_FFT_range(FFT_t type, int tapNum = 0);
     void tapPrfChanged(int tapNum);
     void setCrosshairBackend(int pos_x, int pos_y);

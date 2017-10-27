@@ -205,7 +205,7 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
     crossStartRow = 0;
     crossWidth = frWidth;
     crossHeight = frHeight;
-    if (profile == VERTICAL_CROSS) {
+    if (profile == VERTICAL_CROSS || profile == VERT_OVERLAY) {
         horizLinesAvgd = linesToAverage;
         if ((crosshair_x + (linesToAverage / 2)) > (int)frWidth) {
             crossStartCol = frWidth - linesToAverage;
@@ -228,11 +228,23 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
             crossHeight = crosshair_y + (linesToAverage / 2);
         }  
     }
+
     crossStartRow = isSkippingFirst && crossStartRow == 0 ? 1 : crossStartRow;
     crossHeight = isSkippingLast && crossHeight == int(frHeight) ? frHeight - 1 : crossHeight;
     to.updateVertRange(crossStartRow, crossHeight);
     to.updateHorizRange(crossStartCol, crossWidth);
+
+    if(profile==VERT_OVERLAY)
+    {
+        //to.updateVertOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+    }
 }
+
+void frameWorker::updateOverlayParams(int lh_start, int lh_end, int cent_start, int cent_end, int rh_start, int rh_end)
+{
+    to.updateVertOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+}
+
 void frameWorker::setCrosshairBackend(int pos_x, int pos_y)
 {
     /*! \brief Determines the range of values to render when a new crosshair is selected.

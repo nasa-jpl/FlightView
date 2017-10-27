@@ -29,7 +29,15 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     qcp->plotLayout()->addElement(0, 0, plotTitle);
     qcp->addGraph();
 
-    if (itype == VERTICAL_MEAN || itype == VERTICAL_CROSS) {
+    // Vertical LH Overlay:
+    qcp->addGraph();
+    qcp->graph(1)->setPen(QPen(Qt::green));
+
+    // Vertical RH Overlay:
+    qcp->addGraph();
+    qcp->graph(2)->setPen(QPen(Qt::red));
+
+    if (itype == VERTICAL_MEAN || itype == VERTICAL_CROSS || itype == VERT_OVERLAY) {
         xAxisMax = frHeight;
         qcp->xAxis->setLabel("Y index");
     } else if (itype == HORIZONTAL_MEAN || itype == HORIZONTAL_CROSS) {
@@ -39,7 +47,11 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     x = QVector<double>(xAxisMax);
     for (int i = 0; i < xAxisMax; i++)
         x[i] = double(i);
+
     y = QVector<double>(xAxisMax);
+    y_lh = QVector<double>(xAxisMax);
+    y_rh = QVector<double>(xAxisMax);
+
     qcp->xAxis->setRange(QCPRange(0, xAxisMax));
 
     qcp->addLayer("Box Layer", qcp->currentLayer());
@@ -116,17 +128,50 @@ void profile_widget::handleNewFrame()
     bool isMeanProfile = itype == VERTICAL_MEAN || itype == HORIZONTAL_MEAN;
     if (!this->isHidden() &&  fw->curFrame != NULL && ((fw->crosshair_x != -1 && fw->crosshair_y != -1) || isMeanProfile)) {
         allow_callouts = true;
-        if (itype == VERTICAL_CROSS || itype == VERTICAL_MEAN) {
+
+        switch (itype)
+        {
+        case VERTICAL_CROSS:
+            // same as mean:
+        case VERTICAL_MEAN:
             local_image_ptr = fw->curFrame->vertical_mean_profile; // vertical profiles
             for (int r = 0; r < frHeight; r++)
+            {
                 y[r] = double(local_image_ptr[r]);
-        } else {
+            }
+            break;
+        case VERT_OVERLAY:
+            local_image_ptr = fw->curFrame->vertical_mean_profile; // vertical profiles
+            for (int r = 0; r < frHeight; r++)
+            {
+                y[r] = double(local_image_ptr[r]);
+                y_lh[r] = double(fw->curFrame->vertical_mean_profile_lh[r]);
+                y_rh[r] = double(fw->curFrame->vertical_mean_profile_rh[r]);
+
+            }
+            // display overlay
+            qcp->graph(1)->setData(x, y_lh);
+            qcp->graph(2)->setData(x, y_rh);
+            break;
+
+        case HORIZONTAL_CROSS:
+            // same as mean:
+        case HORIZONTAL_MEAN:
+
             local_image_ptr = fw->curFrame->horizontal_mean_profile; // horizontal profiles
             for (int c = 0; c < frWidth; c++)
                 y[c] = double(local_image_ptr[c]);
+            break;
+        default:
+            // do nothing
+            break;
         }
+
+
+        // display x and y:
         qcp->graph(0)->setData(x, y);
         qcp->replot();
+
         if (callout->visible())
             updateCalloutValue();
         switch (itype) {
@@ -134,6 +179,7 @@ void profile_widget::handleNewFrame()
         case HORIZONTAL_CROSS: plotTitle->setText(QString("Horizontal Profile centered @ y = %1").arg(fw->crosshair_y)); break;
         case VERTICAL_MEAN: plotTitle->setText(QString("Vertical Mean Profile")); break;
         case VERTICAL_CROSS: plotTitle->setText(QString("Vertical Profile centered @ x = %1").arg(fw->crosshair_x)); break;
+        case VERT_OVERLAY: plotTitle->setText(QString("Vertical Overlay")); break; // TODO: Add useful things here
         default: break;
         }
     } else {

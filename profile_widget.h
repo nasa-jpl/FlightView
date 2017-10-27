@@ -54,6 +54,8 @@ class profile_widget : public QWidget
 
     QVector<double> x;
     QVector<double> y;
+    QVector<double> y_lh;
+    QVector<double> y_rh;
 
     int x_coord;
     volatile int y_coord;

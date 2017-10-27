@@ -96,6 +96,17 @@ public:
     QLineEdit filename_edit;
     QPushButton set_filename_button;
 
+    // Overlay profile only:
+    QSlider * overlay_lh_width;
+    QSlider * overlay_cent_width;
+    QSlider * overlay_rh_width;
+    QLabel * overlay_lh_width_label;
+    QLabel * overlay_cent_width_label;
+    QLabel * overlay_rh_width_label;
+    QSpinBox * overlay_lh_width_spin;
+    QSpinBox * overlay_cent_width_spin;
+    QSpinBox * overlay_rh_width_spin;
+
     frameview_widget *p_frameview;
     histogram_widget *p_histogram;
     profile_widget *p_profile;
