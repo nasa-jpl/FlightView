@@ -144,19 +144,19 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     
     save_layout = new QGridLayout();
     //First Row
-    save_layout->addWidget(&select_save_location, 1, 1, 1, 1);
-    save_layout->addWidget(new QLabel("Total #Frames / #Averaged:"), 2, 1, 1, 1);
+    save_layout->addWidget(&select_save_location, 1, 1, 1, 3);
+    save_layout->addWidget(new QLabel("Total #Frames / #Averaged:"), 2, 1, 1, 3);
     save_layout->addWidget(new QLabel("Filename:"), 3, 1, 1, 1);
 
     //Second Row
     //save_layout.addWidget(&start_saving_frames_button, 1, 2, 1, 1);
-    save_layout->addWidget(&save_finite_button, 1, 2, 1, 1);
-    save_layout->addWidget(&frames_save_num_edit, 2, 2, 1, 1);
-    save_layout->addWidget(&filename_edit, 3, 2, 1, 2);
+    save_layout->addWidget(&save_finite_button, 1, 4, 1, 1);
+    save_layout->addWidget(&frames_save_num_edit, 2, 4, 1, 1);
+    save_layout->addWidget(&filename_edit, 3, 2, 1, 4);
 
     //Third Row
-    save_layout->addWidget(&stop_saving_frames_button, 1, 3, 1, 1);
-    save_layout->addWidget(&frames_save_num_avgs_edit, 2, 3, 1, 1);
+    save_layout->addWidget(&stop_saving_frames_button, 1, 5, 1, 1);
+    save_layout->addWidget(&frames_save_num_avgs_edit, 2, 5, 1, 1);
     
     SaveButtonsBox.setLayout(save_layout);
 

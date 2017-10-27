@@ -46,7 +46,9 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qsp.setHeightForWidth(true);
     qcp->setSizePolicy(qsp);
     qcp->heightForWidth(200);
-    qcp->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+    qcp->setInteraction(QCP::iRangeDrag, true);
+    qcp->setInteraction(QCP::iRangeZoom, true);
+    // qcp->axisRect()->setRangeZoom(Qt::Horizontal);
     qcp->axisRect()->setupFullAxesBox(true);
     qcp->xAxis->setLabel("x");
     qcp->yAxis->setLabel("y");
@@ -87,6 +89,8 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     fpsLabel.setText("FPS");
     layout.addWidget(&fpsLabel, 8, 0, 1, 2);
     layout.addWidget(&displayCrosshairCheck, 8, 2, 1, 2);
+    layout.addWidget(&zoomXCheck, 8, 4, 1, 2);
+    layout.addWidget(&zoomYCheck, 8, 6, 1, 2);    
     this->setLayout(&layout);
 
     displayCrosshairCheck.setText(tr("Display Crosshairs on Frame"));
@@ -95,6 +99,12 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
         displayCrosshairCheck.setEnabled(false);
         displayCrosshairCheck.setChecked(false);
     }
+
+    zoomXCheck.setText("Zoom on X axis only");
+    zoomYCheck.setText("Zoom on Y axis only");
+    zoomXCheck.setChecked(false);
+    zoomYCheck.setChecked(false);
+
     fps = 0;
     clock.start();
 
@@ -102,6 +112,8 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     connect(qcp->yAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(colorMapScrolledX(QCPRange)));
     connect(&displayCrosshairCheck, SIGNAL(toggled(bool)), fw, SLOT(updateCrossDiplay(bool)));
+    connect(&zoomXCheck, SIGNAL(toggled(bool)), this, SLOT(setScrollX(bool)));
+    connect(&zoomYCheck, SIGNAL(toggled(bool)), this, SLOT(setScrollY(bool)));
     connect(fw, SIGNAL(setColorScheme_signal(int)), this, SLOT(handleNewColorScheme(int)));
 
     if (image_type==BASE || image_type==DSF) {
@@ -304,6 +316,47 @@ void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
     }
     qcp->xAxis->setRange(boundedRange);
 }
+void frameview_widget::setScrollX(bool Yenabled)
+{
+    scrollYenabled = !Yenabled;
+    qcp->setInteraction(QCP::iRangeDrag, true);
+    qcp->setInteraction(QCP::iRangeZoom, true);
+
+    if (!scrollYenabled && scrollXenabled) {
+        qcp->axisRect()->setRangeZoom(Qt::Horizontal);
+        qcp->axisRect()->setRangeDrag(Qt::Horizontal);
+    } else if (scrollXenabled && scrollYenabled) {
+        qcp->axisRect()->setRangeZoom(Qt::Horizontal | Qt::Vertical);
+        qcp->axisRect()->setRangeDrag(Qt::Horizontal | Qt::Vertical);
+    } else if (!scrollXenabled && scrollYenabled) {
+        qcp->axisRect()->setRangeZoom(Qt::Vertical);
+        qcp->axisRect()->setRangeDrag(Qt::Vertical);
+    } else {
+        qcp->setInteraction(QCP::iRangeDrag, false);
+        qcp->setInteraction(QCP::iRangeZoom, false);
+    }
+
+}
+void frameview_widget::setScrollY(bool Xenabled)
+{
+    scrollXenabled = !Xenabled;
+    qcp->setInteraction(QCP::iRangeDrag, true);
+    qcp->setInteraction(QCP::iRangeZoom, true);
+    if (!scrollXenabled && scrollYenabled) {
+        qcp->axisRect()->setRangeZoom(Qt::Vertical);
+        qcp->axisRect()->setRangeDrag(Qt::Vertical);
+    } else if (scrollXenabled && scrollYenabled) {
+        qcp->axisRect()->setRangeZoom(Qt::Horizontal | Qt::Vertical);
+        qcp->axisRect()->setRangeDrag(Qt::Horizontal | Qt::Vertical);
+    } else if (scrollXenabled && !scrollYenabled) {
+        qcp->axisRect()->setRangeZoom(Qt::Horizontal);
+        qcp->axisRect()->setRangeDrag(Qt::Horizontal);
+    } else {
+        qcp->setInteraction(QCP::iRangeDrag, false);
+        qcp->setInteraction(QCP::iRangeZoom, false);
+
+    }
+}
 void frameview_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
@@ -312,7 +365,7 @@ void frameview_widget::updateCeiling(int c)
 }
 void frameview_widget::updateFloor(int f)
 {
-    /*! \brief Change the value of the floor for this widget to the input parameter and replot the color scale. */
+    /*! \brief Change the value  of the floor for this widget to the input parameter and replot the color scale. */
     floor = (double)f;
     rescaleRange();
 }

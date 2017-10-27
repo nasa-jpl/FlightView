@@ -53,6 +53,8 @@ class frameview_widget : public QWidget
     QGridLayout layout;
     QLabel fpsLabel;
     QCheckBox displayCrosshairCheck;
+    QCheckBox zoomXCheck;
+    QCheckBox zoomYCheck;
 
     /* Plot Rendering elements
      * Contains local copies of the frame geometry and color map range. */
@@ -60,6 +62,9 @@ class frameview_widget : public QWidget
 
     volatile double ceiling;
     volatile double floor;
+
+    bool scrollXenabled = true;
+    bool scrollYenabled = true;
 
     /* Frame Timing elements
      * Contains the variables used to keep track of framerate and fps, as well the program time elapsed, which is used
@@ -100,6 +105,8 @@ public slots:
      *  @{ */
     void colorMapScrolledY(const QCPRange &newRange);
     void colorMapScrolledX(const QCPRange &newRange);
+    void setScrollX(bool Yenabled);
+    void setScrollY(bool Xenabled);
     void updateCeiling(int c);
     void updateFloor(int f);
     void rescaleRange();
