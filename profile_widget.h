@@ -14,6 +14,7 @@
 #include "qcustomplot.h"
 #include "frame_worker.h"
 #include "image_type.h"
+#include "frameview_widget.h"
 
 /*! \file
  * \brief Widget which displays a line plot of two dimensions of image data.
@@ -36,7 +37,8 @@ class profile_widget : public QWidget
     QTimer rendertimer;
 
     /* GUI elements */
-    QVBoxLayout qvbl;
+    QVBoxLayout qvbl; // for others
+    QGridLayout qgl; // for overlay
     QCheckBox *showCalloutCheck;
     QCPItemText *callout;
     QCPItemLine *arrow;
@@ -44,6 +46,8 @@ class profile_widget : public QWidget
     /* Plot elements */
     QCustomPlot *qcp;
     QCPPlotTitle *plotTitle;
+
+    frameview_widget *overlay_img;
 
     /* Frame rendering elements */
     int frWidth, frHeight;

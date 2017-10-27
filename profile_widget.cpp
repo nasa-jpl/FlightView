@@ -86,9 +86,29 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     showCalloutCheck = new QCheckBox("Display Callout");
     showCalloutCheck->setChecked(false);
 
-    qvbl.addWidget(qcp);
-    qvbl.addWidget(showCalloutCheck);
-    this->setLayout(&qvbl);
+
+    if(itype==VERT_OVERLAY)
+    {
+        overlay_img = new frameview_widget(fw, DSF, this);
+
+        // Grid layout
+        qgl.addWidget(qcp, 1,2,1,1);
+        qgl.addWidget(showCalloutCheck, 2,1,1,1);
+
+        qgl.addWidget(overlay_img, 1,1,1,1);
+
+        //TODO: Zoom-X, Zoom-Y toggles for plot
+        this->setLayout(&qgl);
+    } else {
+        // VBox layout
+        qvbl.addWidget(qcp);
+        qvbl.addWidget(showCalloutCheck);
+        //TODO: Zoom-X, Zoom-Y toggles for plot
+
+        this->setLayout(&qvbl);
+    }
+
+
 
     connect(qcp, SIGNAL(mouseMove(QMouseEvent*)), this, SLOT(moveCallout(QMouseEvent*)));
     connect(qcp, SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(setCallout(QMouseEvent*)));
@@ -101,6 +121,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 }
 profile_widget::~profile_widget()
 {
+    delete overlay_img;
 }
 
 // public functions
