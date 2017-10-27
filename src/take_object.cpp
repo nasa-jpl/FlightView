@@ -208,12 +208,12 @@ void take_object::updateVertOverlayParams(int lh_start_in, int lh_end_in,
                                           int rh_start_in, int rh_end_in)
 {
     curFrame->lh_start = lh_start_in;
-//    curFrame->lh_start = lh_start_in;
-//    curFrame->lh_end = lh_end_in;
-//    curFrame->cent_start = cent_start_in;
-//    curFrame->cent_end = cent_start_in;
-//    curFrame->rh_start = rh_start_in;
-//    curFrame->rh_end = rh_end_in;
+    curFrame->lh_start = lh_start_in;
+    curFrame->lh_end = lh_end_in;
+    curFrame->cent_start = cent_start_in;
+    curFrame->cent_end = cent_start_in;
+    curFrame->rh_start = rh_start_in;
+    curFrame->rh_end = rh_end_in;
 
 }
 

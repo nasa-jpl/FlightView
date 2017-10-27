@@ -123,8 +123,8 @@ public:
     void updateVertRange(int br, int er);
     void updateHorizRange(int bc, int ec);
     void updateVertOverlayParams(int lh_start, int lh_end,\
-                                              int cent_start, int cent_end,\
-                                              int rh_start, int rh_end);
+                                 int cent_start, int cent_end,\
+                                 int rh_start, int rh_end);
     void changeFFTtype(FFT_t t);
 
     // Frame saving functions

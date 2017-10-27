@@ -71,6 +71,7 @@ void mean_filter::calculate_means()
     }
 
 
+    // LH and RH profiles:
     if(!useDSF)
     {
         for(int r = 0; r < height; r++)
@@ -82,14 +83,31 @@ void mean_filter::calculate_means()
     } else {
         for(int r = 0; r < height; r++)
         {
-            // for each row, grab the data at UI-selected col=start and col=end
-            frame->vertical_mean_profile_lh[r] = frame->dark_subtracted_data[r*frWidth + beginCol];
-            frame->vertical_mean_profile_rh[r] = frame->dark_subtracted_data[r*frWidth + width];
+            for(int c = lh_start; c < lh_end; c++)
+            {
+                // for each row, grab the data at UI-selected col=start and col=end
+                //frame->vertical_mean_profile_lh[r] += frame->dark_subtracted_data[r*frWidth + beginCol];
+                frame->vertical_mean_profile_lh[r] += frame->dark_subtracted_data[r*frWidth + c]; // untested
+
+            }
+            for(int c = rh_start; c < rh_end; c++)
+            {
+                //frame->vertical_mean_profile_rh[r] += frame->dark_subtracted_data[r*frWidth + width];
+                frame->vertical_mean_profile_rh[r] += frame->dark_subtracted_data[r*frWidth + c]; // untested
+
+            }
         }
     }
 
     for(int r = beginRow; r < height; r++)
+    {
         frame->vertical_mean_profile[r] /= horizDiff;
+
+        // Not sure if this works
+        frame->vertical_mean_profile_lh[r] /= (lh_end-lh_start+1);
+        frame->vertical_mean_profile_rh[r] /= (rh_end-rh_start+1);
+
+    }
 
     // begin determining frame mean for FFT
     frame_mean = 0;
@@ -97,7 +115,7 @@ void mean_filter::calculate_means()
     {
         frame->horizontal_mean_profile[c] /= (vertDiff);
         frame_mean += frame->horizontal_mean_profile[c];
-	}
+    }
     frame_mean /= frWidth;
 
     mean_ring_buffer_fft_head = mean_ring_buffer_head;
