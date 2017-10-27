@@ -93,7 +93,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
         // Grid layout
         qgl.addWidget(qcp, 1,2,1,1);
-        qgl.addWidget(showCalloutCheck, 2,1,1,1);
+        qgl.addWidget(showCalloutCheck, 2,2,1,1); // TODO: Move to left side under actual line plot
 
         qgl.addWidget(overlay_img, 1,1,1,1);
 

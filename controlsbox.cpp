@@ -371,6 +371,11 @@ void ControlsBox::tab_changed_slot(int index)
             overlay_rh_width_spin->setVisible(see_it);
             overlay_rh_width_spin->setEnabled(see_it);
             this->setMaximumHeight(175);
+
+            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
+            connect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)));
+
+
         } else {
             see_it = false;
 
@@ -395,6 +400,12 @@ void ControlsBox::tab_changed_slot(int index)
             overlay_rh_width_spin->setVisible(see_it);
             overlay_rh_width_spin->setEnabled(see_it);
             this->setMaximumHeight(150);
+
+
+            disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
+            disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)));
+
+
         }
 
         p_profile->rescaleRange();

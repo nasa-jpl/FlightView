@@ -47,7 +47,6 @@ class profile_widget : public QWidget
     QCustomPlot *qcp;
     QCPPlotTitle *plotTitle;
 
-    frameview_widget *overlay_img;
 
     /* Frame rendering elements */
     int frWidth, frHeight;
@@ -79,6 +78,8 @@ public:
     bool slider_low_inc = false;
 
     image_t itype;
+    frameview_widget *overlay_img; // public to aid connection through the profile to the controls box
+
 
 public slots:
     /*! \addtogroup renderfunc
