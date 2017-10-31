@@ -86,7 +86,7 @@ class take_object {
 
     std_dev_filter* sdvf;
     int meanStartRow, meanHeight, meanStartCol, meanWidth; // dimensions used by the mean filter
-    // int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end; // VERT_OVERLAY
+    int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end; // VERT_OVERLAY
 
     //frame saving variables
     boost::thread saving_thread; // this thread handles the frame saving, as saving frames should not cause data collection to suspend

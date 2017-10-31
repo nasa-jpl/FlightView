@@ -1,9 +1,14 @@
 #include "mean_filter.hpp"
 #include "fft.hpp"
 #include <atomic>
+#include <stdio.h>
 
-mean_filter::mean_filter(frame_c * frame,unsigned long frame_count,int startCol,int endCol,int startRow,int endRow,int actualWidth, \
-                         bool useDSF,FFT_t FFTtype)
+mean_filter::mean_filter(frame_c * frame,unsigned long frame_count,int startCol,\
+                         int endCol,int startRow,int endRow,int actualWidth, \
+                         bool useDSF,FFT_t FFTtype,\
+                         int lh_start, int lh_end,\
+                         int cent_start, int cent_end,\
+                         int rh_start, int rh_end)
 {
     beginCol = startCol;
     width = endCol;
@@ -17,12 +22,13 @@ mean_filter::mean_filter(frame_c * frame,unsigned long frame_count,int startCol,
     this->FFTtype = FFTtype;
 
     // copy the latest overlay parameters from the frame:
-    lh_start = frame->lh_start;
-    lh_end = frame->lh_end;
-    cent_start = frame->cent_start;
-    cent_end = frame->cent_end;
-    rh_start = frame->rh_start;
-    rh_end = frame->rh_end;
+    // new with every frame... bad idea
+    this->lh_start = lh_start;
+    this->lh_end = lh_end;
+    this->cent_start = cent_start;
+    this->cent_end = cent_end;
+    this->rh_start = rh_start;
+    this->rh_end = rh_end;
 
 }
 void mean_filter::start_mean()
@@ -31,6 +37,7 @@ void mean_filter::start_mean()
 }
 void mean_filter::calculate_means()
 {
+    // bool is_overlay_plot = false;
     int horizDiff = width - beginCol;
     int vertDiff = height - beginRow;
     if( horizDiff == 0 )
@@ -48,6 +55,34 @@ void mean_filter::calculate_means()
     memset(frame->horizontal_mean_profile, 0, MAX_WIDTH*sizeof(*(frame->horizontal_mean_profile)));
     memset(frame->vertical_mean_profile_lh, 0, MAX_HEIGHT*sizeof(*(frame->vertical_mean_profile_lh)));
     memset(frame->vertical_mean_profile_rh, 0, MAX_HEIGHT*sizeof(*(frame->vertical_mean_profile_rh)));
+
+    // Remove this later, debug code:
+    if(!(frame_count % 100))
+    {
+        usleep(10000);
+        std::cout << "----- from CUDA take object: -----\n";
+        std::cout << "frame_count:   " << frame_count << std::endl;
+        if(!lh_start)
+            std::cout << "-----========= WARNING, lh_start == 0 WARNING WARNING WARNING =========-----" << std::endl;
+        // The above should only occur at the start of liveview, before any useful parameters are passed in.
+        std::cout << "lh_start:   " << lh_start <<   ", lh_end:   " << lh_end << std::endl;
+        std::cout << "rh_start:   " << rh_start <<   ", rh_end:   " << rh_end << std::endl;
+        std::cout << "cent_start: " << cent_start << ", cent_end: " << cent_end << std::endl;
+        std::cout << "----- end from CUDA take object --\n";
+    }
+
+    if( (cent_start != 0) && (cent_end !=0) )
+    {
+        // is_overlay_plot = true;
+        beginCol = cent_start;
+        width = cent_end;
+        horizDiff = cent_end-cent_start + 1;
+        if(!(frame_count % 100))
+        {
+            std::cout << "beginCol: " << beginCol << "width: " << width << std::endl;
+            std::cout << "beginRow: " << beginRow << "height: " << height << std::endl;
+        }
+    }
 
     for(int r = beginRow; r < height; r++)
     {
@@ -77,24 +112,25 @@ void mean_filter::calculate_means()
         for(int r = 0; r < height; r++)
         {
             // for each row, grab the data at UI-selected col=start and col=end
-            frame->vertical_mean_profile_lh[r] = frame->image_data_ptr[r*frWidth + beginCol];
-            frame->vertical_mean_profile_rh[r] = frame->image_data_ptr[r*frWidth + width];
+            for(int c = lh_start; c < lh_end; c++)
+            {
+                frame->vertical_mean_profile_lh[r] += frame->image_data_ptr[r*frWidth + c];
+            }
+            for(int c = rh_start; c < rh_end; c++)
+            {
+                frame->vertical_mean_profile_rh[r] += frame->image_data_ptr[r*frWidth + c];
+            }
         }
     } else {
         for(int r = 0; r < height; r++)
         {
             for(int c = lh_start; c < lh_end; c++)
             {
-                // for each row, grab the data at UI-selected col=start and col=end
-                //frame->vertical_mean_profile_lh[r] += frame->dark_subtracted_data[r*frWidth + beginCol];
-                frame->vertical_mean_profile_lh[r] += frame->dark_subtracted_data[r*frWidth + c]; // untested
-
+                frame->vertical_mean_profile_lh[r] += frame->dark_subtracted_data[r*frWidth + c];
             }
             for(int c = rh_start; c < rh_end; c++)
             {
-                //frame->vertical_mean_profile_rh[r] += frame->dark_subtracted_data[r*frWidth + width];
-                frame->vertical_mean_profile_rh[r] += frame->dark_subtracted_data[r*frWidth + c]; // untested
-
+                frame->vertical_mean_profile_rh[r] += frame->dark_subtracted_data[r*frWidth + c];
             }
         }
     }
@@ -102,11 +138,8 @@ void mean_filter::calculate_means()
     for(int r = beginRow; r < height; r++)
     {
         frame->vertical_mean_profile[r] /= horizDiff;
-
-        // Not sure if this works
         frame->vertical_mean_profile_lh[r] /= (lh_end-lh_start+1);
         frame->vertical_mean_profile_rh[r] /= (rh_end-rh_start+1);
-
     }
 
     // begin determining frame mean for FFT

@@ -34,12 +34,6 @@ struct frame_c{
 	float std_dev_data[MAX_SIZE];
 	uint32_t std_dev_histogram[NUMBER_OF_BINS];
 #endif
-        int lh_start;
-        int lh_end;
-        int cent_start;
-        int cent_end;
-        int rh_start;
-        int rh_end;
 
         uint16_t * image_data_ptr;
 
