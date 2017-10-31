@@ -179,6 +179,7 @@ private slots:
 
     void load_pref_window();
     void transmitChange(int linesToAverage);
+    void updateOverlayParams(int dummy);
     void fft_slider_enable(bool toggled);
 
 };

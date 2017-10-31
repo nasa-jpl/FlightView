@@ -1,5 +1,5 @@
 #include "controlsbox.h"
-#include <QDebug>
+#include <stdio.h>
 
 static const char notAllowedChars[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`'";
 
@@ -350,6 +350,7 @@ void ControlsBox::tab_changed_slot(int index)
         {
             // vertical overlay has three additional sliders for setting the width.
             see_it = true;
+            lines_label->setText("L-R Span:");
 
             overlay_lh_width->setEnabled(see_it);
             overlay_lh_width->setVisible(see_it);
@@ -373,12 +374,17 @@ void ControlsBox::tab_changed_slot(int index)
             overlay_rh_width_spin->setEnabled(see_it);
             this->setMaximumHeight(175);
 
+
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)));
 
+            connect(overlay_lh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+            connect(overlay_cent_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+            connect(overlay_rh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
 
         } else {
             see_it = false;
+            lines_label->setText("Lines to Average:");
 
             overlay_lh_width->setEnabled(see_it);
             overlay_lh_width->setVisible(see_it);
@@ -401,6 +407,7 @@ void ControlsBox::tab_changed_slot(int index)
             overlay_rh_width_spin->setVisible(see_it);
             overlay_rh_width_spin->setEnabled(see_it);
             this->setMaximumHeight(150);
+
 
         }
 
@@ -557,6 +564,10 @@ void ControlsBox::disconnect_old_tab()
         {
             disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
             disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)));
+            disconnect(overlay_lh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+            disconnect(overlay_cent_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+            disconnect(overlay_rh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+
         }
     } else if (p_fft) {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_fft,SLOT(updateCeiling(int)));
@@ -862,28 +873,22 @@ void ControlsBox::transmitChange(int linesToAverage)
     volatile int lh_width = 20;
     volatile int cent_width = 20;
     volatile int rh_width = 20;
-    if (p_profile) {
-        qDebug() << "in the transmit";
 
-        fw->updateMeanRange(linesToAverage, p_profile->itype);
+    if (p_profile) {
+
+        // Unfortunately, updateMeanRange also updates the crosshair span
+        // so it is not possible to update the mean range in take object
+        // without also altering the span. It would be nice to be able to
+        // only update the crosshairs and not touch the take object.
         if(p_profile->itype == VERT_OVERLAY)
         {
-            // update list of parameters.
-            lh_start = fw->crossStartCol - lh_width/2;
-            lh_end = lh_start + lh_width/2;
+            fw->updateMeanRange(linesToAverage, p_profile->itype);
+            // fw->redraw_crosshairs(linesToAverage);
+            this->updateOverlayParams(0);
+        } else {
+            fw->updateMeanRange(linesToAverage, p_profile->itype);
+            fw->updateOverlayParams(0, 0, 0, 0, 0, 0); // signal that there is not an overlay plot
 
-            rh_start = fw->crossStartCol+(int)(fw->crossWidth/2) - rh_width/2;
-            rh_end = rh_start + rh_width/2;
-
-            cent_start = fw->crosshair_x - cent_width/2;
-            cent_end = fw->crosshair_x + cent_width/2;
-
-            // validateOverlayParams(); // TODO: check limits!!
-            qDebug() << "lh_start:   " << lh_start <<   ", lh_end:   " << lh_end;
-            qDebug() << "rh_start:   " << rh_start <<   ", rh_end:   " << rh_end;
-            qDebug() << "cent_start: " << cent_start << ", cent_end: " << cent_end;
-
-            fw->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
         }
     } else if (p_fft) {
         if (p_fft->vCrossButton->isChecked())
@@ -892,6 +897,38 @@ void ControlsBox::transmitChange(int linesToAverage)
         fw->updateMeanRange(linesToAverage, BASE);
     }
 }
+
+void ControlsBox::updateOverlayParams(int dummy)
+{
+    volatile int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end;
+    volatile int lh_width = this->overlay_lh_width_spin->value();
+    volatile int cent_width = this->overlay_cent_width_spin->value();
+    volatile int rh_width = this->overlay_rh_width_spin->value();
+
+    // update list of parameters.
+    // Currently uses the crosshairs to determine L, C, R position
+    // and the UI sliders determine the span of each averaging.
+    lh_start = fw->crossStartCol - lh_width/2;
+    lh_end = lh_start + lh_width;
+
+    rh_start = fw->crossWidth - rh_width/2;
+    rh_end = rh_start + rh_width;
+
+    cent_start = fw->crosshair_x - cent_width/2;
+    cent_end = fw->crosshair_x + cent_width/2;
+
+    // validateOverlayParams(); // TODO: check limits!!
+
+    std::cout << "----- begin ControlsBox::updateOverlayParams -----\n";
+    std::cout << "fw->crossWidth: " << fw->crossWidth << " fw->crosshair_x: " << fw->crosshair_x << std::endl;
+    std::cout << "lh_start:   " << lh_start <<   ", lh_end:   " << lh_end << std::endl;
+    std::cout << "rh_start:   " << rh_start <<   ", rh_end:   " << rh_end << std::endl;
+    std::cout << "cent_start: " << cent_start << ", cent_end: " << cent_end << std::endl;
+    std::cout << "----- end ControlsBox::updateOverlayParams -----\n";
+    // Send to frame worker, which sends to take object which sends to the mean filter.
+    fw->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+}
+
 void ControlsBox::fft_slider_enable(bool toggled)
 {
     bool enable = fw->crosshair_x != -1 && toggled;

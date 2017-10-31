@@ -12,7 +12,6 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
 TARGET = LiveView
 TEMPLATE = app
 
-
 SOURCES += main.cpp\
         mainwindow.cpp \
     frameview_widget.cpp \

@@ -231,17 +231,27 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
 
     crossStartRow = isSkippingFirst && crossStartRow == 0 ? 1 : crossStartRow;
     crossHeight = isSkippingLast && crossHeight == int(frHeight) ? frHeight - 1 : crossHeight;
-    to.updateVertRange(crossStartRow, crossHeight);
-    to.updateHorizRange(crossStartCol, crossWidth);
+
 
     if(profile==VERT_OVERLAY)
     {
+        // do not update take object.
         //to.updateVertOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+    } else {
+        // update take object
+        to.updateVertRange(crossStartRow, crossHeight);
+        to.updateHorizRange(crossStartCol, crossWidth);
     }
 }
 
 void frameWorker::updateOverlayParams(int lh_start, int lh_end, int cent_start, int cent_end, int rh_start, int rh_end)
 {
+    std::cout << "In fw.updateOverlayParams.-----------\n";
+    std::cout << "----- ----- -----\n";
+    std::cout << "lh_start:   " << lh_start <<   ", lh_end:   " << lh_end << std::endl;
+    std::cout << "rh_start:   " << rh_start <<   ", rh_end:   " << rh_end << std::endl;
+    std::cout << "cent_start: " << cent_start << ", cent_end: " << cent_end << std::endl;
+    std::cout << "----- end fw.updateOverlayParams -----\n";
     to.updateVertOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
 }
 
