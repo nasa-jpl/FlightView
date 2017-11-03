@@ -180,6 +180,8 @@ private slots:
     void load_pref_window();
     void transmitChange(int linesToAverage);
     void updateOverlayParams(int dummy);
+    void validateOverlayParams(int &lh_start, int &lh_end, int &cent_start, int &cent_end, int &rh_start, int &rh_end);
+
     void fft_slider_enable(bool toggled);
 
 };

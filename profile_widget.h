@@ -39,9 +39,15 @@ class profile_widget : public QWidget
     /* GUI elements */
     QVBoxLayout qvbl; // for others
     QGridLayout qgl; // for overlay
+    QVBoxLayout op_vert; // overlay plot vertical layout option
+    QHBoxLayout horiz_layout; // bottom of profile plot check boxes
+
     QCheckBox *showCalloutCheck;
+    QCheckBox * zoomX_enable_Check;
+    QCheckBox * zoomY_enable_Check;
     QCPItemText *callout;
     QCPItemLine *arrow;
+    QSpacerItem * spacer;
 
     /* Plot elements */
     QCustomPlot *qcp;

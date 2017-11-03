@@ -86,16 +86,42 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     showCalloutCheck = new QCheckBox("Display Callout");
     showCalloutCheck->setChecked(false);
 
+    zoomX_enable_Check = new QCheckBox("Enable X-Zoom");
+    zoomX_enable_Check->setChecked(true);
+
+    zoomY_enable_Check = new QCheckBox("Enable Y-Zoom");
+    zoomY_enable_Check->setChecked(true);
+
+    spacer = new QSpacerItem(50,1,QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
+    spacer->setAlignment(Qt::AlignRight);
 
     if(itype==VERT_OVERLAY)
     {
         overlay_img = new frameview_widget(fw, DSF, this);
 
         // Grid layout
-        qgl.addWidget(qcp, 1,2,1,1);
-        qgl.addWidget(showCalloutCheck, 2,2,1,1); // TODO: Move to left side under actual line plot
 
-        qgl.addWidget(overlay_img, 1,1,1,1);
+        // Right side plot and check box:
+        op_vert.addWidget(qcp,1);
+        // op_vert.addWidget(showCalloutCheck, 2);
+
+        // Assemble Left and Right together:
+        // qgl.addWidget(qcp, 1,2,1,1); // profile plot
+        // qgl.addWidget(showCalloutCheck, 2,2,1,1); //  "Show Callout"
+
+        horiz_layout.addSpacerItem(spacer);
+        horiz_layout.addWidget(showCalloutCheck,0);
+        horiz_layout.addWidget(zoomX_enable_Check,0);
+        horiz_layout.addWidget(zoomY_enable_Check,0);
+
+        op_vert.addLayout(&horiz_layout,1);
+
+        // Place vertical layout on right side:
+        qgl.addLayout(&op_vert, 0,2, Qt::AlignBaseline);
+
+
+        // Left side frame view image:
+        qgl.addWidget(overlay_img, 0,1,1,1); // frame view, dark subtracted
 
         //TODO: Zoom-X, Zoom-Y toggles for plot
         this->setLayout(&qgl);
@@ -233,30 +259,34 @@ void profile_widget::profileScrolledX(const QCPRange &newRange)
      * \param newRange Unused.
      * Profiles must not allow the user to zoom in the x direction.
      */
-    // Q_UNUSED(newRange);
 
-    QCPRange boundedRange = newRange;
-    // LIL_MIN, BIG_MIN, these are based on pixel amplitude range, not frame geometry.
-    double lowerRangeBound = 0;
-    double upperRangeBound = xAxisMax;
-    if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
-        boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
-    } else {
-        double oldSize = boundedRange.size();
-        if (boundedRange.lower < lowerRangeBound) {
-            boundedRange.lower = lowerRangeBound;
-            boundedRange.upper = lowerRangeBound + oldSize;
+    if(zoomX_enable_Check->isChecked())
+    {
+        // Q_UNUSED(newRange);
+
+        QCPRange boundedRange = newRange;
+        // LIL_MIN, BIG_MIN, these are based on pixel amplitude range, not frame geometry.
+        double lowerRangeBound = 0;
+        double upperRangeBound = xAxisMax;
+        if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
+            boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+        } else {
+            double oldSize = boundedRange.size();
+            if (boundedRange.lower < lowerRangeBound) {
+                boundedRange.lower = lowerRangeBound;
+                boundedRange.upper = lowerRangeBound + oldSize;
+            }
+            if (boundedRange.upper > upperRangeBound) {
+                boundedRange.lower = upperRangeBound - oldSize;
+                boundedRange.upper = upperRangeBound;
+            }
         }
-        if (boundedRange.upper > upperRangeBound) {
-            boundedRange.lower = upperRangeBound - oldSize;
-            boundedRange.upper = upperRangeBound;
-        }
+        // floor = boundedRange.lower;
+        // ceiling = boundedRange.upper;
+        // old:
+        // qcp->xAxis->setRange(0, xAxisMax);
+        qcp->xAxis->setRange(boundedRange);
     }
-    // floor = boundedRange.lower;
-    // ceiling = boundedRange.upper;
-    // old:
-    // qcp->xAxis->setRange(0, xAxisMax);
-    qcp->xAxis->setRange(boundedRange);
 
 }
 void profile_widget::profileScrolledY(const QCPRange &newRange)
@@ -265,25 +295,29 @@ void profile_widget::profileScrolledY(const QCPRange &newRange)
      * \param newRange Mouse wheel scrolled range.
      * Profiles must not allow the user to zoom past the dimensions of the frame.
      */
-    QCPRange boundedRange = newRange;
-    double lowerRangeBound = slider_low_inc ? LIL_MIN : BIG_MIN;
-    double upperRangeBound = slider_low_inc ? LIL_MAX : BIG_MAX;
-    if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
-        boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
-    } else {
-        double oldSize = boundedRange.size();
-        if (boundedRange.lower < lowerRangeBound) {
-            boundedRange.lower = lowerRangeBound;
-            boundedRange.upper = lowerRangeBound + oldSize;
+
+    if(zoomY_enable_Check->isChecked())
+    {
+        QCPRange boundedRange = newRange;
+        double lowerRangeBound = slider_low_inc ? LIL_MIN : BIG_MIN;
+        double upperRangeBound = slider_low_inc ? LIL_MAX : BIG_MAX;
+        if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
+            boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+        } else {
+            double oldSize = boundedRange.size();
+            if (boundedRange.lower < lowerRangeBound) {
+                boundedRange.lower = lowerRangeBound;
+                boundedRange.upper = lowerRangeBound + oldSize;
+            }
+            if (boundedRange.upper > upperRangeBound) {
+                boundedRange.lower = upperRangeBound - oldSize;
+                boundedRange.upper = upperRangeBound;
+            }
         }
-        if (boundedRange.upper > upperRangeBound) {
-            boundedRange.lower = upperRangeBound - oldSize;
-            boundedRange.upper = upperRangeBound;
-        }
+        floor = boundedRange.lower;
+        ceiling = boundedRange.upper;
+        qcp->yAxis->setRange(boundedRange);
     }
-    floor = boundedRange.lower;
-    ceiling = boundedRange.upper;
-    qcp->yAxis->setRange(boundedRange);
 }
 void profile_widget::setCallout(QMouseEvent *e)
 {

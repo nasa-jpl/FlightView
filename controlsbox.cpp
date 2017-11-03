@@ -900,10 +900,10 @@ void ControlsBox::transmitChange(int linesToAverage)
 
 void ControlsBox::updateOverlayParams(int dummy)
 {
-    volatile int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end;
-    volatile int lh_width = this->overlay_lh_width_spin->value();
-    volatile int cent_width = this->overlay_cent_width_spin->value();
-    volatile int rh_width = this->overlay_rh_width_spin->value();
+    int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end;
+    int lh_width = this->overlay_lh_width_spin->value();
+    int cent_width = this->overlay_cent_width_spin->value();
+    int rh_width = this->overlay_rh_width_spin->value();
 
     // update list of parameters.
     // Currently uses the crosshairs to determine L, C, R position
@@ -917,7 +917,7 @@ void ControlsBox::updateOverlayParams(int dummy)
     cent_start = fw->crosshair_x - cent_width/2;
     cent_end = fw->crosshair_x + cent_width/2;
 
-    // validateOverlayParams(); // TODO: check limits!!
+    validateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end); // TODO: check limits!!
 
     std::cout << "----- begin ControlsBox::updateOverlayParams -----\n";
     std::cout << "fw->crossWidth: " << fw->crossWidth << " fw->crosshair_x: " << fw->crosshair_x << std::endl;
@@ -928,6 +928,44 @@ void ControlsBox::updateOverlayParams(int dummy)
     // Send to frame worker, which sends to take object which sends to the mean filter.
     fw->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
 }
+
+void ControlsBox::validateOverlayParams(int &lh_start, int &lh_end,\
+                                        int &cent_start, int &cent_end,\
+                                        int &rh_start, int &rh_end)
+{
+
+    int width = fw->getFrameWidth() - 1; // last usable index
+
+    // check lower bound:
+    if(lh_start < 0)
+        lh_start = 0;
+    if(lh_end < 0)
+        lh_end = 0;
+    if(cent_start < 0)
+        cent_start = 0;
+    if(cent_end < 0)
+        cent_end = 0;
+    if(rh_start < 0)
+        rh_start = 0;
+    if(rh_end < 0)
+        rh_end = 0;
+
+    // check upper bound:
+    if(lh_start > width)
+        lh_start = width;
+    if(lh_end > width)
+        lh_end = width;
+    if(cent_start > width)
+        cent_start = width;
+    if(cent_end > width)
+        cent_end = width;
+    if(rh_start > width)
+        rh_start = width;
+    if(rh_end > width)
+        rh_end = width;
+
+}
+
 
 void ControlsBox::fft_slider_enable(bool toggled)
 {
