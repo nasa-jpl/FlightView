@@ -224,12 +224,14 @@ void take_object::updateVertOverlayParams(int lh_start_in, int lh_end_in,
     this->rh_start = rh_start_in;
     this->rh_end = rh_end_in;
 
+    /*
     // Debug, remove later:
     std::cout << "----- In take_object::updateVertOverlayParams\n";
     std::cout << "->lh_start:   " << lh_start <<   ", lh_end:   " << lh_end << std::endl;
     std::cout << "->rh_start:   " << rh_start <<   ", rh_end:   " << rh_end << std::endl;
     std::cout << "->cent_start: " << cent_start << ", cent_end: " << cent_end << std::endl;
     std::cout << "----- end take_object::updateVertOverlayParams -----\n";
+    */
 }
 
 void take_object::updateVertRange(int br, int er)

@@ -57,9 +57,12 @@ void mean_filter::calculate_means()
     memset(frame->vertical_mean_profile_rh, 0, MAX_HEIGHT*sizeof(*(frame->vertical_mean_profile_rh)));
 
     // Remove this later, debug code:
+    /*
     if(!(frame_count % 100))
     {
+
         usleep(10000);
+
         std::cout << "----- from CUDA take object: -----\n";
         std::cout << "frame_count:   " << frame_count << std::endl;
         if(!lh_start)
@@ -70,18 +73,23 @@ void mean_filter::calculate_means()
         std::cout << "cent_start: " << cent_start << ", cent_end: " << cent_end << std::endl;
         std::cout << "----- end from CUDA take object --\n";
     }
+    */
 
     if( (cent_start != 0) && (cent_end !=0) )
     {
+        // hack to detect overlay condition.
+        // this means we must set these two variables to zero in the other plot tabs.
         // is_overlay_plot = true;
         beginCol = cent_start;
         width = cent_end;
         horizDiff = cent_end-cent_start + 1;
+        /*
         if(!(frame_count % 100))
         {
             std::cout << "beginCol: " << beginCol << "width: " << width << std::endl;
             std::cout << "beginRow: " << beginRow << "height: " << height << std::endl;
         }
+        */
     }
 
     for(int r = beginRow; r < height; r++)
