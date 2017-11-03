@@ -561,7 +561,7 @@ void ControlsBox::disconnect_old_tab()
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile,SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateFloor(int)));
         if(p_profile->itype == VERT_OVERLAY)
-        {
+        {            
             disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
             disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)));
             disconnect(overlay_lh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));

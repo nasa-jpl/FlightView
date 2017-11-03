@@ -48,6 +48,7 @@ class profile_widget : public QWidget
     QCPItemText *callout;
     QCPItemLine *arrow;
     QSpacerItem * spacer;
+    QPushButton * reset_zoom_btn;
 
     /* Plot elements */
     QCustomPlot *qcp;
@@ -65,6 +66,9 @@ class profile_widget : public QWidget
     QVector<double> y;
     QVector<double> y_lh;
     QVector<double> y_rh;
+
+    QCPRange boundedRange_x;
+    QCPRange boundedRange_y;
 
     int x_coord;
     volatile int y_coord;
@@ -101,7 +105,7 @@ public slots:
     void profileScrolledX(const QCPRange &newRange);
     void profileScrolledY(const QCPRange &newRange);
     /*! @} */
-
+    void defaultZoom();
     void setCallout(QMouseEvent *e);
     void moveCallout(QMouseEvent *e);
     void hideCallout();
