@@ -917,14 +917,17 @@ void ControlsBox::updateOverlayParams(int dummy)
     cent_start = fw->crosshair_x - cent_width/2;
     cent_end = fw->crosshair_x + cent_width/2;
 
-    validateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end); // TODO: check limits!!
+    validateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
 
+    /*
     std::cout << "----- begin ControlsBox::updateOverlayParams -----\n";
     std::cout << "fw->crossWidth: " << fw->crossWidth << " fw->crosshair_x: " << fw->crosshair_x << std::endl;
     std::cout << "lh_start:   " << lh_start <<   ", lh_end:   " << lh_end << std::endl;
     std::cout << "rh_start:   " << rh_start <<   ", rh_end:   " << rh_end << std::endl;
     std::cout << "cent_start: " << cent_start << ", cent_end: " << cent_end << std::endl;
     std::cout << "----- end ControlsBox::updateOverlayParams -----\n";
+    */
+
     // Send to frame worker, which sends to take object which sends to the mean filter.
     fw->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
 }

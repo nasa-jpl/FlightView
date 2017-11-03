@@ -338,7 +338,6 @@ void profile_widget::profileScrolledY(const QCPRange &newRange)
         boundedRange_y = boundedRange;
 
     } else {
-        //std::cout << "not zooming Y\n";
         qcp->yAxis->setRange(boundedRange_y);
     }
 }
