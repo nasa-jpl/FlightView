@@ -83,13 +83,15 @@ void mean_filter::calculate_means()
         beginCol = cent_start;
         width = cent_end;
         horizDiff = cent_end-cent_start + 1;
+
         /*
         if(!(frame_count % 100))
         {
             std::cout << "beginCol: " << beginCol << "width: " << width << std::endl;
-            std::cout << "beginRow: " << beginRow << "height: " << height << std::endl;
+            std::cout << "beginRow: " << beginRow << "height: " << height << std::endl; // sometimes WRONG!
         }
         */
+
     }
 
     for(int r = beginRow; r < height; r++)
