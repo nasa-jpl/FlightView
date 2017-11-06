@@ -374,6 +374,7 @@ void ControlsBox::tab_changed_slot(int index)
             overlay_rh_width_spin->setEnabled(see_it);
             this->setMaximumHeight(175);
 
+            lines_slider->setEnabled(true);
 
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)));

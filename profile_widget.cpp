@@ -76,7 +76,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     arrow->setHead(QCPLineEnding::esSpikeArrow);
     arrow->setSelectable(false);
     arrow->setVisible(false);
-    qcp->setInteractions(QCP::iRangeZoom | QCP::iSelectItems);
+    qcp->setInteractions(QCP::iRangeZoom | QCP::iSelectItems | QCP::iRangeDrag);
 
     qcp->yAxis->setLabel("Pixel Magnitude [DN]");
     qcp->yAxis->setRange(QCPRange(0, fw->base_ceiling)); //From 0 to 2^16
