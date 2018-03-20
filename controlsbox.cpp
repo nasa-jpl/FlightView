@@ -1,4 +1,5 @@
 #include "controlsbox.h"
+#include <stdio.h>
 
 static const char notAllowedChars[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`'";
 
@@ -36,6 +37,24 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     server_ip_label.setText("Server IP: Not Connected!");
     server_port_label.setText("Port Number: Not Connected!");
 
+    // Overlay controls:
+
+    //left:
+    overlay_lh_width = new QSlider(this);
+    overlay_lh_width->setMinimum(1);
+    overlay_lh_width->setMaximum(160);
+    overlay_lh_width->setToolTip(QString("Sets the width"));
+    overlay_lh_width->setTickInterval(1);
+    overlay_lh_width->setOrientation(Qt::Horizontal);
+
+    overlay_lh_width_label = new QLabel(this);
+    overlay_lh_width_label->setText("Left Width:");
+
+    overlay_lh_width_spin = new QSpinBox(this);
+    overlay_lh_width_spin->setMinimum(1);
+    overlay_lh_width_spin->setMaximum(160);
+    overlay_lh_width_spin->setButtonSymbols(QAbstractSpinBox::NoButtons);
+
     collections_layout = new QGridLayout();
     //First Row
     collections_layout->addWidget(&collect_dark_frames_button, 1, 1, 1, 1);
@@ -51,6 +70,11 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
 
     //Fourth Row
     collections_layout->addWidget(&server_port_label, 4, 1, 1, 1);
+
+    //Fifth Row:
+    collections_layout->addWidget(overlay_lh_width_label, 5,1,1,1);
+    collections_layout->addWidget(overlay_lh_width, 5,2,1,7);
+    collections_layout->addWidget(overlay_lh_width_spin, 5,10,1,1);
 
     CollectionButtonsBox.setLayout(collections_layout);
 
@@ -102,7 +126,65 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     low_increment_cbox.setText("Precision Slider");
     use_DSF_cbox.setText("Apply Dark Subtraction Filter");
 
+
+
+    //center:
+    overlay_cent_width = new QSlider(this);
+    overlay_cent_width->setMinimum(1);
+    overlay_cent_width->setMaximum(160);
+    overlay_cent_width->setToolTip(QString("Sets the width"));
+    overlay_cent_width->setTickInterval(1);
+    overlay_cent_width->setOrientation(Qt::Horizontal);
+
+    overlay_cent_width_label = new QLabel(this);
+    overlay_cent_width_label->setText("Center Width:");
+
+    overlay_cent_width_spin = new QSpinBox(this);
+    overlay_cent_width_spin->setMinimum(1);
+    overlay_cent_width_spin->setMaximum(160);
+    overlay_cent_width_spin->setButtonSymbols(QAbstractSpinBox::NoButtons);
+
+    //right:
+    overlay_rh_width = new QSlider(this);
+    overlay_rh_width->setMinimum(1);
+    overlay_rh_width->setMaximum(160);
+    overlay_rh_width->setToolTip(QString("Sets the width"));
+    overlay_rh_width->setTickInterval(1);
+    overlay_rh_width->setOrientation(Qt::Horizontal);
+
+    overlay_rh_width_label = new QLabel(this);
+    overlay_rh_width_label->setText("Right Width:");
+
+    overlay_rh_width_spin = new QSpinBox(this);
+    overlay_rh_width_spin->setMinimum(1);
+    overlay_rh_width_spin->setMaximum(160);
+    overlay_rh_width_spin->setButtonSymbols(QAbstractSpinBox::NoButtons);
+
+    // off by default:
+
+    overlay_lh_width->setVisible(false);
+    overlay_lh_width->setEnabled(false);
+    overlay_lh_width_label->setVisible(false);
+    overlay_lh_width_label->setEnabled(false);
+    overlay_lh_width_spin->setVisible(false);
+    overlay_lh_width_spin->setEnabled(false);
+
+    overlay_cent_width->setVisible(false);
+    overlay_cent_width->setEnabled(false);
+    overlay_cent_width_label->setVisible(false);
+    overlay_cent_width_label->setEnabled(false);
+    overlay_cent_width_spin->setVisible(false);
+    overlay_cent_width_spin->setEnabled(false);
+
+    overlay_rh_width->setVisible(false);
+    overlay_rh_width->setEnabled(false);
+    overlay_rh_width_label->setVisible(false);
+    overlay_rh_width_label->setEnabled(false);
+    overlay_rh_width_spin->setVisible(false);
+    overlay_rh_width_spin->setEnabled(false);
+
     sliders_layout = new QGridLayout();
+
     //First Row
     sliders_layout->addWidget(std_dev_n_label, 1, 1, 1, 1);
     sliders_layout->addWidget(std_dev_N_slider, 1, 2, 1, 7);
@@ -121,6 +203,11 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     sliders_layout->addWidget(new QLabel("Floor:"), 4, 1, 1, 1);
     sliders_layout->addWidget(&floor_slider, 4, 2, 1, 7);
     sliders_layout->addWidget(&floor_edit, 4, 10, 1, 1);
+
+    //Fifth Row:
+    sliders_layout->addWidget(overlay_cent_width_label, 5,1,1,1);
+    sliders_layout->addWidget(overlay_cent_width, 5,2,1,7);
+    sliders_layout->addWidget(overlay_cent_width_spin, 5,10,1,1);
 
     ThresholdingSlidersBox.setLayout(sliders_layout);
 
@@ -158,6 +245,12 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     save_layout->addWidget(&stop_saving_frames_button, 1, 5, 1, 1);
     save_layout->addWidget(&frames_save_num_avgs_edit, 2, 5, 1, 1);
     
+    //Forth Row (overlay plot only)
+    //To Do: Add lh_select_slider (4th row) and then place width in 5th row
+    save_layout->addWidget(overlay_rh_width_label,4,1,1,1 );
+    save_layout->addWidget(overlay_rh_width, 4,2,1,3);
+    save_layout->addWidget(overlay_rh_width_spin, 4,5,1,1);
+
     SaveButtonsBox.setLayout(save_layout);
 
 /* =========================================================================== */
@@ -190,6 +283,18 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     connect(&save_finite_button, SIGNAL(clicked()), this, SLOT(save_finite_button_slot()));
     connect(&stop_saving_frames_button, SIGNAL(clicked()), this, SLOT(stop_continous_button_slot()));
     connect(&select_save_location, SIGNAL(clicked()), this, SLOT(show_save_dialog()));
+
+    //overlay:
+    connect(overlay_lh_width_spin, SIGNAL(valueChanged(int)), overlay_lh_width, SLOT(setValue(int)));
+    connect(overlay_lh_width, SIGNAL(valueChanged(int)), overlay_lh_width_spin, SLOT(setValue(int)));
+
+    connect(overlay_cent_width_spin, SIGNAL(valueChanged(int)), overlay_cent_width, SLOT(setValue(int)));
+    connect(overlay_cent_width, SIGNAL(valueChanged(int)), overlay_cent_width_spin, SLOT(setValue(int)));
+
+    connect(overlay_rh_width_spin, SIGNAL(valueChanged(int)), overlay_rh_width, SLOT(setValue(int)));
+    connect(overlay_rh_width, SIGNAL(valueChanged(int)), overlay_rh_width_spin, SLOT(setValue(int)));
+
+
 }
 void ControlsBox::closeEvent(QCloseEvent *e)
 {
@@ -210,6 +315,8 @@ void ControlsBox::tab_changed_slot(int index)
      * \author Noah Levy
      * \author JP Ryan
      */
+
+    bool see_it = false;
     current_tab = qtw->widget(index);
     disconnect_old_tab();
     attempt_pointers(current_tab);
@@ -229,8 +336,8 @@ void ControlsBox::tab_changed_slot(int index)
         frameMax = p_profile->itype == HORIZONTAL_MEAN || p_profile->itype == HORIZONTAL_CROSS \
                 ? fw->getFrameHeight() : fw->getFrameWidth();
         startVal = p_profile->itype == HORIZONTAL_CROSS ? fw->vertLinesAvgd : frameMax;
-        startVal = p_profile->itype == VERTICAL_CROSS ? fw->horizLinesAvgd : startVal;
-        enable = (p_profile->itype == VERTICAL_CROSS || p_profile->itype == HORIZONTAL_CROSS) && fw->crosshair_x != -1;
+        startVal = (p_profile->itype == VERTICAL_CROSS || p_profile->itype == VERT_OVERLAY) ? fw->horizLinesAvgd : startVal;
+        enable = (p_profile->itype == VERTICAL_CROSS || p_profile->itype == HORIZONTAL_CROSS || p_profile->itype == VERT_OVERLAY) && fw->crosshair_x != -1;
         lines_slider->setMaximum(frameMax);
         line_average_edit->setMaximum(frameMax);
         lines_slider->setValue(startVal);
@@ -238,6 +345,72 @@ void ControlsBox::tab_changed_slot(int index)
         lines_slider->setEnabled(enable);
         line_average_edit->setEnabled(enable);
         display_lines_slider();
+
+        if(p_profile->itype == VERT_OVERLAY)
+        {
+            // vertical overlay has three additional sliders for setting the width.
+            see_it = true;
+            lines_label->setText("L-R Span:");
+
+            overlay_lh_width->setEnabled(see_it);
+            overlay_lh_width->setVisible(see_it);
+            overlay_lh_width_label->setVisible(see_it);
+            overlay_lh_width_label->setEnabled(see_it);
+            overlay_lh_width_spin->setVisible(see_it);
+            overlay_lh_width_spin->setEnabled(see_it);
+
+            overlay_cent_width->setEnabled(see_it);
+            overlay_cent_width->setVisible(see_it);
+            overlay_cent_width_label->setVisible(see_it);
+            overlay_cent_width_label->setEnabled(see_it);
+            overlay_cent_width_spin->setVisible(see_it);
+            overlay_cent_width_spin->setEnabled(see_it);
+
+            overlay_rh_width->setEnabled(see_it);
+            overlay_rh_width->setVisible(see_it);
+            overlay_rh_width_label->setVisible(see_it);
+            overlay_rh_width_label->setEnabled(see_it);
+            overlay_rh_width_spin->setVisible(see_it);
+            overlay_rh_width_spin->setEnabled(see_it);
+            this->setMaximumHeight(175);
+
+            lines_slider->setEnabled(true);
+
+            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
+            connect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)));
+
+            connect(overlay_lh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+            connect(overlay_cent_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+            connect(overlay_rh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+
+        } else {
+            see_it = false;
+            lines_label->setText("Lines to Average:");
+
+            overlay_lh_width->setEnabled(see_it);
+            overlay_lh_width->setVisible(see_it);
+            overlay_lh_width_label->setVisible(see_it);
+            overlay_lh_width_label->setEnabled(see_it);
+            overlay_lh_width_spin->setVisible(see_it);
+            overlay_lh_width_spin->setEnabled(see_it);
+
+            overlay_cent_width->setEnabled(see_it);
+            overlay_cent_width->setVisible(see_it);
+            overlay_cent_width_label->setVisible(see_it);
+            overlay_cent_width_label->setEnabled(see_it);
+            overlay_cent_width_spin->setVisible(see_it);
+            overlay_cent_width_spin->setEnabled(see_it);
+
+            overlay_rh_width->setEnabled(see_it);
+            overlay_rh_width->setVisible(see_it);
+            overlay_rh_width_label->setVisible(see_it);
+            overlay_rh_width_label->setEnabled(see_it);
+            overlay_rh_width_spin->setVisible(see_it);
+            overlay_rh_width_spin->setEnabled(see_it);
+            this->setMaximumHeight(150);
+
+
+        }
 
         p_profile->rescaleRange();
     } else if (p_fft) {
@@ -388,6 +561,15 @@ void ControlsBox::disconnect_old_tab()
     } else if (p_profile) {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile,SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateFloor(int)));
+        if(p_profile->itype == VERT_OVERLAY)
+        {            
+            disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
+            disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)));
+            disconnect(overlay_lh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+            disconnect(overlay_cent_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+            disconnect(overlay_rh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+
+        }
     } else if (p_fft) {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_fft,SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_fft, SLOT(updateFloor(int)));
@@ -510,7 +692,7 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
         frames_save_num_edit.setEnabled(true);
         frames_save_num_edit.setValue(previousNumSaved);
     } else {
-    frames_save_num_edit.setValue(n);
+        frames_save_num_edit.setValue(n);
     }
 }
 int ControlsBox::validateFileName(const QString &name)
@@ -545,6 +727,7 @@ int ControlsBox::validateFileName(const QString &name)
     // File exists
     QFileInfo checkFile(name);
     if (checkFile.exists() && checkFile.isFile() && checkForOverwrites)
+    {
         result = (quint16) QMessageBox::warning(this, "Frame Save Warning", \
                              tr("File name already exists.\nOverwrite it?"), \
                              QMessageBox::Ok, QMessageBox::Cancel);
@@ -553,6 +736,7 @@ int ControlsBox::validateFileName(const QString &name)
         // HORRIBLE hack: (added casting to quint16 though)
         if(result == 1024)
             result = 1;
+    }
     return result;
 }
 void ControlsBox::start_dark_collection_slot()
@@ -686,8 +870,27 @@ void ControlsBox::load_pref_window()
 }
 void ControlsBox::transmitChange(int linesToAverage)
 {
+    volatile int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end;
+    volatile int lh_width = 20;
+    volatile int cent_width = 20;
+    volatile int rh_width = 20;
+
     if (p_profile) {
-        fw->updateMeanRange(linesToAverage, p_profile->itype);
+
+        // Unfortunately, updateMeanRange also updates the crosshair span
+        // so it is not possible to update the mean range in take object
+        // without also altering the span. It would be nice to be able to
+        // only update the crosshairs and not touch the take object.
+        if(p_profile->itype == VERT_OVERLAY)
+        {
+            fw->updateMeanRange(linesToAverage, p_profile->itype);
+            // fw->redraw_crosshairs(linesToAverage);
+            this->updateOverlayParams(0);
+        } else {
+            fw->updateMeanRange(linesToAverage, p_profile->itype);
+            fw->updateOverlayParams(0, 0, 0, 0, 0, 0); // signal that there is not an overlay plot
+
+        }
     } else if (p_fft) {
         if (p_fft->vCrossButton->isChecked())
             fw->updateMeanRange(linesToAverage, VERTICAL_CROSS);
@@ -695,6 +898,79 @@ void ControlsBox::transmitChange(int linesToAverage)
         fw->updateMeanRange(linesToAverage, BASE);
     }
 }
+
+void ControlsBox::updateOverlayParams(int dummy)
+{
+    int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end;
+    int lh_width = this->overlay_lh_width_spin->value();
+    int cent_width = this->overlay_cent_width_spin->value();
+    int rh_width = this->overlay_rh_width_spin->value();
+
+    // update list of parameters.
+    // Currently uses the crosshairs to determine L, C, R position
+    // and the UI sliders determine the span of each averaging.
+    lh_start = fw->crossStartCol - lh_width/2;
+    lh_end = lh_start + lh_width;
+
+    rh_start = fw->crossWidth - rh_width/2;
+    rh_end = rh_start + rh_width;
+
+    cent_start = fw->crosshair_x - cent_width/2;
+    cent_end = fw->crosshair_x + cent_width/2;
+
+    validateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+
+    /*
+    std::cout << "----- begin ControlsBox::updateOverlayParams -----\n";
+    std::cout << "fw->crossWidth: " << fw->crossWidth << " fw->crosshair_x: " << fw->crosshair_x << std::endl;
+    std::cout << "lh_start:   " << lh_start <<   ", lh_end:   " << lh_end << std::endl;
+    std::cout << "rh_start:   " << rh_start <<   ", rh_end:   " << rh_end << std::endl;
+    std::cout << "cent_start: " << cent_start << ", cent_end: " << cent_end << std::endl;
+    std::cout << "----- end ControlsBox::updateOverlayParams -----\n";
+    */
+
+    // Send to frame worker, which sends to take object which sends to the mean filter.
+    fw->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+}
+
+void ControlsBox::validateOverlayParams(int &lh_start, int &lh_end,\
+                                        int &cent_start, int &cent_end,\
+                                        int &rh_start, int &rh_end)
+{
+
+    int width = fw->getFrameWidth() - 1; // last usable index
+
+    // check lower bound:
+    if(lh_start < 0)
+        lh_start = 0;
+    if(lh_end < 0)
+        lh_end = 0;
+    if(cent_start < 0)
+        cent_start = 0;
+    if(cent_end < 0)
+        cent_end = 0;
+    if(rh_start < 0)
+        rh_start = 0;
+    if(rh_end < 0)
+        rh_end = 0;
+
+    // check upper bound:
+    if(lh_start > width)
+        lh_start = width;
+    if(lh_end > width)
+        lh_end = width;
+    if(cent_start > width)
+        cent_start = width;
+    if(cent_end > width)
+        cent_end = width;
+    if(rh_start > width)
+        rh_start = width;
+    if(rh_end > width)
+        rh_end = width;
+
+}
+
+
 void ControlsBox::fft_slider_enable(bool toggled)
 {
     bool enable = fw->crosshair_x != -1 && toggled;

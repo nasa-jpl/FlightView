@@ -12,7 +12,6 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
 TARGET = LiveView
 TEMPLATE = app
 
-
 SOURCES += main.cpp\
         mainwindow.cpp \
     frameview_widget.cpp \
@@ -51,7 +50,7 @@ OTHER_FILES += \
 RESOURCES += \
     images.qrc
 
-QMAKE_CXXFLAGS += -O2 -std=c++11 -march=native -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable
+QMAKE_CXXFLAGS += -O2 -std=c++11 -march=native -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result
 #RC_FILE = liveview.rc
 
 # Used for build tracking:

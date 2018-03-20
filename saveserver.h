@@ -3,6 +3,7 @@
 
 #include <QtNetwork/QTcpServer>
 #include <QtNetwork/QTcpSocket>
+#include <QDataStream>
 
 #include "frame_worker.h"
 

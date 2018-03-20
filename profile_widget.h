@@ -14,6 +14,7 @@
 #include "qcustomplot.h"
 #include "frame_worker.h"
 #include "image_type.h"
+#include "frameview_widget.h"
 
 /*! \file
  * \brief Widget which displays a line plot of two dimensions of image data.
@@ -36,14 +37,23 @@ class profile_widget : public QWidget
     QTimer rendertimer;
 
     /* GUI elements */
-    QVBoxLayout qvbl;
+    QVBoxLayout qvbl; // for others
+    QGridLayout qgl; // for overlay
+    QVBoxLayout op_vert; // overlay plot vertical layout option
+    QHBoxLayout horiz_layout; // bottom of profile plot check boxes
+
     QCheckBox *showCalloutCheck;
+    QCheckBox * zoomX_enable_Check;
+    QCheckBox * zoomY_enable_Check;
     QCPItemText *callout;
     QCPItemLine *arrow;
+    QSpacerItem * spacer;
+    QPushButton * reset_zoom_btn;
 
     /* Plot elements */
     QCustomPlot *qcp;
     QCPPlotTitle *plotTitle;
+
 
     /* Frame rendering elements */
     int frWidth, frHeight;
@@ -54,6 +64,11 @@ class profile_widget : public QWidget
 
     QVector<double> x;
     QVector<double> y;
+    QVector<double> y_lh;
+    QVector<double> y_rh;
+
+    QCPRange boundedRange_x;
+    QCPRange boundedRange_y;
 
     int x_coord;
     volatile int y_coord;
@@ -73,6 +88,8 @@ public:
     bool slider_low_inc = false;
 
     image_t itype;
+    frameview_widget *overlay_img; // public to aid connection through the profile to the controls box
+
 
 public slots:
     /*! \addtogroup renderfunc
@@ -88,7 +105,7 @@ public slots:
     void profileScrolledX(const QCPRange &newRange);
     void profileScrolledY(const QCPRange &newRange);
     /*! @} */
-
+    void defaultZoom();
     void setCallout(QMouseEvent *e);
     void moveCallout(QMouseEvent *e);
     void hideCallout();
