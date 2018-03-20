@@ -29,7 +29,15 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     qcp->plotLayout()->addElement(0, 0, plotTitle);
     qcp->addGraph();
 
-    if (itype == VERTICAL_MEAN || itype == VERTICAL_CROSS) {
+    // Vertical LH Overlay:
+    qcp->addGraph();
+    qcp->graph(1)->setPen(QPen(Qt::green));
+
+    // Vertical RH Overlay:
+    qcp->addGraph();
+    qcp->graph(2)->setPen(QPen(Qt::red));
+
+    if (itype == VERTICAL_MEAN || itype == VERTICAL_CROSS || itype == VERT_OVERLAY) {
         xAxisMax = frHeight;
         qcp->xAxis->setLabel("Y index");
     } else if (itype == HORIZONTAL_MEAN || itype == HORIZONTAL_CROSS) {
@@ -39,7 +47,11 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     x = QVector<double>(xAxisMax);
     for (int i = 0; i < xAxisMax; i++)
         x[i] = double(i);
+
     y = QVector<double>(xAxisMax);
+    y_lh = QVector<double>(xAxisMax);
+    y_rh = QVector<double>(xAxisMax);
+
     qcp->xAxis->setRange(QCPRange(0, xAxisMax));
 
     qcp->addLayer("Box Layer", qcp->currentLayer());
@@ -64,7 +76,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     arrow->setHead(QCPLineEnding::esSpikeArrow);
     arrow->setSelectable(false);
     arrow->setVisible(false);
-    qcp->setInteractions(QCP::iRangeZoom | QCP::iSelectItems);
+    qcp->setInteractions(QCP::iRangeZoom | QCP::iSelectItems | QCP::iRangeDrag);
 
     qcp->yAxis->setLabel("Pixel Magnitude [DN]");
     qcp->yAxis->setRange(QCPRange(0, fw->base_ceiling)); //From 0 to 2^16
@@ -74,10 +86,68 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     showCalloutCheck = new QCheckBox("Display Callout");
     showCalloutCheck->setChecked(false);
 
-    qvbl.addWidget(qcp);
-    qvbl.addWidget(showCalloutCheck);
-    this->setLayout(&qvbl);
+    zoomX_enable_Check = new QCheckBox("Enable X-Zoom");
+    zoomX_enable_Check->setChecked(true);
 
+    zoomY_enable_Check = new QCheckBox("Enable Y-Zoom");
+    zoomY_enable_Check->setChecked(true);
+
+    spacer = new QSpacerItem(50,1,QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
+    spacer->setAlignment(Qt::AlignRight);
+
+    reset_zoom_btn = new QPushButton("Reset Zoom");
+    reset_zoom_btn->setToolTip("Reset the X-axis to full-frame, and the y-axis to full-scale.\n If displaying dark-subtracted data, the y-axis goes to +/- 200 DN.");
+
+    if(itype==VERT_OVERLAY)
+    {
+        overlay_img = new frameview_widget(fw, DSF, this);
+
+        // Grid layout
+
+        // Right side plot and check box:
+        op_vert.addWidget(qcp,1);
+        // op_vert.addWidget(showCalloutCheck, 2);
+
+        // Assemble Left and Right together:
+        // qgl.addWidget(qcp, 1,2,1,1); // profile plot
+        // qgl.addWidget(showCalloutCheck, 2,2,1,1); //  "Show Callout"
+
+        horiz_layout.addSpacerItem(spacer);
+        horiz_layout.addWidget(showCalloutCheck,0);
+        horiz_layout.addWidget(zoomX_enable_Check,0);
+        horiz_layout.addWidget(zoomY_enable_Check,0);
+        horiz_layout.addWidget(reset_zoom_btn,0);
+
+        op_vert.addLayout(&horiz_layout,1);
+
+        // Place vertical layout on right side:
+        qgl.addLayout(&op_vert, 0,2, Qt::AlignBaseline);
+
+
+        // Left side frame view image:
+        qgl.addWidget(overlay_img, 0,1,1,1); // frame view, dark subtracted
+
+        //TODO: Zoom-X, Zoom-Y toggles for plot
+        this->setLayout(&qgl);
+    } else {
+        // VBox layout
+        qvbl.addWidget(qcp);
+
+        horiz_layout.addWidget(showCalloutCheck,0);
+        horiz_layout.addWidget(zoomX_enable_Check,0);
+        horiz_layout.addWidget(zoomY_enable_Check,0);
+        horiz_layout.addWidget(reset_zoom_btn,0);
+
+        horiz_layout.addSpacerItem(spacer);
+
+        qvbl.addLayout(&horiz_layout, 1);
+        qvbl.addWidget(showCalloutCheck);
+
+        this->setLayout(&qvbl);
+    }
+
+
+    connect(reset_zoom_btn, SIGNAL(released()), this, SLOT(defaultZoom())); // disconnect?
     connect(qcp, SIGNAL(mouseMove(QMouseEvent*)), this, SLOT(moveCallout(QMouseEvent*)));
     connect(qcp, SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(setCallout(QMouseEvent*)));
     connect(qcp->xAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(profileScrolledX(QCPRange)));
@@ -89,6 +159,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 }
 profile_widget::~profile_widget()
 {
+    delete overlay_img;
 }
 
 // public functions
@@ -116,17 +187,50 @@ void profile_widget::handleNewFrame()
     bool isMeanProfile = itype == VERTICAL_MEAN || itype == HORIZONTAL_MEAN;
     if (!this->isHidden() &&  fw->curFrame != NULL && ((fw->crosshair_x != -1 && fw->crosshair_y != -1) || isMeanProfile)) {
         allow_callouts = true;
-        if (itype == VERTICAL_CROSS || itype == VERTICAL_MEAN) {
+
+        switch (itype)
+        {
+        case VERTICAL_CROSS:
+            // same as mean:
+        case VERTICAL_MEAN:
             local_image_ptr = fw->curFrame->vertical_mean_profile; // vertical profiles
             for (int r = 0; r < frHeight; r++)
+            {
                 y[r] = double(local_image_ptr[r]);
-        } else {
+            }
+            break;
+        case VERT_OVERLAY:
+            local_image_ptr = fw->curFrame->vertical_mean_profile; // vertical profiles
+            for (int r = 0; r < frHeight; r++)
+            {
+                y[r] = double(local_image_ptr[r]);
+                y_lh[r] = double(fw->curFrame->vertical_mean_profile_lh[r]);
+                y_rh[r] = double(fw->curFrame->vertical_mean_profile_rh[r]);
+
+            }
+            // display overlay
+            qcp->graph(1)->setData(x, y_lh);
+            qcp->graph(2)->setData(x, y_rh);
+            break;
+
+        case HORIZONTAL_CROSS:
+            // same as mean:
+        case HORIZONTAL_MEAN:
+
             local_image_ptr = fw->curFrame->horizontal_mean_profile; // horizontal profiles
             for (int c = 0; c < frWidth; c++)
                 y[c] = double(local_image_ptr[c]);
+            break;
+        default:
+            // do nothing
+            break;
         }
+
+
+        // display x and y:
         qcp->graph(0)->setData(x, y);
         qcp->replot();
+
         if (callout->visible())
             updateCalloutValue();
         switch (itype) {
@@ -134,6 +238,7 @@ void profile_widget::handleNewFrame()
         case HORIZONTAL_CROSS: plotTitle->setText(QString("Horizontal Profile centered @ y = %1").arg(fw->crosshair_y)); break;
         case VERTICAL_MEAN: plotTitle->setText(QString("Vertical Mean Profile")); break;
         case VERTICAL_CROSS: plotTitle->setText(QString("Vertical Profile centered @ x = %1").arg(fw->crosshair_x)); break;
+        case VERT_OVERLAY: plotTitle->setText(QString("Vertical Overlay")); break; // TODO: Add useful things here
         default: break;
         }
     } else {
@@ -142,6 +247,8 @@ void profile_widget::handleNewFrame()
         qcp->graph(0)->clearData();
         qcp->replot();
     }
+    boundedRange_y = qcp->yAxis->range();
+    boundedRange_x = qcp->xAxis->range();
 }
 void profile_widget::updateCeiling(int c)
 {
@@ -166,30 +273,38 @@ void profile_widget::profileScrolledX(const QCPRange &newRange)
      * \param newRange Unused.
      * Profiles must not allow the user to zoom in the x direction.
      */
-    // Q_UNUSED(newRange);
 
-    QCPRange boundedRange = newRange;
-    // LIL_MIN, BIG_MIN, these are based on pixel amplitude range, not frame geometry.
-    double lowerRangeBound = 0;
-    double upperRangeBound = xAxisMax;
-    if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
-        boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+    if(zoomX_enable_Check->isChecked())
+    {
+        // Compute intelligent zoom parameters
+        // Q_UNUSED(newRange);
+
+        QCPRange boundedRange = newRange;
+        // LIL_MIN, BIG_MIN, these are based on pixel amplitude range, not frame geometry.
+        double lowerRangeBound = 0;
+        double upperRangeBound = xAxisMax;
+        if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
+            boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+        } else {
+            double oldSize = boundedRange.size();
+            if (boundedRange.lower < lowerRangeBound) {
+                boundedRange.lower = lowerRangeBound;
+                boundedRange.upper = lowerRangeBound + oldSize;
+            }
+            if (boundedRange.upper > upperRangeBound) {
+                boundedRange.lower = upperRangeBound - oldSize;
+                boundedRange.upper = upperRangeBound;
+            }
+        }
+        // floor = boundedRange.lower;
+        // ceiling = boundedRange.upper;
+        // old:
+        // qcp->xAxis->setRange(0, xAxisMax);
+        qcp->xAxis->setRange(boundedRange);
+        boundedRange_x = boundedRange;
     } else {
-        double oldSize = boundedRange.size();
-        if (boundedRange.lower < lowerRangeBound) {
-            boundedRange.lower = lowerRangeBound;
-            boundedRange.upper = lowerRangeBound + oldSize;
-        }
-        if (boundedRange.upper > upperRangeBound) {
-            boundedRange.lower = upperRangeBound - oldSize;
-            boundedRange.upper = upperRangeBound;
-        }
+        qcp->xAxis->setRange(boundedRange_x);
     }
-    // floor = boundedRange.lower;
-    // ceiling = boundedRange.upper;
-    // old:
-    // qcp->xAxis->setRange(0, xAxisMax);
-    qcp->xAxis->setRange(boundedRange);
 
 }
 void profile_widget::profileScrolledY(const QCPRange &newRange)
@@ -198,26 +313,61 @@ void profile_widget::profileScrolledY(const QCPRange &newRange)
      * \param newRange Mouse wheel scrolled range.
      * Profiles must not allow the user to zoom past the dimensions of the frame.
      */
-    QCPRange boundedRange = newRange;
-    double lowerRangeBound = slider_low_inc ? LIL_MIN : BIG_MIN;
-    double upperRangeBound = slider_low_inc ? LIL_MAX : BIG_MAX;
-    if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
-        boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+
+    if(zoomY_enable_Check->isChecked())
+    {
+        QCPRange boundedRange = newRange;
+        double lowerRangeBound = slider_low_inc ? LIL_MIN : BIG_MIN;
+        double upperRangeBound = slider_low_inc ? LIL_MAX : BIG_MAX;
+        if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
+            boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
+        } else {
+            double oldSize = boundedRange.size();
+            if (boundedRange.lower < lowerRangeBound) {
+                boundedRange.lower = lowerRangeBound;
+                boundedRange.upper = lowerRangeBound + oldSize;
+            }
+            if (boundedRange.upper > upperRangeBound) {
+                boundedRange.lower = upperRangeBound - oldSize;
+                boundedRange.upper = upperRangeBound;
+            }
+        }
+        floor = boundedRange.lower;
+        ceiling = boundedRange.upper;
+        qcp->yAxis->setRange(boundedRange);
+        boundedRange_y = boundedRange;
+
     } else {
-        double oldSize = boundedRange.size();
-        if (boundedRange.lower < lowerRangeBound) {
-            boundedRange.lower = lowerRangeBound;
-            boundedRange.upper = lowerRangeBound + oldSize;
-        }
-        if (boundedRange.upper > upperRangeBound) {
-            boundedRange.lower = upperRangeBound - oldSize;
-            boundedRange.upper = upperRangeBound;
-        }
+        qcp->yAxis->setRange(boundedRange_y);
     }
-    floor = boundedRange.lower;
-    ceiling = boundedRange.upper;
-    qcp->yAxis->setRange(boundedRange);
 }
+
+void profile_widget::defaultZoom()
+{
+    // Set default zoom ("zoom reset" button)
+    QCPRange boundedRange_vert;
+
+    // if(dark_sub_enabled)
+    if(fw->usingDSF())
+    {
+        boundedRange_vert.lower = -200;
+        boundedRange_vert.upper = 200;
+    } else {
+        boundedRange_vert.lower = 0;
+        boundedRange_vert.upper = 65535;
+    }
+
+    QCPRange boundedRange_horiz;
+    boundedRange_horiz.lower = 0;
+    boundedRange_horiz.upper = xAxisMax;
+
+    qcp->yAxis->setRange(boundedRange_vert);
+    qcp->xAxis->setRange(boundedRange_horiz);
+
+    //TODO: update slider
+
+}
+
 void profile_widget::setCallout(QMouseEvent *e)
 {
     x_coord = qcp->xAxis->pixelToCoord(e->pos().x());

@@ -43,6 +43,7 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     horiz_mean_widget = new profile_widget(fw, HORIZONTAL_MEAN);
     vert_cross_widget = new profile_widget(fw, VERTICAL_CROSS);
     horiz_cross_widget = new profile_widget(fw, HORIZONTAL_CROSS);
+    vert_overlay_widget = new profile_widget(fw, VERT_OVERLAY);
     fft_mean_widget = new fft_widget(fw);
     raw_play_widget = new playback_widget(fw);
 
@@ -55,6 +56,7 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     tabWidget->addTab(horiz_mean_widget, QString("Horizontal Mean Profile"));
     tabWidget->addTab(vert_cross_widget, QString("Vertical Crosshair Profile"));
     tabWidget->addTab(horiz_cross_widget, QString("Horizontal Crosshair Profile"));
+    tabWidget->addTab(vert_overlay_widget, QString("Vertical Overlay"));
     tabWidget->addTab(fft_mean_widget, QString("FFT Profile"));
     tabWidget->addTab(raw_play_widget, QString("Playback View"));
 

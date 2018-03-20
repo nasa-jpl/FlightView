@@ -96,6 +96,17 @@ public:
     QLineEdit filename_edit;
     QPushButton set_filename_button;
 
+    // Overlay profile only:
+    QSlider * overlay_lh_width;
+    QSlider * overlay_cent_width;
+    QSlider * overlay_rh_width;
+    QLabel * overlay_lh_width_label;
+    QLabel * overlay_cent_width_label;
+    QLabel * overlay_rh_width_label;
+    QSpinBox * overlay_lh_width_spin;
+    QSpinBox * overlay_cent_width_spin;
+    QSpinBox * overlay_rh_width_spin;
+
     frameview_widget *p_frameview;
     histogram_widget *p_histogram;
     profile_widget *p_profile;
@@ -168,6 +179,9 @@ private slots:
 
     void load_pref_window();
     void transmitChange(int linesToAverage);
+    void updateOverlayParams(int dummy);
+    void validateOverlayParams(int &lh_start, int &lh_end, int &cent_start, int &cent_end, int &rh_start, int &rh_end);
+
     void fft_slider_enable(bool toggled);
 
 };

@@ -44,6 +44,7 @@ private:
     profile_widget *horiz_mean_widget;
     profile_widget *vert_cross_widget;
     profile_widget *horiz_cross_widget;
+    profile_widget *vert_overlay_widget;
     fft_widget *fft_mean_widget;
     playback_widget *raw_play_widget;
     /*! @} */
