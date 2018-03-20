@@ -6,7 +6,11 @@
 print "Plotting using mean values from file: ", filename_mean;
     print "Plotting using stdv values from file: ", filename_sd;
 
-set loadpath "/home/eliggett/NGIS_DATA/eliggett/gnuplot"
+#set loadpath "/home/eliggett/NGIS_DATA/eliggett/gnuplot"
+# for computer: dcseliveview.jpl.nasa.gov
+set loadpath "/home/eliggett/Documents/development/liveview/utils/statscli/script"
+
+
 
 ### Standard Deviation plot:
 titletext="Standard Deviation Plot for filename ".filename_sd

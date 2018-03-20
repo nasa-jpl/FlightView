@@ -22,10 +22,10 @@ parser::parser(int argc, char *argv[])
 
     for(int n=1; n<argc; n++)
     {
-        args.insert(n-1, QString::fromAscii(argv[n]));
+        args.insert(n-1, QString::fromLatin1(argv[n]));
     }
 
-    program_name = QString::fromAscii(argv[0]);
+    program_name = QString::fromLatin1(argv[0]);
 
     // Parse!
     for(int n=0; n < args.length(); n++)

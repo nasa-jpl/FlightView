@@ -13,7 +13,9 @@ if( exists("chroma")) {
     height = 480;
     width = 1280;
 } else {
-    height = 481;
+#    height = 481;
+# for liveviewdcse.jpl.nasa.gov
+    height = 480;
     width = 640;
 }
     set yrange [height-1:0]
