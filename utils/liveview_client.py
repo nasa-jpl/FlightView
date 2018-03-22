@@ -106,7 +106,7 @@ if __name__ == '__main__':
     #app = QtGui.QApplication(sys.argv) # not needed unless you want a GUI
     client = saveClient("127.0.0.1", 65000)
     # Save 1024 frames:
-    #client.requestFrames("/tmp/frames.raw", 1024); # returns immediately
+    client.requestFrames("/tmp/10_2_socket.raw", 10, 2); # returns immediately
     status = client.requestStatus(True)
     print('(Frames remaining, FPS, averages_per_frame)')
     print(status)

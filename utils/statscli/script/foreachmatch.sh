@@ -7,9 +7,13 @@ width=480
 dtype='lvds'
 
 
-script=/home/eliggett/NGIS_DATA/eliggett/gnuplot/plotstats.gnu
+#script=/home/eliggett/NGIS_DATA/eliggett/gnuplot/plotstats.gnu
+#for liveviewdcse.jpl.nasa.gov
+script=/home/eliggett/Documents/development/liveview/utils/statscli/script/plotstats.gnu
 
-for i in $DIRECTORY/*.decomp_no-header; do
+#for i in $DIRECTORY/*.decomp_no-header; do
+#for liveviewdcse.jpl.nasa.gov
+for i in $DIRECTORY/*adcsample64.raw; do
     echo "Will now process $i."
     inputfile=$i
     shortfile="${inputfile%.*}"
@@ -23,7 +27,9 @@ for i in $DIRECTORY/*.decomp_no-header; do
     export plot_stdev_hist=$shortfile-stdev-hist.eps
     export pdfout=$shortfile-plots.pdf
 
-    newstats -i $inputfile -m $output_mean -s $output_stdev -x $output_stats -h $height -w $width -t $dtype
+    #newstats -i $inputfile -m $output_mean -s $output_stdev -x $output_stats -h $height -w $width -t $dtype
+    # for liveviewdcse.jpl.nasa.gov
+    statscli -i $inputfile -m $output_mean -s $output_stdev -x $output_stats -h $height -w $width -t $dtype 
     #lvdsstatscli $inputfile $output_mean $output_stdev $output_stats
     #lvdsstatscli $inputfile $output_mean $output_stdev $output_stats
 
@@ -34,7 +40,7 @@ for i in $DIRECTORY/*.decomp_no-header; do
     gs -q -dSAFER -dNOPAUSE -dBATCH -dEPSCrop -sOutputFile=$pdfout -sDEVICE=pdfwrite -c .setpdfwrite \
         -f $plot_mean $plot_mean_hist $plot_stdev $plot_stdev_hist
 
-    #echo "mean: $output_mean"
-    #echo "stdev: $output_stdev"
-    #echo "stats: $output_stats"
+    echo "mean: $output_mean"
+    echo "stdev: $output_stdev"
+    echo "stats: $output_stats"
 done
