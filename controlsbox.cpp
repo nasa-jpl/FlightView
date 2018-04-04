@@ -15,7 +15,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
      * updateCeiling(int c), updateFloor(int f), and any other widget specfic action within its case in
      * tab_changed_slot. The beginning of this function specifies the behavior for when tabs are exited -
      * all connections made must be disconnected to prevent overlap and repetition.
-     * \author JP Ryan
+     * \author Jackie Ryan
      * \author Noah Levy
      */
     this->fw = fw;
@@ -313,7 +313,7 @@ void ControlsBox::tab_changed_slot(int index)
      * Then we make new connections and adjustments for the widget we just made a valid pointer to. Crucially, the top slider
      * differs depending on the widget. FFT widgets and Profile Widgets use it, all others use the Std Dev N slider.
      * \author Noah Levy
-     * \author JP Ryan
+     * \author Jackie Ryan
      */
 
     bool see_it = false;
@@ -741,7 +741,7 @@ int ControlsBox::validateFileName(const QString &name)
 }
 void ControlsBox::start_dark_collection_slot()
 { /*! \brief Begins recording dark frames in the backend
-   *  \author JP Ryan
+   *  \author Jackie Ryan
    */
     collect_dark_frames_button.setEnabled(false);
     stop_dark_collection_button.setEnabled(true);
@@ -750,7 +750,7 @@ void ControlsBox::start_dark_collection_slot()
 void ControlsBox::stop_dark_collection_slot()
 {
     /*! \brief Stops recording dark frames in the backend
-     *  \author JP Ryan
+     *  \author Jackie Ryan
      */
     emit stopDSFMaskCollection();
     collect_dark_frames_button.setEnabled(true);
@@ -762,7 +762,7 @@ void ControlsBox::getMaskFile()
      * First opens a file dialog, verifies the file, then opens a QDialog which allows the user to select a range
      * of frames which contain dark that will then be averaged into a mask. A widget which uses this signal must be
      * able to receive the signal maskSelected(QString filename, unsigned int elem_to_read, long offset)
-     * \author JP Ryan
+     * \author Jackie Ryan
      */
     /* Step 1: Open a dialog to select the mask file location */
     QFileDialog location_dialog(0);
@@ -848,7 +848,7 @@ void ControlsBox::use_DSF_general(bool checked)
     /*! \brief Toggles the use of the static dark frame mask for the playback widget.
      * A stupid little function I made because the playback widget uses the pre-loaded mask
      * as opposed to the others which use the recorded mask.
-     * \author JP Ryan
+     * \author Jackie Ryan
      */
     if (p_playback)
         p_playback->toggleUseDSF(checked);
@@ -858,7 +858,7 @@ void ControlsBox::use_DSF_general(bool checked)
 void ControlsBox::load_pref_window()
 {
     /*! \brief Displays the preference window one the screen
-     *  \author JP Ryan
+     *  \author Jackie Ryan
      */
     QPoint pos = prefWindow->pos();
     if (pos.x() < 0)

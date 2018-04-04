@@ -25,7 +25,7 @@
  * to have Vertical or Horizontal Crosshair Profiles which offer flexibility in the number of rows or columns to average. For example, a vertical
  * crosshair profile centered at x = 300 would contain the image data for column 300 averaged with the data for any number of other columns up to
  * the width of the frame.
- * \author JP Ryan
+ * \author Jackie Ryan
  * \author Noah Levy
  */
 

@@ -7,7 +7,7 @@ fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
 {
     /*!
      * We need to set up the GUI elements which control the FFT type, and the checkbox to display the constant term.
-     * \author JP Ryan
+     * \author Jackie Ryan
      * \author Noah Levy
      */
     qcp = NULL;
@@ -81,7 +81,7 @@ void fft_widget::handleNewFrame()
      * Then the bars are plotted based on the fftMagnitudes inside the frame struct for the current
      * frame in the buffer.
      * \author Noah Levy
-     * \author JP Ryan
+     * \author Jackie Ryan
      */
     if (!this->isHidden() && fw->curFrame->fftMagnitude != NULL) {
         double nyquist_freq = 50.0;
@@ -136,7 +136,7 @@ void fft_widget::updateFFT()
      *
      * We also need to change the mean filter range due to the nature
      * of how general my mean calculation is.
-     * \author JP Ryan
+     * \author Jackie Ryan
      */
     if (plMeanButton->isChecked())
         fw->update_FFT_range(PLANE_MEAN);

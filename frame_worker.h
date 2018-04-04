@@ -31,7 +31,7 @@
  * communication with cuda_take.
  *
  * \author Noah Levy
- * \author JP Ryan
+ * \author Jackie Ryan
  */
 
 /* regular slider range */

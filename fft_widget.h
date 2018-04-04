@@ -41,7 +41,7 @@
  * In vertical crosshair FFTs, the number of columns to be binned may be selected using the slider in the
  * controls box. In the tap profile, the tap that is being sampled may be selected using the numbered display
  * next to the button.
- * \author JP Ryan
+ * \author Jackie Ryan
  * \author Noah Levy
  */
 

@@ -7,7 +7,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 {
     /*! \brief Establishes a plot for a specified image type.
      * \param image_type Determines the type of graph that will be output by profile_widget
-     * \author JP Ryan
+     * \author Jackie Ryan
      * \author Noah Levy */
     itype = image_type;
     qcp = NULL;
@@ -181,7 +181,7 @@ void profile_widget::handleNewFrame()
      * \paragraph
      * The switch statement is a bit silly here, I only use it to differentiate the plot title and the type of profile array to use.
      * The y-axis data is reversed in these images.
-     * \author JP Ryan
+     * \author Jackie Ryan
      */
     float *local_image_ptr;
     bool isMeanProfile = itype == VERTICAL_MEAN || itype == HORIZONTAL_MEAN;

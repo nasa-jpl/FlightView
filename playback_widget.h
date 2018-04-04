@@ -33,7 +33,7 @@ enum err_code {SUCCESS, NO_LOAD, NO_DATA, NO_FILE, READ_FAIL, NO_MASK};
  * the playback. Whenever a new frame needs to be loaded, it is read from the file several microseconds before being plotted. A mutex handles
  * serialization of the image data between the two threads. In the playback widget, all the GUI components, frame movement, and plotting are
  * handled.
- * \author All classes and their members - JP Ryan
+ * \author Jackie Ryan
  */
 
 class buffer_handler : public QObject

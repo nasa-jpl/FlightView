@@ -13,7 +13,7 @@ preferenceWindow::preferenceWindow(frameWorker *fw, QTabWidget *qtw, QWidget *pa
      * We need a copy of the QTabWidget from the main window so that we can determine the current view window. Certain hardware controls
      * are only applicable to certain tabs in the main application and may cause issues if activated in the wrong tab.
      * \param qtw Used to create pointers to the current viewing widget.
-     * \author JP Ryan
+     * \author Jackie Ryan
      */
     this->fw = fw;
     this->mainWinTab = qtw;

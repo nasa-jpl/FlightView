@@ -25,7 +25,7 @@ saveServer::saveServer(frameWorker *fw, QObject *parent ) :
 
     connect(clientConnection, SIGNAL(readyRead()), this, SLOT(readCommand()));
     connect(this, SIGNAL(newConnection()), this, SLOT(new_conn_slot())  );
-    listen(QHostAddress::Any, port); // This will automatically connect on the IP Address of aviris-cal
+    listen(QHostAddress::Any, port); // This will automatically connect on the IP Address of the machine
 }
 
 void saveServer::incomingConnection(qintptr socketDescriptor)

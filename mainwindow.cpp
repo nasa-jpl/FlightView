@@ -137,7 +137,7 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
      * a - Move back one frame. Only works when playback is paused.
      * d - Move forward one frame. Only works when playback is paused.
      *
-     * \author JP Ryan
+     * \author Jackie Ryan
      */
     QWidget* current_tab = tabWidget->widget(tabWidget->currentIndex());
     profile_widget *ppw;

@@ -32,7 +32,7 @@
  * Live View is designed to be sufficiently modular that it will plot any data with known geometry, up to a maximum word size
  * of 16 bits. To implement new hardware or modify existing parameters, changes must be made to the backend cuda_take software.
  *
- * \author This documentation and most comments in Live View and cuda_take were written by JP Ryan
+ * \author This documentation and comments in Live View and cuda_take were written by Jackie Ryan
  */
 
 int main(int argc, char *argv[])

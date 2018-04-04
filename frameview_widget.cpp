@@ -219,7 +219,7 @@ void frameview_widget::handleNewFrame()
      * For STD_DEV type images, the current std_dev_frame in frameWorker is used rather than the curFrame. As calculating the standard deviation proceeds
      * on the GPU regardless of CPU timing, the device must send back a signal whenever it has completed the most recent image. STD_DEV images will
      * display at a lower framerate than other frameviews, especially on weaker graphics cards. They do not render crosshairs.
-     * \author JP Ryan
+     * \author Jackie Ryan
      * \author Noah Levy
      */
 
@@ -377,7 +377,7 @@ void frameview_widget::rescaleRange()
 void frameview_widget::setCrosshairs(QMouseEvent *event)
 {
     /*! \brief Sets the value of the crosshair and lines to average selection for rendering
-     * \author JP Ryan */
+     * \author Jackie Ryan */
     fw->displayCross = displayCrosshairCheck.isChecked();
     fw->setCrosshairBackend(qcp->xAxis->pixelToCoord(event->pos().x()), qcp->yAxis->pixelToCoord(event->pos().y()));
 }

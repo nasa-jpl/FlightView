@@ -12,7 +12,7 @@ frameWorker::frameWorker(QObject *parent) :
      * \paragraph
      * Also gathers the frame geometry from the backend. These values are used by all other members of Live View.
      * Determines the default ceiling to use based on the camera type (14-bit or 16-bit systems)
-     * \author JP Ryan
+     * \author Jackie Ryan
      * \author Noah Levy
      */
 
@@ -199,7 +199,7 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
      * \param linesToAverage Number of rows or columns to average in the backend.
      * The linesToAverage parameter is used to determine the start and end coordinates for the mean filter at the backend. The initial conditions are set to
      * average the entire image, then are adjusted based on the image type and the location of the crosshair.
-     * \author JP Ryan
+     * \author Jackie Ryan
      */
     crossStartCol = 0;
     crossStartRow = 0;

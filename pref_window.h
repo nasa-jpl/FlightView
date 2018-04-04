@@ -31,7 +31,7 @@
  * factor. As a sanity check, the expected data range is displayed above this option. The assumed camera type and geometry
  * are listed at the top of the window. Additionally, the first or last row data in the raw image may be excluded from the
  * image. This option only applies to linear profiles. Log files are not currently an implemented feature.
- * \author JP Ryan
+ * \author Jackie Ryan
  */
 
 class preferenceWindow : public QWidget
