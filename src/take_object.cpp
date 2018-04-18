@@ -16,6 +16,15 @@ take_object::take_object(int channel_num, int number_of_buffers, int frf)
     this->std_dev_filter_N = 400;
     whichFFT = PLANE_MEAN;
 
+    // for the overlay, zap everything to zero:
+    this->lh_start = 0;
+    this->lh_start = 0;
+    this->lh_end = 0;
+    this->cent_start = 0;
+    this->cent_end = 0;
+    this->rh_start = 0;
+    this->rh_end = 0;
+
     //For the frame saving
     this->do_raw_save = false;
     save_framenum = 0;
@@ -202,6 +211,29 @@ void take_object::setStdDev_N(int s)
 {
     this->std_dev_filter_N = s;
 }
+
+void take_object::updateVertOverlayParams(int lh_start_in, int lh_end_in,
+                                          int cent_start_in, int cent_end_in,
+                                          int rh_start_in, int rh_end_in)
+{
+    this->lh_start = lh_start_in;
+    this->lh_start = lh_start_in;
+    this->lh_end = lh_end_in;
+    this->cent_start = cent_start_in;
+    this->cent_end = cent_end_in;
+    this->rh_start = rh_start_in;
+    this->rh_end = rh_end_in;
+
+    /*
+    // Debug, remove later:
+    std::cout << "----- In take_object::updateVertOverlayParams\n";
+    std::cout << "->lh_start:   " << lh_start <<   ", lh_end:   " << lh_end << std::endl;
+    std::cout << "->rh_start:   " << rh_start <<   ", rh_end:   " << rh_end << std::endl;
+    std::cout << "->cent_start: " << cent_start << ", cent_end: " << cent_end << std::endl;
+    std::cout << "----- end take_object::updateVertOverlayParams -----\n";
+    */
+}
+
 void take_object::updateVertRange(int br, int er)
 {
     meanStartRow = br;
@@ -339,7 +371,12 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         // Calculating the filters for this frame
         sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
         dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
-        mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,meanStartRow,meanHeight,frWidth,useDSF,whichFFT);
+        mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
+                                           meanStartRow,meanHeight,frWidth,useDSF,\
+                                           whichFFT, lh_start, lh_end,\
+                                           cent_start, cent_end,\
+                                           rh_start, rh_end);
+
         //This will deallocate itself when it is done.
         mf->start_mean();
 

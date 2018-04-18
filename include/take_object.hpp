@@ -86,6 +86,7 @@ class take_object {
 
     std_dev_filter* sdvf;
     int meanStartRow, meanHeight, meanStartCol, meanWidth; // dimensions used by the mean filter
+    int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end; // VERT_OVERLAY
 
     //frame saving variables
     boost::thread saving_thread; // this thread handles the frame saving, as saving frames should not cause data collection to suspend
@@ -121,6 +122,9 @@ public:
     // Mean filter functions
     void updateVertRange(int br, int er);
     void updateHorizRange(int bc, int ec);
+    void updateVertOverlayParams(int lh_start, int lh_end,\
+                                 int cent_start, int cent_end,\
+                                 int rh_start, int rh_end);
     void changeFFTtype(FFT_t t);
 
     // Frame saving functions
