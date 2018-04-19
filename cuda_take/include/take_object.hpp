@@ -1,0 +1,169 @@
+#ifndef TAKEOBJECT_HPP_
+#define TAKEOBJECT_HPP_
+
+//standard includes
+#include <cstdint>
+#include <cstdio>
+#include <ostream>
+#include <string>
+#include <iostream>
+#include <fstream>
+
+//multithreading includes
+#include <atomic>
+#include <boost/shared_array.hpp>
+#include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
+//#include <boost/atomic.hpp>
+
+//custom includes
+#include "frame_c.hpp"
+#include "std_dev_filter.hpp"
+#include "chroma_translate_filter.hpp"
+#include "dark_subtraction_filter.hpp"
+#include "mean_filter.hpp"
+#include "camera_types.h"
+#include "constants.h"
+
+//** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
+#define EDT
+//#define OPALKELLY
+
+#ifdef OPALKELLY
+//OpalKelly Device Support
+#include "okFrontPanelDLL.h"
+#include "ok_addresses.h"
+
+// the location of the OpalKelly bit file which configures the  FPGA
+#define FPGA_CONFIG_FILE "/home/jryan/NGIS_DATA/jryan/top4ch.bit"
+#endif
+
+//** Debug Macros **
+//#define RESET_GPUS // will reset the GPU hardware on closing the program
+//#define VERBOSE  // sets whether or not to compile the program with some debugging diagnostics
+
+//Handles a corner case for the lines that display the version author. If no HOST or UNAME can be
+// provided by the OS at compile time, this will display instead.
+#ifndef HOST
+#define HOST "unknown location"
+#endif
+#ifndef UNAME
+#define UNAME "unknown person"
+#endif
+
+static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence or absence of the "WARNING: MISSED FRAME X" line
+
+class take_object {
+#ifdef EDT
+    PdvDev * pdv_p;
+    unsigned int channel;
+    unsigned int numbufs;
+    unsigned int filter_refresh_rate;
+#endif
+#ifdef OPALKELLY
+    okCFrontPanel* xem;
+    unsigned long clock_div = CLOCK_DIV;
+    unsigned long clock_delay = CLOCK_DLY;
+    int blocklen;
+    long framelen;
+#endif
+
+    boost::thread pdv_thread; // this thread controls the data collection
+    int pdv_thread_run = 0;
+	bool pdv_thread_start_complete=false; // added by Michael Bernas 2016
+
+	unsigned int size;
+    int lastfc;
+
+    //frame dimensions
+    frame_c* curFrame;
+    unsigned int dataHeight;
+    unsigned int frHeight;
+    unsigned int frWidth;
+
+    //Filter-specific variables
+	int std_dev_filter_N;
+
+    std_dev_filter* sdvf;
+    int meanStartRow, meanHeight, meanStartCol, meanWidth; // dimensions used by the mean filter
+    int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end; // VERT_OVERLAY
+
+    //frame saving variables
+    boost::thread saving_thread; // this thread handles the frame saving, as saving frames should not cause data collection to suspend
+	//unsigned int save_count;
+    bool do_raw_save;
+	bool saveFrameAvailable;
+	uint16_t * raw_save_ptr;
+
+public:
+    take_object(int channel_num = 0, int number_of_buffers = 64, int filter_refresh_rate = 10);
+    virtual ~take_object();
+	void start();
+
+    dark_subtraction_filter* dsf;
+    camera_t cam_type;
+    frame_c * frame_ring_buffer;
+    unsigned long count = 0; // frame count
+
+    //Frame filters that affect everything at the raw data level
+    void setInversion(bool checked, unsigned int factor);
+    void paraPixRemap(bool checked);
+
+    //DSF mask functions
+	void startCapturingDSFMask();
+	void finishCapturingDSFMask();
+	void loadDSFMask(std::string file_name);
+    bool dsfMaskCollected;
+    bool useDSF = false;
+
+    // Std Dev Filter functions
+    void setStdDev_N(int s);
+
+    // Mean filter functions
+    void updateVertRange(int br, int er);
+    void updateHorizRange(int bc, int ec);
+    void updateVertOverlayParams(int lh_start, int lh_end,\
+                                 int cent_start, int cent_end,\
+                                 int rh_start, int rh_end);
+    void changeFFTtype(FFT_t t);
+
+    // Frame saving functions
+    void startSavingRaws(std::string raw_file_name, unsigned int frames_to_save, unsigned int num_avgs_save);
+	void stopSavingRaws();
+    //void panicSave(std::string);
+    std::list<uint16_t *> saving_list;
+	std::atomic <uint_fast32_t> save_framenum;
+	std::atomic <uint_fast32_t> save_count;
+	unsigned int save_num_avgs;
+
+    //Getter functions / variables
+    unsigned int getDataHeight();
+    unsigned int getFrameHeight();
+    unsigned int getFrameWidth();
+    bool std_dev_ready();
+    std::vector<float> * getHistogramBins();
+    FFT_t getFFTtype();
+
+private:
+	void pdv_loop();
+    void savingLoop(std::string, unsigned int num_avgs, unsigned int num_frames);
+    //void saveFramesInBuffer();
+    /* This function will save all the frames currently in the frame_ring_buffer
+     * to a pre-specified raw file. For the moment, it stops the take_object loop
+     * until it has finished saving. Not fully implemented. */
+
+#ifdef OPALKELLY
+    okCFrontPanel* initializeFPGA();
+    void ok_init_pipe();
+    long ok_read_frame(unsigned char *wait_ptr, long prev_result);
+#endif
+
+    // variables needed by the Raw Filters
+    unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
+    bool inverted = false;
+    bool pixRemap = false; // Enable Parallel Pixel Mapping (Chroma Translate filter)
+
+    FFT_t whichFFT;
+};
+
+#endif /* TAKEOBJECT_HPP_ */

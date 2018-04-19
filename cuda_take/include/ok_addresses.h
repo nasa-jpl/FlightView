@@ -1,0 +1,22 @@
+#ifndef OK_ADDRESSES_H_
+#define OK_ADDRESSES_H_
+
+#define NROW 480
+#define NCOL 640
+#define NCHUNX 1
+#define BLOCK_LEN 1024
+
+#define FIFO_THRESH     252
+
+#define CLOCK_DIV       0x00010045
+#define CLOCK_DLY       0x00000000
+#define FIFO_FULL_MASK  0x00000004
+#define FIFO_VALID_MASK 0x00000002
+#define FIFO_WRITE_MASK 0x00000001
+
+#define FIFO_STATUS_REG 0x20
+#define FIFO_COUNT_REG  0x21
+#define FIFO_RESET_TRIG 0x43
+#define ACQ_TRIG        0x42
+
+#endif /* OK_ADDRESSES_H_ */
