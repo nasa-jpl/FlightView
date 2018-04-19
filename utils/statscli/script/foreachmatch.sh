@@ -7,12 +7,12 @@ width=480
 dtype='lvds'
 
 
-#script=/home/eliggett/NGIS_DATA/eliggett/gnuplot/plotstats.gnu
-#for liveviewdcse.jpl.nasa.gov
-script=/home/eliggett/Documents/development/liveview/utils/statscli/script/plotstats.gnu
+#script=//gnuplot/plotstats.gnu
+#for hostnameexample.jpl.nasa.gov
+script=/full/path/to/gnu/script/liveview/utils/statscli/script/plotstats.gnu
 
 #for i in $DIRECTORY/*.decomp_no-header; do
-#for liveviewdcse.jpl.nasa.gov
+#for hostexample.jpl.nasa.gov
 for i in $DIRECTORY/*adcsample64.raw; do
     echo "Will now process $i."
     inputfile=$i
