@@ -9,7 +9,7 @@ QT       += network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
 
-TARGET = LiveView
+TARGET = liveview
 TEMPLATE = app
 
 SOURCES += main.cpp\
