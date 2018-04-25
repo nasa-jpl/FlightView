@@ -59,8 +59,8 @@ DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 # qmake will create this directory automatically:
 DESTDIR = ./lv_release
 # Copy files into DESTDIR for potential releases:
-QMAKE_POST_LINK += cp ../liveview/liveview_icon.png $$DESTDIR;
-QMAKE_POST_LINK += cp ../liveview/LiveView.desktop $$DESTDIR;
+QMAKE_POST_LINK += cp ../LiveView/liveview_icon.png $$DESTDIR;
+QMAKE_POST_LINK += cp ../LiveView/LiveView.desktop $$DESTDIR;
 
 
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff
@@ -77,9 +77,9 @@ QMAKE_POST_LINK += cp ../liveview/LiveView.desktop $$DESTDIR;
 
 #unix:!macx:!symbian: LIBS += -L$$PWD/../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -lokFrontPanel -ldl # -lGL -lQtOpenGL
 
-unix:!macx:!symbian: LIBS += -L$$PWD/../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -ldl # -lGL -lQtOpenGL
-INCLUDEPATH += $$PWD/../cuda_take/include\
-$$PWD/../cuda_take/EDT_include
-DEPENDPATH += $$PWD/../cuda_take
+unix:!macx:!symbian: LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -ldl # -lGL -lQtOpenGL
+INCLUDEPATH += $$PWD/cuda_take/include\
+/opt/EDTpdv
+DEPENDPATH += $$PWD/cuda_take
 
-unix:!macx:!symbian: PRE_TARGETDEPS += $$PWD/../cuda_take/libcuda_take.a
+unix:!macx:!symbian: PRE_TARGETDEPS += $$PWD/cuda_take/libcuda_take.a
