@@ -1,5 +1,5 @@
 CREATE libcuda_take.a
 ADDLIB thin_libcuda_take.a
-ADDLIB lib/libpdv.a
+ADDLIB /opt/EDTpdv/libpdv.a
 SAVE
 END
