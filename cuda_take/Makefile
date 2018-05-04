@@ -91,7 +91,7 @@ CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-unused-function -Wno-u
 #(-G -lineinfo) are both to enable cuda-gdb debugging, -Xcompiler specifies arguments to get passed directly to g++ (which NVCC is built on), the internet said to do -rdynamic
 
 
-NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30, -gencode arch=compute_35,code=sm_35 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
+NVCCFLAGS  = -gencode arch=compute_30,code=sm_30, -gencode arch=compute_35,code=sm_35 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
 
 NVCCFLAGS += $(CFLAGS)
 

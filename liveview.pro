@@ -59,8 +59,8 @@ DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 # qmake will create this directory automatically:
 DESTDIR = ./lv_release
 # Copy files into DESTDIR for potential releases:
-QMAKE_POST_LINK += cp ../LiveView/liveview_icon.png $$DESTDIR;
-QMAKE_POST_LINK += cp ../LiveView/LiveView.desktop $$DESTDIR;
+QMAKE_POST_LINK += cp ../liveview/liveview_icon.png $$DESTDIR;
+QMAKE_POST_LINK += cp ../liveview/LiveView.desktop $$DESTDIR;
 
 
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff
