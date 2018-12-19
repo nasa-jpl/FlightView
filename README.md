@@ -3,6 +3,8 @@
 2014-2018 Jet Propulsion Laboratory, AVIRIS lab
 @authors: Jackie Ryan, and Elliott Liggett, with past work from Noah Levy
 
+Please note: You are currently viewing an older version of LiveView, which depends on NVIDIA's CUDA. The new version of LiveView, located at [this link](https://github.com/nasa-jpl/LiveViewOpenSource), does not require CUDA and uses OpenCL. Thanks!
+
 ## Contact Us!
 Jackie's contact info:
 JPL email: [Jacqueline.Ryan@jpl.nasa.gov](mailto:Jacqueline.Ryan@jpl.nasa.gov)
