@@ -10,6 +10,6 @@
  * When using image_types in a switch statement, use default: break; to circumvent warnings about missed members. */
 
 enum image_t {BASE, DSF, STD_DEV, STD_DEV_HISTOGRAM, VERTICAL_MEAN, HORIZONTAL_MEAN, FFT_MEAN,\
-              VERTICAL_CROSS, HORIZONTAL_CROSS, VERT_OVERLAY};
+              VERTICAL_CROSS, HORIZONTAL_CROSS, VERT_OVERLAY, WATERFALL, FLIGHT};
 
 #endif // IMAGE_TYPE_H

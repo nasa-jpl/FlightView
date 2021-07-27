@@ -9,6 +9,7 @@
 #include "fft_widget.h"
 #include "frame_c_meta.h"
 #include "frameview_widget.h"
+#include "flight_widget.h"
 #include "histogram_widget.h"
 #include "profile_widget.h"
 #include "playback_widget.h"
@@ -38,6 +39,8 @@ private:
      * @{ */
     frameview_widget *unfiltered_widget;
     frameview_widget *dsf_widget;
+    frameview_widget *waterfall_widget;
+    flight_widget *flight_screen;
     frameview_widget *std_dev_widget;
     histogram_widget *hist_widget;
     profile_widget *vert_mean_widget;

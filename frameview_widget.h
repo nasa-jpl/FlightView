@@ -11,6 +11,9 @@
 #include <QTimer>
 #include <QPushButton>
 #include <QMutex>
+#include <vector>
+#include <deque>
+
 
 /* standard includes */
 #include <atomic>
@@ -48,6 +51,8 @@ class frameview_widget : public QWidget
     QCPColorMapData *colorMapData;
     QCPColorScale *colorScale;
 
+    std::deque <std::vector <float>> wfimage;
+
     /* GUI elements
      * Contains elements of the GUI specific to a widget */
     QGridLayout layout;
@@ -59,6 +64,8 @@ class frameview_widget : public QWidget
     /* Plot Rendering elements
      * Contains local copies of the frame geometry and color map range. */
     int frHeight, frWidth;
+
+    int wflength;
 
     volatile double ceiling;
     volatile double floor;

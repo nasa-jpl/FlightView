@@ -162,7 +162,7 @@ private:
     unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
     bool inverted = false;
     bool pixRemap = false; // Enable Parallel Pixel Mapping (Chroma Translate filter)
-
+    bool continuousRecording = false; // flag to enable continuous recording
     FFT_t whichFFT;
 };
 

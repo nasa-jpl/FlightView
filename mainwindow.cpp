@@ -37,6 +37,8 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
      * signals/slots (currentChanged) make use of this relation */
     unfiltered_widget = new frameview_widget(fw, BASE);
     dsf_widget = new frameview_widget(fw, DSF);
+    waterfall_widget = new frameview_widget(fw, WATERFALL);
+    flight_screen = new flight_widget(fw);
     std_dev_widget = new frameview_widget(fw, STD_DEV);
     hist_widget = new histogram_widget(fw);
     vert_mean_widget = new profile_widget(fw, VERTICAL_MEAN);
@@ -50,6 +52,8 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     /* Add tabs in order */
     tabWidget->addTab(unfiltered_widget, QString("Live View"));
     tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
+    tabWidget->addTab(waterfall_widget, QString("Waterfall"));
+    tabWidget->addTab(flight_screen, QString("Flight"));
     tabWidget->addTab(std_dev_widget, QString("Std. Deviation"));
     tabWidget->addTab(hist_widget, QString("Histogram View"));
     tabWidget->addTab(vert_mean_widget, QString("Vertical Mean Profile"));

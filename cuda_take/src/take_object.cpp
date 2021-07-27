@@ -27,6 +27,7 @@ take_object::take_object(int channel_num, int number_of_buffers, int frf)
 
     //For the frame saving
     this->do_raw_save = false;
+    continuousRecording = false;
     save_framenum = 0;
     save_count=0;
     save_num_avgs=1;
@@ -256,6 +257,13 @@ void take_object::changeFFTtype(FFT_t t)
 }
 void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames_to_save, unsigned int num_avgs_save)
 {
+    if(frames_to_save==0)
+    {
+        continuousRecording = true;
+    } else {
+        continuousRecording = false;
+    }
+    
     save_framenum.store(0, std::memory_order_seq_cst);
     save_count.store(0, std::memory_order_seq_cst);
 #ifdef VERBOSE
@@ -278,6 +286,7 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 }
 void take_object::stopSavingRaws()
 {
+    continuousRecording = false;
     save_framenum.store(0,std::memory_order_relaxed);
     save_count.store(0,std::memory_order_relaxed);
     save_num_avgs=1;
@@ -337,6 +346,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         curFrame->reset();
 #ifdef EDT
 		pdv_start_image(pdv_p); //Start another
+                // Have seen Segmentation faults here on closing liveview:
 		wait_ptr = pdv_wait_image(pdv_p);
 		pdv_thread_start_complete=true;
 #endif
@@ -380,7 +390,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         //This will deallocate itself when it is done.
         mf->start_mean();
 
-        if(save_framenum > 0)
+        if((save_framenum > 0) || continuousRecording)
         {
             uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
             memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
@@ -419,7 +429,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     FILE * file_target = fopen(fname.c_str(), "wb");
 	int sv_count = 0;
 
-    while(save_framenum != 0 || !saving_list.empty())
+    while(  (save_framenum != 0 || continuousRecording)    ||  !saving_list.empty())
     {
         if(!saving_list.empty())
         {

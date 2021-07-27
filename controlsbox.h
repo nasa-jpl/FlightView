@@ -28,6 +28,7 @@
 /* LiveView includes */
 #include "fft_widget.h"
 #include "frameview_widget.h"
+#include "flight_widget.h"
 #include "histogram_widget.h"
 #include "playback_widget.h"
 #include "profile_widget.h"
@@ -108,6 +109,7 @@ public:
     QSpinBox * overlay_rh_width_spin;
 
     frameview_widget *p_frameview;
+    flight_widget *p_flight;
     histogram_widget *p_histogram;
     profile_widget *p_profile;
     fft_widget *p_fft;

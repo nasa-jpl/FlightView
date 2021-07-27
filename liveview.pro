@@ -13,6 +13,7 @@ TARGET = liveview
 TEMPLATE = app
 
 SOURCES += main.cpp\
+    flight_widget.cpp \
         mainwindow.cpp \
     frameview_widget.cpp \
     controlsbox.cpp \
@@ -22,11 +23,13 @@ SOURCES += main.cpp\
     fft_widget.cpp \
     profile_widget.cpp \
     pref_window.cpp \
+    qledlabel.cpp \
     saveserver.cpp \
     playback_widget.cpp \
 
 
 HEADERS  += mainwindow.h \
+    flight_widget.h \
     frameview_widget.h \
     controlsbox.h\
     frame_worker.h \
@@ -35,6 +38,7 @@ HEADERS  += mainwindow.h \
     histogram_widget.h \
     fft_widget.h \
     frame_c_meta.h \
+    qledlabel.h \
     settings.h \
     profile_widget.h \
     pref_window.h \
@@ -59,8 +63,8 @@ DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 # qmake will create this directory automatically:
 DESTDIR = ./lv_release
 # Copy files into DESTDIR for potential releases:
-QMAKE_POST_LINK += cp ../liveview/liveview_icon.png $$DESTDIR;
-QMAKE_POST_LINK += cp ../liveview/LiveView.desktop $$DESTDIR;
+QMAKE_POST_LINK += cp ../LiveViewLegacy/liveview_icon.png $$DESTDIR;
+QMAKE_POST_LINK += cp ../LiveViewLegacy/LiveView.desktop $$DESTDIR;
 
 
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff

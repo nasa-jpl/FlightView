@@ -21,6 +21,9 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
 {
     this->fw = fw;
     this->image_type = image_type;
+    floor = 0;
+    frHeight = fw->getFrameHeight();
+    frWidth = fw->getFrameWidth();
 
     switch(image_type) {
     case BASE:
@@ -32,13 +35,26 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     case STD_DEV:
         ceiling = 100;
         break;
+    case WATERFALL:
+    {
+        wflength = 1024;
+        std::vector <float> blank;
+        for(unsigned int c=0; c < (unsigned int)frWidth; c++)
+        {
+            blank.push_back(0.00);
+        }
+        for(unsigned int l=0; l < (unsigned int)wflength; l++)
+        {
+            wfimage.push_back(blank);
+        }
+
+        break;
+    }
     default:
         break;
     }
     // Note, this code is only run once, at the initial execution of liveview.
-    floor = 0;
-    frHeight = fw->getFrameHeight();
-    frWidth = fw->getFrameWidth();
+
 
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);
@@ -68,7 +84,12 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
 
     colorMap->setColorScale(colorScale);
 
+    if(image_type == WATERFALL)
+    {
+        colorMap->data()->setValueRange(QCPRange(0, wflength-1));
+    } else {
     colorMap->data()->setValueRange(QCPRange(0, frHeight-1));
+    }
 
     colorMap->data()->setKeyRange(QCPRange(0, frWidth-1));
 
@@ -85,7 +106,11 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qcp->rescaleAxes();
     qcp->axisRect()->setBackgroundScaled(false);
 
+
     layout.addWidget(qcp, 0, 0, 8, 8);
+
+
+
     fpsLabel.setText("FPS");
     layout.addWidget(&fpsLabel, 8, 0, 1, 2);
     layout.addWidget(&displayCrosshairCheck, 8, 2, 1, 2);
@@ -120,7 +145,12 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
         this->setFocusPolicy(Qt::ClickFocus); //Focus accepted via clicking
         connect(qcp, SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(setCrosshairs(QMouseEvent*)));
     }
-    colorMapData = new QCPColorMapData(frWidth, frHeight, QCPRange(0, frWidth-1), QCPRange(0, frHeight-1));
+    if(image_type == WATERFALL)
+    {
+        colorMapData = new QCPColorMapData(frWidth, wflength, QCPRange(0, frWidth-1), QCPRange(0, wflength-1));
+    } else {
+        colorMapData = new QCPColorMapData(frWidth, frHeight, QCPRange(0, frWidth-1), QCPRange(0, frHeight-1));
+    }
     colorMap->setData(colorMapData);
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
 }
@@ -145,8 +175,6 @@ void frameview_widget::toggleDisplayCrosshair()
 {
     /*! \brief Turn on or off the rendering of the crosshair */
     displayCrosshairCheck.setChecked(!displayCrosshairCheck.isChecked());
-
-
 }
 
 // public slots
@@ -223,6 +251,27 @@ void frameview_widget::handleNewFrame()
      * \author Noah Levy
      */
 
+    if((fw->curFrame->image_data_ptr != NULL) && image_type == WATERFALL)
+    {
+        // Copy waterfall data in, even if hidden:
+        int row = fw->crosshair_y;
+        if(row < 0)
+            return;
+
+        float *local_image_ptr = fw->curFrame->dark_subtracted_data;
+        std::vector <float> line;
+        for(int col = 0; col < frWidth; col++)
+        {
+            line.push_back(local_image_ptr[row * frWidth + col]);
+        }
+        // There's a better way, but for now this will be ok:
+        wfimage.push_front(line); // Append to top
+        // I have seen a crash here even when wflength was defined as 1024:
+        // crash was when only items 0-420 existed
+        // Other items were "not accessable"
+        wfimage.resize(wflength); // Cut off anything too small.
+    }
+
     if(!this->isHidden() && (fw->curFrame->image_data_ptr != NULL)) {
         if(image_type == BASE) {
             uint16_t *local_image_ptr = fw->curFrame->image_data_ptr;
@@ -253,6 +302,23 @@ void frameview_widget::handleNewFrame()
                         colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
             qcp->replot();
         }
+
+        if(image_type == WATERFALL)
+        {
+            // Display time:
+            std::vector <float> rowdata;
+
+            for(unsigned int row=0; row < wfimage.size(); row++)
+            {
+                rowdata = wfimage.at(row);
+                for(unsigned int col=0; col < (unsigned int)frWidth; col++)
+                {
+                    colorMap->data()->setCell(col, row, rowdata.at(col)); // y-axis NOT reversed
+                }
+            }
+            qcp->replot();
+        }
+
         if(image_type == STD_DEV && fw->std_dev_frame != NULL) {
             float * local_image_ptr = fw->std_dev_frame->std_dev_data;
             for (int col = 0; col < frWidth; col++)
@@ -277,7 +343,13 @@ void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
      */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
-    double upperRangeBound = frHeight-1;
+    double upperRangeBound = 0;
+    if(image_type == WATERFALL)
+    {
+        upperRangeBound = wflength-1;
+    } else {
+        upperRangeBound = frHeight-1;
+    }
     if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
         boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
     } else {

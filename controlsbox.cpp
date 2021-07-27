@@ -222,7 +222,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     stop_saving_frames_button.setEnabled(false);
 
     frames_save_num_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
-    frames_save_num_edit.setMinimum(1);
+    frames_save_num_edit.setMinimum(0);
     frames_save_num_edit.setMaximum(10000000);
     
     frames_save_num_avgs_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
@@ -464,6 +464,23 @@ void ControlsBox::tab_changed_slot(int index)
             use_DSF_cbox.setChecked(fw->usingDSF());
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_frameview->rescaleRange();
+        } else if (p_flight) {
+            ceiling_maximum = p_flight->slider_max;
+            low_increment_cbox.setChecked(p_flight->slider_low_inc);
+            increment_slot(low_increment_cbox.isChecked());
+            ceiling_edit.setValue(p_flight->getCeiling());
+            floor_edit.setValue(p_flight->getFloor());
+            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateCeiling(int)));
+            connect(&floor_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateFloor(int)));
+
+
+                std_dev_N_slider->setEnabled(false);
+                std_dev_N_edit->setEnabled(false);
+
+            use_DSF_cbox.setEnabled(false);
+            use_DSF_cbox.setChecked(fw->usingDSF());
+            fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
+            p_flight->rescaleRange();
         } else if (p_histogram) {
             ceiling_maximum = p_histogram->slider_max;
             low_increment_cbox.setChecked(p_histogram->slider_low_inc);
@@ -532,6 +549,8 @@ void ControlsBox::increment_slot(bool t)
 
     if (p_frameview)
         p_frameview->slider_low_inc = t;
+    else if (p_flight)
+        p_flight->slider_low_inc = t;
     else if (p_histogram)
         p_histogram->slider_low_inc = t;
     else if (p_profile)
@@ -544,6 +563,7 @@ void ControlsBox::increment_slot(bool t)
 void ControlsBox::attempt_pointers(QWidget *tab)
 {
     p_frameview = qobject_cast<frameview_widget*>(tab);
+    p_flight = qobject_cast<flight_widget*>(tab);
     p_histogram = qobject_cast<histogram_widget*>(tab);
     p_profile = qobject_cast<profile_widget*>(tab);
     p_fft = qobject_cast<fft_widget*>(tab);
@@ -555,6 +575,10 @@ void ControlsBox::disconnect_old_tab()
     if (p_frameview) {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_frameview,SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateFloor(int)));
+    } else if (p_flight)
+    {
+        disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_flight,SLOT(updateCeiling(int)));
+        disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateFloor(int)));
     } else if (p_histogram) {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_histogram,SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateFloor(int)));
@@ -653,7 +677,10 @@ void ControlsBox::save_finite_button_slot()
     qDebug() << "fname: " << filename_edit.text();
 #endif
     if (validateFileName(filename_edit.text()) == QDialog::Accepted) {
-        if(frames_save_num_edit.value() < frames_save_num_avgs_edit.value()) {
+        if(frames_save_num_edit.value() == 0)
+        {
+            // Continuous Recording Mode
+        } else if(frames_save_num_edit.value() < frames_save_num_avgs_edit.value()) {
             frames_save_num_edit.setValue(frames_save_num_avgs_edit.value());
         }
         emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text(), frames_save_num_avgs_edit.value());
