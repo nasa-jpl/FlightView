@@ -354,7 +354,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         } else {
             pdv_start_image(pdv_p); //Start another
             // Have seen Segmentation faults here on closing liveview:
-            wait_ptr = pdv_wait_image(pdv_p);
+            if(!closing) wait_ptr = pdv_wait_image(pdv_p);
         }
         pdv_thread_start_complete=true;
 #endif
