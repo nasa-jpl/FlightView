@@ -40,14 +40,14 @@ class gpsManager : public QObject
 
 
     // Status:
-    bool statusGNSSReceptionOk; // GNSS Info received on time or way too late
-    bool statusGNSSReceptionWarning; // GNSS Info received late
-    bool statusUTCok; // UTC received on time
-    bool statusMessageDecodeOk; // message decoded ok
-    bool statusGPSConnectionNoErrors; // Have not received any errors from the network socket
-    bool statusConnectedToGPS; // Connected at this time to the GPS unit
-    bool statusGPSHeartbeatOk; // Have received messages recently
-    bool statusGPSMessagesDropped; // true if messages being dropped
+    bool statusGNSSReceptionOk = true; // GNSS Info received on time or way too late
+    bool statusGNSSReceptionWarning = false; // GNSS Info received late
+    bool statusUTCok = true; // UTC received on time
+    bool statusMessageDecodeOk = true; // message decoded ok
+    bool statusGPSConnectionNoErrors = true; // Have not received any errors from the network socket
+    bool statusConnectedToGPS = true; // Connected at this time to the GPS unit
+    bool statusGPSHeartbeatOk = true; // Have received messages recently
+    bool statusGPSMessagesDropped = false; // true if messages being dropped
     bool statusStickyError = false; // stays true until cleared
 
     // Record 1 out of every 40 points for 5 Hz updates to plots

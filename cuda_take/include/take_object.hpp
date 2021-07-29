@@ -69,6 +69,7 @@ class take_object {
 #endif
 
     bool closing = false;
+    bool grabbing = true;
 
     boost::thread pdv_thread; // this thread controls the data collection
     int pdv_thread_run = 0;

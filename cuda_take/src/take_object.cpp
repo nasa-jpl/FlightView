@@ -36,6 +36,12 @@ take_object::take_object(int channel_num, int number_of_buffers, int frf)
 }
 take_object::~take_object()
 {
+    closing = true;
+    while(grabbing)
+    {
+        // wait here.
+        usleep(1000);
+    }
     if(pdv_thread_run != 0) {
         pdv_thread_run = 0;
 
@@ -343,6 +349,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 
     while(pdv_thread_run == 1)
     {	
+        grabbing = true;
         curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
         curFrame->reset();
 #ifdef EDT
@@ -420,6 +427,12 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         }
         last_framecount = framecount;
         count++;
+        grabbing = false;
+        if(closing)
+        {
+            pdv_thread_run = 0;
+            break;
+        }
     }
 }
 void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
