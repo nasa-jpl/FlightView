@@ -7,6 +7,7 @@ flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
     waterfall_widget = new frameview_widget(fw, WATERFALL, this);
     dsf_widget = new frameview_widget(fw, DSF, this);
 
+    gps = new gpsManager();
 
     // Group Box "Flight Instrument Controls" items:
     flyBtn.setText("FLY!");
@@ -64,6 +65,14 @@ flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
     layout.addWidget(&lrSplitter);
 
     this->setLayout(&layout);
+
+    // Connections to GPS:
+    gps->insertLEDs(&gpsLED);
+    gps->insertLabels(&gpsLatData, &gpsLongData,
+                      &gpsAltitudeData, NULL,
+                      NULL, NULL, NULL,
+                      &gpsHeadingData, NULL,
+                      NULL, NULL, NULL);
 }
 
 
@@ -146,4 +155,5 @@ void flight_widget::setCrosshairs(QMouseEvent *event)
 void flight_widget::debugThis()
 {
     emit statusMessage("Debug function inside flight widget pressed.");
+    gps->initiateGPSConnection("10.0.0.6", 8111);
 }

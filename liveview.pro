@@ -5,7 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui
-QT       += network
+QT       += network svg
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
 
@@ -14,7 +14,8 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
     flight_widget.cpp \
-        mainwindow.cpp \
+    gpsmanager.cpp \
+    mainwindow.cpp \
     frameview_widget.cpp \
     controlsbox.cpp \
     frame_worker.cpp \
@@ -23,27 +24,36 @@ SOURCES += main.cpp\
     fft_widget.cpp \
     profile_widget.cpp \
     pref_window.cpp \
-    qledlabel.cpp \
     saveserver.cpp \
     playback_widget.cpp \
-
+    gpsGUI/qledlabel.cpp \
+    gpsGUI/gpsnetwork.cpp \
+    gpsGUI/gpsbinaryreader.cpp
 
 HEADERS  += mainwindow.h \
     flight_widget.h \
     frameview_widget.h \
     controlsbox.h\
     frame_worker.h \
+    gpsmanager.h \
     image_type.h \
     qcustomplot.h \
     histogram_widget.h \
     fft_widget.h \
     frame_c_meta.h \
-    qledlabel.h \
     settings.h \
     profile_widget.h \
     pref_window.h \
     saveserver.h \
-    playback_widget.h
+    playback_widget.h \
+    gpsGUI/qledlabel.h \
+    gpsGUI/gpsnetwork.h \
+    gpsGUI/gpsbinaryreader.h \
+
+# the following two lines are needed for the QFI widgets:
+include(qfi.pri)
+INCLUDEPATH += gpsGUI
+
 
 OTHER_FILES += \
     aviris-ng-logo.png \

@@ -96,6 +96,7 @@ public:
     QSpinBox frames_save_num_avgs_edit;
     QLineEdit filename_edit;
     QPushButton set_filename_button;
+    QPushButton debugButton;
 
     // Overlay profile only:
     QSlider * overlay_lh_width;
@@ -147,6 +148,8 @@ signals:
     /*! \brief Passes the information needed to generate the dark mask and load it into the DSF in the playback_widget. */
     void mask_selected(QString file_name, unsigned int bytes_to_read, long offset);
 
+    void debugSignal();
+
 public slots:
     void tab_changed_slot(int index);
 
@@ -185,6 +188,8 @@ private slots:
     void validateOverlayParams(int &lh_start, int &lh_end, int &cent_start, int &cent_end, int &rh_start, int &rh_end);
 
     void fft_slider_enable(bool toggled);
+
+    void debugThis();
 
 };
 

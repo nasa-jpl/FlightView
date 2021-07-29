@@ -228,6 +228,12 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     frames_save_num_avgs_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
     frames_save_num_avgs_edit.setMinimum(1);
     frames_save_num_avgs_edit.setMaximum(10000000);
+
+    debugButton.setText("Debug");
+#ifndef QT_DEBUG
+    // Hide the debug button on release builds:
+    debugButton.hide();
+#endif
     
     save_layout = new QGridLayout();
     //First Row
@@ -240,6 +246,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     save_layout->addWidget(&save_finite_button, 1, 4, 1, 1);
     save_layout->addWidget(&frames_save_num_edit, 2, 4, 1, 1);
     save_layout->addWidget(&filename_edit, 3, 2, 1, 4);
+    save_layout->addWidget(&debugButton, 4, 4, 1, 1);
 
     //Third Row
     save_layout->addWidget(&stop_saving_frames_button, 1, 5, 1, 1);
@@ -283,6 +290,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     connect(&save_finite_button, SIGNAL(clicked()), this, SLOT(save_finite_button_slot()));
     connect(&stop_saving_frames_button, SIGNAL(clicked()), this, SLOT(stop_continous_button_slot()));
     connect(&select_save_location, SIGNAL(clicked()), this, SLOT(show_save_dialog()));
+    connect(&debugButton, SIGNAL(clicked()), this, SLOT(debugThis()));
 
     //overlay:
     connect(overlay_lh_width_spin, SIGNAL(valueChanged(int)), overlay_lh_width, SLOT(setValue(int)));
@@ -997,10 +1005,14 @@ void ControlsBox::validateOverlayParams(int &lh_start, int &lh_end,\
 
 }
 
-
 void ControlsBox::fft_slider_enable(bool toggled)
 {
     bool enable = fw->crosshair_x != -1 && toggled;
     lines_slider->setEnabled(enable);
     line_average_edit->setEnabled(enable);
+}
+
+void ControlsBox::debugThis()
+{
+    emit debugSignal();
 }

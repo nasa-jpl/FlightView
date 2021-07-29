@@ -3,6 +3,7 @@
 
 take_object::take_object(int channel_num, int number_of_buffers, int frf)
 {
+    closing = false;
 #ifdef EDT
     this->channel = channel_num;
     this->numbufs = number_of_buffers;
@@ -342,13 +343,20 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 
     while(pdv_thread_run == 1)
     {	
-		curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+        curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
         curFrame->reset();
 #ifdef EDT
-		pdv_start_image(pdv_p); //Start another
-                // Have seen Segmentation faults here on closing liveview:
-		wait_ptr = pdv_wait_image(pdv_p);
-		pdv_thread_start_complete=true;
+        if(closing)
+        {
+            pdv_thread_run = 0;
+            break;
+
+        } else {
+            pdv_start_image(pdv_p); //Start another
+            // Have seen Segmentation faults here on closing liveview:
+            wait_ptr = pdv_wait_image(pdv_p);
+        }
+        pdv_thread_start_complete=true;
 #endif
 #ifdef OPALKELLY
         prev_result = ok_read_frame(wait_ptr, prev_result);

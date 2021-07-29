@@ -15,6 +15,10 @@
 #include "playback_widget.h"
 #include "saveserver.h"
 
+// GPS includes:
+
+#include "gpsGUI/gpsbinaryreader.h"
+
 /*! \file
  * \brief The main viewing window for Live View.
  */
@@ -35,6 +39,9 @@ private:
     ControlsBox *controlbox;
     saveServer *save_server; // Save Server is a non-GUI component that should be open regardless of the current view widget
 
+    void prepareGPS();
+    void processGPSMessage();
+
     /*! All widgets currently used in Live View
      * @{ */
     frameview_widget *unfiltered_widget;
@@ -54,6 +61,21 @@ private:
 
 public slots:
     void enableStdDevTabs();
+
+    void createGPSConnection(QString host, int port);
+    void handleGPSMessage(gpsMessage gm);
+    void handleGPSDataString(QString);
+    void handleGPSStatusMessage(QString);
+    void handleGPSConnectionError(int);
+    void handleGPSConnectionGood();
+
+    void debugThis();
+
+signals:
+    void connectToGPS(QString, int);
+    void disconnectFromGPS();
+    void getGPSDebugInfo();
+
 
 protected:
     /*! \brief Defines keyboard controls for all components of Live View */

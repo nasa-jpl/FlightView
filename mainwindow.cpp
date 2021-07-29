@@ -93,7 +93,70 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
         controlbox->server_ip_label.setText(tr("Server IP: %1").arg(save_server->ipAddress.toString()));
         controlbox->server_port_label.setText(tr("Server Port: %1").arg(save_server->port));
     }
+
+    connect(controlbox, SIGNAL(debugSignal()), this, SLOT(debugThis()));
 }
+
+void MainWindow::prepareGPS()
+{
+//    qRegisterMetaType<gpsMessage>();
+
+//    gps = new gpsNetwork();
+//    gpsThread = new QThread(this);
+
+//    gps->moveToThread(gpsThread);
+
+//    connect(gpsThread, &QThread::finished, gps, &QObject::deleteLater);
+//    connect(this, SIGNAL(connectToGPS(QString,int)), gps, SLOT(connectToGPS(QString,int)));
+//    connect(flight_screen, SIGNAL(connectToGPS(QString,int)), this, SLOT(createGPSConnection(QString,int)));
+//    connect(this, SIGNAL(disconnectFromGPS()), gps, SLOT(disconnectFromGPS()));
+//    connect(this, SIGNAL(getGPSDebugInfo()), gps, SLOT(debugThis()));
+//    connect(gps, SIGNAL(haveGPSString(QString)), this, SLOT(handleGPSDataString(QString)));
+//    connect(gps, SIGNAL(statusMessage(QString)), this, SLOT(handleGPSStatusMessage(QString)));
+//    connect(gps, SIGNAL(connectionError(int)), this, SLOT(handleGPSConnectionError(int)));
+//    connect(gps, SIGNAL(connectionGood()), this, SLOT(handleGPSConnectionGood()));
+//    connect(gps, SIGNAL(haveGPSMessage(gpsMessage)), this, SLOT(handleGPSMessage(gpsMessage)));
+
+//    gpsThread->start();
+}
+
+void MainWindow::createGPSConnection(QString host, int port)
+{
+    (void)host;
+    (void)port;
+    // emit connectToGPS("10.0.0.6", (int)8111);
+}
+
+void MainWindow::processGPSMessage()
+{
+    //qDebug() << "Received GPS message with counter " << gpsm.counter;
+}
+
+void MainWindow::handleGPSConnectionError(int errorNumber)
+{
+    (void) errorNumber;
+}
+
+void MainWindow::handleGPSConnectionGood()
+{
+
+}
+
+void MainWindow::handleGPSDataString(QString gpsString)
+{
+    (void) gpsString;
+}
+
+void MainWindow::handleGPSMessage(gpsMessage gm)
+{
+    (void)gm;
+}
+
+void MainWindow::handleGPSStatusMessage(QString gpsStatusMessage)
+{
+    (void)gpsStatusMessage;
+}
+
 void MainWindow::enableStdDevTabs()
 {
     qDebug() << "enabling std. dev. tabs";
@@ -240,4 +303,10 @@ void MainWindow::closeEvent(QCloseEvent *e)
     QList<QWidget*> allWidgets = findChildren<QWidget*>();
     for(int i = 0; i < allWidgets.size(); ++i)
         allWidgets.at(i)->close();
+}
+
+void MainWindow::debugThis()
+{
+    qDebug() << __PRETTY_FUNCTION__ << ": Debug reached inside MainWindow class.";
+    flight_screen->debugThis();
 }

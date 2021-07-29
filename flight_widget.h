@@ -7,6 +7,8 @@
 #include <QWidget>
 #include <QSplitter>
 
+#include "gpsmanager.h"
+
 #include "frame_worker.h"
 #include "frameview_widget.h"
 #include "qledlabel.h"
@@ -19,6 +21,8 @@ class flight_widget : public QWidget
 
     frameview_widget *waterfall_widget;
     frameview_widget *dsf_widget;
+
+    gpsManager *gps;
 
     QSplitter lrSplitter;
     QSplitter rhSplitter;
@@ -35,6 +39,7 @@ class flight_widget : public QWidget
     QLabel cameraLinkLEDLabel;
     QLedLabel cameraLinkLED;
     QLabel aircraftLbl;
+
     QLabel gpsLatText;
     QLabel gpsLatData;
     QLabel gpsLongText;
@@ -75,6 +80,7 @@ public slots:
 
 signals:
     void statusMessage(QString);
+    void connectToGPS(QString host, int port);
 
 
 };

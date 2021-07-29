@@ -68,6 +68,8 @@ class take_object {
     long framelen;
 #endif
 
+    bool closing = false;
+
     boost::thread pdv_thread; // this thread controls the data collection
     int pdv_thread_run = 0;
 	bool pdv_thread_start_complete=false; // added by Michael Bernas 2016
