@@ -14,10 +14,12 @@ flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
     instBtn.setText("Init");
     aircraftLbl.setText("AVIRIS-III");
     gpsLatText.setText("GPS Latitude: ");
-    gpsLatData.setText("34.11251");
+    gpsLatData.setText("########");
     gpsLongText.setText("GPS Longitude: ");
-    gpsLongData.setText("-114.22231");
+    gpsLongData.setText("########");
     gpsLEDLabel.setText("GPS Status: ");
+    gpsHeadingText.setText("Heading: ");
+    gpsHeadingData.setText("###.###");
     gpsLED.setState(QLedLabel::StateWarning);
     cameraLinkLEDLabel.setText("CameraLink Status: ");
     cameraLinkLED.setState(QLedLabel::StateOk);
@@ -39,7 +41,8 @@ flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
     flightControlLayout.addWidget(&gpsLongText, ++row,0,1,1);
     flightControlLayout.addWidget(&gpsLongData, row,1,1,1);
 
-    flightControlLayout.addWidget(&aircraftLbl, ++row,0,1,1);
+    flightControlLayout.addWidget(&gpsHeadingText, ++row,0,1,1);
+    flightControlLayout.addWidget(&gpsHeadingData, row,1,1,1);
 
 
     flightControlLayout.setColumnStretch(2,2);

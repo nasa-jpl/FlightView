@@ -3,7 +3,7 @@
 gpsManager::gpsManager()
 {
     qRegisterMetaType<gpsMessage>();
-
+    statusStickyError = false;
     prepareVectors(); // size the vectors
     prepareGPS(); // get ready to connect the GPS
 }
@@ -227,7 +227,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     if(m.validDecode)
     {
         this->m = m;
-
+        statusMessageDecodeOk = true;
     } else {
         statusMessageDecodeOk = false;
         processStatus();
@@ -247,22 +247,22 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     if(m.haveGNSSInfo1 || m.haveGNSSInfo2 || m.haveGNSSInfo3)
     {
         gnssStatusTime.restart();
+        statusGNSSReceptionOk = true;
     } else {
         if(gnssStatusTime.elapsed() > 5*1000)
         {
             statusGNSSReceptionOk = false;
-            processStatus();
         } else if (gnssStatusTime.elapsed() > 2*1000)
         {
             statusGNSSReceptionWarning = true;
-            processStatus();
         }
     }
 
     if(m.numberDropped > 0)
     {
         statusGPSMessagesDropped = true;
-        processStatus();
+    } else {
+        statusGPSMessagesDropped = false;
     }
 
     bool doPlotUpdate = (msgsReceivedCount%updatePlotsInverval)==0;
@@ -289,9 +289,9 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             } else {
                 longitude = m.longitude;
             }
-
-            updateLabel(gpsLat, QString("%1").arg(m.latitude));
-            updateLabel(gpsLong, QString("%1").arg(longitude));
+            // Format specifier is number, TOTAL DIGITS (including the dot), float, and the number of decimal places desired (8), and the filler character for any front filling
+            updateLabel(gpsLat, QString("%1").arg(m.latitude, 12, 'f', 8, QChar('0')));
+            updateLabel(gpsLong, QString("%1").arg(longitude, 12, 'f', 8, QChar('0')));
             updateLabel(gpsAltitude, QString("%1").arg(m.altitude));
         }
         if(m.haveCourseSpeedGroundData)
@@ -401,6 +401,8 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     if(doPlotUpdate)
         updatePlots();
 
+    // Every time, process the status:
+    processStatus();
 }
 
 void gpsManager::handleGPSStatusMessage(QString message)
@@ -447,8 +449,20 @@ void gpsManager::processStatus()
 {
     // Central function to evaluate the status
     // of the GPS
-    if(!statusGPSHeartbeatOk || !statusUTCok)
+
+    bool trouble = !statusGPSHeartbeatOk || !statusUTCok || statusStickyError;
+
+    if(trouble)
     {
         gpsOkLED->setState(QLedLabel::StateError);
+        statusStickyError = true;
+    } else {
+        gpsOkLED->setState(QLedLabel::StateOk);
     }
+}
+
+void gpsManager::clearStickyError()
+{
+    statusStickyError = false;
+    processStatus();
 }
