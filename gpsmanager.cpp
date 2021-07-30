@@ -6,6 +6,7 @@ gpsManager::gpsManager()
     statusStickyError = false;
     prepareVectors(); // size the vectors
     prepareGPS(); // get ready to connect the GPS
+
 }
 
 gpsManager::~gpsManager()
@@ -111,11 +112,11 @@ void gpsManager::preparePlots()
         plotLatLong->addGraph(plotLatLong->xAxis, plotLatLong->yAxis ); // Lat
         plotLatLong->addGraph(plotLatLong->xAxis, plotLatLong->yAxis ); // Long
         setTimeAxis(plotLatLong->xAxis);
-        setPlotTitle(plotLatLong, QString("Latitude and Longitude"));
+        setPlotTitle(plotLatLong, titleLatLong, "Lat and Long");
+        plotLatLong->plotLayout()->addElement(0,0,titleLatLong);
         plotLatLong->graph(0)->setPen(QPen(Qt::blue)); // Lat
         plotLatLong->graph(1)->setPen(QPen(Qt::red)); // Long
     }
-
 }
 
 void gpsManager::updateUIelements()
@@ -135,14 +136,26 @@ void gpsManager::updatePlots()
 }
 
 void gpsManager::setTimeAxis(QCPAxis *x)
-{
-    (void)x;
+{ 
+    if(x != NULL)
+    {
+        x->setRange(0, vecSize);
+        x->setLabel("Time (relative units)");
+    }
 }
 
-void gpsManager::setPlotTitle(QCustomPlot *p, QString title)
+void gpsManager::setPlotTitle(QCustomPlot *p, QCPPlotTitle *t, QString title)
 {
-    (void)p;
-    (void)title;
+    // Does not seem to quite work, oh well. Fix as you go.
+    if(p!=NULL)
+    {
+        if(t==NULL)
+        {
+            t = new QCPPlotTitle(p);
+        }
+        t->setText(title);
+    }
+    // The insert to the plot happens later.
 }
 
 void gpsManager::setPlotColors(QCustomPlot *p, bool dark)
@@ -243,11 +256,13 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     }
 
     gpsMessageHeartbeat.start();
+    statusGPSHeartbeatOk = true;
 
     if(m.haveGNSSInfo1 || m.haveGNSSInfo2 || m.haveGNSSInfo3)
     {
         gnssStatusTime.restart();
         statusGNSSReceptionOk = true;
+        statusGNSSReceptionWarning = false;
     } else {
         if(gnssStatusTime.elapsed() > 5*1000)
         {
@@ -450,14 +465,22 @@ void gpsManager::processStatus()
     // Central function to evaluate the status
     // of the GPS
 
-    bool trouble = !statusGPSHeartbeatOk || !statusUTCok || statusStickyError;
+    bool trouble = statusStickyError || !statusGPSHeartbeatOk || !statusUTCok || !statusGNSSReceptionOk;
+    bool warning = statusGNSSReceptionWarning;
 
+    // Warnings are not sticky (automatically cleared)
+    if(warning && !trouble)
+    {
+        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateWarning);
+    }
+
+    // Trouble is sticky (clearning is manually done by the user)
     if(trouble)
     {
-        gpsOkLED->setState(QLedLabel::StateError);
+        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateError);
         statusStickyError = true;
     } else {
-        gpsOkLED->setState(QLedLabel::StateOk);
+        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateOk);
     }
 }
 

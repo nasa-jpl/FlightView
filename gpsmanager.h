@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QLabel>
-#include <qcustomplot.h>
+#include "qcustomplot.h"
 
 #include "gpsGUI/qfi/qfi_EADI.h"
 #include "gpsGUI/qfi/qfi_EHSI.h"
@@ -86,7 +86,7 @@ class gpsManager : public QObject
     void preparePlots();
     void updatePlots();
     void setTimeAxis(QCPAxis *x);
-    void setPlotTitle(QCustomPlot *p, QString title);
+    void setPlotTitle(QCustomPlot *p, QCPPlotTitle *t, QString title);
 
     void setPlotColors(QCustomPlot *p, bool dark);
 
@@ -97,7 +97,6 @@ class gpsManager : public QObject
 
     void showStatusMessage(QString);
     void processStatus();
-    void clearStickyError();
 
     utcTime processUTCstamp(uint64_t t);
     utcTime currentTime;
@@ -108,6 +107,7 @@ class gpsManager : public QObject
     // UI elements (set to NULL if unused):
     QLedLabel *gpsOkLED = NULL;
     QCustomPlot *plotLatLong = NULL;
+    QCPPlotTitle *titleLatLong = NULL;
     QLabel *gpsLat = NULL;
     QLabel *gpsLong = NULL;
     QLabel *gpsAltitude = NULL;
@@ -149,6 +149,7 @@ public slots:
     void initiateGPSDisconnect();
 
     void receiveGPSMessage(gpsMessage m); // from GPS network thread
+    void clearStickyError();
 
 
 signals:

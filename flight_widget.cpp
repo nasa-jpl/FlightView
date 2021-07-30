@@ -26,7 +26,12 @@ flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
 
     // Format is &item, row, col, rowSpan, colSpan. -1 = to "edge"
     int row=0;
-    flightControlLayout.addWidget(&flyBtn, row,0,1,1);
+
+    flightControlLayout.addWidget(&gpsLatLonPlot, row,0,4,3);
+
+    row += 4;
+
+    flightControlLayout.addWidget(&flyBtn, ++row,0,1,1);
     flightControlLayout.addWidget(&instBtn, row,1,1,1);
 
     flightControlLayout.addWidget(&gpsLEDLabel, ++row,0,1,1);
@@ -43,6 +48,8 @@ flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
 
     flightControlLayout.addWidget(&gpsHeadingText, ++row,0,1,1);
     flightControlLayout.addWidget(&gpsHeadingData, row,1,1,1);
+
+
 
 
     flightControlLayout.setColumnStretch(2,2);
@@ -76,6 +83,10 @@ flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
                       NULL, NULL, NULL,
                       &gpsHeadingData, NULL,
                       NULL, NULL, NULL);
+    gps->insertPlots(&gpsLatLonPlot);
+    gps->prepareElements();
+    connect(&flyBtn, SIGNAL(clicked(bool)), gps, SLOT(clearStickyError()));
+
 }
 
 

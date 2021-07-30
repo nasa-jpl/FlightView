@@ -7,6 +7,8 @@
 #include <QWidget>
 #include <QSplitter>
 
+#include <qcustomplot.h>
+
 #include "gpsmanager.h"
 
 #include "frame_worker.h"
@@ -40,6 +42,7 @@ class flight_widget : public QWidget
     QLedLabel cameraLinkLED;
     QLabel aircraftLbl;
 
+    // GPS Text Labels:
     QLabel gpsLatText;
     QLabel gpsLatData;
     QLabel gpsLongText;
@@ -49,6 +52,10 @@ class flight_widget : public QWidget
     QLabel gpsAltitudeText;
     QLabel gpsAltitudeData;
 
+    // GPS Plots:
+    QCustomPlot gpsLatLonPlot;
+    QCustomPlot gpsRollPitchPlot;
+    QCustomPlot gpsHeadingPlot;
 
 
     uint16_t redRow;
