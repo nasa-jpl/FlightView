@@ -10,7 +10,7 @@ flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
     gps = new gpsManager();
 
     // Group Box "Flight Instrument Controls" items:
-    flyBtn.setText("FLY!");
+    resetStickyErrorsBtn.setText("Clear Errors");
     instBtn.setText("Init");
     aircraftLbl.setText("AVIRIS-III");
     gpsLatText.setText("GPS Latitude: ");
@@ -20,18 +20,18 @@ flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
     gpsLEDLabel.setText("GPS Status: ");
     gpsHeadingText.setText("Heading: ");
     gpsHeadingData.setText("###.###");
-    gpsLED.setState(QLedLabel::StateWarning);
+    gpsLED.setState(QLedLabel::StateOkBlue);
     cameraLinkLEDLabel.setText("CameraLink Status: ");
     cameraLinkLED.setState(QLedLabel::StateOk);
 
     // Format is &item, row, col, rowSpan, colSpan. -1 = to "edge"
     int row=0;
 
-    flightControlLayout.addWidget(&gpsLatLonPlot, row,0,4,3);
+    flightControlLayout.addWidget(&gpsPitchRollPlot, row,0,4,3);
 
     row += 4;
 
-    flightControlLayout.addWidget(&flyBtn, ++row,0,1,1);
+    flightControlLayout.addWidget(&resetStickyErrorsBtn, ++row,0,1,1);
     flightControlLayout.addWidget(&instBtn, row,1,1,1);
 
     flightControlLayout.addWidget(&gpsLEDLabel, ++row,0,1,1);
@@ -83,9 +83,9 @@ flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
                       NULL, NULL, NULL,
                       &gpsHeadingData, NULL,
                       NULL, NULL, NULL);
-    gps->insertPlots(&gpsLatLonPlot);
+    gps->insertPlots(&gpsPitchRollPlot);
     gps->prepareElements();
-    connect(&flyBtn, SIGNAL(clicked(bool)), gps, SLOT(clearStickyError()));
+    connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), gps, SLOT(clearStickyError()));
 
 }
 
@@ -169,5 +169,5 @@ void flight_widget::setCrosshairs(QMouseEvent *event)
 void flight_widget::debugThis()
 {
     emit statusMessage("Debug function inside flight widget pressed.");
-    gps->initiateGPSConnection("10.0.0.6", 8111);
+    gps->initiateGPSConnection("10.0.0.6", 8111, "/tmp/gpsbinary.log");
 }

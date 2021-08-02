@@ -17,9 +17,9 @@ gpsManager::~gpsManager()
     //delete gps;
 }
 
-void gpsManager::initiateGPSConnection(QString host = "10.0.0.6", int port=(int)8111)
+void gpsManager::initiateGPSConnection(QString host = "10.0.0.6", int port=(int)8111, QString gpsBinaryLogFilename = "/tmp/unset_from_gps_manager.log")
 {
-    emit connectToGPS(host, port);
+    emit connectToGPS(host, port, gpsBinaryLogFilename);
     gnssStatusTime.restart();
 }
 
@@ -80,7 +80,7 @@ void gpsManager::prepareGPS()
 
     connect(gpsThread, &QThread::finished, gps, &QObject::deleteLater);
 
-    connect(this, SIGNAL(connectToGPS(QString,int)), gps, SLOT(connectToGPS(QString,int)));
+    connect(this, SIGNAL(connectToGPS(QString,int,QString)), gps, SLOT(connectToGPS(QString,int,QString)));
     connect(this, SIGNAL(disconnectFromGPS()), gps, SLOT(disconnectFromGPS()));
     connect(this, SIGNAL(getDebugInfo()), gps, SLOT(debugThis()));
     connect(gps, SIGNAL(haveGPSString(QString)), this, SLOT(handleGPSDataString(QString)));
@@ -105,17 +105,19 @@ void gpsManager::preparePlots()
         timeAxis[i-1] = t++;
     }
 
-    if(plotLatLong != NULL)
+    if(plotRollPitch != NULL)
     {
-        plotLatLong->addGraph();
-        plotLatLong->yAxis->setRange(-360*1.25, 360*1.25); // Lat
-        plotLatLong->addGraph(plotLatLong->xAxis, plotLatLong->yAxis ); // Lat
-        plotLatLong->addGraph(plotLatLong->xAxis, plotLatLong->yAxis ); // Long
-        setTimeAxis(plotLatLong->xAxis);
-        setPlotTitle(plotLatLong, titleLatLong, "Lat and Long");
-        plotLatLong->plotLayout()->addElement(0,0,titleLatLong);
-        plotLatLong->graph(0)->setPen(QPen(Qt::blue)); // Lat
-        plotLatLong->graph(1)->setPen(QPen(Qt::red)); // Long
+        plotRollPitch->addGraph();
+        plotRollPitch->yAxis->setRange(-10, 10); // Lat
+        plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis ); // Lat
+        plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis ); // Long
+        setTimeAxis(plotRollPitch->xAxis);
+        setPlotTitle(plotRollPitch, titleLatLong, "Pitch and Roll");
+        plotRollPitch->plotLayout()->addElement(0,-1,titleLatLong);
+        plotRollPitch->graph(0)->setPen(QPen(Qt::blue)); // roll
+        plotRollPitch->graph(1)->setPen(QPen(Qt::red)); // pitch
+        setPlotTitle(plotRollPitch, titleLatLong, "Pitch and Roll");
+
     }
 }
 
@@ -127,11 +129,11 @@ void gpsManager::updateUIelements()
 
 void gpsManager::updatePlots()
 {
-    if(plotLatLong != NULL)
+    if(plotRollPitch != NULL)
     {
-        this->plotLatLong->graph(0)->setData(timeAxis, lats);
-        this->plotLatLong->graph(1)->setData(timeAxis, longs); // should be longs
-        this->plotLatLong->replot();
+        this->plotRollPitch->graph(0)->setData(timeAxis, rolls);
+        this->plotRollPitch->graph(1)->setData(timeAxis, pitches); // should be longs
+        this->plotRollPitch->replot();
     }
 }
 
@@ -188,9 +190,9 @@ void gpsManager::insertLEDs(QLedLabel *gpsOk)
     this->gpsOkLED = gpsOk;
 }
 
-void gpsManager::insertPlots(QCustomPlot *gpsLatLonPlot)
+void gpsManager::insertPlots(QCustomPlot *gpsRollPitchplot)
 {
-    this->plotLatLong = gpsLatLonPlot;
+    this->plotRollPitch = gpsRollPitchplot;
 }
 
 void gpsManager::insertLabels(QLabel *gpsLat, QLabel *gpsLong, QLabel *gpsAltitude,

@@ -24,7 +24,7 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
 #ifdef VERBOSE
     qDebug() << "fw passed to MainWindow";
 #endif
-    this->resize(1440, 900);
+    this->resize(1280, 1024);
     mainwidget = new QWidget();
     QVBoxLayout *layout = new QVBoxLayout;
 

@@ -34,7 +34,7 @@ class flight_widget : public QWidget
     QGridLayout flightControlLayout;
 
     // stand-in items for flight controls:
-    QPushButton flyBtn;
+    QPushButton resetStickyErrorsBtn;
     QCheckBox instBtn;
     QLabel gpsLEDLabel;
     QLedLabel gpsLED;
@@ -53,8 +53,7 @@ class flight_widget : public QWidget
     QLabel gpsAltitudeData;
 
     // GPS Plots:
-    QCustomPlot gpsLatLonPlot;
-    QCustomPlot gpsRollPitchPlot;
+    QCustomPlot gpsPitchRollPlot;
     QCustomPlot gpsHeadingPlot;
 
 

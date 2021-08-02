@@ -106,7 +106,7 @@ class gpsManager : public QObject
 
     // UI elements (set to NULL if unused):
     QLedLabel *gpsOkLED = NULL;
-    QCustomPlot *plotLatLong = NULL;
+    QCustomPlot *plotRollPitch = NULL;
     QCPPlotTitle *titleLatLong = NULL;
     QLabel *gpsLat = NULL;
     QLabel *gpsLong = NULL;
@@ -132,7 +132,7 @@ public:
     ~gpsManager();
 
     void insertLEDs(QLedLabel *gpsOkLED);
-    void insertPlots(QCustomPlot *gpsLatLonPlot);
+    void insertPlots(QCustomPlot *gpsRollPitchPlot);
     void insertLabels(QLabel *gpsLat, QLabel *gpsLong, QLabel *gpsAltitude,
                       QLabel *gpsUTCtime, QLabel *gpsUTCdate, QLabel *gpsUTCValidity,
                       QLabel *gpsGroundSpeed,
@@ -145,7 +145,7 @@ public:
     void prepareElements();
 
 public slots:
-    void initiateGPSConnection(QString host, int port);
+    void initiateGPSConnection(QString host, int port, QString gpsBinaryLogFilename);
     void initiateGPSDisconnect();
 
     void receiveGPSMessage(gpsMessage m); // from GPS network thread
@@ -153,7 +153,7 @@ public slots:
 
 
 signals:
-    void connectToGPS(QString host, int port);
+    void connectToGPS(QString host, int port, QString gpsBinaryLogFilename);
     void disconnectFromGPS();
     void getDebugInfo();
 
