@@ -28,7 +28,8 @@ SOURCES += main.cpp\
     playback_widget.cpp \
     gpsGUI/qledlabel.cpp \
     gpsGUI/gpsnetwork.cpp \
-    gpsGUI/gpsbinaryreader.cpp
+    gpsGUI/gpsbinaryreader.cpp \
+    gpsGUI/gpsbinarylogger.cpp
 
 HEADERS  += mainwindow.h \
     flight_widget.h \
@@ -49,6 +50,8 @@ HEADERS  += mainwindow.h \
     gpsGUI/qledlabel.h \
     gpsGUI/gpsnetwork.h \
     gpsGUI/gpsbinaryreader.h \
+    gpsGUI/gpsbinarylogger.h
+
 
 # the following two lines are needed for the QFI widgets:
 include(qfi.pri)
