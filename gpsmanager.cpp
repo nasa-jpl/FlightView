@@ -4,6 +4,13 @@ gpsManager::gpsManager()
 {
     qRegisterMetaType<gpsMessage>();
     statusStickyError = false;
+
+    // May override later:
+    baseSaveDirectory = QString("/tmp/gps");
+    createLoggingDirectory();
+    filenamegen.setMainDirectory(baseSaveDirectory);
+    filenamegen.setFilenameExtension("log");
+
     prepareVectors(); // size the vectors
     prepareGPS(); // get ready to connect the GPS
 
@@ -17,8 +24,12 @@ gpsManager::~gpsManager()
     //delete gps;
 }
 
-void gpsManager::initiateGPSConnection(QString host = "10.0.0.6", int port=(int)8111, QString gpsBinaryLogFilename = "/tmp/unset_from_gps_manager.log")
+void gpsManager::initiateGPSConnection(QString host = "10.0.0.6", int port=(int)8111, QString gpsBinaryLogFilename = "")
 {
+    if (gpsBinaryLogFilename.isEmpty())
+    {
+        gpsBinaryLogFilename=filenamegen.getNewFullFilename();
+    }
     emit connectToGPS(host, port, gpsBinaryLogFilename);
     gnssStatusTime.restart();
 }
@@ -27,6 +38,19 @@ void gpsManager::initiateGPSDisconnect()
 {
     emit disconnectFromGPS();
     firstMessage = true;
+}
+
+bool gpsManager::createLoggingDirectory()
+{
+    if(baseSaveDirectory.isEmpty())
+    {
+        return false;
+    }
+    QDir dir(baseSaveDirectory);
+    if (!dir.exists())
+        dir.mkpath(".");
+
+    return dir.exists();
 }
 
 void gpsManager::prepareElements()

@@ -169,5 +169,5 @@ void flight_widget::setCrosshairs(QMouseEvent *event)
 void flight_widget::debugThis()
 {
     emit statusMessage("Debug function inside flight widget pressed.");
-    gps->initiateGPSConnection("10.0.0.6", 8111, "/tmp/gpsbinary.log");
+    gps->initiateGPSConnection("10.0.0.6", 8111, "");
 }

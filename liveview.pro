@@ -13,6 +13,7 @@ TARGET = liveview
 TEMPLATE = app
 
 SOURCES += main.cpp\
+    filenamegenerator.cpp \
     flight_widget.cpp \
     gpsmanager.cpp \
     mainwindow.cpp \
@@ -32,6 +33,7 @@ SOURCES += main.cpp\
     gpsGUI/gpsbinarylogger.cpp
 
 HEADERS  += mainwindow.h \
+    filenamegenerator.h \
     flight_widget.h \
     frameview_widget.h \
     controlsbox.h\

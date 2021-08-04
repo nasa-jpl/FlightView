@@ -5,6 +5,8 @@
 #include <QLabel>
 #include "qcustomplot.h"
 
+#include "filenamegenerator.h"
+
 #include "gpsGUI/qfi/qfi_EADI.h"
 #include "gpsGUI/qfi/qfi_EHSI.h"
 #include "gpsGUI/qfi/qfi_ASI.h"
@@ -31,6 +33,12 @@ class gpsManager : public QObject
     QThread *gpsThread;
     gpsNetwork *gps;
     gpsMessage m;
+
+    fileNameGenerator filenamegen;
+
+    QString baseSaveDirectory;
+    QString gpsRecordingBinaryLogFilename;
+    bool createLoggingDirectory();
 
     // Update Frequency:
     // data come in at 200 Hz

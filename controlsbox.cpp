@@ -737,10 +737,12 @@ int ControlsBox::validateFileName(const QString &name)
     int result = QDialog::Accepted;
 
     // No filename
-    if (name.isEmpty())
+    if (name.isEmpty()) {
         result = QMessageBox::critical(this, "Frame Save Error", \
                               tr("Filename is empty.\nPlease select a valid location to save data."), \
                               QMessageBox::Cancel);
+        return -1;
+    }
 
     // Characters
     QString qs;
@@ -748,16 +750,20 @@ int ControlsBox::validateFileName(const QString &name)
         if (name.contains(QLatin1Char(*c)))
             qs.append(QLatin1Char(*c));
     }
-    if (!qs.isEmpty())
+    if (!qs.isEmpty()){
         result = QMessageBox::critical(this, "Frame Save Error", \
                                        tr("Invalid character(s) \"%1\" in file name.").arg(qs), \
                               QMessageBox::Cancel);
+        return -1;
+    }
 
     // Starts with slash
-    if (name.at(0) != '/')
+    if (name.at(0) != '/') {
         result = QMessageBox::critical(this, "Frame Save Error", \
                               tr("File name does not specify a valid path.\nPlease include the path to the folder in which to save data."), \
                               QMessageBox::Cancel);
+        return -1;
+    }
 
     // File exists
     QFileInfo checkFile(name);
