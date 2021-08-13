@@ -135,9 +135,11 @@ signals:
      * will experience a segmentation violation. Very little checking of location validity and permissions is done
      * at the backend. */
     void startSavingFinite(unsigned int length, QString fname, unsigned int navgs);
+    void startDataCollection(QString baseFilename);
 
     /*! \brief Ends the saving loop at the backend. */
     void stopSaving();
+    void stopDataCollection();
 
     /*! \brief Passes the DSF the message to begin averaging dark frames for all live widgets. */
     void startDSFMaskCollection();

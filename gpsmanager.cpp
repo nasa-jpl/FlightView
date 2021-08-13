@@ -114,6 +114,9 @@ void gpsManager::prepareGPS()
 
     connect(gps, SIGNAL(haveGPSMessage(gpsMessage)), this, SLOT(receiveGPSMessage(gpsMessage)));
 
+    connect(this, SIGNAL(startSecondaryLog(QString)), gps, SLOT(beginSecondaryBinaryLog(QString)));
+    connect(this, SIGNAL(stopSecondaryLog()), gps, SLOT(stopSecondaryBinaryLog()));
+
     gpsThread->start();
 
     gpsMessageHeartbeat.setInterval(500); // half second, expected is 5ms.
@@ -141,7 +144,6 @@ void gpsManager::preparePlots()
         plotRollPitch->graph(0)->setPen(QPen(Qt::blue)); // roll
         plotRollPitch->graph(1)->setPen(QPen(Qt::red)); // pitch
         setPlotTitle(plotRollPitch, titleLatLong, "Pitch and Roll");
-
     }
 }
 
@@ -444,6 +446,16 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
 
     // Every time, process the status:
     processStatus();
+}
+
+void gpsManager::handleStartsecondaryLog(QString filename)
+{
+    emit startSecondaryLog(filename);
+}
+
+void gpsManager::handleStopSecondaryLog()
+{
+    emit stopSecondaryLog();
 }
 
 void gpsManager::handleGPSStatusMessage(QString message)

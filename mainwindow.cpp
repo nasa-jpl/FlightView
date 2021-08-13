@@ -9,7 +9,7 @@
 #include "mainwindow.h"
 #include "image_type.h"
 
-MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
+MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw, QWidget *parent)
     : QMainWindow(parent)
 {
     qRegisterMetaType<frame_c*>("frame_c*");
@@ -17,6 +17,7 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     //qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");
 
     this->fw = fw;
+    this->options = options;
 
     /*! start the workerThread from main */
     qth->start();
@@ -95,29 +96,14 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     }
 
     connect(controlbox, SIGNAL(debugSignal()), this, SLOT(debugThis()));
+
+    connect(controlbox, SIGNAL(startDataCollection(QString)), flight_screen, SLOT(startDataCollection(QString)));
+    connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
 }
 
 void MainWindow::prepareGPS()
 {
-//    qRegisterMetaType<gpsMessage>();
 
-//    gps = new gpsNetwork();
-//    gpsThread = new QThread(this);
-
-//    gps->moveToThread(gpsThread);
-
-//    connect(gpsThread, &QThread::finished, gps, &QObject::deleteLater);
-//    connect(this, SIGNAL(connectToGPS(QString,int)), gps, SLOT(connectToGPS(QString,int)));
-//    connect(flight_screen, SIGNAL(connectToGPS(QString,int)), this, SLOT(createGPSConnection(QString,int)));
-//    connect(this, SIGNAL(disconnectFromGPS()), gps, SLOT(disconnectFromGPS()));
-//    connect(this, SIGNAL(getGPSDebugInfo()), gps, SLOT(debugThis()));
-//    connect(gps, SIGNAL(haveGPSString(QString)), this, SLOT(handleGPSDataString(QString)));
-//    connect(gps, SIGNAL(statusMessage(QString)), this, SLOT(handleGPSStatusMessage(QString)));
-//    connect(gps, SIGNAL(connectionError(int)), this, SLOT(handleGPSConnectionError(int)));
-//    connect(gps, SIGNAL(connectionGood()), this, SLOT(handleGPSConnectionGood()));
-//    connect(gps, SIGNAL(haveGPSMessage(gpsMessage)), this, SLOT(handleGPSMessage(gpsMessage)));
-
-//    gpsThread->start();
 }
 
 void MainWindow::createGPSConnection(QString host, int port)

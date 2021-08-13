@@ -14,6 +14,7 @@
 #include "profile_widget.h"
 #include "playback_widget.h"
 #include "saveserver.h"
+#include "startupOptions.h"
 
 // GPS includes:
 
@@ -30,7 +31,7 @@ class MainWindow : public QMainWindow
 public:
     /*! The main window must be passed a QThread to ensure that GUI commands are handled
      * separately from backend commands. This improves the overall responsiveness of the software. */
-    MainWindow(QThread *qth, frameWorker *fw, QWidget *parent = 0);
+    MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw, QWidget *parent = 0);
 
 private:
     frameWorker *fw;
@@ -38,6 +39,8 @@ private:
     QWidget *mainwidget;
     ControlsBox *controlbox;
     saveServer *save_server; // Save Server is a non-GUI component that should be open regardless of the current view widget
+
+    startupOptionsType options;
 
     void prepareGPS();
     void processGPSMessage();

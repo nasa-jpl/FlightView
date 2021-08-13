@@ -73,6 +73,10 @@ public slots:
     void handleNewFrame();
     void receiveGPS();
 
+    // Notify:
+    void startDataCollection(QString secondaryLogFilename);
+    void stopDataCollection();
+
     void handleNewColorScheme(int scheme);
     void colorMapScrolledY(const QCPRange &newRange);
     void colorMapScrolledX(const QCPRange &newRange);
@@ -87,6 +91,8 @@ public slots:
 signals:
     void statusMessage(QString);
     void connectToGPS(QString host, int port);
+    void beginSecondaryLog(QString filename);
+    void stopSecondaryLog();
 
 
 };

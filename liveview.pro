@@ -52,7 +52,8 @@ HEADERS  += mainwindow.h \
     gpsGUI/qledlabel.h \
     gpsGUI/gpsnetwork.h \
     gpsGUI/gpsbinaryreader.h \
-    gpsGUI/gpsbinarylogger.h
+    gpsGUI/gpsbinarylogger.h \
+    startupOptions.h
 
 
 # the following two lines are needed for the QFI widgets:

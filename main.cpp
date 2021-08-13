@@ -7,10 +7,13 @@
 #include <QThread>
 #include <QTime>
 
+#include <cstdio>
+
 /* LiveView includes */
 #include "mainwindow.h"
 #include "qcustomplot.h"
 #include "frame_worker.h"
+#include "startupOptions.h"
 
 /* If the macros to define the development environment are not defined at compile time, use defaults */
 #ifndef HOST
@@ -41,6 +44,102 @@ int main(int argc, char *argv[])
     //QApplication::setGraphicsSystem("raster"); //This is intended to make 2D rendering faster
     QApplication a(argc, argv);
 
+    QString cmdName = QString("%1").arg(argv[0]);
+    QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps "
+                               "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 "
+                               "--deviceIHE /dev/ihe --deviceFPIED /dev/fpied")\
+            .arg(cmdName);
+    QString currentArg;
+    startupOptionsType startupOptions;
+    startupOptions.debug = false;
+    startupOptions.flightMode = false;
+    startupOptions.disableCamera = false;
+    startupOptions.disableGPS = false;
+    startupOptions.dataLocation = QString("/data");
+    startupOptions.gpsIP = QString("10.0.0.6");
+    startupOptions.deviceFPIED = QString("/dev/fpied");
+    startupOptions.deviceIHE = QString("/dev/ihe");
+
+    // Basic CLI argument parser:
+    for(int c=1; c < argc; c++)
+    {
+        currentArg = QString(argv[c]).toLower();
+
+        if(currentArg == "-d" || currentArg == "--debug")
+        {
+            startupOptions.debug = true;
+        }
+        if(currentArg == "-f" || currentArg == "--flight")
+        {
+            startupOptions.flightMode = true;
+        }
+        if(currentArg == "--no-gps")
+        {
+            startupOptions.disableGPS = true;
+        }
+        if(currentArg == "--no-camera")
+        {
+            startupOptions.disableCamera = true;
+        }
+        if(currentArg == "--datastoragelocation")
+        {
+            if(argc > c)
+            {
+                startupOptions.dataLocation = argv[c+1];
+                startupOptions.dataLocationSet = true;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if(currentArg == "--gpsip")
+        {
+            // Only IPV4 supported, and no hostnames please, let's not depend upon DNS or resolv in the airplane...
+            if((argc > c) && QString(argv[c+1]).contains(QRegularExpression("(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})")))
+            {
+                startupOptions.gpsIP = argv[c+1];
+                startupOptions.gpsIPSet = true;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if(currentArg == "--deviceihe")
+        {
+            // Use UDEV rules to give nice names
+            if((argc > c) && QString(argv[c+1]).contains("/dev"))
+            {
+                startupOptions.deviceIHE = argv[c+1];
+                startupOptions.deviceIHESet = true;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if(currentArg == "--devicefpied")
+        {
+            // Use UDEV rules to give nice names
+            if((argc > c) && QString(argv[c+1]).contains("/dev"))
+            {
+                startupOptions.deviceFPIED = argv[c+1];
+                startupOptions.deviceFPIEDSet = true;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if(currentArg == "--help" || currentArg == "-h" || currentArg.contains("?"))
+        {
+            std::cout << helptext.toStdString() << std::endl;
+            exit(-1);
+        }
+
+    }
+
+
+
+
+
     /* Step 2: Load the splash screen */
     QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
     QSplashScreen splash(logo_pixmap);
@@ -49,7 +148,7 @@ int main(int argc, char *argv[])
                        Qt::AlignCenter | Qt::AlignBottom, Qt::gray);
 
     /* Step 3: Load the parallel worker object which will act as a "backend" for LiveView */
-    frameWorker *fw = new frameWorker();
+    frameWorker *fw = new frameWorker(startupOptions);
     QThread *workerThread = new QThread();
     fw->moveToThread(workerThread);
     QObject::connect(workerThread, SIGNAL(started()), fw, SLOT(captureFrames()));
@@ -59,7 +158,7 @@ int main(int argc, char *argv[])
     std::cout << "The compilation was performed by " << UNAME << " @ " << HOST << std::endl;
 
     /* Step 5: Open the main window (GUI/frontend) */
-    MainWindow w(workerThread, fw);
+    MainWindow w(startupOptions, workerThread, fw);
     w.setGeometry(   QStyle::alignedRect(
                          Qt::LeftToRight,
                          Qt::AlignCenter,

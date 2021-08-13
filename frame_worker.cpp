@@ -5,7 +5,7 @@
 #include <QSharedPointer>
 #include <QDebug>
 
-frameWorker::frameWorker(QObject *parent) :
+frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
     QObject(parent)
 {
     /*! \brief Launches cuda_take using the take_object.
@@ -15,6 +15,8 @@ frameWorker::frameWorker(QObject *parent) :
      * \author Jackie Ryan
      * \author Noah Levy
      */
+
+    this->options = options;
 
     to.start(); // begin cuda_take
 

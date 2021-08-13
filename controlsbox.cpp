@@ -684,6 +684,14 @@ void ControlsBox::save_finite_button_slot()
 #ifdef VERBOSE
     qDebug() << "fname: " << filename_edit.text();
 #endif
+    // TODO: for "flight mode", skip validation and auto-generate.
+    // Store auto-gen basemane in local varaibles.
+    // baseDirectory
+    // baseName;
+    // imageExtension
+    // flightGPSlogExtension (secondary log file)
+    // Master log file generated on start automatically? hmm
+
     if (validateFileName(filename_edit.text()) == QDialog::Accepted) {
         if(frames_save_num_edit.value() == 0)
         {
@@ -698,6 +706,8 @@ void ControlsBox::save_finite_button_slot()
         save_finite_button.setEnabled(false);
         frames_save_num_edit.setEnabled(false);
         frames_save_num_avgs_edit.setEnabled(false);
+        // TODO: Filename generation for flight mode
+        emit startDataCollection(filename_edit.text().append("-GPS-TEMP-SECONDARY.log"));
     }
 }
 void ControlsBox::stop_continous_button_slot()
@@ -712,6 +722,7 @@ void ControlsBox::stop_continous_button_slot()
     frames_save_num_edit.setEnabled(true);
     frames_save_num_avgs_edit.setEnabled(true);
     frames_save_num_edit.setValue(previousNumSaved);
+    emit stopDataCollection();
 }
 void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
 {

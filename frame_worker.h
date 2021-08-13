@@ -17,6 +17,7 @@
 #include "take_object.hpp"
 #include "frame_c_meta.h"
 #include "image_type.h"
+#include "startupOptions.h"
 
 /*! \file
  * \brief Communicates with the backend and connects public information between widgets.
@@ -57,8 +58,10 @@ class frameWorker : public QObject
     float *histogram_bins;
     bool doRun = true;
 
+    startupOptionsType options;
+
 public:
-    explicit frameWorker(QObject *parent = 0);
+    explicit frameWorker(startupOptionsType options, QObject *parent = 0);
     virtual ~frameWorker();
 
     take_object to;

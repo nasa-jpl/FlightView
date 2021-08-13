@@ -166,6 +166,16 @@ void flight_widget::setCrosshairs(QMouseEvent *event)
     dsf_widget->setCrosshairs(event);
 }
 
+void flight_widget::startDataCollection(QString secondaryLogFilename)
+{
+    emit beginSecondaryLog(secondaryLogFilename);
+}
+
+void flight_widget::stopDataCollection()
+{
+    emit stopSecondaryLog();
+}
+
 void flight_widget::debugThis()
 {
     emit statusMessage("Debug function inside flight widget pressed.");
