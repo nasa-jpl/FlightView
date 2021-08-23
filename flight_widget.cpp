@@ -1,12 +1,17 @@
 #include "flight_widget.h"
 
-flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
+flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidget *parent) : QWidget(parent)
 {
+    connect(this, SIGNAL(statusMessage(QString)), this, SLOT(showDebugMessage(QString)));
+
+    emit statusMessage(QString("TEST AT START OF FLIGHT WIDGET"));
     this->fw = fw;
+    this->options = options;
 
     waterfall_widget = new frameview_widget(fw, WATERFALL, this);
     dsf_widget = new frameview_widget(fw, DSF, this);
 
+    startedPrimaryGPSLog = false;
     gps = new gpsManager();
 
     // Group Box "Flight Instrument Controls" items:
@@ -85,8 +90,36 @@ flight_widget::flight_widget(frameWorker *fw, QWidget *parent) : QWidget(parent)
                       NULL, NULL, NULL);
     gps->insertPlots(&gpsPitchRollPlot);
     gps->prepareElements();
-    connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), gps, SLOT(clearStickyError()));
 
+    if(options.flightMode && !options.disableGPS)
+    {
+        emit statusMessage(QString("Starting liveview in FLIGHT mode."));
+        // Connecto to GPS immediately and start logging.
+        if(options.gpsIPSet && options.gpsPortSet && options.dataLocationSet)
+        {
+            gps->initiateGPSConnection(options.gpsIP,
+                              options.gpsPort,
+                              options.dataLocation);
+            startedPrimaryGPSLog = true;
+        } else {
+            emit statusMessage(QString("Error, cannot start flight mode with incomplete GPS settings."));
+        }
+    } else {
+        emit statusMessage(QString("Starting liveview in LAB mode."));
+    }
+
+    // TODO:
+    // set base filename for master (primary) log
+
+    // connect start and stop signals for secondary log
+    connect(this, &flight_widget::beginSecondaryLog, gps, &gpsManager::handleStartsecondaryLog);
+    connect(this, &flight_widget::stopSecondaryLog, gps, &gpsManager::handleStopSecondaryLog);
+
+
+
+    connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), gps, SLOT(clearStickyError()));
+    emit statusMessage(QString("Finished flight constructor."));
+    qDebug() << "flight_widget finished constructor.";
 }
 
 
@@ -109,11 +142,6 @@ void flight_widget::handleNewFrame()
 {
     dsf_widget->handleNewFrame();
     waterfall_widget->handleNewFrame();
-}
-
-void flight_widget::receiveGPS()
-{
-
 }
 
 void flight_widget::handleNewColorScheme(int scheme)
@@ -176,8 +204,34 @@ void flight_widget::stopDataCollection()
     emit stopSecondaryLog();
 }
 
+void flight_widget::startGPS(QString gpsHostname, uint16_t gpsPort, QString primaryLogLocation)
+{
+    this->gpsHostname = gpsHostname;
+    this->primaryGPSLogLocation = primaryLogLocation;
+    this->gpsPort = gpsPort;
+
+    if(!startedPrimaryGPSLog)
+    {
+    gps->initiateGPSConnection(gpsHostname, gpsPort, primaryLogLocation);
+    startedPrimaryGPSLog = true;
+
+    emit statusMessage(QString("Connecting to GPS host %1:%2 with primary log location %3")\
+                       .arg(gpsHostname)\
+                       .arg(gpsPort)\
+                       .arg(primaryLogLocation));
+    } else {
+        emit statusMessage(QString("Error, asked to connect to GPS twice."));
+    }
+}
+
+void flight_widget::showDebugMessage(QString debugMessage)
+{
+    std::cout << "DEBUG MESSAGE IN FLIGHT WIDGET: " << debugMessage.toLocal8Bit().toStdString() << std::endl;
+}
+
 void flight_widget::debugThis()
 {
+    qDebug() << "in debug function using qDebug()";
     emit statusMessage("Debug function inside flight widget pressed.");
-    gps->initiateGPSConnection("10.0.0.6", 8111, "");
+    //gps->initiateGPSConnection("10.0.0.6", 8111, "");
 }

@@ -29,6 +29,10 @@ void gpsManager::initiateGPSConnection(QString host = "10.0.0.6", int port=(int)
     if (gpsBinaryLogFilename.isEmpty())
     {
         gpsBinaryLogFilename=filenamegen.getNewFullFilename();
+    } else {
+        baseSaveDirectory = gpsBinaryLogFilename;
+        createLoggingDirectory();
+        gpsBinaryLogFilename = filenamegen.getNewFullFilename(gpsBinaryLogFilename, "log");
     }
     emit connectToGPS(host, port, gpsBinaryLogFilename);
     gnssStatusTime.restart();

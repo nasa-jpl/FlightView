@@ -37,6 +37,11 @@ QString fileNameGenerator::getFullFilename()
     return directory + "/" + shortFilename + "." + extension;
 }
 
+QString fileNameGenerator::getFullFilename(QString extension)
+{
+    return directory + "/" + shortFilename + "." + extension;
+}
+
 QString fileNameGenerator::getShortFilename()
 {
     return shortFilename + extension;

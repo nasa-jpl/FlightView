@@ -1,5 +1,6 @@
 /* Qt includes */
 #include <QDebug>
+#include <cstdio>
 #include <QVBoxLayout>
 
 /* Standard includes */
@@ -39,7 +40,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     unfiltered_widget = new frameview_widget(fw, BASE);
     dsf_widget = new frameview_widget(fw, DSF);
     waterfall_widget = new frameview_widget(fw, WATERFALL);
-    flight_screen = new flight_widget(fw);
+    flight_screen = new flight_widget(fw, options);
     std_dev_widget = new frameview_widget(fw, STD_DEV);
     hist_widget = new histogram_widget(fw);
     vert_mean_widget = new profile_widget(fw, VERTICAL_MEAN);
@@ -81,6 +82,12 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     connect(tabWidget,SIGNAL(currentChanged(int)),controlbox,SLOT(tab_changed_slot(int)));
     controlbox->tab_changed_slot(0);
 
+    if(options.flightMode)
+    {
+        // Flight Tab
+        tabWidget->setCurrentIndex(3);
+    }
+
     connect(fw, SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
     connect(controlbox, SIGNAL(startDSFMaskCollection()), fw,SLOT(startCapturingDSFMask()));
     connect(controlbox, SIGNAL(stopDSFMaskCollection()), fw, SLOT(finishCapturingDSFMask()));
@@ -99,48 +106,14 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
 
     connect(controlbox, SIGNAL(startDataCollection(QString)), flight_screen, SLOT(startDataCollection(QString)));
     connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
+    connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
+    qDebug() << __PRETTY_FUNCTION__ << "started";
 }
 
-void MainWindow::prepareGPS()
+void MainWindow::handleStatusMessage(QString message)
 {
-
-}
-
-void MainWindow::createGPSConnection(QString host, int port)
-{
-    (void)host;
-    (void)port;
-    // emit connectToGPS("10.0.0.6", (int)8111);
-}
-
-void MainWindow::processGPSMessage()
-{
-    //qDebug() << "Received GPS message with counter " << gpsm.counter;
-}
-
-void MainWindow::handleGPSConnectionError(int errorNumber)
-{
-    (void) errorNumber;
-}
-
-void MainWindow::handleGPSConnectionGood()
-{
-
-}
-
-void MainWindow::handleGPSDataString(QString gpsString)
-{
-    (void) gpsString;
-}
-
-void MainWindow::handleGPSMessage(gpsMessage gm)
-{
-    (void)gm;
-}
-
-void MainWindow::handleGPSStatusMessage(QString gpsStatusMessage)
-{
-    (void)gpsStatusMessage;
+    std::cout << "STDOUT: Status Message: " << message.toLocal8Bit().toStdString() << std::endl;
+    qDebug() << __PRETTY_FUNCTION__ << "Status message: " << message;
 }
 
 void MainWindow::enableStdDevTabs()

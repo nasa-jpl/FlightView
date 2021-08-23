@@ -2,6 +2,7 @@
 #define FLIGHT_WIDGET_H
 
 #include <unistd.h>
+#include <cstdio>
 
 #include <QObject>
 #include <QWidget>
@@ -14,6 +15,7 @@
 #include "frame_worker.h"
 #include "frameview_widget.h"
 #include "qledlabel.h"
+#include "startupOptions.h"
 
 class flight_widget : public QWidget
 {
@@ -25,6 +27,11 @@ class flight_widget : public QWidget
     frameview_widget *dsf_widget;
 
     gpsManager *gps;
+    QString primaryGPSLogLocation; // directory, filename is automatic for primary log
+    QString gpsHostname;
+    uint16_t gpsPort;
+    bool startedPrimaryGPSLog = false;
+    startupOptionsType options;
 
     QSplitter lrSplitter;
     QSplitter rhSplitter;
@@ -56,13 +63,14 @@ class flight_widget : public QWidget
     QCustomPlot gpsPitchRollPlot;
     QCustomPlot gpsHeadingPlot;
 
-
     uint16_t redRow;
     uint16_t greenRow;
     uint16_t blueRow;
 
+
+
 public:
-    explicit flight_widget(frameWorker *fw, QWidget *parent = nullptr);
+    explicit flight_widget(frameWorker *fw, startupOptionsType options, QWidget *parent = nullptr);
     const unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
     double getCeiling();
@@ -71,7 +79,8 @@ public:
 
 public slots:
     void handleNewFrame();
-    void receiveGPS();
+
+    void startGPS(QString gpsHostname, uint16_t gpsPort, QString primaryLogLocation); // connect to GPS and start primary log
 
     // Notify:
     void startDataCollection(QString secondaryLogFilename);
@@ -87,6 +96,8 @@ public slots:
     void rescaleRange();
     void setCrosshairs(QMouseEvent *event);
     void debugThis();
+    // debug text handler:
+    void showDebugMessage(QString debugMessage);
 
 signals:
     void statusMessage(QString);

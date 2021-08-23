@@ -12,6 +12,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
 TARGET = liveview
 TEMPLATE = app
 
+#CONFIG += console
+#CONFIG += warn_on
+
 SOURCES += main.cpp\
     filenamegenerator.cpp \
     flight_widget.cpp \

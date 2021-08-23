@@ -12,6 +12,8 @@ struct startupOptionsType
     QString dataLocation = QString("/data");
     bool gpsIPSet = false;
     QString gpsIP = QString("10.0.0.6");
+    bool gpsPortSet = false;
+    uint16_t gpsPort = 8111;
     bool deviceFPIEDSet = false;
     QString deviceFPIED = QString("/dev/fpied");
     bool deviceIHESet = false;

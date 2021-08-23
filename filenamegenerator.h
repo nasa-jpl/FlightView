@@ -15,6 +15,7 @@ public:
     QString getNewFullFilename(QString basedir, QString extension); // auto new filename
     QString getNewFullFilename(); // auto new filename
     QString getFullFilename(); // use existing timestamp
+    QString getFullFilename(QString extension); // use existing timestamp
     QString getShortFilename(); // use existing timestamp
     QString getFilenameExtension();
 

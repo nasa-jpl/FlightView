@@ -8,6 +8,7 @@
 #include <QTime>
 
 #include <cstdio>
+#include <QDebug>
 
 /* LiveView includes */
 #include "mainwindow.h"
@@ -57,6 +58,8 @@ int main(int argc, char *argv[])
     startupOptions.disableGPS = false;
     startupOptions.dataLocation = QString("/data");
     startupOptions.gpsIP = QString("10.0.0.6");
+    startupOptions.gpsPort = 8111;
+    startupOptions.gpsPortSet = true;
     startupOptions.deviceFPIED = QString("/dev/fpied");
     startupOptions.deviceIHE = QString("/dev/ihe");
 
@@ -138,7 +141,7 @@ int main(int argc, char *argv[])
 
 
 
-
+    qDebug() << "test";
 
     /* Step 2: Load the splash screen */
     QPixmap logo_pixmap(":images/aviris-logo-transparent.png");

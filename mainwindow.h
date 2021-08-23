@@ -63,21 +63,11 @@ private:
     /*! @} */
 
 public slots:
+    void handleStatusMessage(QString message);
     void enableStdDevTabs();
-
-    void createGPSConnection(QString host, int port);
-    void handleGPSMessage(gpsMessage gm);
-    void handleGPSDataString(QString);
-    void handleGPSStatusMessage(QString);
-    void handleGPSConnectionError(int);
-    void handleGPSConnectionGood();
-
     void debugThis();
 
 signals:
-    void connectToGPS(QString, int);
-    void disconnectFromGPS();
-    void getGPSDebugInfo();
 
 
 protected:
