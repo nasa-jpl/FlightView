@@ -163,6 +163,7 @@ public slots:
 signals:
     void connectToGPS(QString host, int port, QString gpsBinaryLogFilename);
     void startSecondaryLog(QString filename);
+    void gpsStatusMessage(QString statusMessage);
     void stopSecondaryLog();
     void disconnectFromGPS();
     void getDebugInfo();

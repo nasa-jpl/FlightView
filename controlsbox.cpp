@@ -3,7 +3,7 @@
 
 static const char notAllowedChars[]   = ",^@=+{}[]~!?:&*\"|#%<>$\"'();`'";
 
-ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
+ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType options, QWidget *parent) :
     QGroupBox(parent)
 {
     /*! \brief The main controls for LiveView
@@ -22,6 +22,20 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent) :
     qtw = tw;
     current_tab = qobject_cast<frameview_widget*>(qtw->widget(qtw->currentIndex()));
     old_tab = NULL;
+    this->options = options;
+    if(options.dataLocationSet)
+    {
+        fnamegen.setMainDirectory(options.dataLocation);
+        emit statusMessage(QString("Setting data storage location to %1")\
+                           .arg(options.dataLocation));
+    } else {
+        fnamegen.setMainDirectory("/tmp");
+        emit warningMessage("Data storage location not set, defaulting to /tmp");
+    }
+    if(!fnamegen.createDirectory())
+    {
+        emit errorMessage(QString("Could not create directory %1").arg(options.dataLocation));
+    }
 
     prefWindow = new preferenceWindow(fw, tw);
 
@@ -692,22 +706,52 @@ void ControlsBox::save_finite_button_slot()
     // flightGPSlogExtension (secondary log file)
     // Master log file generated on start automatically? hmm
 
-    if (validateFileName(filename_edit.text()) == QDialog::Accepted) {
-        if(frames_save_num_edit.value() == 0)
-        {
-            // Continuous Recording Mode
-        } else if(frames_save_num_edit.value() < frames_save_num_avgs_edit.value()) {
-            frames_save_num_edit.setValue(frames_save_num_avgs_edit.value());
-        }
-        emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text(), frames_save_num_avgs_edit.value());
+    if(options.flightMode)
+    {
+        // Generate filenames:
+
+        fnamegen.generate(); // new timestamp
+        QString rawDataFilename = fnamegen.getFullFilename("", "-scenedata", "raw");
+        QString gpsLogFilename = fnamegen.getFullFilename("", "-scenegps", "bin");
+
+        // Populate the text boxes with the filenames
+
+        // If the number of frames to save is blank, continuous recording happens.
+        // No averaging.
+        // We might want to hard-code a zero for the number of frames to save,
+        // which is a flag to continuously save. Or, we can keep it as-is
+        // and allow the operator to specify a number of frames.
+        emit startSavingFinite(frames_save_num_edit.value(), rawDataFilename, 1);
+
         previousNumSaved = frames_save_num_edit.value();
         stop_saving_frames_button.setEnabled(true);
         start_saving_frames_button.setEnabled(false);
         save_finite_button.setEnabled(false);
         frames_save_num_edit.setEnabled(false);
         frames_save_num_avgs_edit.setEnabled(false);
-        // TODO: Filename generation for flight mode
-        emit startDataCollection(filename_edit.text().append("-GPS-TEMP-SECONDARY.log"));
+
+        // This is a signal to start saving the secondary GPS log.
+        emit startDataCollection(gpsLogFilename);
+    } else {
+
+
+        if (validateFileName(filename_edit.text()) == QDialog::Accepted) {
+            if(frames_save_num_edit.value() == 0)
+            {
+                // Continuous Recording Mode
+            } else if(frames_save_num_edit.value() < frames_save_num_avgs_edit.value()) {
+                frames_save_num_edit.setValue(frames_save_num_avgs_edit.value());
+            }
+            emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text(), frames_save_num_avgs_edit.value());
+            previousNumSaved = frames_save_num_edit.value();
+            stop_saving_frames_button.setEnabled(true);
+            start_saving_frames_button.setEnabled(false);
+            save_finite_button.setEnabled(false);
+            frames_save_num_edit.setEnabled(false);
+            frames_save_num_avgs_edit.setEnabled(false);
+            // TODO: Filename generation for flight mode
+            emit startDataCollection(filename_edit.text().append("-GPS-TEMP-SECONDARY.log"));
+        }
     }
 }
 void ControlsBox::stop_continous_button_slot()

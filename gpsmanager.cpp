@@ -7,7 +7,7 @@ gpsManager::gpsManager()
 
     // May override later:
     baseSaveDirectory = QString("/tmp/gps");
-    createLoggingDirectory();
+    //createLoggingDirectory();
     filenamegen.setMainDirectory(baseSaveDirectory);
     filenamegen.setFilenameExtension("log");
 
@@ -28,11 +28,12 @@ void gpsManager::initiateGPSConnection(QString host = "10.0.0.6", int port=(int)
 {
     if (gpsBinaryLogFilename.isEmpty())
     {
-        gpsBinaryLogFilename=filenamegen.getNewFullFilename();
+        createLoggingDirectory();
+        gpsBinaryLogFilename=filenamegen.getNewFullFilename(this->baseSaveDirectory, QString(""), QString("-gpsPrimary"), QString("bin"));
     } else {
         baseSaveDirectory = gpsBinaryLogFilename;
         createLoggingDirectory();
-        gpsBinaryLogFilename = filenamegen.getNewFullFilename(gpsBinaryLogFilename, "log");
+        gpsBinaryLogFilename = filenamegen.getNewFullFilename(gpsBinaryLogFilename, QString(""), QString("-gpsPrimary"), QString("bin"));
     }
     emit connectToGPS(host, port, gpsBinaryLogFilename);
     gnssStatusTime.restart();
@@ -48,12 +49,17 @@ bool gpsManager::createLoggingDirectory()
 {
     if(baseSaveDirectory.isEmpty())
     {
+        emit gpsStatusMessage(QString("ERROR! GPS Base Directory requested for primary log is blank!"));
         return false;
     }
     QDir dir(baseSaveDirectory);
     if (!dir.exists())
         dir.mkpath(".");
 
+    if(!dir.exists())
+    {
+        emit gpsStatusMessage(QString("ERROR! Could not create gps primary log directory %1!").arg(baseSaveDirectory));
+    }
     return dir.exists();
 }
 
@@ -454,31 +460,34 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
 
 void gpsManager::handleStartsecondaryLog(QString filename)
 {
+    emit gpsStatusMessage(QString("About to start secondary logging to file %1").arg(filename));
     emit startSecondaryLog(filename);
 }
 
 void gpsManager::handleStopSecondaryLog()
 {
+    emit gpsStatusMessage(QString("Stopping secondary GPS log."));
     emit stopSecondaryLog();
 }
 
 void gpsManager::handleGPSStatusMessage(QString message)
 {
-
+    emit gpsStatusMessage(QString("GPS Message: ") + message);
 }
 
 void gpsManager::handleGPSDataString(QString gpsString)
 {
-
+    emit gpsStatusMessage(QString("GPS message: ") + gpsString);
 }
 
 void gpsManager::handleGPSConnectionError(int error)
 {
-
+    emit gpsStatusMessage(QString("Error code from GPS connection: %1").arg(error));
 }
 
 void gpsManager::handleGPSConnectionGood()
 {
+    emit gpsStatusMessage(QString("GPS: Connection good"));
     statusConnectedToGPS = true;
 }
 

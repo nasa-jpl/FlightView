@@ -49,7 +49,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     horiz_cross_widget = new profile_widget(fw, HORIZONTAL_CROSS);
     vert_overlay_widget = new profile_widget(fw, VERT_OVERLAY);
     fft_mean_widget = new fft_widget(fw);
-    raw_play_widget = new playback_widget(fw);
+    //raw_play_widget = new playback_widget(fw);
 
     /* Add tabs in order */
     tabWidget->addTab(unfiltered_widget, QString("Live View"));
@@ -64,12 +64,13 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     tabWidget->addTab(horiz_cross_widget, QString("Horizontal Crosshair Profile"));
     tabWidget->addTab(vert_overlay_widget, QString("Vertical Overlay"));
     tabWidget->addTab(fft_mean_widget, QString("FFT Profile"));
-    tabWidget->addTab(raw_play_widget, QString("Playback View"));
+    //tabWidget->addTab(raw_play_widget, QString("Playback View"));
+    raw_play_widget = NULL;
 
     layout->addWidget(tabWidget, 3);
 
     /* Create controls box */
-    controlbox = new ControlsBox(fw, tabWidget);
+    controlbox = new ControlsBox(fw, tabWidget, options);
     layout->addWidget(controlbox, 1);
 
     mainwidget->setLayout(layout);

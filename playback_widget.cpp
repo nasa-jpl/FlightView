@@ -14,7 +14,7 @@ buffer_handler::buffer_handler(int height, int width, QObject *parent) :
     this->fr_width = width;
     this->fr_size = fr_height * fr_width;
     this->fp = NULL;
-    this->running = true;
+    this->running = true; // should we start not-running?
     this->current_frame = 1;
 }
 buffer_handler::~buffer_handler()

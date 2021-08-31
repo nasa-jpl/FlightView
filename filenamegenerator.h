@@ -2,6 +2,7 @@
 #define FILENAMEGENERATOR_H
 #include <QString>
 #include <QDateTime>
+#include <QDir>
 
 #include <QDebug>
 
@@ -13,11 +14,15 @@ public:
     void setFilenameExtension(QString extension);
     void generate(); // call this for new time stamp
     QString getNewFullFilename(QString basedir, QString extension); // auto new filename
+    QString getNewFullFilename(QString basedir, QString prefix, QString postfix, QString extension); // auto new filename
     QString getNewFullFilename(); // auto new filename
     QString getFullFilename(); // use existing timestamp
     QString getFullFilename(QString extension); // use existing timestamp
+    QString getFullFilename(QString prefix, QString postfix, QString extension);
     QString getShortFilename(); // use existing timestamp
     QString getFilenameExtension();
+    bool createDirectory(QString directory);
+    bool createDirectory();
 
 private:
     QString getTimeDatestring();

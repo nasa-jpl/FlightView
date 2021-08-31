@@ -33,6 +33,8 @@
 #include "playback_widget.h"
 #include "profile_widget.h"
 #include "pref_window.h"
+#include "startupOptions.h"
+#include "filenamegenerator.h"
 
 /*! \file
  *  \brief Widget which contains the GUI elements common to several or all plotting widgets.
@@ -50,8 +52,11 @@ class ControlsBox : public QGroupBox
 {
     Q_OBJECT
 
+    startupOptionsType options;
+    fileNameGenerator fnamegen;
+
 public:
-    explicit ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent = 0);
+    explicit ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType options, QWidget *parent = 0);
 
     frameWorker *fw;
     preferenceWindow *prefWindow;
@@ -149,7 +154,9 @@ signals:
 
     /*! \brief Passes the information needed to generate the dark mask and load it into the DSF in the playback_widget. */
     void mask_selected(QString file_name, unsigned int bytes_to_read, long offset);
-
+    void statusMessage(QString message);
+    void warningMessage(QString message);
+    void errorMessage(QString message);
     void debugSignal();
 
 public slots:

@@ -4,7 +4,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 {
     connect(this, SIGNAL(statusMessage(QString)), this, SLOT(showDebugMessage(QString)));
 
-    emit statusMessage(QString("TEST AT START OF FLIGHT WIDGET"));
+    emit statusMessage(QString("Starting flight screen widget"));
     this->fw = fw;
     this->options = options;
 
@@ -81,7 +81,9 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     this->setLayout(&layout);
 
+
     // Connections to GPS:
+    connect(gps, SIGNAL(gpsStatusMessage(QString)), this, SLOT(showDebugMessage(QString)));
     gps->insertLEDs(&gpsLED);
     gps->insertLabels(&gpsLatData, &gpsLongData,
                       &gpsAltitudeData, NULL,
@@ -97,10 +99,9 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
         // Connecto to GPS immediately and start logging.
         if(options.gpsIPSet && options.gpsPortSet && options.dataLocationSet)
         {
-            gps->initiateGPSConnection(options.gpsIP,
-                              options.gpsPort,
-                              options.dataLocation);
-            startedPrimaryGPSLog = true;
+            this->startGPS(options.gpsIP,
+                            options.gpsPort,
+                            options.dataLocation);
         } else {
             emit statusMessage(QString("Error, cannot start flight mode with incomplete GPS settings."));
         }
@@ -119,7 +120,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), gps, SLOT(clearStickyError()));
     emit statusMessage(QString("Finished flight constructor."));
-    qDebug() << "flight_widget finished constructor.";
 }
 
 
@@ -196,11 +196,13 @@ void flight_widget::setCrosshairs(QMouseEvent *event)
 
 void flight_widget::startDataCollection(QString secondaryLogFilename)
 {
+    emit statusMessage(QString("User pressed START Recording button"));
     emit beginSecondaryLog(secondaryLogFilename);
 }
 
 void flight_widget::stopDataCollection()
 {
+    emit statusMessage(QString("User pressed STOP Recording button"));
     emit stopSecondaryLog();
 }
 
@@ -212,10 +214,10 @@ void flight_widget::startGPS(QString gpsHostname, uint16_t gpsPort, QString prim
 
     if(!startedPrimaryGPSLog)
     {
-    gps->initiateGPSConnection(gpsHostname, gpsPort, primaryLogLocation);
-    startedPrimaryGPSLog = true;
+        gps->initiateGPSConnection(gpsHostname, gpsPort, primaryLogLocation);
+        startedPrimaryGPSLog = true;
 
-    emit statusMessage(QString("Connecting to GPS host %1:%2 with primary log location %3")\
+        emit statusMessage(QString("Connecting to GPS host %1:%2 with primary log location %3")\
                        .arg(gpsHostname)\
                        .arg(gpsPort)\
                        .arg(primaryLogLocation));
