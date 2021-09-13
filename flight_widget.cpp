@@ -228,6 +228,8 @@ void flight_widget::startGPS(QString gpsHostname, uint16_t gpsPort, QString prim
 
 void flight_widget::showDebugMessage(QString debugMessage)
 {
+    // This is the location to log and/or display debug messages
+    // related to flight operations, including GPS and data recording.
     std::cout << "DEBUG MESSAGE IN FLIGHT WIDGET: " << debugMessage.toLocal8Bit().toStdString() << std::endl;
 }
 

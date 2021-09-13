@@ -29,14 +29,95 @@ mean_filter::mean_filter(frame_c * frame,unsigned long frame_count,int startCol,
     this->cent_end = cent_end;
     this->rh_start = rh_start;
     this->rh_end = rh_end;
-
+    doThreadWork.store(false);
+    runningMF.store(true);
+    mean_thread = boost::thread(&mean_filter::threadEntry, this);
 }
+
+mean_filter::~mean_filter()
+{
+    runningMF.store(false);
+    usleep(200);
+}
+
+void mean_filter::update(frame_c * frame,unsigned long frame_count,int startCol,\
+                         int endCol,int startRow,int endRow,int actualWidth, \
+                         bool useDSF,FFT_t FFTtype,\
+                         int lh_start, int lh_end,\
+                         int cent_start, int cent_end,\
+                         int rh_start, int rh_end)
+{
+    beginCol = startCol;
+    width = endCol;
+    beginRow = startRow;
+    height = endRow;
+    frWidth = actualWidth;
+
+    this->frame = frame;
+    this->frame_count = frame_count;
+    this->useDSF = useDSF;
+    this->FFTtype = FFTtype;
+
+    // copy the latest overlay parameters from the frame:
+    // new with every frame... bad idea
+    this->lh_start = lh_start;
+    this->lh_end = lh_end;
+    this->cent_start = cent_start;
+    this->cent_end = cent_end;
+    this->rh_start = rh_start;
+    this->rh_end = rh_end;
+}
+
+void mean_filter::updateParameters(unsigned long frame_count,int startCol,\
+                         int endCol,int startRow,int endRow,int actualWidth, \
+                         bool useDSF,FFT_t FFTtype,\
+                         int lh_start, int lh_end,\
+                         int cent_start, int cent_end,\
+                         int rh_start, int rh_end)
+{
+    beginCol = startCol;
+    width = endCol;
+    beginRow = startRow;
+    height = endRow;
+    frWidth = actualWidth;
+
+    this->frame_count = frame_count;
+    this->useDSF = useDSF;
+    this->FFTtype = FFTtype;
+
+    // copy the latest overlay parameters from the frame:
+    // new with every frame... bad idea
+    this->lh_start = lh_start;
+    this->lh_end = lh_end;
+    this->cent_start = cent_start;
+    this->cent_end = cent_end;
+    this->rh_start = rh_start;
+    this->rh_end = rh_end;
+}
+
 void mean_filter::start_mean()
 {
-    mean_thread = boost::thread(&mean_filter::calculate_means, this);
+    //mean_thread = boost::thread(&mean_filter::calculate_means, this);
+    doThreadWork.store(true);
+}
+
+void mean_filter::threadEntry()
+{
+    while(runningMF)
+    {
+        std::unique_lock<std::mutex> lock(locking_mutex);
+        while(!doThreadWork.load())
+        {
+            // wait here
+            usleep(100);
+        }
+        calculate_means();
+        lock.unlock();
+    }
 }
 void mean_filter::calculate_means()
 {
+    frame->async_filtering_done = 0;
     // bool is_overlay_plot = false;
     int horizDiff = width - beginCol;
     int vertDiff = height - beginRow;
@@ -174,7 +255,8 @@ void mean_filter::calculate_means()
         myFFT.doRealFFT(tap_profile, 0, frame->fftMagnitude);
 
     frame->async_filtering_done = 1;
-    delete this; //I can honestly say this is the ugliest line of C++ I've ever written.
+    //delete this; //I can honestly say this is the ugliest line of C++ I've ever written.
+    doThreadWork.store(false);
 }
 void mean_filter::wait_mean()
 {

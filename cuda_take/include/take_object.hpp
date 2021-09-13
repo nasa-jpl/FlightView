@@ -14,6 +14,7 @@
 #include <boost/shared_array.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
+#include <mutex>
 //#include <boost/atomic.hpp>
 
 //custom includes
@@ -148,8 +149,10 @@ public:
     FFT_t getFFTtype();
 
 private:
-	void pdv_loop();
+    void pdv_loop();
     void savingLoop(std::string, unsigned int num_avgs, unsigned int num_frames);
+    std::mutex savingMutex;
+    bool savingData = false;
     //void saveFramesInBuffer();
     /* This function will save all the frames currently in the frame_ring_buffer
      * to a pre-specified raw file. For the moment, it stops the take_object loop
@@ -160,7 +163,9 @@ private:
     void ok_init_pipe();
     long ok_read_frame(unsigned char *wait_ptr, long prev_result);
 #endif
-
+    void errorMessage(const char* message);
+    void warningMessage(const char* message);
+    void statusMessage(const char* message);
     // variables needed by the Raw Filters
     unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
     bool inverted = false;

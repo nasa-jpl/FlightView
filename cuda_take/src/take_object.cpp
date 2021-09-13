@@ -28,6 +28,7 @@ take_object::take_object(int channel_num, int number_of_buffers, int frf)
 
     //For the frame saving
     this->do_raw_save = false;
+    savingData = false;
     continuousRecording = false;
     save_framenum = 0;
     save_count=0;
@@ -347,6 +348,12 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
     long prev_result = 0;
 #endif
 
+    mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
+                                       meanStartRow,meanHeight,frWidth,useDSF,\
+                                       whichFFT, lh_start, lh_end,\
+                                       cent_start, cent_end,\
+                                       rh_start, rh_end);
+
     while(pdv_thread_run == 1)
     {	
         grabbing = true;
@@ -397,7 +404,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
         dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
         // TODO: Chabge from heap to stack, or allocate outside the loop.
-        mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
+        mf->update(curFrame,count,meanStartCol,meanWidth,\
                                            meanStartRow,meanHeight,frWidth,useDSF,\
                                            whichFFT, lh_start, lh_end,\
                                            cent_start, cent_end,\
@@ -439,89 +446,99 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
 //Frame Save Thread (saving_thread)
 {
-	if(fname.find(".")!=std::string::npos)
-	{
-	    fname.replace(fname.find("."),std::string::npos,".raw");
-	}
-	else
-	{
-	    fname+=".raw";
-	}    
-	std::string hdr_fname = fname.substr(0,fname.size()-3) + "hdr";   
+    if(savingData)
+    {
+        warningMessage("Saving loop hit but already saving data!");
+        return;
+    } else {
+        savingData = true;
+    }
+
+    savingMutex.lock();
+
+    if(fname.find(".")!=std::string::npos)
+    {
+        fname.replace(fname.find("."),std::string::npos,".raw");
+    }
+    else
+    {
+        fname+=".raw";
+    }
+    std::string hdr_fname = fname.substr(0,fname.size()-3) + "hdr";
     FILE * file_target = fopen(fname.c_str(), "wb");
-	int sv_count = 0;
+    int sv_count = 0;
 
     while(  (save_framenum != 0 || continuousRecording)    ||  !saving_list.empty())
     {
         if(!saving_list.empty())
         {
-        	if(num_avgs == 1)
-        	{
-                // This is the "normal" behavior. 
-	            uint16_t * data = saving_list.back();
-	            saving_list.pop_back();
-	            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
-	            delete[] data;
-	            sv_count++;
-				if(sv_count == 1) {
-					save_count.store(1, std::memory_order_seq_cst);
-				}
-				else {
-	            	save_count++;
-				}
-        	}
-        	else if(saving_list.size() >= num_avgs && num_avgs != 1)
-        	{
-        		float * data = new float[frWidth*dataHeight];
-        		for(unsigned int i2 = 0; i2 < num_avgs; i2++)
-        		{
-					uint16_t * data2 = saving_list.back();
-					saving_list.pop_back();
-	        		if(i2 == 0)
-	        		{
-		        		for(unsigned int i = 0; i < frWidth*dataHeight; i++)
-						{
-				        	data[i] = (float)data2[i];
-						}
-	        		}
-	        		else if(i2 == num_avgs-1)
-	        		{
-		        		for(unsigned int i = 0; i < frWidth*dataHeight; i++)
-						{
-				        	data[i] = (data[i] + (float)data2[i])/num_avgs;
-						}
-	        		}
-	        		else
-	        		{
-		        		for(unsigned int i = 0; i < frWidth*dataHeight; i++)
-						{
-				        	data[i] += (float)data2[i];
-						}
-	        		}
-	        		delete[] data2;
-        		}
-	            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
-	            delete[] data;
-	            sv_count++;
-				if(sv_count == 1) {
-					save_count.store(1, std::memory_order_seq_cst);
-				}
-				else {
-	            	save_count++;
-				}
-	            //std::cout << "save_count: " << std::to_string(save_count) << "\n";
-	            //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
-	            //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
-        	}
-	        else if(save_framenum == 0 && saving_list.size() < num_avgs)
+            if(num_avgs == 1)
             {
-            	saving_list.erase(saving_list.begin(),saving_list.end()); 
+                // This is the "normal" behavior.
+                uint16_t * data = saving_list.back();
+                saving_list.pop_back();
+                fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
+                delete[] data;
+                sv_count++;
+                if(sv_count == 1) {
+                    save_count.store(1, std::memory_order_seq_cst);
+                }
+                else {
+                    save_count++;
+                }
+            }
+            else if(saving_list.size() >= num_avgs && num_avgs != 1)
+            {
+                float * data = new float[frWidth*dataHeight];
+                for(unsigned int i2 = 0; i2 < num_avgs; i2++)
+                {
+                    uint16_t * data2 = saving_list.back();
+                    saving_list.pop_back();
+                    if(i2 == 0)
+                    {
+                        for(unsigned int i = 0; i < frWidth*dataHeight; i++)
+                        {
+                            data[i] = (float)data2[i];
+                        }
+                    }
+                    else if(i2 == num_avgs-1)
+                    {
+                        for(unsigned int i = 0; i < frWidth*dataHeight; i++)
+                        {
+                            data[i] = (data[i] + (float)data2[i])/num_avgs;
+                        }
+                    }
+                    else
+                    {
+                        for(unsigned int i = 0; i < frWidth*dataHeight; i++)
+                        {
+                            data[i] += (float)data2[i];
+                        }
+                    }
+                    delete[] data2;
+                }
+                fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
+                delete[] data;
+                sv_count++;
+                if(sv_count == 1) {
+                    save_count.store(1, std::memory_order_seq_cst);
+                }
+                else {
+                    save_count++;
+                }
+                //std::cout << "save_count: " << std::to_string(save_count) << "\n";
+                //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
+                //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
+            }
+            else if(save_framenum == 0 && saving_list.size() < num_avgs)
+            {
+                saving_list.erase(saving_list.begin(),saving_list.end());
             }
             else
-	        {
-	            //We're waiting for data to get added to the list...
-	            usleep(250);
-	        }
+            {
+                //We're waiting for data to get added to the list...
+                usleep(250);
+            }
         }
         else
         {
@@ -531,36 +548,38 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     }
     //We're done!
     fclose(file_target);
-	std::string hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frame mean per grab}\n";
-	hdr_text= hdr_text + "samples = " + std::to_string(frWidth) +"\n";
-	hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n";
-	hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
-	hdr_text+= "header offset = 0\n";
-	hdr_text+= "file type = ENVI Standard\n";
-	if(num_avgs != 1)
-	{
-	    hdr_text+= "data type = 4\n";
-	}
-	else
-	{
-	    hdr_text+= "data type = 12\n";
-	}
-	hdr_text+= "interleave = bil\n";
-	hdr_text+="sensor type = Unknown\n";
-	hdr_text+= "byte order = 0\n";
-	hdr_text+= "wavelength units = Unknown\n";
-	//std::cout << hdr_text;
-	std::ofstream hdr_target(hdr_fname);
-	hdr_target << hdr_text;
-	hdr_target.close();
+    std::string hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frame mean per grab}\n";
+    hdr_text= hdr_text + "samples = " + std::to_string(frWidth) +"\n";
+    hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n";
+    hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
+    hdr_text+= "header offset = 0\n";
+    hdr_text+= "file type = ENVI Standard\n";
+    if(num_avgs != 1)
+    {
+        hdr_text+= "data type = 4\n";
+    }
+    else
+    {
+        hdr_text+= "data type = 12\n";
+    }
+    hdr_text+= "interleave = bil\n";
+    hdr_text+="sensor type = Unknown\n";
+    hdr_text+= "byte order = 0\n";
+    hdr_text+= "wavelength units = Unknown\n";
+    //std::cout << hdr_text;
+    std::ofstream hdr_target(hdr_fname);
+    hdr_target << hdr_text;
+    hdr_target.close();
     // What does this usleep do? --EHL
-	if(sv_count == 1)
-		usleep(500000);
+    if(sv_count == 1)
+        usleep(500000);
     save_count.store(0, std::memory_order_seq_cst);
-	//std::cout << "save_count: " << std::to_string(save_count) << "\n";
-	//std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
-	//std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
-    printf("Frame save complete!\n");
+    //std::cout << "save_count: " << std::to_string(save_count) << "\n";
+    //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
+    //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
+    statusMessage("Saving complete.");
+    savingMutex.unlock();
+    savingData = false;
 }
 /*void take_object::saveFramesInBuffer()
 {
@@ -657,3 +676,18 @@ long take_object::ok_read_frame(unsigned char *wait_ptr, long prev_result)
     return result;
 }
 #endif
+
+void take_object::errorMessage(const char *message)
+{
+    std::cout << "take_object: ERROR: " << message << std::endl;
+}
+
+void take_object::warningMessage(const char *message)
+{
+    std::cout << "take_object: WARNING: " << message << std::endl;
+}
+
+void take_object::statusMessage(const char *message)
+{
+    std::cout << "take_object: STATUS: " << message << std::endl;
+}
