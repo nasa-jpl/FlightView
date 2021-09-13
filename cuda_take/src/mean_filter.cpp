@@ -97,7 +97,6 @@ void mean_filter::updateParameters(unsigned long frame_count,int startCol,\
 
 void mean_filter::start_mean()
 {
-    //mean_thread = boost::thread(&mean_filter::calculate_means, this);
     doThreadWork.store(true);
 }
 

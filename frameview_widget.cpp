@@ -88,7 +88,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     {
         colorMap->data()->setValueRange(QCPRange(0, wflength-1));
     } else {
-    colorMap->data()->setValueRange(QCPRange(0, frHeight-1));
+        colorMap->data()->setValueRange(QCPRange(0, frHeight-1));
     }
 
     colorMap->data()->setKeyRange(QCPRange(0, frWidth-1));

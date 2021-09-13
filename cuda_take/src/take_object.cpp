@@ -403,14 +403,12 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         // Calculating the filters for this frame
         sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
         dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
-        // TODO: Chabge from heap to stack, or allocate outside the loop.
         mf->update(curFrame,count,meanStartCol,meanWidth,\
                                            meanStartRow,meanHeight,frWidth,useDSF,\
                                            whichFFT, lh_start, lh_end,\
                                            cent_start, cent_end,\
                                            rh_start, rh_end);
 
-        //This will deallocate itself when it is done.
         mf->start_mean();
 
         if((save_framenum > 0) || continuousRecording)
