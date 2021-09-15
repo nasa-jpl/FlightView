@@ -33,7 +33,8 @@ SOURCES += main.cpp\
     gpsGUI/qledlabel.cpp \
     gpsGUI/gpsnetwork.cpp \
     gpsGUI/gpsbinaryreader.cpp \
-    gpsGUI/gpsbinarylogger.cpp
+    gpsGUI/gpsbinarylogger.cpp \
+    waterfall.cpp
 
 HEADERS  += mainwindow.h \
     filenamegenerator.h \
@@ -47,6 +48,7 @@ HEADERS  += mainwindow.h \
     histogram_widget.h \
     fft_widget.h \
     frame_c_meta.h \
+    rgbline.h \
     settings.h \
     profile_widget.h \
     pref_window.h \
@@ -56,7 +58,8 @@ HEADERS  += mainwindow.h \
     gpsGUI/gpsnetwork.h \
     gpsGUI/gpsbinaryreader.h \
     gpsGUI/gpsbinarylogger.h \
-    startupOptions.h
+    startupOptions.h \
+    waterfall.h
 
 
 # the following two lines are needed for the QFI widgets:

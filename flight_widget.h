@@ -16,6 +16,7 @@
 #include "frameview_widget.h"
 #include "qledlabel.h"
 #include "startupOptions.h"
+#include "waterfall.h"
 
 class flight_widget : public QWidget
 {
@@ -23,7 +24,8 @@ class flight_widget : public QWidget
 
     frameWorker *fw;
 
-    frameview_widget *waterfall_widget;
+    waterfall *waterfall_widget;
+    //frameview_widget *waterfall_widget;
     frameview_widget *dsf_widget;
 
     gpsManager *gps;

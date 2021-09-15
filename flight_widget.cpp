@@ -8,7 +8,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     this->fw = fw;
     this->options = options;
 
-    waterfall_widget = new frameview_widget(fw, WATERFALL, this);
+    waterfall_widget = new waterfall(fw, 1, 1024, this);
     dsf_widget = new frameview_widget(fw, DSF, this);
 
     startedPrimaryGPSLog = false;
@@ -81,6 +81,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     this->setLayout(&layout);
 
+    connect(waterfall_widget, SIGNAL(statusMessageOut(QString)), this, SLOT(showDebugMessage(QString)));
+
 
     // Connections to GPS:
     connect(gps, SIGNAL(gpsStatusMessage(QString)), this, SLOT(showDebugMessage(QString)));
@@ -147,7 +149,7 @@ void flight_widget::handleNewFrame()
 void flight_widget::handleNewColorScheme(int scheme)
 {
     // It should be ok to call these directly:
-    waterfall_widget->handleNewColorScheme(scheme);
+    //waterfall_widget->handleNewColorScheme(scheme);
     dsf_widget->handleNewColorScheme(scheme);
 }
 
@@ -185,7 +187,7 @@ void flight_widget::updateFloor(int f)
 
 void flight_widget::rescaleRange()
 {
-    waterfall_widget->rescaleRange();
+    //waterfall_widget->rescaleRange();
     dsf_widget->rescaleRange();
 }
 
@@ -238,4 +240,6 @@ void flight_widget::debugThis()
     qDebug() << "in debug function using qDebug()";
     emit statusMessage("Debug function inside flight widget pressed.");
     //gps->initiateGPSConnection("10.0.0.6", 8111, "");
+    //waterfall_widget->debugThis();
+    waterfall_widget->handleNewFrame();
 }
