@@ -30,6 +30,7 @@ class waterfall : public QWidget
 
     void allocateBlankWF();
     void copyPixToLine(float* image, float* dst, int pixPosition);
+    void copyPixToLine(uint16_t* image, float* dst, int pixPosition);
 
     int maxWFlength;
     void statusMessage(QString);

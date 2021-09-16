@@ -31,7 +31,7 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent) : Q
     // Override for now:
     this->vSize = maxWFlength;
     this->hSize = frWidth;
-    opacity = 0x88;
+    opacity = 0xff;
 
     specImage = QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
     statusMessage(QString("Created specImage with height %1 and width %2.").arg(specImage.height()).arg(specImage.width()));
@@ -87,11 +87,23 @@ void waterfall::copyPixToLine(float *image, float *dst, int rowSelection)
     }
 }
 
+void waterfall::copyPixToLine(uint16_t *image, float *dst, int rowSelection)
+{
+    for(int p=0; p < frWidth; p++)
+    {
+        dst[p] = (float)image[ rowSelection + p];
+    }
+}
+
 void waterfall::addNewFrame()
 {
     // MUTEX wait-lock
     addingFrame.lock();
-    float *local_image_ptr = fw->curFrame->dark_subtracted_data;
+    float *local_image_ptr;
+    uint16_t* local_image_ptr_uint16;
+    local_image_ptr = fw->curFrame->dark_subtracted_data;
+    local_image_ptr_uint16 = fw->curFrame->image_data_ptr;
+
     rgbLine *line = new rgbLine(frWidth);
 
     // Copy portions of the frame into the line
@@ -100,9 +112,16 @@ void waterfall::addNewFrame()
     int g_row_pix = frWidth * g_row;
     int b_row_pix = frWidth * b_row;
 
-    copyPixToLine(local_image_ptr, line->getr_raw(), r_row_pix);
-    copyPixToLine(local_image_ptr, line->getg_raw(), g_row_pix);
-    copyPixToLine(local_image_ptr, line->getb_raw(), b_row_pix);
+    if(fw->dsfMaskCollected())
+    {
+        copyPixToLine(local_image_ptr, line->getr_raw(), r_row_pix);
+        copyPixToLine(local_image_ptr, line->getg_raw(), g_row_pix);
+        copyPixToLine(local_image_ptr, line->getb_raw(), b_row_pix);
+    } else {
+        copyPixToLine(local_image_ptr_uint16, line->getr_raw(), r_row_pix);
+        copyPixToLine(local_image_ptr_uint16, line->getg_raw(), g_row_pix);
+        copyPixToLine(local_image_ptr_uint16, line->getb_raw(), b_row_pix);
+    }
 
     // process initial RGB values:
     processLineToRGB(line);

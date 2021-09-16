@@ -93,15 +93,15 @@ uint32_t dark_subtraction_filter::update_mask_collection(uint16_t* pic_in)
      *
      * This section must be locked with the mask_collected variable to prevent serialization errors. */
 	if(!mask_collected)
-	{
-    	for(unsigned int i = 0; i<width*height; i++)
-		{
-        	//mask[i] = pic_in[i] + mask[i];
-        	mask_accum[i] = pic_in[i] + mask_accum[i];
-		}
-		averaged_samples++;
-	}
-	return averaged_samples;
+        {
+            for(unsigned int i = 0; i<width*height; i++)
+            {
+                //mask[i] = pic_in[i] + mask[i];
+                mask_accum[i] = pic_in[i] + mask_accum[i];
+            }
+            averaged_samples++;
+        }
+        return averaged_samples;
 }
 
 dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)
@@ -110,7 +110,7 @@ dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)
      * \param nWidth The new frame width
      * \param nHeight The new frame height
      */
-	mask_collected = false;
+    mask_collected = false;
     width = nWidth;
     height = nHeight;
     for(unsigned int i = 0; i < width*height; i++)

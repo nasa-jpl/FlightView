@@ -19,6 +19,8 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
      * \author Noah Levy
      */
     this->fw = fw;
+    frWidth = fw->getFrameWidth();
+    frHeight = fw->getFrameHeight();
     qtw = tw;
     current_tab = qobject_cast<frameview_widget*>(qtw->widget(qtw->currentIndex()));
     old_tab = NULL;
@@ -117,6 +119,34 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     floor_slider.setMaximum(BIG_MAX);
     floor_slider.setMinimum(BIG_MIN);
     floor_slider.setTickInterval(BIG_TICK);
+
+    red_slider.setOrientation(Qt::Horizontal);
+    red_slider.setMaximum(frHeight-1);
+    red_slider.setMinimum(0);
+    red_slider.setValue((frHeight-1)*0.166);
+    red_slider.setTickInterval(1);
+    red_slider.hide();
+
+    green_slider.setOrientation(Qt::Horizontal);
+    green_slider.setMaximum(frHeight-1);
+    green_slider.setMinimum(0);
+    green_slider.setValue((frHeight-1)*0.5);
+    green_slider.setTickInterval(1);
+    green_slider.hide();
+
+    blue_slider.setOrientation(Qt::Horizontal);
+    blue_slider.setMaximum(frHeight-1);
+    blue_slider.setMinimum(0);
+    blue_slider.setValue((frHeight-1)*0.833);
+    blue_slider.setTickInterval(1);
+    blue_slider.hide();
+
+    wflength_slider.setOrientation(Qt::Horizontal);
+    wflength_slider.setMaximum(1024);
+    wflength_slider.setMinimum(100);
+    wflength_slider.setValue(500);
+    wflength_slider.setTickInterval(1);
+    wflength_slider.hide();
 
     std_dev_N_edit = new QSpinBox(this);
     std_dev_N_edit->setMinimum(1);
@@ -223,6 +253,28 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     sliders_layout->addWidget(overlay_cent_width, 5,2,1,7);
     sliders_layout->addWidget(overlay_cent_width_spin, 5,10,1,1);
 
+    // RGB waterfall support:
+    red_label.setText("Red:");
+    green_label.setText("Green:");
+    blue_label.setText("Blue:");
+    wflength_label.setText("WF Length:");
+
+    // 6:
+    sliders_layout->addWidget(&red_label, 6,1,1,1);
+    sliders_layout->addWidget(&red_slider, 6,2,1,7);
+
+    // 7:
+    sliders_layout->addWidget(&green_label, 7,1,1,1);
+    sliders_layout->addWidget(&green_slider, 7,2,1,7);
+
+    // 8:
+    sliders_layout->addWidget(&blue_label, 8,1,1,1);
+    sliders_layout->addWidget(&blue_slider, 8,2,1,7);
+
+    // 9:
+    sliders_layout->addWidget(&wflength_label, 9,1,1,1);
+    sliders_layout->addWidget(&wflength_slider, 9,2,1,7);
+
     ThresholdingSlidersBox.setLayout(sliders_layout);
 
 /* ====================================================================== */
@@ -280,7 +332,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     controls_layout.addWidget(&ThresholdingSlidersBox, 3);
     controls_layout.addWidget(&SaveButtonsBox, 2);
     this->setLayout(&controls_layout);
-    this->setMaximumHeight(150);
+    this->setMaximumHeight(200);
 
 /* =========================================================================== */
     //Connections
@@ -306,7 +358,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     connect(&select_save_location, SIGNAL(clicked()), this, SLOT(show_save_dialog()));
     connect(&debugButton, SIGNAL(clicked()), this, SLOT(debugThis()));
 
-    //overlay:
+    // Overlay:
     connect(overlay_lh_width_spin, SIGNAL(valueChanged(int)), overlay_lh_width, SLOT(setValue(int)));
     connect(overlay_lh_width, SIGNAL(valueChanged(int)), overlay_lh_width_spin, SLOT(setValue(int)));
 
@@ -316,7 +368,10 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     connect(overlay_rh_width_spin, SIGNAL(valueChanged(int)), overlay_rh_width, SLOT(setValue(int)));
     connect(overlay_rh_width, SIGNAL(valueChanged(int)), overlay_rh_width_spin, SLOT(setValue(int)));
 
-
+    // Waterfall:
+    connect(&red_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)));
+    connect(&green_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)));
+    connect(&blue_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)));
 }
 void ControlsBox::closeEvent(QCloseEvent *e)
 {
@@ -433,7 +488,7 @@ void ControlsBox::tab_changed_slot(int index)
 
 
         }
-
+        waterfallControls(false);
         p_profile->rescaleRange();
     } else if (p_fft) {
         use_DSF_cbox.setEnabled(true);
@@ -461,8 +516,8 @@ void ControlsBox::tab_changed_slot(int index)
         connect(p_fft->vCrossButton, SIGNAL(toggled(bool)), this, SLOT(fft_slider_enable(bool)));
         connect(p_fft->vCrossButton, SIGNAL(toggled(bool)), this, SLOT(fft_slider_enable(bool)));
         display_lines_slider();
-
         p_fft->rescaleRange();
+        waterfallControls(false);
     } else {
         display_std_dev_slider();
         if (p_frameview) {
@@ -486,23 +541,35 @@ void ControlsBox::tab_changed_slot(int index)
             use_DSF_cbox.setChecked(fw->usingDSF());
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_frameview->rescaleRange();
+            waterfallControls(false);
         } else if (p_flight) {
             ceiling_maximum = p_flight->slider_max;
             low_increment_cbox.setChecked(p_flight->slider_low_inc);
             increment_slot(low_increment_cbox.isChecked());
             ceiling_edit.setValue(p_flight->getCeiling());
             floor_edit.setValue(p_flight->getFloor());
+            waterfallControls(true);
+
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateCeiling(int)));
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateFloor(int)));
+            connect(this, SIGNAL(updateRGB(int,int,int)), p_flight, SLOT(changeRGB(int,int,int)));
+            connect(&wflength_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(changeWFLength(int)));
+
+            std_dev_n_label->hide();
+            std_dev_N_slider->setEnabled(false);
+            std_dev_N_edit->setEnabled(false);
+            std_dev_N_slider->hide();
+            std_dev_N_edit->hide();
 
 
-                std_dev_N_slider->setEnabled(false);
-                std_dev_N_edit->setEnabled(false);
 
             use_DSF_cbox.setEnabled(false);
             use_DSF_cbox.setChecked(fw->usingDSF());
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_flight->rescaleRange();
+            p_flight->updateFloor(floor_slider.value());
+            p_flight->updateCeiling(ceiling_slider.value());
+            this->setMaximumHeight(230);
         } else if (p_histogram) {
             ceiling_maximum = p_histogram->slider_max;
             low_increment_cbox.setChecked(p_histogram->slider_low_inc);
@@ -516,6 +583,7 @@ void ControlsBox::tab_changed_slot(int index)
             use_DSF_cbox.setEnabled(false);
             use_DSF_cbox.setChecked(fw->usingDSF());
             p_histogram->rescaleRange();
+            waterfallControls(false);
         } else if (p_playback) {
             ceiling_maximum = p_playback->slider_max;
             low_increment_cbox.setChecked(p_playback->slider_low_inc);
@@ -531,6 +599,7 @@ void ControlsBox::tab_changed_slot(int index)
             use_DSF_cbox.setEnabled(true);
             use_DSF_cbox.setChecked(p_playback->usingDSF());
             p_playback->rescaleRange();
+            waterfallControls(false);
         }
     }
 }
@@ -1073,7 +1142,60 @@ void ControlsBox::fft_slider_enable(bool toggled)
     line_average_edit->setEnabled(enable);
 }
 
+void ControlsBox::waterfallControls(bool enabled)
+{
+    red_slider.setEnabled(enabled);
+    red_slider.setVisible(enabled);
+    green_slider.setEnabled(enabled);
+    green_slider.setVisible(enabled);
+    blue_slider.setEnabled(enabled);
+    blue_slider.setVisible(enabled);
+    wflength_slider.setEnabled(enabled);
+    wflength_slider.setVisible(enabled);
+
+    red_label.setVisible(enabled);
+    green_label.setVisible(enabled);
+    blue_label.setVisible(enabled);
+    wflength_label.setVisible(enabled);
+
+    if(enabled)
+    {
+//        red_slider.setOrientation(Qt::Horizontal);
+//        red_slider.setMaximum(frHeight-1);
+//        red_slider.setMinimum(0);
+//        red_slider.setValue((frHeight-1)/2);
+//        red_slider.setTickInterval(1);
+
+//        green_slider.setOrientation(Qt::Horizontal);
+//        green_slider.setMaximum(frHeight-1);
+//        green_slider.setMinimum(0);
+//        green_slider.setValue((frHeight-1)/2);
+//        green_slider.setTickInterval(1);
+
+//        blue_slider.setOrientation(Qt::Horizontal);
+//        blue_slider.setMaximum(frHeight-1);
+//        blue_slider.setMinimum(0);
+//        blue_slider.setValue((frHeight-1)/2);
+//        blue_slider.setTickInterval(1);
+
+//        wflength_slider.setMaximum(1024);
+//        wflength_slider.setMinimum(100);
+//        wflength_slider.setValue(500);
+//        wflength_slider.setTickInterval(1);
+    }
+}
+
+void ControlsBox::setRGBWaterfall(int value)
+{
+    (void)value;
+    emit updateRGB(red_slider.value(), green_slider.value(),
+                   blue_slider.value());
+}
+
 void ControlsBox::debugThis()
 {
+    qDebug() << "Debug button function in controlsbox reached";
+
+    qDebug() << "wflength slider max: " << wflength_slider.maximum() << "wf slider min: " << wflength_slider.minimum() << "wf slider value: " << wflength_slider.value();
     emit debugSignal();
 }

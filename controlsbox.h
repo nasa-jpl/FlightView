@@ -85,6 +85,14 @@ public:
     QSpinBox *line_average_edit;
     QSpinBox ceiling_edit;
     QSpinBox floor_edit;
+    QSlider red_slider;
+    QSlider green_slider;
+    QSlider blue_slider;
+    QSlider wflength_slider;
+    QLabel red_label;
+    QLabel green_label;
+    QLabel blue_label;
+    QLabel wflength_label;
     QLabel *std_dev_n_label;
     QLabel *lines_label;
     QCheckBox low_increment_cbox;
@@ -131,6 +139,7 @@ private:
     int ceiling_maximum;
     int previousNumSaved;
     bool checkForOverwrites = true;
+    void waterfallControls(bool enabled);
 
 signals:
     /*! \brief Passes the message to save raw frames at the backend.
@@ -154,6 +163,8 @@ signals:
 
     /*! \brief Passes the information needed to generate the dark mask and load it into the DSF in the playback_widget. */
     void mask_selected(QString file_name, unsigned int bytes_to_read, long offset);
+    void updateRGB(int r, int g, int b);
+    void updateWFLength(int length);
     void statusMessage(QString message);
     void warningMessage(QString message);
     void errorMessage(QString message);
@@ -161,6 +172,7 @@ signals:
 
 public slots:
     void tab_changed_slot(int index);
+    void setRGBWaterfall(int value);
 
 private slots:
     void increment_slot(bool t);

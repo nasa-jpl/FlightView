@@ -95,6 +95,8 @@ public slots:
     void setScrollY(bool Xenabled);
     void updateCeiling(int c);
     void updateFloor(int f);
+    void changeRGB(int r, int g, int b);
+    void changeWFLength(int length);
     void rescaleRange();
     void setCrosshairs(QMouseEvent *event);
     void debugThis();

@@ -191,6 +191,16 @@ void flight_widget::rescaleRange()
     dsf_widget->rescaleRange();
 }
 
+void flight_widget::changeRGB(int r, int g, int b)
+{
+    waterfall_widget->changeRGB(r,g,b);
+}
+
+void flight_widget::changeWFLength(int length)
+{
+    waterfall_widget->changeWFLength(length);
+}
+
 void flight_widget::setCrosshairs(QMouseEvent *event)
 {
     dsf_widget->setCrosshairs(event);
