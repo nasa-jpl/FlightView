@@ -9,6 +9,7 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent) : Q
 
     //rgbLineStruct blank = allocateLine();
     maxWFlength = 1024;
+    wflength = maxWFlength;
     //wf.resize(maxWFlength, blank);
     allocateBlankWF();
 
@@ -39,21 +40,36 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent) : Q
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
     rendertimer.setInterval(FRAME_DISPLAY_PERIOD_MSECS);
     rendertimer.start();
-
+    QSizePolicy policy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    this->setSizePolicy(policy);
     statusMessage("Finished waterfall constructor.");
 }
 
 void waterfall::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
-    QRectF target(0, 0, hSize, vSize);
-    QRectF source(0.0f, 0.0f, hSize, vSize); // use source geometry to "crop" the waterfall image
+
+    // anti-alias:
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+
+    painter.setWindow(QRect(0, 0, hSize/4.0, 1024));
+
+    // Target: Where the image ultimately goes
+    // Source: A rectangle which defines the portion of the specImage
+    //         to copy into the target.
+
+    // The source is stretched out over the target.
+
+    // For length trimming, adjust the wflength parameter on the source
+    // for Left-Right trimming, adjust the first two parameters of source.
+
+    QRectF target(0, 0, hSize/4.0, vSize);
+    QRectF source(0.0f, 0.0f, hSize, wflength); // use source geometry to "crop" the waterfall image
     painter.drawImage(target, specImage, source);
 }
 
 void waterfall::redraw()
 {
-    QRgb point;
     QColor c;
     for(int y = 0; y < vSize; y++)
     {
@@ -162,25 +178,22 @@ unsigned char waterfall::scaleDataPoint(float dataPt)
     //   0   --  255
 
     if(ceiling == floor)
-        return 0;
+        return 127;
 
-    // First the clamp:
-    if(dataPt < floor)
+    dataPt = dataPt - floor;
+
+    if(dataPt > ceiling-floor)
     {
-        dataPt = floor;
-    }
-    if(dataPt > ceiling)
-    {
-        dataPt = ceiling;
+        dataPt = ceiling-floor;
     }
 
     // Now that the data are between ceiling and floor:
     float span = ceiling - floor;
-    float factor = 256.0f / span;
+    float factor = 255.0f / span;
 
-    if (  (dataPt-floor) * factor >= 0 )
+    if (  (dataPt) * factor >= 0 )
     {
-        return (dataPt-floor) * factor;
+        return (dataPt) * factor;
     } else {
         return 0;
     }

@@ -569,6 +569,7 @@ void ControlsBox::tab_changed_slot(int index)
             p_flight->rescaleRange();
             p_flight->updateFloor(floor_slider.value());
             p_flight->updateCeiling(ceiling_slider.value());
+            p_flight->changeWFLength(wflength_slider.value());
             this->setMaximumHeight(230);
         } else if (p_histogram) {
             ceiling_maximum = p_histogram->slider_max;
