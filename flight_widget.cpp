@@ -5,6 +5,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(this, SIGNAL(statusMessage(QString)), this, SLOT(showDebugMessage(QString)));
 
     emit statusMessage(QString("Starting flight screen widget"));
+    stickyFPSError = false;
+    FPSErrorCounter = 0;
     this->fw = fw;
     this->options = options;
 
@@ -121,6 +123,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
 
     connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), gps, SLOT(clearStickyError()));
+    connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), this, SLOT(resetFPSError()));
+
     emit statusMessage(QString("Finished flight constructor."));
 }
 
@@ -144,6 +148,40 @@ void flight_widget::handleNewFrame()
 {
     dsf_widget->handleNewFrame();
     waterfall_widget->handleNewFrame();
+}
+
+void flight_widget::updateFPS()
+{
+    if(fw->delta < 12.8f)
+    {
+        processFPSError();
+    } else if (fw->delta < 13.0f) {
+        this->cameraLinkLED.setState(QLedLabel::StateWarning);
+    } else if ((fw->delta > 13.0f) && !stickyFPSError)
+    {
+        // to reset the warning, but not the sticky error:
+        this->cameraLinkLED.setState(QLedLabel::StateOk);
+    }
+}
+
+void flight_widget::processFPSError()
+{
+    FPSErrorCounter++;
+    emit statusMessage(QString("FPS Error, FPS: %1, Error Count: %2").\
+                       arg(fw->delta).\
+                       arg(FPSErrorCounter));
+    if((FPSErrorCounter > 0) && !stickyFPSError)
+    {
+        this->cameraLinkLED.setState(QLedLabel::StateError);
+        stickyFPSError = true;
+    }
+}
+
+void flight_widget::resetFPSError()
+{
+    this->cameraLinkLED.setState(QLedLabel::StateOk);
+    stickyFPSError = false;
+    FPSErrorCounter = 0;
 }
 
 void flight_widget::handleNewColorScheme(int scheme)

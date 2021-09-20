@@ -554,6 +554,8 @@ void ControlsBox::tab_changed_slot(int index)
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateFloor(int)));
             connect(this, SIGNAL(updateRGB(int,int,int)), p_flight, SLOT(changeRGB(int,int,int)));
             connect(&wflength_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(changeWFLength(int)));
+            connect(fw, SIGNAL(updateFPS()), p_flight, SLOT(updateFPS()));
+
 
             std_dev_n_label->hide();
             std_dev_N_slider->setEnabled(false);

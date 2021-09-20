@@ -55,6 +55,8 @@ class frameWorker : public QObject
     unsigned int frHeight;
     unsigned int frWidth;
 
+    int lastTime;
+
     float *histogram_bins;
     bool doRun = true;
 

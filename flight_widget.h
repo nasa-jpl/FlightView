@@ -69,6 +69,9 @@ class flight_widget : public QWidget
     uint16_t greenRow;
     uint16_t blueRow;
 
+    bool stickyFPSError;
+    int FPSErrorCounter;
+    void processFPSError();
 
 
 public:
@@ -81,6 +84,7 @@ public:
 
 public slots:
     void handleNewFrame();
+    void resetFPSError();
 
     void startGPS(QString gpsHostname, uint16_t gpsPort, QString primaryLogLocation); // connect to GPS and start primary log
 
@@ -98,6 +102,7 @@ public slots:
     void changeRGB(int r, int g, int b);
     void changeWFLength(int length);
     void rescaleRange();
+    void updateFPS();
     void setCrosshairs(QMouseEvent *event);
     void debugThis();
     // debug text handler:

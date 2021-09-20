@@ -15,7 +15,7 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
      * \author Jackie Ryan
      * \author Noah Levy
      */
-
+    lastTime = 0;
     this->options = options;
 
     to.start(); // begin cuda_take
@@ -90,6 +90,7 @@ void frameWorker::captureFrames()
     unsigned long count = 0;
     QTime clock;
     clock.start();
+    lastTime = clock.elapsed();
     unsigned int last_savenum = 0; // unused, really?
     unsigned int last_savect = 0;
     unsigned int save_num;
@@ -121,10 +122,32 @@ void frameWorker::captureFrames()
             last_savect = save_ct;
             last_savenum = save_num;
             count++;
-            if (count % 50 == 0 && count != 0) {
-                delta = 50.0 / clock.restart() * 1000.0;
+
+            // This is to detect and report slow frame rates:
+            if(clock.elapsed() - lastTime > 30)
+            {
+                int restart = clock.restart();
+                if(restart != 0)
+                {
+                    delta = 1000.0f / restart;
+                } else {
+                    delta = 0.0f;
+                }
                 emit updateFPS();
+            } else {
+                // Calcualte normal frame rate:
+                if (count % 25 == 0 && count != 0) {
+                    int restart = clock.restart();
+                    if(restart != 0)
+                    {
+                        delta = 25.0 / restart * 1000.0;
+                    } else {
+                        delta = 0;
+                    }
+                    emit updateFPS();
+                }
             }
+            lastTime = clock.elapsed();
         }
 
     }
