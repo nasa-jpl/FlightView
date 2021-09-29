@@ -80,6 +80,7 @@ class frameview_widget : public QWidget
     unsigned int count;
     double fps;
     QString fps_string;
+    bool useDSF;
 
 
 public:
@@ -116,6 +117,7 @@ public slots:
     void setScrollY(bool Xenabled);
     void updateCeiling(int c);
     void updateFloor(int f);
+    void setUseDSF(bool useDSF);
     void rescaleRange();
     void setCrosshairs(QMouseEvent *event);
     /*! @} */

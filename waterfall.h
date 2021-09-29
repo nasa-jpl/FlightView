@@ -62,6 +62,7 @@ class waterfall : public QWidget
     unsigned char opacity;
     QImage specImage;
     void redraw();
+    bool useDSF;
 
 public:
     explicit waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent = nullptr);
@@ -74,6 +75,7 @@ public slots:
     void setSpecOpacity(unsigned char opacity);
     void updateCeiling(int c);
     void updateFloor(int f);
+    void setUseDSF(bool useDSF);
     void debugThis();
 
 signals:

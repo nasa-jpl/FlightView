@@ -22,6 +22,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     this->fw = fw;
     this->image_type = image_type;
     floor = 0;
+    useDSF = false;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
 
@@ -273,33 +274,42 @@ void frameview_widget::handleNewFrame()
     }
 
     if(!this->isHidden() && (fw->curFrame->image_data_ptr != NULL)) {
-        if(image_type == BASE) {
-            uint16_t *local_image_ptr = fw->curFrame->image_data_ptr;
-            for(int col = 0; col < frWidth; col++)
-                for(int row = 0; row < frHeight; row++ )
-                    // this will blank out the part of the frame where the crosshair is pointing so that it is
-                    // visible in the display
-                    if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
-                         || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
+//        if(image_type == BASE) {
+//            uint16_t *local_image_ptr = fw->curFrame->image_data_ptr;
+//            for(int col = 0; col < frWidth; col++)
+//                for(int row = 0; row < frHeight; row++ )
+//                    // this will blank out the part of the frame where the crosshair is pointing so that it is
+//                    // visible in the display
+//                    if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
+//                         || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
+//
+//                        colorMap->data()->setCell(col, row, NAN);
+//                    else
+//                        // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+//                        colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
+//            qcp->replot();
+//        }
+        if((image_type == DSF) || (image_type==BASE)) {
+            uint16_t* local_image_ptr_uint = fw->curFrame->image_data_ptr;
+            float* local_image_ptr_float = fw->curFrame->dark_subtracted_data;
 
-                        colorMap->data()->setCell(col, row, NAN);
-                    else
-                        // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
-                        colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
-            qcp->replot();
-        }
-        if(image_type == DSF) {
-            float *local_image_ptr = fw->curFrame->dark_subtracted_data;
             for(int col = 0; col < frWidth; col++)
                 for(int row = 0; row < frHeight; row++)
                     // this will blank out the part of the frame where the crosshair is pointing so that it is
                     // visible in the display
                     if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
                          || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
+                    {
                         colorMap->data()->setCell(col, row, NAN);
-                    else
+                    } else {
                         // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
-                        colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
+                        if(useDSF && image_type == DSF)
+                        {
+                            colorMap->data()->setCell(col, row, local_image_ptr_float[row * frWidth + col]); // y-axis NOT reversed
+                        } else {
+                            colorMap->data()->setCell(col, row, local_image_ptr_uint[row * frWidth + col]); // y-axis NOT reversed
+                        }
+                    }
             qcp->replot();
         }
 
@@ -429,23 +439,32 @@ void frameview_widget::setScrollY(bool Xenabled)
 
     }
 }
+
 void frameview_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
     ceiling = (double)c;
     rescaleRange();
 }
+
 void frameview_widget::updateFloor(int f)
 {
     /*! \brief Change the value  of the floor for this widget to the input parameter and replot the color scale. */
     floor = (double)f;
     rescaleRange();
 }
+
+void frameview_widget::setUseDSF(bool useDSF)
+{
+    this->useDSF = useDSF;
+}
+
 void frameview_widget::rescaleRange()
 {
     /*! \brief Set the color scale of the display to the last used values for this widget */
     colorScale->setDataRange(QCPRange(floor,ceiling));
 }
+
 void frameview_widget::setCrosshairs(QMouseEvent *event)
 {
     /*! \brief Sets the value of the crosshair and lines to average selection for rendering

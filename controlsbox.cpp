@@ -420,35 +420,20 @@ void ControlsBox::tab_changed_slot(int index)
         lines_slider->setValue(startVal);
         fw->updateMeanRange(lines_slider->value(), p_profile->itype);
         lines_slider->setEnabled(enable);
+        lines_slider->setVisible(enable);
         line_average_edit->setEnabled(enable);
+        line_average_edit->setVisible(enable);
         display_lines_slider();
 
         if(p_profile->itype == VERT_OVERLAY)
         {
             // vertical overlay has three additional sliders for setting the width.
-            see_it = true;
+            overlayControls(true);
+            lines_slider->setEnabled(true);
+            lines_slider->setVisible(true);
+            lines_label->setVisible(true);
             lines_label->setText("L-R Span:");
 
-            overlay_lh_width->setEnabled(see_it);
-            overlay_lh_width->setVisible(see_it);
-            overlay_lh_width_label->setVisible(see_it);
-            overlay_lh_width_label->setEnabled(see_it);
-            overlay_lh_width_spin->setVisible(see_it);
-            overlay_lh_width_spin->setEnabled(see_it);
-
-            overlay_cent_width->setEnabled(see_it);
-            overlay_cent_width->setVisible(see_it);
-            overlay_cent_width_label->setVisible(see_it);
-            overlay_cent_width_label->setEnabled(see_it);
-            overlay_cent_width_spin->setVisible(see_it);
-            overlay_cent_width_spin->setEnabled(see_it);
-
-            overlay_rh_width->setEnabled(see_it);
-            overlay_rh_width->setVisible(see_it);
-            overlay_rh_width_label->setVisible(see_it);
-            overlay_rh_width_label->setEnabled(see_it);
-            overlay_rh_width_spin->setVisible(see_it);
-            overlay_rh_width_spin->setEnabled(see_it);
             this->setMaximumHeight(175);
 
             lines_slider->setEnabled(true);
@@ -461,29 +446,10 @@ void ControlsBox::tab_changed_slot(int index)
             connect(overlay_rh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
 
         } else {
-            see_it = false;
+            overlayControls(false);
             lines_label->setText("Lines to Average:");
 
-            overlay_lh_width->setEnabled(see_it);
-            overlay_lh_width->setVisible(see_it);
-            overlay_lh_width_label->setVisible(see_it);
-            overlay_lh_width_label->setEnabled(see_it);
-            overlay_lh_width_spin->setVisible(see_it);
-            overlay_lh_width_spin->setEnabled(see_it);
 
-            overlay_cent_width->setEnabled(see_it);
-            overlay_cent_width->setVisible(see_it);
-            overlay_cent_width_label->setVisible(see_it);
-            overlay_cent_width_label->setEnabled(see_it);
-            overlay_cent_width_spin->setVisible(see_it);
-            overlay_cent_width_spin->setEnabled(see_it);
-
-            overlay_rh_width->setEnabled(see_it);
-            overlay_rh_width->setVisible(see_it);
-            overlay_rh_width_label->setVisible(see_it);
-            overlay_rh_width_label->setEnabled(see_it);
-            overlay_rh_width_spin->setVisible(see_it);
-            overlay_rh_width_spin->setEnabled(see_it);
             this->setMaximumHeight(150);
 
 
@@ -491,6 +457,7 @@ void ControlsBox::tab_changed_slot(int index)
         waterfallControls(false);
         p_profile->rescaleRange();
     } else if (p_fft) {
+        overlayControls(false);
         use_DSF_cbox.setEnabled(true);
         use_DSF_cbox.setChecked(fw->usingDSF());
         ceiling_maximum = p_fft->slider_max;
@@ -528,7 +495,7 @@ void ControlsBox::tab_changed_slot(int index)
             floor_edit.setValue(p_frameview->getFloor());
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateCeiling(int)));
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateFloor(int)));
-
+            connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_frameview, SLOT(setUseDSF(bool)));
             if (p_frameview->image_type == STD_DEV) {
                 std_dev_N_slider->setEnabled(true);
                 std_dev_N_edit->setEnabled(true);
@@ -537,7 +504,7 @@ void ControlsBox::tab_changed_slot(int index)
                 std_dev_N_slider->setEnabled(false);
                 std_dev_N_edit->setEnabled(false);
             }
-            use_DSF_cbox.setEnabled(false);
+            use_DSF_cbox.setEnabled(true);
             use_DSF_cbox.setChecked(fw->usingDSF());
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_frameview->rescaleRange();
@@ -555,7 +522,7 @@ void ControlsBox::tab_changed_slot(int index)
             connect(this, SIGNAL(updateRGB(int,int,int)), p_flight, SLOT(changeRGB(int,int,int)));
             connect(&wflength_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(changeWFLength(int)));
             connect(fw, SIGNAL(updateFPS()), p_flight, SLOT(updateFPS()));
-
+            connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseDSF(bool)));
 
             std_dev_n_label->hide();
             std_dev_N_slider->setEnabled(false);
@@ -565,8 +532,8 @@ void ControlsBox::tab_changed_slot(int index)
 
 
 
-            use_DSF_cbox.setEnabled(false);
-            use_DSF_cbox.setChecked(fw->usingDSF());
+            use_DSF_cbox.setEnabled(true);
+            use_DSF_cbox.setChecked(false);
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_flight->rescaleRange();
             p_flight->updateFloor(floor_slider.value());
@@ -1160,32 +1127,30 @@ void ControlsBox::waterfallControls(bool enabled)
     green_label.setVisible(enabled);
     blue_label.setVisible(enabled);
     wflength_label.setVisible(enabled);
+}
 
-    if(enabled)
-    {
-//        red_slider.setOrientation(Qt::Horizontal);
-//        red_slider.setMaximum(frHeight-1);
-//        red_slider.setMinimum(0);
-//        red_slider.setValue((frHeight-1)/2);
-//        red_slider.setTickInterval(1);
+void ControlsBox::overlayControls(bool see_it)
+{
+    overlay_lh_width->setEnabled(see_it);
+    overlay_lh_width->setVisible(see_it);
+    overlay_lh_width_label->setVisible(see_it);
+    overlay_lh_width_label->setEnabled(see_it);
+    overlay_lh_width_spin->setVisible(see_it);
+    overlay_lh_width_spin->setEnabled(see_it);
 
-//        green_slider.setOrientation(Qt::Horizontal);
-//        green_slider.setMaximum(frHeight-1);
-//        green_slider.setMinimum(0);
-//        green_slider.setValue((frHeight-1)/2);
-//        green_slider.setTickInterval(1);
+    overlay_cent_width->setEnabled(see_it);
+    overlay_cent_width->setVisible(see_it);
+    overlay_cent_width_label->setVisible(see_it);
+    overlay_cent_width_label->setEnabled(see_it);
+    overlay_cent_width_spin->setVisible(see_it);
+    overlay_cent_width_spin->setEnabled(see_it);
 
-//        blue_slider.setOrientation(Qt::Horizontal);
-//        blue_slider.setMaximum(frHeight-1);
-//        blue_slider.setMinimum(0);
-//        blue_slider.setValue((frHeight-1)/2);
-//        blue_slider.setTickInterval(1);
-
-//        wflength_slider.setMaximum(1024);
-//        wflength_slider.setMinimum(100);
-//        wflength_slider.setValue(500);
-//        wflength_slider.setTickInterval(1);
-    }
+    overlay_rh_width->setEnabled(see_it);
+    overlay_rh_width->setVisible(see_it);
+    overlay_rh_width_label->setVisible(see_it);
+    overlay_rh_width_label->setEnabled(see_it);
+    overlay_rh_width_spin->setVisible(see_it);
+    overlay_rh_width_spin->setEnabled(see_it);
 }
 
 void ControlsBox::setRGBWaterfall(int value)

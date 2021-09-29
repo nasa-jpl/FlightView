@@ -33,6 +33,7 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent) : Q
     this->vSize = maxWFlength;
     this->hSize = frWidth;
     opacity = 0xff;
+    useDSF = false; // default to false since the program can't start up with a DSF mask anyway
 
     specImage = QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
     statusMessage(QString("Created specImage with height %1 and width %2.").arg(specImage.height()).arg(specImage.width()));
@@ -128,7 +129,7 @@ void waterfall::addNewFrame()
     int g_row_pix = frWidth * g_row;
     int b_row_pix = frWidth * b_row;
 
-    if(fw->dsfMaskCollected())
+    if(fw->dsfMaskCollected() && useDSF)
     {
         copyPixToLine(local_image_ptr, line->getr_raw(), r_row_pix);
         copyPixToLine(local_image_ptr, line->getg_raw(), g_row_pix);
@@ -246,6 +247,11 @@ void waterfall::updateFloor(int f)
 {
     floor = f;
     rescaleWF();
+}
+
+void waterfall::setUseDSF(bool useDSF)
+{
+    this->useDSF = useDSF;
 }
 
 void waterfall::rescaleWF()

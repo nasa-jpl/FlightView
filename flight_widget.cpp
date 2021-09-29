@@ -139,6 +139,12 @@ double flight_widget::getFloor()
     return dsf_widget->getFloor();
 }
 
+void flight_widget::setUseDSF(bool useDSF)
+{
+    waterfall_widget->setUseDSF(useDSF);
+    dsf_widget->setUseDSF(useDSF);
+}
+
 void flight_widget::toggleDisplayCrosshair()
 {
     dsf_widget->toggleDisplayCrosshair();

@@ -102,6 +102,7 @@ public slots:
     void changeRGB(int r, int g, int b);
     void changeWFLength(int length);
     void rescaleRange();
+    void setUseDSF(bool useDSF);
     void updateFPS();
     void setCrosshairs(QMouseEvent *event);
     void debugThis();

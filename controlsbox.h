@@ -140,6 +140,7 @@ private:
     int previousNumSaved;
     bool checkForOverwrites = true;
     void waterfallControls(bool enabled);
+    void overlayControls(bool enabled);
 
 signals:
     /*! \brief Passes the message to save raw frames at the backend.
