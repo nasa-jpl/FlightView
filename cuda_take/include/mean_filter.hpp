@@ -2,6 +2,7 @@
 #define MEAN_FILTER_HPP
 #include <cstdint>
 #include <ccomplex>
+#include <mutex>
 #include <boost/thread.hpp>
 #include <atomic>
 #include "frame_c.hpp"
