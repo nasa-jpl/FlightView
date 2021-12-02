@@ -67,7 +67,7 @@ OBJDIR = obj
 
 ######################################
 #Here we set the directories containing necessary header files (.h,.cuh,.hpp); ones specific to this program are kept in include/, ones needed for cameralink stuff in EDT_include/
-IDIR      = -Iinclude -I/opt/EDTpdv
+IDIR      = -Iinclude -I/opt/EDTpdv -I/usr/local/cuda/include
 
 #SECOND NOTE: ONLY BUILD WITH O1! Somehow, someway, O2 optimizes out things that nvcc needs and O0 has linker redefinition errors. #JankCity <- This has been fixed, but still a good idea
 CFLAGS     = -g -O3 -D HOST=\"`hostname`\" -D UNAME=\"`whoami`\" #This is added to the compilation of every file, enables gdb debugging symbols (-g) and limited optimization (-O1) 
@@ -91,7 +91,7 @@ CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-unused-function -Wno-u
 #(-G -lineinfo) are both to enable cuda-gdb debugging, -Xcompiler specifies arguments to get passed directly to g++ (which NVCC is built on), the internet said to do -rdynamic
 
 
-NVCCFLAGS  = -gencode arch=compute_30,code=sm_30, -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
+NVCCFLAGS  = -gencode arch=compute_75,code=sm_75, -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
 
 NVCCFLAGS += $(CFLAGS)
 
