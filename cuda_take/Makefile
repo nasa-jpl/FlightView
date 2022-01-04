@@ -81,7 +81,8 @@ CONLYFLAGS += $(CFLAGS)
 CPPFLAGS = $(CFLAGS)
 CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-result#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 
-
+# See this URL to determine the architecture flags for your GPU: 
+# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/  
 
 #This version of NVCCFLAGS will build the fatest binary possible if the version of NVCC >= 6
 #NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30, -gencode arch=compute_35,code=sm_35, -gencode arch=compute_50,code=sm_50 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
@@ -90,8 +91,12 @@ CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-unused-function -Wno-u
 #NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=sm_35 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
 #(-G -lineinfo) are both to enable cuda-gdb debugging, -Xcompiler specifies arguments to get passed directly to g++ (which NVCC is built on), the internet said to do -rdynamic
 
+# NVIDIA GeForce RTX 3080: 
+NVCCFLAGS  = -gencode arch=compute_86,code=sm_86 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'
 
-NVCCFLAGS  = -gencode arch=compute_30,code=sm_30, -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
+
+# Truly legacy GPUs which aren't supported anymore: 
+#NVCCFLAGS  = -gencode arch=compute_30,code=sm_30, -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
 
 NVCCFLAGS += $(CFLAGS)
 
