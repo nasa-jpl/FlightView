@@ -67,7 +67,7 @@ OBJDIR = obj
 
 ######################################
 #Here we set the directories containing necessary header files (.h,.cuh,.hpp); ones specific to this program are kept in include/, ones needed for cameralink stuff in EDT_include/
-IDIR      = -Iinclude -I/opt/EDTpdv
+IDIR      = -Iinclude -I/opt/EDTpdv -I/usr/local/cuda/include
 
 #SECOND NOTE: ONLY BUILD WITH O1! Somehow, someway, O2 optimizes out things that nvcc needs and O0 has linker redefinition errors. #JankCity <- This has been fixed, but still a good idea
 CFLAGS     = -g -O3 -D HOST=\"`hostname`\" -D UNAME=\"`whoami`\" #This is added to the compilation of every file, enables gdb debugging symbols (-g) and limited optimization (-O1) 
