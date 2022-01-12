@@ -38,7 +38,8 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     /*! \note Care should be taken to ensure that tabbed widgets are ordered by the value of their image_type enum
      * signals/slots (currentChanged) make use of this relation */
     unfiltered_widget = new frameview_widget(fw, BASE);
-    dsf_widget = new frameview_widget(fw, DSF);
+    //dsf_widget = new frameview_widget(fw, DSF);
+    dsf_widget = NULL;
     waterfall_widget = new frameview_widget(fw, WATERFALL);
     flight_screen = new flight_widget(fw, options);
     std_dev_widget = new frameview_widget(fw, STD_DEV);
