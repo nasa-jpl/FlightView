@@ -271,9 +271,26 @@ void frameview_widget::handleNewFrame()
         // crash was when only items 0-420 existed
         // Other items were "not accessable"
         wfimage.resize(wflength); // Cut off anything too small.
+
+        // Display time:
+        std::vector <float> rowdata;
+
+        for(unsigned int row=0; row < wfimage.size(); row++)
+        {
+            rowdata = wfimage.at(row);
+            for(unsigned int col=0; col < (unsigned int)frWidth; col++)
+            {
+                colorMap->data()->setCell(col, row, rowdata.at(col)); // y-axis NOT reversed
+            }
+        }
+        qcp->replot();
+        goto done_here;
+
     }
 
     if(!this->isHidden() && (fw->curFrame->image_data_ptr != NULL)) {
+
+
         if((image_type == DSF) || (image_type==BASE)) {
             uint16_t* local_image_ptr_uint = fw->curFrame->image_data_ptr;
             float* local_image_ptr_float = fw->curFrame->dark_subtracted_data;
@@ -312,37 +329,21 @@ void frameview_widget::handleNewFrame()
                         }
                 }
             }
+            qcp->replot();
+            goto done_here;
         }
-        qcp->replot();
-        goto done_here;
-    }
 
-    if(image_type == WATERFALL)
-    {
-        // Display time:
-        std::vector <float> rowdata;
-
-        for(unsigned int row=0; row < wfimage.size(); row++)
-        {
-            rowdata = wfimage.at(row);
-            for(unsigned int col=0; col < (unsigned int)frWidth; col++)
-            {
-                colorMap->data()->setCell(col, row, rowdata.at(col)); // y-axis NOT reversed
-            }
+        if(image_type == STD_DEV && fw->std_dev_frame != NULL) {
+            float * local_image_ptr = fw->std_dev_frame->std_dev_data;
+            for (int col = 0; col < frWidth; col++)
+                for (int row = 0; row < frHeight; row++)
+                    // colorMap->data()->setCell(col, row, (double_t)local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                    colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
+            qcp->replot();
+            goto done_here;
         }
-        qcp->replot();
-        goto done_here;
     }
 
-    if(image_type == STD_DEV && fw->std_dev_frame != NULL) {
-        float * local_image_ptr = fw->std_dev_frame->std_dev_data;
-        for (int col = 0; col < frWidth; col++)
-            for (int row = 0; row < frHeight; row++)
-                // colorMap->data()->setCell(col, row, (double_t)local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
-                colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
-        qcp->replot();
-        goto done_here;
-    }
 
 done_here:
     count++;
