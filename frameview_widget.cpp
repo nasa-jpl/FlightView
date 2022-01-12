@@ -116,7 +116,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     layout.addWidget(&fpsLabel, 8, 0, 1, 2);
     layout.addWidget(&displayCrosshairCheck, 8, 2, 1, 2);
     layout.addWidget(&zoomXCheck, 8, 4, 1, 2);
-    layout.addWidget(&zoomYCheck, 8, 6, 1, 2);    
+    layout.addWidget(&zoomYCheck, 8, 6, 1, 2);
     this->setLayout(&layout);
 
     displayCrosshairCheck.setText(tr("Display Crosshairs on Frame"));
@@ -274,70 +274,77 @@ void frameview_widget::handleNewFrame()
     }
 
     if(!this->isHidden() && (fw->curFrame->image_data_ptr != NULL)) {
-//        if(image_type == BASE) {
-//            uint16_t *local_image_ptr = fw->curFrame->image_data_ptr;
-//            for(int col = 0; col < frWidth; col++)
-//                for(int row = 0; row < frHeight; row++ )
-//                    // this will blank out the part of the frame where the crosshair is pointing so that it is
-//                    // visible in the display
-//                    if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
-//                         || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
-//
-//                        colorMap->data()->setCell(col, row, NAN);
-//                    else
-//                        // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
-//                        colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
-//            qcp->replot();
-//        }
         if((image_type == DSF) || (image_type==BASE)) {
             uint16_t* local_image_ptr_uint = fw->curFrame->image_data_ptr;
             float* local_image_ptr_float = fw->curFrame->dark_subtracted_data;
 
-            for(int col = 0; col < frWidth; col++)
-                for(int row = 0; row < frHeight; row++)
-                    // this will blank out the part of the frame where the crosshair is pointing so that it is
-                    // visible in the display
-                    if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
-                         || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
-                    {
-                        colorMap->data()->setCell(col, row, NAN);
-                    } else {
-                        // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
-                        if(useDSF && (image_type == DSF || image_type == BASE))
+            if(useDSF)
+            {
+                // DSF
+                for(int col = 0; col < frWidth; col++)
+                {
+                    for(int row = 0; row < frHeight; row++)
+                        // this will blank out the part of the frame where the crosshair is pointing so that it is
+                        // visible in the display
+                        if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
+                             || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
                         {
-                            colorMap->data()->setCell(col, row, local_image_ptr_float[row * frWidth + col]); // y-axis NOT reversed
+                            colorMap->data()->setCell(col, row, NAN);
                         } else {
+                            // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                            colorMap->data()->setCell(col, row, local_image_ptr_float[row * frWidth + col]); // y-axis NOT reversed
+                        }
+                }
+            } else {
+                // Not DSF
+                for(int col = 0; col < frWidth; col++)
+                {
+                    for(int row = 0; row < frHeight; row++)
+                        // this will blank out the part of the frame where the crosshair is pointing so that it is
+                        // visible in the display
+                        if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
+                             || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
+                        {
+                            colorMap->data()->setCell(col, row, NAN);
+                        } else {
+                            // colorMap->data()->setCell(col, row, local_image_ptr_uint[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
                             colorMap->data()->setCell(col, row, local_image_ptr_uint[row * frWidth + col]); // y-axis NOT reversed
                         }
-                    }
-            qcp->replot();
-        }
-
-        if(image_type == WATERFALL)
-        {
-            // Display time:
-            std::vector <float> rowdata;
-
-            for(unsigned int row=0; row < wfimage.size(); row++)
-            {
-                rowdata = wfimage.at(row);
-                for(unsigned int col=0; col < (unsigned int)frWidth; col++)
-                {
-                    colorMap->data()->setCell(col, row, rowdata.at(col)); // y-axis NOT reversed
                 }
             }
-            qcp->replot();
         }
-
-        if(image_type == STD_DEV && fw->std_dev_frame != NULL) {
-            float * local_image_ptr = fw->std_dev_frame->std_dev_data;
-            for (int col = 0; col < frWidth; col++)
-                for (int row = 0; row < frHeight; row++)
-                    // colorMap->data()->setCell(col, row, (double_t)local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
-                    colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
-            qcp->replot();
-        }
+        qcp->replot();
+        goto done_here;
     }
+
+    if(image_type == WATERFALL)
+    {
+        // Display time:
+        std::vector <float> rowdata;
+
+        for(unsigned int row=0; row < wfimage.size(); row++)
+        {
+            rowdata = wfimage.at(row);
+            for(unsigned int col=0; col < (unsigned int)frWidth; col++)
+            {
+                colorMap->data()->setCell(col, row, rowdata.at(col)); // y-axis NOT reversed
+            }
+        }
+        qcp->replot();
+        goto done_here;
+    }
+
+    if(image_type == STD_DEV && fw->std_dev_frame != NULL) {
+        float * local_image_ptr = fw->std_dev_frame->std_dev_data;
+        for (int col = 0; col < frWidth; col++)
+            for (int row = 0; row < frHeight; row++)
+                // colorMap->data()->setCell(col, row, (double_t)local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
+        qcp->replot();
+        goto done_here;
+    }
+
+done_here:
     count++;
     if (count % 20 == 0 && count != 0) {
         fps = 20.0 / clock.restart() * 1000.0;
@@ -345,6 +352,7 @@ void frameview_widget::handleNewFrame()
         fpsLabel.setText(QString("fps of display: %1").arg(fps_string));
     }
 }
+
 void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
 {
     /*! \brief Controls the behavior of zooming the plot.
