@@ -56,7 +56,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
 
     /* Add tabs in order */
     tabWidget->addTab(unfiltered_widget, QString("Live View"));
-    tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
+    //tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
     tabWidget->addTab(waterfall_widget, QString("Waterfall"));
     tabWidget->addTab(flight_screen, QString("Flight"));
     tabWidget->addTab(std_dev_widget, QString("Std. Deviation"));

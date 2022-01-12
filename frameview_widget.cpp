@@ -303,7 +303,7 @@ void frameview_widget::handleNewFrame()
                         colorMap->data()->setCell(col, row, NAN);
                     } else {
                         // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
-                        if(useDSF && image_type == DSF)
+                        if(useDSF && (image_type == DSF || image_type == BASE))
                         {
                             colorMap->data()->setCell(col, row, local_image_ptr_float[row * frWidth + col]); // y-axis NOT reversed
                         } else {

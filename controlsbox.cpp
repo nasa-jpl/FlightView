@@ -988,7 +988,13 @@ void ControlsBox::use_DSF_general(bool checked)
     if (p_playback)
         p_playback->toggleUseDSF(checked);
     else
+    {
         fw->toggleUseDSF(checked);
+        if(p_frameview)
+        {
+            p_frameview->setUseDSF(checked);
+        }
+    }
 }
 void ControlsBox::load_pref_window()
 {
