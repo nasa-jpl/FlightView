@@ -116,6 +116,7 @@ public:
     QLineEdit filename_edit;
     QPushButton set_filename_button;
     QPushButton debugButton;
+    QPushButton saveRGBPresetButton;
 
     // Overlay profile only:
     QSlider * overlay_lh_width;
@@ -152,6 +153,7 @@ private:
     void setDefaultSettings();
     void loadSettings();
     void saveSettings();
+    void saveSingleRGBPreset(int index, int r, int g, int b);
 
     QString prefsFilename;
     settingsT prefs;
@@ -160,6 +162,8 @@ private:
     int bandRed = 0;
     int bandGreen = 0;
     int bandBlue = 0;
+
+    int previousRGBPresetIndex = 0;
 
 signals:
     /*! \brief Passes the message to save raw frames at the backend.

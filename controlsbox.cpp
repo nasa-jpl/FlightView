@@ -163,7 +163,16 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     blueSpin.setSingleStep(1);
     blueSpin.hide();
 
-    QStringList rgbPresets = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
+    QStringList rgbPresets;
+    // default names are = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
+
+    for(int p=0; p < 10; p++)
+    {
+        rgbPresets.append(prefs.presetName[p]);
+    }
+
+    rgbPresets.append("Rename..."); // index = 10;
+
     rgbPresetCombo.addItems(rgbPresets);
     rgbPresetCombo.setToolTip("Recall an RGB preset here.\n To save a preset to the settings file, adjust the sliders and then press Save Settings in the Preferences.");
     rgbPresetCombo.hide();
@@ -331,7 +340,10 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     // Hide the debug button on release builds:
     debugButton.hide();
 #endif
-    
+    saveRGBPresetButton.setText("Save Preset");
+    saveRGBPresetButton.setToolTip("Press to save the current RGB sliders to the selected preset slot.\nSlots may be named in the settings file.");
+    saveRGBPresetButton.setVisible(false);
+
     save_layout = new QGridLayout();
     //First Row
     save_layout->addWidget(&select_save_location, 1, 1, 1, 3);
@@ -344,6 +356,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     save_layout->addWidget(&frames_save_num_edit, 2, 4, 1, 1);
     save_layout->addWidget(&filename_edit, 3, 2, 1, 4);
     save_layout->addWidget(&debugButton, 4, 4, 1, 1);
+    save_layout->addWidget(&saveRGBPresetButton, 4, 1, 1, 1);
 
     //Third Row
     save_layout->addWidget(&stop_saving_frames_button, 1, 5, 1, 1);
@@ -461,6 +474,20 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     connect(&rgbPresetCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             [&](int index) {
+        if(index == 10)
+        {
+            bool ok;
+            QString text = QInputDialog::getText(this, tr("QInputDialog::getText()"),
+                                                 tr("Preset Name:"), QLineEdit::Normal,
+                                                 rgbPresetCombo.itemText(previousRGBPresetIndex), &ok);
+            if (ok && !text.isEmpty())
+            {
+                rgbPresetCombo.setItemText(previousRGBPresetIndex, text);
+                prefs.presetName[previousRGBPresetIndex] = text;
+            }
+            rgbPresetCombo.setCurrentIndex(previousRGBPresetIndex);
+            return;
+        }
         if(index < 0 || index > 9)
             return;
         bandRed = prefs.bandRed[index];
@@ -469,9 +496,16 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         redSpin.setValue(bandRed);
         greenSpin.setValue(bandGreen);
         blueSpin.setValue(bandBlue);
+        previousRGBPresetIndex = index;
     });
 
-
+    connect(&saveRGBPresetButton, &QPushButton::pressed,
+            [&]() {
+        saveSingleRGBPreset(rgbPresetCombo.currentIndex(),
+                            bandRed,
+                            bandGreen,
+                            bandBlue);
+    });
 
 
     // Preferences:
@@ -484,6 +518,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     redSpin.setValue(bandRed);
     greenSpin.setValue(bandGreen);
     blueSpin.setValue(bandBlue);
+    previousRGBPresetIndex = 0;
 
 }
 void ControlsBox::closeEvent(QCloseEvent *e)
@@ -519,12 +554,14 @@ void ControlsBox::loadSettings()
     if(rgbArraySize > 10)
         rgbArraySize = 10;
 
+
     for(int i=0; i < rgbArraySize; i++)
     {
         settings->setArrayIndex(i);
         prefs.bandRed[i] = settings->value("bandRed", defaultPrefs.bandRed[i]).toInt();
         prefs.bandGreen[i] = settings->value("bandGreen", defaultPrefs.bandGreen[i]).toInt();
         prefs.bandBlue[i] = settings->value("bandBlue", defaultPrefs.bandBlue[i]).toInt();
+        prefs.presetName[i] = settings->value("bandName", QString("%1").arg(i+1)).toString();
     }
 
     settings->endArray();
@@ -532,6 +569,7 @@ void ControlsBox::loadSettings()
 
     settings->beginGroup("Flight");
     prefs.hidePlayback = settings->value("hidePlayback", defaultPrefs.hidePlayback).toBool();
+    prefs.hideFFT = settings->value("hideFFT", defaultPrefs.hideFFT).toBool();
     settings->endGroup();
 }
 
@@ -580,6 +618,7 @@ void ControlsBox::saveSettings()
         settings->setValue("bandRed", prefs.bandRed[i]);
         settings->setValue("bandGreen", prefs.bandGreen[i]);
         settings->setValue("bandBlue", prefs.bandBlue[i]);
+        settings->setValue("bandName", rgbPresetCombo.itemText(i));
     }
     settings->endArray();
     settings->endGroup();
@@ -587,9 +626,26 @@ void ControlsBox::saveSettings()
     // [Flight]:
     settings->beginGroup("Flight");
     settings->setValue("hidePlayback", prefs.hidePlayback);
+    settings->setValue("hideFFT", prefs.hideFFT);
     settings->endGroup();
 
     settings->sync();
+}
+
+void ControlsBox::saveSingleRGBPreset(int index, int r, int g, int b)
+{
+    // [RGB]:
+    settings->beginGroup("RGB");
+    settings->beginWriteArray("bandsRGB", 10);
+
+    settings->setArrayIndex(index);
+    settings->setValue("bandRed", prefs.bandRed[index]);
+    settings->setValue("bandGreen", prefs.bandGreen[index]);
+    settings->setValue("bandBlue", prefs.bandBlue[index]);
+    settings->setValue("bandName", rgbPresetCombo.itemText(index));
+
+    settings->endArray();
+    settings->endGroup();
 }
 
 void ControlsBox::setDefaultSettings()
@@ -1380,6 +1436,7 @@ void ControlsBox::waterfallControls(bool enabled)
 
     wflength_label.setVisible(enabled);
     rgbPresetCombo.setVisible(enabled);
+    saveRGBPresetButton.setVisible(enabled);
 }
 
 void ControlsBox::overlayControls(bool see_it)

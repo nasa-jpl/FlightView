@@ -1,5 +1,6 @@
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
+#include <QString>
 
 struct settingsT {
     // [Camera]:
@@ -21,6 +22,7 @@ struct settingsT {
     unsigned int bandRed[10];
     unsigned int bandBlue[10];
     unsigned int bandGreen[10];
+    QString presetName[10];
 
     // [Flight]:
     bool hidePlayback = true;
