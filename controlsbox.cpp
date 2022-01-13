@@ -528,9 +528,15 @@ void ControlsBox::closeEvent(QCloseEvent *e)
     prefWindow->close();
 }
 
+void ControlsBox::getPrefsExternalTrig()
+{
+    // This is called by the MainWindow after we have setup.
+    emit haveReadPreferences(prefs);
+}
 
 void ControlsBox::loadSettings()
 {
+    // [Camera]:
     settings->beginGroup("Camera");
     prefs.brightSwap14 = settings->value("brightSwap14", defaultPrefs.brightSwap14).toBool();
     prefs.brightSwap16 = settings->value("brightSwap16", defaultPrefs.brightSwap16).toBool();
@@ -540,6 +546,7 @@ void ControlsBox::loadSettings()
     prefs.use2sComp = settings->value("use2sComp", defaultPrefs.use2sComp).toBool();
     settings->endGroup();
 
+    // [Interface]:
     settings->beginGroup("Interface");
     prefs.frameColorScheme = settings->value("frameColorScheme", defaultPrefs.frameColorScheme).toInt();
     prefs.darkSubLow = settings->value("darkSubLow", defaultPrefs.darkSubLow).toInt();
@@ -567,10 +574,22 @@ void ControlsBox::loadSettings()
     settings->endArray();
     settings->endGroup();
 
+    // [Flight]:
     settings->beginGroup("Flight");
     prefs.hidePlayback = settings->value("hidePlayback", defaultPrefs.hidePlayback).toBool();
     prefs.hideFFT = settings->value("hideFFT", defaultPrefs.hideFFT).toBool();
+    prefs.hideVerticalOverlay = settings->value("hideVerticalOverlay", defaultPrefs.hideVerticalOverlay).toBool();
+
+    prefs.hideVertMeanProfile = settings->value("hideVertMeanProfile", defaultPrefs.hideVertMeanProfile).toBool();
+    prefs.hideVertCrosshairProfile = settings->value("hideVertCrosshairProfile", defaultPrefs.hideVertCrosshairProfile).toBool();
+    prefs.hideHorizontalMeanProfile = settings->value("hideHorizontalMeanProfile", defaultPrefs.hideHorizontalMeanProfile).toBool();
+    prefs.hideHorizontalCrosshairProfile = settings->value("hideHorizontalCrosshairProfile", defaultPrefs.hideHorizontalCrosshairProfile).toBool();
+    prefs.hideHistogramView = settings->value("hideHistogramView", defaultPrefs.hideHistogramView).toBool();
+    prefs.hideStddeviation = settings->value("hideStddeviation", defaultPrefs.hideStddeviation).toBool();
+    prefs.hideWaterfallTab = settings->value("hideWaterfallTab", defaultPrefs.hideWaterfallTab).toBool();
     settings->endGroup();
+
+    emit haveReadPreferences(prefs);
 }
 
 void ControlsBox::triggerSaveSettings()
@@ -627,6 +646,14 @@ void ControlsBox::saveSettings()
     settings->beginGroup("Flight");
     settings->setValue("hidePlayback", prefs.hidePlayback);
     settings->setValue("hideFFT", prefs.hideFFT);
+    settings->setValue("hideVerticalOverlay", prefs.hideVerticalOverlay);
+    settings->setValue("hideVertMeanProfile", prefs.hideVertMeanProfile);
+    settings->setValue("hideVertCrosshairProfile", prefs.hideVertCrosshairProfile);
+    settings->setValue("hideHorizontalMeanProfile", prefs.hideHorizontalMeanProfile);
+    settings->setValue("hideHorizontalCrosshairProfile", prefs.hideHorizontalCrosshairProfile);
+    settings->setValue("hideHistogramView", prefs.hideHistogramView);
+    settings->setValue("hideStddeviation", prefs.hideStddeviation);
+    settings->setValue("hideWaterfallTab", prefs.hideWaterfallTab);
     settings->endGroup();
 
     settings->sync();
@@ -674,7 +701,17 @@ void ControlsBox::setDefaultSettings()
     }
 
     // [Flight]:
-    defaultPrefs.hidePlayback = true;
+    defaultPrefs.hidePlayback = true; // currently always hidden due to issues with the playback widget.
+    defaultPrefs.hideFFT = true;
+    defaultPrefs.hideVerticalOverlay = true;
+
+    defaultPrefs.hideVertMeanProfile = false;
+    defaultPrefs.hideVertCrosshairProfile = false;
+    defaultPrefs.hideHorizontalMeanProfile = false;
+    defaultPrefs.hideHorizontalCrosshairProfile = false;
+    defaultPrefs.hideHistogramView = false;
+    defaultPrefs.hideStddeviation = false;
+    defaultPrefs.hideWaterfallTab = false;
 }
 
 // public slot(s)

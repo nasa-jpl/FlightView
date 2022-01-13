@@ -189,6 +189,7 @@ signals:
     void mask_selected(QString file_name, unsigned int bytes_to_read, long offset);
     void updateRGB(int r, int g, int b);
     void updateWFLength(int length);
+    void haveReadPreferences(settingsT prefs);
     void statusMessage(QString message);
     void warningMessage(QString message);
     void errorMessage(QString message);
@@ -197,6 +198,7 @@ signals:
 public slots:
     void tab_changed_slot(int index);
     void setRGBWaterfall(int value);
+    void getPrefsExternalTrig();
 
 private slots:
     void increment_slot(bool t);

@@ -27,7 +27,14 @@ struct settingsT {
     // [Flight]:
     bool hidePlayback = true;
     bool hideFFT = true;
-
+    bool hideVerticalOverlay = true;
+    bool hideVertMeanProfile = false;
+    bool hideVertCrosshairProfile = false;
+    bool hideHorizontalMeanProfile = false;
+    bool hideHorizontalCrosshairProfile = false;
+    bool hideHistogramView = false;
+    bool hideStddeviation = false;
+    bool hideWaterfallTab = false;
 };
 
 

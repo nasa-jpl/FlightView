@@ -103,6 +103,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     connect(controlbox, SIGNAL(startSavingFinite(unsigned int, QString, unsigned int)), fw, SLOT(startSavingRawData(unsigned int, QString, unsigned int)));
     connect(controlbox, SIGNAL(stopSaving()),fw,SLOT(stopSavingRawData()));
     connect(controlbox->std_dev_N_slider, SIGNAL(valueChanged(int)), fw, SLOT(setStdDev_N(int)));
+    connect(controlbox, SIGNAL(haveReadPreferences(settingsT)), this, SLOT(handlePreferenceRead(settingsT)));
     connect(fw, SIGNAL(savingFrameNumChanged(unsigned int)), controlbox, SLOT(updateSaveFrameNum_slot(unsigned int)));
 
     controlbox->fps_label.setStyleSheet("QLabel {color: green;}");
@@ -116,6 +117,8 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     connect(controlbox, SIGNAL(startDataCollection(QString)), flight_screen, SLOT(startDataCollection(QString)));
     connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
     connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
+
+    controlbox->getPrefsExternalTrig();
     qDebug() << __PRETTY_FUNCTION__ << "started";
 }
 
@@ -266,6 +269,7 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
         }
     }
 }
+
 void MainWindow::closeEvent(QCloseEvent *e)
 {
     Q_UNUSED(e);
@@ -273,6 +277,50 @@ void MainWindow::closeEvent(QCloseEvent *e)
     QList<QWidget*> allWidgets = findChildren<QWidget*>();
     for(int i = 0; i < allWidgets.size(); ++i)
         allWidgets.at(i)->close();
+}
+
+void MainWindow::handlePreferenceRead(settingsT prefs)
+{
+    QString title;
+    if(options.flightMode)
+    {
+        if(prefs.hideFFT)
+            removeTab("FFT Profile");
+        if(prefs.hidePlayback)
+            removeTab("Playback");
+        if(prefs.hideVerticalOverlay)
+            removeTab("Vertical Overlay");
+        if(prefs.hideVertMeanProfile)
+            removeTab("Vertical Mean Profile");
+        if(prefs.hideVertCrosshairProfile)
+            removeTab("Vertical Crosshair Profile");
+        if(prefs.hideHorizontalMeanProfile)
+            removeTab("Horizontal Mean Profile");
+        if(prefs.hideHorizontalCrosshairProfile)
+            removeTab("Horizontal Crosshair Profile");
+        if(prefs.hideHistogramView)
+            removeTab("Histogram View");
+        if(prefs.hideStddeviation)
+            removeTab("Std. Deviation");
+        if(prefs.hideWaterfallTab)
+            removeTab("Waterfall");
+    }
+}
+
+void MainWindow::removeTab(QString tabTitle)
+{
+    // Note: This isn't optimal, and the tab cannot be added again without
+    // some interesting consequences.
+    QString title;
+    for(int t=0; t < tabWidget->count(); t++)
+    {
+        title = tabWidget->tabText(t);
+        if(title == tabTitle)
+        {
+            tabWidget->removeTab(t);
+            break;
+        }
+    }
 }
 
 void MainWindow::debugThis()
