@@ -19,6 +19,7 @@
 #include "frame_worker.h"
 #include "profile_widget.h"
 #include "fft_widget.h"
+#include "preferences.h"
 
 /*! \file
  * \brief Adjusts hardware settings in the backend.
@@ -58,6 +59,7 @@ class preferenceWindow : public QWidget
     //QIntValidator *valid;
 
     QPushButton *closeButton;
+    QPushButton *saveSettingsBtn;
     QPushButton *browseButton;
 
     QCheckBox *paraPixCheck;
@@ -68,15 +70,24 @@ class preferenceWindow : public QWidget
     QRadioButton *invert16bitButton;
     QRadioButton *invert14bitButton;
 
+    QHBoxLayout *bottomLayout;
+
     QLabel *ColorLabel;
     QComboBox *ColorScalePicker;
 
+    bool havePreferencesLoaded = false;
+    settingsT preferences;
+
 public:
-    preferenceWindow(frameWorker *fw, QTabWidget *qtw, QWidget *parent = 0);
+    preferenceWindow(frameWorker *fw, QTabWidget *qtw, settingsT prefs, QWidget *parent = 0);
+
+    settingsT getPrefs();
 
 private:
     void createLogFileTab();
     void createRenderingTab();
+    void processPreferences();
+
 
 private slots:
     void getFilePath();
@@ -87,6 +98,10 @@ private slots:
     void ignoreFirstRow(bool checked);
     void ignoreLastRow(bool checked);
     void setColorScheme(int index);
+    void saveSettingsNow();
+
+signals:
+    void saveSettings();
 };
 
 #endif

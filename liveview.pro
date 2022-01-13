@@ -44,6 +44,7 @@ HEADERS  += mainwindow.h \
     frame_worker.h \
     gpsmanager.h \
     image_type.h \
+    preferences.h \
     qcustomplot.h \
     histogram_widget.h \
     fft_widget.h \
@@ -59,7 +60,8 @@ HEADERS  += mainwindow.h \
     gpsGUI/gpsbinaryreader.h \
     gpsGUI/gpsbinarylogger.h \
     startupOptions.h \
-    waterfall.h
+    waterfall.h \
+    preferences.h
 
 
 # the following two lines are needed for the QFI widgets:

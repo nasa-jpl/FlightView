@@ -15,6 +15,7 @@
 #include "playback_widget.h"
 #include "saveserver.h"
 #include "startupOptions.h"
+#include "preferences.h"
 
 // GPS includes:
 
@@ -41,6 +42,7 @@ private:
     saveServer *save_server; // Save Server is a non-GUI component that should be open regardless of the current view widget
 
     startupOptionsType options;
+    QString settingsFilename;
 
     void prepareGPS();
     void processGPSMessage();
@@ -60,6 +62,7 @@ private:
     profile_widget *vert_overlay_widget;
     fft_widget *fft_mean_widget;
     playback_widget *raw_play_widget;
+
     /*! @} */
 
 public slots:

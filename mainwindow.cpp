@@ -125,6 +125,8 @@ void MainWindow::handleStatusMessage(QString message)
     qDebug() << __PRETTY_FUNCTION__ << "Status message: " << message;
 }
 
+
+
 void MainWindow::enableStdDevTabs()
 {
     qDebug() << "enabling std. dev. tabs";

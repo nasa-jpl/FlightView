@@ -18,6 +18,7 @@
 #include <QSpinBox>
 #include <QTabWidget>
 #include <QVBoxLayout>
+#include <QSettings>
 
 /* standard includes */
 #include <stdint.h>
@@ -33,6 +34,7 @@
 #include "playback_widget.h"
 #include "profile_widget.h"
 #include "pref_window.h"
+#include "preferences.h"
 #include "startupOptions.h"
 #include "filenamegenerator.h"
 
@@ -142,6 +144,15 @@ private:
     void waterfallControls(bool enabled);
     void overlayControls(bool enabled);
 
+    QSettings *settings;
+    void setDefaultSettings();
+    void loadSettings();
+    void saveSettings();
+
+    QString prefsFilename;
+    settingsT prefs;
+    settingsT defaultPrefs;
+
 signals:
     /*! \brief Passes the message to save raw frames at the backend.
      * \paragraph
@@ -210,6 +221,8 @@ private slots:
     void validateOverlayParams(int &lh_start, int &lh_end, int &cent_start, int &cent_end, int &rh_start, int &rh_end);
 
     void fft_slider_enable(bool toggled);
+
+    void triggerSaveSettings();
 
     void debugThis();
 

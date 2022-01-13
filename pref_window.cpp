@@ -4,7 +4,7 @@
 #include "profile_widget.h"
 #include "pref_window.h"
 
-preferenceWindow::preferenceWindow(frameWorker *fw, QTabWidget *qtw, QWidget *parent) :
+preferenceWindow::preferenceWindow(frameWorker *fw, QTabWidget *qtw, settingsT prefs, QWidget *parent) :
     QWidget(parent)
 {   
     /*! \brief Generates the preferenceWindow layout and tabs.
@@ -21,10 +21,12 @@ preferenceWindow::preferenceWindow(frameWorker *fw, QTabWidget *qtw, QWidget *pa
     this->frWidth = fw->getFrameWidth();
 
     closeButton = new QPushButton(tr("&Close"));
+    saveSettingsBtn = new QPushButton(tr("&Save Settings"));
     createLogFileTab();
     createRenderingTab();
 
     connect(closeButton, SIGNAL(clicked()), this, SLOT(close()));
+    connect(saveSettingsBtn, SIGNAL(clicked()), this, SLOT(saveSettingsNow()));
 
     QTabWidget *tabs = new QTabWidget();
     tabs->addTab(renderingTab, "Rendering");
@@ -35,9 +37,15 @@ preferenceWindow::preferenceWindow(frameWorker *fw, QTabWidget *qtw, QWidget *pa
 
     QVBoxLayout *layout = new QVBoxLayout();
     layout->addWidget(tabs);
-    layout->addWidget(closeButton);
+    bottomLayout = new QHBoxLayout();
+    bottomLayout->addWidget(closeButton);
+    bottomLayout->addWidget(saveSettingsBtn);
+    layout->addLayout(bottomLayout);
+
     this->setLayout(layout);
     this->setWindowTitle("Preferences");
+    this->preferences = prefs;
+    processPreferences();
 }
 void preferenceWindow::createLogFileTab()
 {
@@ -180,10 +188,47 @@ void preferenceWindow::enableControls(int ndx)
         ignoreLastCheck->setEnabled(false);
     }
 }
+
+void preferenceWindow::processPreferences()
+{
+    // Initial run.
+    // Set the GUI controls to the preference values
+    // and trigger any needed actions
+
+    invert14bitButton->setChecked(preferences.brightSwap14);
+    if(preferences.brightSwap14)
+        invert14bitButton->click();
+
+    invert16bitButton->setChecked(preferences.brightSwap16);
+    if(preferences.brightSwap16)
+        invert16bitButton->click();
+
+    ignoreLastCheck->setChecked(preferences.skipLastRow);
+    ignoreLastCheck->clicked(preferences.skipLastRow);
+
+    ignoreFirstCheck->setChecked(preferences.skipFirstRow);
+    ignoreFirstCheck->clicked(preferences.skipFirstRow);
+
+    nativeScaleButton->setChecked(preferences.nativeScale);
+    nativeScaleButton->clicked(preferences.nativeScale);
+
+    paraPixCheck->setChecked(preferences.use2sComp);
+    paraPixCheck->clicked(preferences.use2sComp);
+
+    ColorScalePicker->setCurrentIndex(preferences.frameColorScheme);
+    ColorScalePicker->activated(preferences.frameColorScheme);
+}
+
+
 void preferenceWindow::invertRange()
 {
     /*! \brief Set the inversion factor of the image and communicate the value to the backend. */
     uint factor = 65535; // (2^16) - 1;
+
+    preferences.brightSwap14 = invert14bitButton->isChecked();
+    preferences.brightSwap16 = invert16bitButton->isChecked();
+    preferences.nativeScale = nativeScaleButton->isChecked();
+
     if( invert14bitButton->isChecked() )
     {
         factor = 16383; // (2^14) - 1;
@@ -206,21 +251,35 @@ void preferenceWindow::ignoreFirstRow(bool checked)
 {
     /*! \brief Ignore first row data for the purpose of averaging. */
     fw->skipFirstRow(checked);
+    preferences.skipFirstRow = checked;
 }
 void preferenceWindow::ignoreLastRow(bool checked)
 {
     /*! \brief Ignore last row data for the purposes of averaging. */
     fw->skipLastRow(checked);
+    preferences.skipLastRow = checked;
 }
 void preferenceWindow::enableParaPixMap(bool checked)
 {
     /*! \brief Enables or Diables the Parallel Pixel Mapping based on the check box in the Rendering Tab */
     fw->to.paraPixRemap(checked);
+    preferences.use2sComp = checked;
 }
 
 void preferenceWindow::setColorScheme(int index)
 {
     //fw->color_scheme = index;
     fw->setColorScheme(index);
+    preferences.frameColorScheme = index;
     //std::cerr << "selected index: " << index << std::endl;
+}
+
+void preferenceWindow::saveSettingsNow()
+{
+    emit saveSettings();
+}
+
+settingsT preferenceWindow::getPrefs()
+{
+    return this->preferences;
 }

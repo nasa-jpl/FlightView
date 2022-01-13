@@ -39,7 +39,11 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         emit errorMessage(QString("Could not create directory %1").arg(options.dataLocation));
     }
 
-    prefWindow = new preferenceWindow(fw, tw);
+    settings = new QSettings();
+    setDefaultSettings();
+    loadSettings();
+
+    prefWindow = new preferenceWindow(fw, tw, prefs);
 
 /* ====================================================================== */
     // LEFT SIDE BUTTONS (Collections)
@@ -372,12 +376,105 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     connect(&red_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)));
     connect(&green_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)));
     connect(&blue_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)));
+
+    // Preferences:
+    connect(prefWindow, SIGNAL(saveSettings()), this, SLOT(triggerSaveSettings()));
 }
 void ControlsBox::closeEvent(QCloseEvent *e)
 {
     /* Note: minor hack below */
     Q_UNUSED(e);
     prefWindow->close();
+}
+
+
+void ControlsBox::loadSettings()
+{
+    settings->beginGroup("Camera");
+    prefs.brightSwap14 = settings->value("brightSwap14", defaultPrefs.brightSwap14).toBool();
+    prefs.brightSwap16 = settings->value("brightSwap16", defaultPrefs.brightSwap16).toBool();
+    prefs.nativeScale = settings->value("nativeScale", defaultPrefs.nativeScale).toBool();
+    prefs.skipFirstRow = settings->value("skipFirstRow", defaultPrefs.skipFirstRow).toBool();
+    prefs.skipLastRow = settings->value("skipLastRow", defaultPrefs.skipLastRow).toBool();
+    prefs.use2sComp = settings->value("use2sComp", defaultPrefs.use2sComp).toBool();
+    settings->endGroup();
+
+    settings->beginGroup("Interface");
+    prefs.frameColorScheme = settings->value("frameColorScheme", defaultPrefs.frameColorScheme).toInt();
+    prefs.darkSubLow = settings->value("darkSubLow", defaultPrefs.darkSubLow).toInt();
+    prefs.darkSubHigh = settings->value("darkSubHigh", defaultPrefs.darkSubHigh).toInt();
+    prefs.rawLow = settings->value("rawLow", defaultPrefs.rawLow).toInt();
+    prefs.rawHigh = settings->value("rawHigh", defaultPrefs.rawHigh).toInt();
+    settings->endGroup();
+
+    settings->beginGroup("Flight");
+    prefs.hidePlayback = settings->value("hidePlayback", defaultPrefs.hidePlayback).toBool();
+    settings->endGroup();
+}
+
+void ControlsBox::triggerSaveSettings()
+{
+    // Copy settings in from the preference window
+    settingsT pwprefs = prefWindow->getPrefs();
+    prefs.brightSwap14 = pwprefs.brightSwap14;
+    prefs.brightSwap16 = pwprefs.brightSwap16;
+    prefs.darkSubHigh = pwprefs.darkSubHigh;
+    prefs.darkSubLow = pwprefs.darkSubLow;
+    prefs.frameColorScheme = pwprefs.frameColorScheme;
+    prefs.use2sComp = pwprefs.use2sComp;
+
+    // Now save:
+    saveSettings();
+}
+
+void ControlsBox::saveSettings()
+{
+    // Camera:
+    settings->beginGroup("Camera");
+    settings->setValue("brightSwap14", prefs.brightSwap14 );
+    settings->setValue("brightSwap16", prefs.brightSwap16);
+    settings->setValue("nativeScale", prefs.nativeScale);
+    settings->setValue("skipFirstRow", prefs.skipFirstRow);
+    settings->setValue("skipLastRow", prefs.skipLastRow);
+    settings->setValue("use2sComp", prefs.use2sComp);
+    settings->endGroup();
+
+    // Interface:
+    settings->beginGroup("Interface");
+    settings->setValue("frameColorScheme", prefs.frameColorScheme);
+    settings->setValue("darkSubLow", prefs.darkSubLow);
+    settings->setValue("darkSubHigh", prefs.darkSubHigh);
+    settings->setValue("rawLow", prefs.rawLow);
+    settings->setValue("rawHigh", prefs.rawHigh);
+    settings->endGroup();
+
+    // Flight:
+    settings->beginGroup("Flight");
+    settings->setValue("hidePlayback", prefs.hidePlayback);
+    settings->endGroup();
+
+    settings->sync();
+}
+
+void ControlsBox::setDefaultSettings()
+{
+    // Camera:
+    defaultPrefs.brightSwap14 = false;
+    defaultPrefs.brightSwap16 = false;
+    defaultPrefs.nativeScale = true;
+    defaultPrefs.skipFirstRow = true;
+    defaultPrefs.skipLastRow = false;
+    defaultPrefs.use2sComp = false;
+
+    // Interface:
+    defaultPrefs.frameColorScheme = 0; // Jet
+    defaultPrefs.darkSubLow = -2000;
+    defaultPrefs.darkSubHigh = 2000;
+    defaultPrefs.rawLow = 0;
+    defaultPrefs.rawHigh = 10000;
+
+    // Flight:
+    defaultPrefs.hidePlayback = true;
 }
 
 // public slot(s)
