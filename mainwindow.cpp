@@ -53,6 +53,9 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     if(!options.flightMode)
     {
         raw_play_widget = new playback_widget(fw);
+        setWindowTitle("Ground Mode");
+    } else {
+        setWindowTitle("Flight Mode");
     }
 
     /* Add tabs in order */

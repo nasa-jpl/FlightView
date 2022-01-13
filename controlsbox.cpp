@@ -357,6 +357,14 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     save_layout->addWidget(&filename_edit, 3, 2, 1, 4);
     save_layout->addWidget(&debugButton, 4, 4, 1, 1);
     save_layout->addWidget(&saveRGBPresetButton, 4, 1, 1, 1);
+    if(options.flightMode)
+    {
+        filename_edit.setToolTip("Automatic");
+        filename_edit.setEnabled(false);
+    } else {
+        filename_edit.setToolTip("Leave blank for automatic filename");
+        filename_edit.setEnabled(true);
+    }
 
     //Third Row
     save_layout->addWidget(&stop_saving_frames_button, 1, 5, 1, 1);
