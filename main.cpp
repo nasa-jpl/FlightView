@@ -44,6 +44,10 @@ int main(int argc, char *argv[])
     /* Step 1: Setup this QApplication */
     //QApplication::setGraphicsSystem("raster"); //This is intended to make 2D rendering faster
     QApplication a(argc, argv);
+    a.setOrganizationDomain("jpl.nasa.gov");
+    a.setOrganizationName("FlightView");
+    a.setApplicationDisplayName("FlightView");
+    a.setApplicationName("FlightView");
 
     QString cmdName = QString("%1").arg(argv[0]);
     QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps "
