@@ -145,6 +145,29 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     blue_slider.setTickInterval(1);
     blue_slider.hide();
 
+    redSpin.setMinimum(0);
+    redSpin.setMaximum(frHeight-1);
+    redSpin.setValue(red_slider.value());
+    redSpin.setSingleStep(1);
+    redSpin.hide();
+
+    greenSpin.setMinimum(0);
+    greenSpin.setMaximum(frHeight-1);
+    greenSpin.setValue(green_slider.value());
+    greenSpin.setSingleStep(1);
+    greenSpin.hide();
+
+    blueSpin.setMinimum(0);
+    blueSpin.setMaximum(frHeight-1);
+    blueSpin.setValue(blue_slider.value());
+    blueSpin.setSingleStep(1);
+    blueSpin.hide();
+
+    QStringList rgbPresets = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
+    rgbPresetCombo.addItems(rgbPresets);
+    rgbPresetCombo.setToolTip("Recall an RGB preset here.\n To save a preset to the settings file, adjust the sliders and then press Save Settings in the Preferences.");
+    rgbPresetCombo.hide();
+
     wflength_slider.setOrientation(Qt::Horizontal);
     wflength_slider.setMaximum(1024);
     wflength_slider.setMinimum(100);
@@ -258,26 +281,30 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     sliders_layout->addWidget(overlay_cent_width_spin, 5,10,1,1);
 
     // RGB waterfall support:
-    red_label.setText("Red:");
-    green_label.setText("Green:");
-    blue_label.setText("Blue:");
+    red_label.setText("Red Band:");
+    green_label.setText("Green Band:");
+    blue_label.setText("Blue Band:");
     wflength_label.setText("WF Length:");
 
     // 6:
     sliders_layout->addWidget(&red_label, 6,1,1,1);
     sliders_layout->addWidget(&red_slider, 6,2,1,7);
+    sliders_layout->addWidget(&redSpin, 6,10,1,1);
 
     // 7:
     sliders_layout->addWidget(&green_label, 7,1,1,1);
     sliders_layout->addWidget(&green_slider, 7,2,1,7);
+    sliders_layout->addWidget(&greenSpin, 7,10,1,1);
 
     // 8:
     sliders_layout->addWidget(&blue_label, 8,1,1,1);
     sliders_layout->addWidget(&blue_slider, 8,2,1,7);
+    sliders_layout->addWidget(&blueSpin, 8,10,1,1);
 
     // 9:
     sliders_layout->addWidget(&wflength_label, 9,1,1,1);
     sliders_layout->addWidget(&wflength_slider, 9,2,1,7);
+    sliders_layout->addWidget(&rgbPresetCombo, 9,10,1,1);
 
     ThresholdingSlidersBox.setLayout(sliders_layout);
 
@@ -377,8 +404,87 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     connect(&green_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)));
     connect(&blue_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)));
 
+    connect(&red_slider, &QSlider::sliderMoved,
+            [&](int value) {
+        redSpin.blockSignals(true);
+        redSpin.setValue(value);
+        redSpin.blockSignals(false);
+        bandRed = value;
+        prefs.bandRed[rgbPresetCombo.currentIndex()] = value;
+    });
+
+    connect(&green_slider, &QSlider::sliderMoved,
+            [&](int value) {
+        greenSpin.blockSignals(true);
+        greenSpin.setValue(value);
+        greenSpin.blockSignals(false);
+        bandGreen = value;
+        prefs.bandGreen[rgbPresetCombo.currentIndex()] = value;
+    });
+
+    connect(&blue_slider, &QSlider::sliderMoved,
+            [&](int value) {
+        blueSpin.blockSignals(true);
+        blueSpin.setValue(value);
+        blueSpin.blockSignals(false);
+        bandBlue = value;
+        prefs.bandBlue[rgbPresetCombo.currentIndex()] = value;
+    });
+
+    connect(&redSpin,  QOverload<int>::of(&QSpinBox::valueChanged),
+            [&](int value) {
+        red_slider.blockSignals(true);
+        red_slider.setValue(value);
+        red_slider.blockSignals(false);
+        bandRed = value;
+        prefs.bandRed[rgbPresetCombo.currentIndex()] = value;
+    });
+
+    connect(&greenSpin,  QOverload<int>::of(&QSpinBox::valueChanged),
+            [&](int value) {
+        green_slider.blockSignals(true);
+        green_slider.setValue(value);
+        green_slider.blockSignals(false);
+        bandGreen = value;
+        prefs.bandGreen[rgbPresetCombo.currentIndex()] = value;
+    });
+
+
+    connect(&blueSpin,  QOverload<int>::of(&QSpinBox::valueChanged),
+            [&](int value) {
+        blue_slider.blockSignals(true);
+        blue_slider.setValue(value);
+        blue_slider.blockSignals(false);
+        bandBlue = value;
+        prefs.bandBlue[rgbPresetCombo.currentIndex()] = value;
+    });
+
+    connect(&rgbPresetCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            [&](int index) {
+        if(index < 0 || index > 9)
+            return;
+        bandRed = prefs.bandRed[index];
+        bandGreen = prefs.bandGreen[index];
+        bandBlue = prefs.bandBlue[index];
+        redSpin.setValue(bandRed);
+        greenSpin.setValue(bandGreen);
+        blueSpin.setValue(bandBlue);
+    });
+
+
+
+
     // Preferences:
     connect(prefWindow, SIGNAL(saveSettings()), this, SLOT(triggerSaveSettings()));
+
+    rgbPresetCombo.setCurrentIndex(0);
+    bandRed = prefs.bandRed[0];
+    bandGreen = prefs.bandGreen[0];
+    bandBlue = prefs.bandBlue[0];
+    redSpin.setValue(bandRed);
+    greenSpin.setValue(bandGreen);
+    blueSpin.setValue(bandBlue);
+
 }
 void ControlsBox::closeEvent(QCloseEvent *e)
 {
@@ -407,6 +513,23 @@ void ControlsBox::loadSettings()
     prefs.rawHigh = settings->value("rawHigh", defaultPrefs.rawHigh).toInt();
     settings->endGroup();
 
+    // [RGB]:
+    settings->beginGroup("RGB");
+    int rgbArraySize = settings->beginReadArray("bandsRGB");
+    if(rgbArraySize > 10)
+        rgbArraySize = 10;
+
+    for(int i=0; i < rgbArraySize; i++)
+    {
+        settings->setArrayIndex(i);
+        prefs.bandRed[i] = settings->value("bandRed", defaultPrefs.bandRed[i]).toInt();
+        prefs.bandGreen[i] = settings->value("bandGreen", defaultPrefs.bandGreen[i]).toInt();
+        prefs.bandBlue[i] = settings->value("bandBlue", defaultPrefs.bandBlue[i]).toInt();
+    }
+
+    settings->endArray();
+    settings->endGroup();
+
     settings->beginGroup("Flight");
     prefs.hidePlayback = settings->value("hidePlayback", defaultPrefs.hidePlayback).toBool();
     settings->endGroup();
@@ -429,7 +552,7 @@ void ControlsBox::triggerSaveSettings()
 
 void ControlsBox::saveSettings()
 {
-    // Camera:
+    // [Camera]:
     settings->beginGroup("Camera");
     settings->setValue("brightSwap14", prefs.brightSwap14 );
     settings->setValue("brightSwap16", prefs.brightSwap16);
@@ -439,7 +562,7 @@ void ControlsBox::saveSettings()
     settings->setValue("use2sComp", prefs.use2sComp);
     settings->endGroup();
 
-    // Interface:
+    // [Interface]:
     settings->beginGroup("Interface");
     settings->setValue("frameColorScheme", prefs.frameColorScheme);
     settings->setValue("darkSubLow", prefs.darkSubLow);
@@ -448,7 +571,20 @@ void ControlsBox::saveSettings()
     settings->setValue("rawHigh", prefs.rawHigh);
     settings->endGroup();
 
-    // Flight:
+    // [RGB]:
+    settings->beginGroup("RGB");
+    settings->beginWriteArray("bandsRGB", 10);
+    for(int i=0; i < 10; i++)
+    {
+        settings->setArrayIndex(i);
+        settings->setValue("bandRed", prefs.bandRed[i]);
+        settings->setValue("bandGreen", prefs.bandGreen[i]);
+        settings->setValue("bandBlue", prefs.bandBlue[i]);
+    }
+    settings->endArray();
+    settings->endGroup();
+
+    // [Flight]:
     settings->beginGroup("Flight");
     settings->setValue("hidePlayback", prefs.hidePlayback);
     settings->endGroup();
@@ -458,7 +594,7 @@ void ControlsBox::saveSettings()
 
 void ControlsBox::setDefaultSettings()
 {
-    // Camera:
+    // [Camera]:
     defaultPrefs.brightSwap14 = false;
     defaultPrefs.brightSwap16 = false;
     defaultPrefs.nativeScale = true;
@@ -466,14 +602,22 @@ void ControlsBox::setDefaultSettings()
     defaultPrefs.skipLastRow = false;
     defaultPrefs.use2sComp = false;
 
-    // Interface:
+    // [Interface]:
     defaultPrefs.frameColorScheme = 0; // Jet
     defaultPrefs.darkSubLow = -2000;
     defaultPrefs.darkSubHigh = 2000;
     defaultPrefs.rawLow = 0;
     defaultPrefs.rawHigh = 10000;
 
-    // Flight:
+    // [RGB]:
+    for(int i=0; i < 10; i++)
+    {
+        defaultPrefs.bandRed[i] = 100;
+        defaultPrefs.bandGreen[i] = 200;
+        defaultPrefs.bandBlue[i] = 300;
+    }
+
+    // [Flight]:
     defaultPrefs.hidePlayback = true;
 }
 
@@ -1229,7 +1373,13 @@ void ControlsBox::waterfallControls(bool enabled)
     red_label.setVisible(enabled);
     green_label.setVisible(enabled);
     blue_label.setVisible(enabled);
+
+    redSpin.setVisible(enabled);
+    greenSpin.setVisible(enabled);
+    blueSpin.setVisible(enabled);
+
     wflength_label.setVisible(enabled);
+    rgbPresetCombo.setVisible(enabled);
 }
 
 void ControlsBox::overlayControls(bool see_it)

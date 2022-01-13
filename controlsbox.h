@@ -90,6 +90,10 @@ public:
     QSlider red_slider;
     QSlider green_slider;
     QSlider blue_slider;
+    QSpinBox redSpin;
+    QSpinBox greenSpin;
+    QSpinBox blueSpin;
+    QComboBox rgbPresetCombo;
     QSlider wflength_slider;
     QLabel red_label;
     QLabel green_label;
@@ -152,6 +156,10 @@ private:
     QString prefsFilename;
     settingsT prefs;
     settingsT defaultPrefs;
+
+    int bandRed = 0;
+    int bandGreen = 0;
+    int bandBlue = 0;
 
 signals:
     /*! \brief Passes the message to save raw frames at the backend.

@@ -1,9 +1,8 @@
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
 
-
 struct settingsT {
-    // Camera:
+    // [Camera]:
     bool skipFirstRow = false;
     bool skipLastRow = false;
     bool use2sComp = false;
@@ -11,15 +10,21 @@ struct settingsT {
     bool brightSwap16 = false;
     bool brightSwap14 = false;
 
-    // Interface:
+    // [Interface]:
     int frameColorScheme;
     int darkSubLow;
     int darkSubHigh;
     int rawLow;
     int rawHigh;
 
-    // Flight:
+    // [RGB]:
+    unsigned int bandRed[10];
+    unsigned int bandBlue[10];
+    unsigned int bandGreen[10];
+
+    // [Flight]:
     bool hidePlayback = true;
+    bool hideFFT = true;
 
 };
 
