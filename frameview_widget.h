@@ -23,6 +23,8 @@
 #include "frame_worker.h"
 #include "image_type.h"
 #include "qcustomplot.h"
+#include "preferences.h"
+
 
 /*! \file
  * \brief Widget which plots live color maps of image data.
@@ -81,6 +83,8 @@ class frameview_widget : public QWidget
     double fps;
     QString fps_string;
     bool useDSF;
+    bool havePrefs = false;
+    settingsT *prefs;
 
 
 public:
@@ -99,6 +103,7 @@ public:
     image_t image_type;
     const unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
+    void setPrefsPtr(settingsT *prefsPtr);
 
 public slots:
     /*! \addtogroup renderfunc Rendering Functions

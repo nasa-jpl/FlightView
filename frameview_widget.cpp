@@ -23,18 +23,20 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     this->image_type = image_type;
     floor = 0;
     useDSF = false;
+    havePrefs = false;
+    prefs = NULL;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
 
     switch(image_type) {
     case BASE:
-        ceiling = fw->base_ceiling;
+        //ceiling = fw->base_ceiling;
         break;
     case DSF:
-        ceiling = 100;
+        //ceiling = 100;
         break;
     case STD_DEV:
-        ceiling = 100;
+        ceiling = 102;
         break;
     case WATERFALL:
     {
@@ -154,6 +156,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     }
     colorMap->setData(colorMapData);
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    qDebug() << __PRETTY_FUNCTION__ << ": Finished constructor";
 }
 frameview_widget::~frameview_widget()
 {
@@ -162,6 +165,18 @@ frameview_widget::~frameview_widget()
 }
 
 // public functions
+
+void frameview_widget::setPrefsPtr(settingsT *prefsPtr)
+{
+    if(prefsPtr)
+    {
+        this->prefs = prefsPtr;
+        this->havePrefs = true;
+    } else {
+        this->havePrefs = false;
+    }
+}
+
 double frameview_widget::getCeiling()
 {
     /*! \brief Return the value of the ceiling for this widget as a double */
@@ -170,6 +185,7 @@ double frameview_widget::getCeiling()
 double frameview_widget::getFloor()
 {
     /*! \brief Return the value of the floor for this widget as a double */
+    qDebug() << "Frameview Widget: Returning floor value from getFloor of " << floor;
     return floor;
 }
 void frameview_widget::toggleDisplayCrosshair()
@@ -452,13 +468,63 @@ void frameview_widget::setScrollY(bool Xenabled)
 void frameview_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
+    if(prefs)
+    {
+        switch(image_type)
+        {
+        case(DSF):
+            prefs->dsfCeiling = c;
+            break;
+        case(BASE):
+            if(useDSF)
+            {
+                prefs->dsfCeiling = c;
+            } else {
+                prefs->frameViewCeiling = c;
+            }
+            break;
+
+        case(STD_DEV):
+            prefs->stddevCeiling = c;
+            break;
+
+        default:
+            break;
+        }
+    }
+
     ceiling = (double)c;
     rescaleRange();
 }
 
 void frameview_widget::updateFloor(int f)
 {
-    /*! \brief Change the value  of the floor for this widget to the input parameter and replot the color scale. */
+    /*! \brief Change the value  of the floor for this widget to the input parameter and replot the color scale. */   
+    if(prefs)
+    {
+        switch(image_type)
+        {
+        case(DSF):
+            prefs->dsfFloor = f;
+            break;
+
+        case(BASE):
+            if(useDSF)
+            {
+                prefs->dsfFloor = f;
+            } else {
+                prefs->frameViewFloor = f;
+            }
+            break;
+
+        case(STD_DEV):
+            prefs->stddevFloor = f;
+            break;
+
+        default:
+            break;
+        }
+    }
     floor = (double)f;
     rescaleRange();
 }

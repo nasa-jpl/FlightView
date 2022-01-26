@@ -32,7 +32,7 @@ fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
     connect(vCrossButton, SIGNAL(clicked()), this, SLOT(updateFFT()));
     connect(tapPrfButton, SIGNAL(clicked()), this, SLOT(updateFFT()));
 
-    ceiling = 100;
+    ceiling = 101;
     floor = 0;
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);

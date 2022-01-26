@@ -155,6 +155,9 @@ private:
     void saveSettings();
     void saveSingleRGBPreset(int index, int r, int g, int b);
 
+    void setLevelToPrefs(bool isCeiling, int val);
+    void updateUIToPrefs();
+
     QString prefsFilename;
     settingsT prefs;
     settingsT defaultPrefs;
@@ -207,6 +210,8 @@ private slots:
     void display_std_dev_slider();
     void display_lines_slider();
     void update_backend_delta();
+    void updateFloor(int f);
+    void updateCeiling(int c);
 
     /*! \addtogroup savingfunc Frame saving functions
      * Contains functions which control the processes needed to save frames.

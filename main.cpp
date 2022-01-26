@@ -144,9 +144,6 @@ int main(int argc, char *argv[])
     }
 
 
-
-    qDebug() << "test";
-
     /* Step 2: Load the splash screen */
     QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
     QSplashScreen splash(logo_pixmap);

@@ -3,6 +3,10 @@
 #include <QString>
 
 struct settingsT {
+
+    // Runtime-only:
+    bool readFile = false;
+
     // [Camera]:
     bool skipFirstRow = false;
     bool skipLastRow = false;
@@ -13,10 +17,26 @@ struct settingsT {
 
     // [Interface]:
     int frameColorScheme;
-    int darkSubLow;
-    int darkSubHigh;
-    int rawLow;
-    int rawHigh;
+//    int darkSubLow;
+//    int darkSubHigh;
+//    int rawLow;
+//    int rawHigh;
+
+    int frameViewCeiling;
+    int frameViewFloor;
+
+    int dsfCeiling;
+    int dsfFloor;
+
+    int fftCeiling;
+    int fftFloor;
+
+    int stddevCeiling;
+    int stddevFloor;
+
+
+
+
 
     // [RGB]:
     unsigned int bandRed[10];

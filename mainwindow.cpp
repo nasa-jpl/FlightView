@@ -97,7 +97,13 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     if(options.flightMode)
     {
         // Flight Tab
-        tabWidget->setCurrentIndex(3);
+        int flightIndex = tabWidget->indexOf(flight_screen);
+        if(flightIndex >-1)
+        {
+            tabWidget->setCurrentIndex(flightIndex);
+        } else {
+            handleStatusMessage("ERROR: Could not set current screen to Flight Screen.");
+        }
     }
 
     connect(fw, SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
@@ -131,11 +137,9 @@ void MainWindow::handleStatusMessage(QString message)
     qDebug() << __PRETTY_FUNCTION__ << "Status message: " << message;
 }
 
-
-
 void MainWindow::enableStdDevTabs()
 {
-    qDebug() << "enabling std. dev. tabs";
+    //qDebug() << "enabling std. dev. tabs";
     tabWidget->setTabEnabled(2, true);
     tabWidget->setTabEnabled(3, true);
     disconnect(fw, SIGNAL(std_dev_ready()), this, SLOT(enableStdDevTabs()));

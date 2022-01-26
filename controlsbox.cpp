@@ -52,7 +52,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     stop_dark_collection_button.setEnabled(false);
     load_mask_from_file.setText("Load Dark Mask");
     load_mask_from_file.setEnabled(false);
-    pref_button.setText("Change Preferences");
+    pref_button.setText("Preferences");
     fps_label.setText("Warning: No Data Recieved");
     server_ip_label.setText("Server IP: Not Connected!");
     server_port_label.setText("Port Number: Not Connected!");
@@ -359,7 +359,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     save_layout->addWidget(&saveRGBPresetButton, 4, 1, 1, 1);
     if(options.flightMode)
     {
-        filename_edit.setToolTip("Automatic");
+        filename_edit.setToolTip("Automatic in Flight Mode");
         filename_edit.setEnabled(false);
     } else {
         filename_edit.setToolTip("Leave blank for automatic filename");
@@ -403,6 +403,50 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     connect(&ceiling_slider, SIGNAL(valueChanged(int)), &ceiling_edit, SLOT(setValue(int)));
     connect(&floor_edit, SIGNAL(valueChanged(int)), &floor_slider, SLOT(setValue(int)));
     connect(&floor_slider, SIGNAL(valueChanged(int)), &floor_edit, SLOT(setValue(int)));
+
+    connect(&floor_slider, SIGNAL(valueChanged(int)), this, SLOT(updateFloor(int)));
+    connect(&floor_edit, SIGNAL(valueChanged(int)), this, SLOT(updateFloor(int)));
+
+    connect(&ceiling_slider, SIGNAL(valueChanged(int)), this, SLOT(updateCeiling(int)));
+    connect(&ceiling_edit, SIGNAL(valueChanged(int)), this, SLOT(updateCeiling(int)));
+
+
+//    connect(&ceiling_slider, &QSlider::valueChanged,
+//            [&](int value) {
+//            if(use_DSF_cbox.isChecked())
+//            {
+//                prefs.dsfCeiling = value;
+//            } else {
+//                prefs.frameViewCeiling = value;
+//            }
+
+//    });
+
+//    connect(&floor_slider, &QSlider::valueChanged,
+//            [&](int value) {
+//            if(use_DSF_cbox.isChecked())
+//            {
+//                prefs.dsfFloor = value;
+//            } else {
+//                prefs.frameViewFloor = value;
+//            }
+
+//    });
+
+//    connect(&use_DSF_cbox, &QCheckBox::toggled,
+//            [&](bool toggled) {
+//            if(toggled)
+//            {
+//                // DSF
+//                floor_slider.setValue(prefs.dsfFloor);
+//                ceiling_slider.setValue(prefs.dsfCeiling);
+//            } else {
+//                // Raw (no subtraction)
+//                floor_slider.setValue(prefs.frameViewFloor);
+//                ceiling_slider.setValue(prefs.frameViewCeiling);
+//            }
+//    });
+
     connect(&use_DSF_cbox, SIGNAL(toggled(bool)), this, SLOT(use_DSF_general(bool)));
     connect(&low_increment_cbox, SIGNAL(toggled(bool)), this, SLOT(increment_slot(bool)));
     connect(&save_finite_button, SIGNAL(clicked()), this, SLOT(save_finite_button_slot()));
@@ -528,6 +572,26 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     blueSpin.setValue(bandBlue);
     previousRGBPresetIndex = 0;
 
+    ceiling_edit.blockSignals(true);
+    ceiling_slider.blockSignals(true);
+    floor_edit.blockSignals(true);
+    floor_slider.blockSignals(true);
+    if(use_DSF_cbox.isChecked())
+    {
+        ceiling_slider.setValue(prefs.dsfCeiling);
+        ceiling_edit.setValue(prefs.dsfCeiling);
+        floor_slider.setValue(prefs.dsfFloor);
+        floor_edit.setValue(prefs.dsfFloor);
+    } else {
+        ceiling_slider.setValue(prefs.frameViewCeiling);
+        ceiling_edit.setValue(prefs.frameViewCeiling);
+        floor_slider.setValue(prefs.frameViewFloor);
+        floor_edit.setValue(prefs.frameViewFloor);
+    }
+    ceiling_edit.blockSignals(false);
+    ceiling_slider.blockSignals(false);
+    floor_edit.blockSignals(false);
+    floor_slider.blockSignals(false);
 }
 void ControlsBox::closeEvent(QCloseEvent *e)
 {
@@ -544,6 +608,8 @@ void ControlsBox::getPrefsExternalTrig()
 
 void ControlsBox::loadSettings()
 {
+    prefs.readFile = false;
+
     // [Camera]:
     settings->beginGroup("Camera");
     prefs.brightSwap14 = settings->value("brightSwap14", defaultPrefs.brightSwap14).toBool();
@@ -557,10 +623,19 @@ void ControlsBox::loadSettings()
     // [Interface]:
     settings->beginGroup("Interface");
     prefs.frameColorScheme = settings->value("frameColorScheme", defaultPrefs.frameColorScheme).toInt();
-    prefs.darkSubLow = settings->value("darkSubLow", defaultPrefs.darkSubLow).toInt();
-    prefs.darkSubHigh = settings->value("darkSubHigh", defaultPrefs.darkSubHigh).toInt();
-    prefs.rawLow = settings->value("rawLow", defaultPrefs.rawLow).toInt();
-    prefs.rawHigh = settings->value("rawHigh", defaultPrefs.rawHigh).toInt();
+//    prefs.darkSubLow = settings->value("darkSubLow", defaultPrefs.darkSubLow).toInt();
+//    prefs.darkSubHigh = settings->value("darkSubHigh", defaultPrefs.darkSubHigh).toInt();
+//    prefs.rawLow = settings->value("rawLow", defaultPrefs.rawLow).toInt();
+//    prefs.rawHigh = settings->value("rawHigh", defaultPrefs.rawHigh).toInt();
+
+    prefs.frameViewCeiling = settings->value("frameViewCeiling", defaultPrefs.frameViewCeiling).toInt();
+    prefs.frameViewFloor = settings->value("frameViewFloor", defaultPrefs.frameViewFloor).toInt();
+    prefs.dsfCeiling = settings->value("dsfCeiling", defaultPrefs.dsfCeiling).toInt();
+    prefs.dsfFloor = settings->value("dsfFloor", defaultPrefs.dsfFloor).toInt();
+    prefs.fftCeiling = settings->value("fftCeiling", defaultPrefs.fftCeiling).toInt();
+    prefs.fftFloor = settings->value("fftFloor", defaultPrefs.fftFloor).toInt();
+    prefs.stddevCeiling = settings->value("stddevCeiling", defaultPrefs.stddevCeiling).toInt();
+    prefs.stddevFloor = settings->value("stddevFloor", defaultPrefs.stddevFloor).toInt();
     settings->endGroup();
 
     // [RGB]:
@@ -597,7 +672,51 @@ void ControlsBox::loadSettings()
     prefs.hideWaterfallTab = settings->value("hideWaterfallTab", defaultPrefs.hideWaterfallTab).toBool();
     settings->endGroup();
 
+    prefs.readFile = true;
+    updateUIToPrefs();
     emit haveReadPreferences(prefs);
+}
+
+void ControlsBox::updateUIToPrefs()
+{
+    current_tab = qtw->widget(qtw->currentIndex());
+    attempt_pointers(current_tab);
+
+    if(p_profile || p_frameview || p_flight)
+    {
+        if (p_frameview && p_frameview->image_type == STD_DEV) {
+            // Type is Standard Deviation Image
+            floor_slider.setValue(prefs.stddevFloor);
+            ceiling_slider.setValue(prefs.stddevCeiling);
+            return;
+        }
+
+        // profile plots and frame view images generally
+        // use the same levels.
+        // So therefore, we just have a DSF and not-DSF level for each.
+        if(use_DSF_cbox.isChecked())
+        {
+            floor_slider.setValue(prefs.dsfFloor);
+            ceiling_slider.setValue(prefs.dsfCeiling);
+        } else {
+            floor_slider.setValue(prefs.frameViewFloor);
+            ceiling_slider.setValue(prefs.frameViewCeiling);
+        }
+        return;
+    }
+
+    if(p_fft)
+    {
+        floor_slider.setValue(prefs.fftFloor);
+        ceiling_slider.setValue(prefs.fftCeiling);
+        return;
+    }
+    if(p_histogram)
+    {
+        floor_slider.setValue(prefs.stddevFloor);
+        ceiling_slider.setValue(prefs.stddevCeiling);
+        return;
+    }
 }
 
 void ControlsBox::triggerSaveSettings()
@@ -606,8 +725,6 @@ void ControlsBox::triggerSaveSettings()
     settingsT pwprefs = prefWindow->getPrefs();
     prefs.brightSwap14 = pwprefs.brightSwap14;
     prefs.brightSwap16 = pwprefs.brightSwap16;
-    prefs.darkSubHigh = pwprefs.darkSubHigh;
-    prefs.darkSubLow = pwprefs.darkSubLow;
     prefs.frameColorScheme = pwprefs.frameColorScheme;
     prefs.use2sComp = pwprefs.use2sComp;
 
@@ -630,10 +747,16 @@ void ControlsBox::saveSettings()
     // [Interface]:
     settings->beginGroup("Interface");
     settings->setValue("frameColorScheme", prefs.frameColorScheme);
-    settings->setValue("darkSubLow", prefs.darkSubLow);
-    settings->setValue("darkSubHigh", prefs.darkSubHigh);
-    settings->setValue("rawLow", prefs.rawLow);
-    settings->setValue("rawHigh", prefs.rawHigh);
+
+    settings->setValue("frameViewCeiling", prefs.frameViewCeiling);
+    settings->setValue("frameViewFloor", prefs.frameViewFloor);
+    settings->setValue("dsfCeiling", prefs.dsfCeiling);
+    settings->setValue("dsfFloor", prefs.dsfFloor);
+    settings->setValue("fftCeiling", prefs.fftCeiling);
+    settings->setValue("fftFloor", prefs.fftFloor);
+    settings->setValue("stddevCeiling", prefs.stddevCeiling);
+    settings->setValue("stddevFloor", prefs.stddevFloor);
+
     settings->endGroup();
 
     // [RGB]:
@@ -695,10 +818,20 @@ void ControlsBox::setDefaultSettings()
 
     // [Interface]:
     defaultPrefs.frameColorScheme = 0; // Jet
-    defaultPrefs.darkSubLow = -2000;
-    defaultPrefs.darkSubHigh = 2000;
-    defaultPrefs.rawLow = 0;
-    defaultPrefs.rawHigh = 10000;
+//    defaultPrefs.darkSubLow = -2000;
+//    defaultPrefs.darkSubHigh = 2000;
+//    defaultPrefs.rawLow = 0;
+//    defaultPrefs.rawHigh = 10000;
+
+    defaultPrefs.frameViewCeiling = 65000;
+    defaultPrefs.frameViewFloor = 10000;
+    defaultPrefs.dsfCeiling = 3000;
+    defaultPrefs.dsfFloor = -2000;
+    defaultPrefs.fftCeiling = 1000;
+    defaultPrefs.fftFloor = 0;
+    defaultPrefs.stddevCeiling = 1000;
+    defaultPrefs.stddevFloor = 0;
+
 
     // [RGB]:
     for(int i=0; i < 10; i++)
@@ -811,6 +944,9 @@ void ControlsBox::tab_changed_slot(int index)
         connect(&floor_slider, SIGNAL(valueChanged(int)), p_fft, SLOT(updateFloor(int)));
 
         p_fft->updateFFT();
+        p_fft->updateCeiling(prefs.fftCeiling);
+        p_fft->updateFloor(prefs.fftFloor);
+
         lines_slider->setMaximum(fw->getFrameWidth());
         line_average_edit->setMaximum(fw->getFrameWidth());
         lines_slider->setValue(fw->horizLinesAvgd);
@@ -829,34 +965,92 @@ void ControlsBox::tab_changed_slot(int index)
         waterfallControls(false);
     } else {
         display_std_dev_slider();
-        if (p_frameview) {
+        if (p_frameview){
             ceiling_maximum = p_frameview->slider_max;
+            // TEST TEST TEST disable:
+            floor_slider.blockSignals(true);
+            ceiling_slider.blockSignals(true);
+            floor_edit.blockSignals(true);
+            ceiling_edit.blockSignals(true);
             low_increment_cbox.setChecked(p_frameview->slider_low_inc);
+
             increment_slot(low_increment_cbox.isChecked());
-            ceiling_edit.setValue(p_frameview->getCeiling());
-            floor_edit.setValue(p_frameview->getFloor());
+
+            if(p_frameview->image_type != STD_DEV)
+            {
+                use_DSF_cbox.setEnabled(true);
+                if(use_DSF_cbox.isChecked())
+                {
+                    ceiling_edit.setValue(prefs.dsfCeiling);
+                    ceiling_slider.setValue(prefs.dsfCeiling);
+                    floor_edit.setValue(prefs.dsfFloor);
+                    floor_slider.setValue(prefs.dsfFloor);
+                    p_frameview->updateCeiling(prefs.dsfCeiling);
+                    p_frameview->updateFloor(prefs.dsfFloor);
+                } else {
+                    ceiling_edit.setValue(prefs.frameViewCeiling);
+                    ceiling_slider.setValue(prefs.frameViewCeiling);
+                    floor_edit.setValue(prefs.frameViewFloor);
+                    floor_slider.setValue(prefs.frameViewFloor);
+                    p_frameview->updateCeiling(prefs.frameViewCeiling);
+                    p_frameview->updateFloor(prefs.frameViewFloor);
+                }
+            } else {
+                use_DSF_cbox.setEnabled(false);
+            }
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateCeiling(int)));
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateFloor(int)));
             connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_frameview, SLOT(setUseDSF(bool)));
+            // TODO: Maybe a careful copy is smarter than a live pointer?
+            // The live pointer can be changed in real time from either side...
+            p_frameview->setPrefsPtr(&this->prefs);
             if (p_frameview->image_type == STD_DEV) {
+                p_frameview->updateCeiling(prefs.stddevCeiling);
+                p_frameview->updateFloor(prefs.stddevFloor);
                 std_dev_N_slider->setEnabled(true);
                 std_dev_N_edit->setEnabled(true);
                 low_increment_cbox.setChecked(true);
+                floor_slider.setValue(prefs.stddevFloor);
+                floor_edit.setValue(prefs.stddevFloor);
+                ceiling_slider.setValue(prefs.stddevCeiling);
+                ceiling_edit.setValue(prefs.stddevCeiling);
+                use_DSF_cbox.setEnabled(false);
             } else {
                 std_dev_N_slider->setEnabled(false);
                 std_dev_N_edit->setEnabled(false);
+                use_DSF_cbox.setEnabled(false);
             }
-            use_DSF_cbox.setEnabled(true);
             use_DSF_cbox.setChecked(fw->usingDSF());
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_frameview->rescaleRange();
             waterfallControls(false);
+
+            floor_edit.blockSignals(false);
+            ceiling_edit.blockSignals(false);
+            floor_slider.blockSignals(false);
+            ceiling_slider.blockSignals(false);
+
         } else if (p_flight) {
             ceiling_maximum = p_flight->slider_max;
             low_increment_cbox.setChecked(p_flight->slider_low_inc);
             increment_slot(low_increment_cbox.isChecked());
-            ceiling_edit.setValue(p_flight->getCeiling());
-            floor_edit.setValue(p_flight->getFloor());
+            //ceiling_edit.setValue(p_flight->getCeiling());
+            //floor_edit.setValue(p_flight->getFloor());
+
+            if(use_DSF_cbox.isChecked())
+            {
+                // DSF
+                ceiling_edit.setValue(prefs.dsfCeiling);
+                floor_edit.setValue(prefs.dsfFloor);
+                p_flight->updateFloor(prefs.dsfFloor);
+                p_flight->updateCeiling(prefs.dsfCeiling);
+            } else {
+                ceiling_edit.setValue(prefs.frameViewCeiling);
+                floor_edit.setValue(prefs.frameViewFloor);
+                p_flight->updateFloor(prefs.frameViewFloor);
+                p_flight->updateCeiling(prefs.frameViewCeiling);
+            }
+
             waterfallControls(true);
 
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateCeiling(int)));
@@ -878,14 +1072,18 @@ void ControlsBox::tab_changed_slot(int index)
             use_DSF_cbox.setChecked(false);
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_flight->rescaleRange();
-            p_flight->updateFloor(floor_slider.value());
-            p_flight->updateCeiling(ceiling_slider.value());
+
+            //p_flight->updateFloor(floor_slider.value());
+            //p_flight->updateCeiling(ceiling_slider.value());
+
             p_flight->changeWFLength(wflength_slider.value());
             this->setMaximumHeight(230);
         } else if (p_histogram) {
             ceiling_maximum = p_histogram->slider_max;
             low_increment_cbox.setChecked(p_histogram->slider_low_inc);
             increment_slot(low_increment_cbox.isChecked());
+
+            // TODO: prefs.std...
             ceiling_edit.setValue(p_histogram->getCeiling());
             floor_edit.setValue(p_histogram->getFloor());
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateCeiling(int)));
@@ -917,6 +1115,78 @@ void ControlsBox::tab_changed_slot(int index)
 }
 
 // private slots
+
+void ControlsBox::updateFloor(int f)
+{
+    setLevelToPrefs(false, f);
+}
+
+void ControlsBox::updateCeiling(int c)
+{
+    setLevelToPrefs(true, c);
+}
+
+void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
+{
+    // This function takes a level (int val) and
+    // writes that value to the "prefs" structure.
+    // It is called whenever a slider is moved
+    // within the controls box.
+
+    current_tab = qtw->widget(qtw->currentIndex());
+    attempt_pointers(current_tab);
+    if(p_profile || p_frameview || p_flight)
+    {
+        if (p_frameview && p_frameview->image_type == STD_DEV) {
+            if(isCeiling)
+                prefs.stddevCeiling = val;
+            else
+                prefs.stddevFloor = val;
+            return;
+        }
+
+        // profile plots and frame view images generally
+        // use the same levels.
+        // So therefore, we just have a DSF and not-DSF level for each.
+        if(use_DSF_cbox.isChecked())
+        {
+            if(isCeiling)
+            {
+                prefs.dsfCeiling = val;
+                //qDebug() << "Setting DSF Ceiling to : " << val;
+            }
+            else
+            {
+                prefs.dsfFloor = val;
+                //qDebug() << "Setting DSF Floor to : " << val;
+            }
+        } else {
+            if(isCeiling)
+                prefs.frameViewCeiling = val;
+            else
+                prefs.frameViewFloor = val;
+        }
+        return;
+    }
+
+    if(p_fft)
+    {
+        if(isCeiling)
+            prefs.fftCeiling = val;
+        else
+            prefs.fftFloor = val;
+        return;
+    }
+    if(p_histogram)
+    {
+        if(isCeiling)
+            prefs.stddevCeiling = val;
+        else
+            prefs.stddevFloor = val;
+        return;
+    }
+}
+
 void ControlsBox::increment_slot(bool t)
 {
     /*! \brief Handles the Precision Slider range adjustment
@@ -926,6 +1196,8 @@ void ControlsBox::increment_slot(bool t)
      * then adjust its copy of the variable slider_low_inc, which holds whether or not the precision slider mode is active.
      * \author Noah Levy
      */
+    //qDebug() << "-  increment_slot: start std floor: " << prefs.stddevFloor << "ceiling: " << prefs.stddevCeiling;
+    //qDebug() << " - increment_slot: floor slideR: " << floor_slider.value() << "ceiling slider: " << ceiling_slider.value();
     int minimum;
     int maximum = t ? LIL_MAX : BIG_MAX;;
     int tick = t ? LIL_TICK : BIG_TICK;
@@ -962,6 +1234,10 @@ void ControlsBox::increment_slot(bool t)
         p_fft->slider_low_inc = t;
     else if (p_playback)
         p_playback->slider_low_inc = t;
+
+    //qDebug() << " - increment_slot: floor slideR: " << floor_slider.value() << "ceiling slider: " << ceiling_slider.value();
+    //qDebug() << "-  increment_slot: end std floor: " << prefs.stddevFloor << "ceiling: " << prefs.stddevCeiling;
+
 }
 void ControlsBox::attempt_pointers(QWidget *tab)
 {
@@ -1520,5 +1796,18 @@ void ControlsBox::debugThis()
     qDebug() << "Debug button function in controlsbox reached";
 
     qDebug() << "wflength slider max: " << wflength_slider.maximum() << "wf slider min: " << wflength_slider.minimum() << "wf slider value: " << wflength_slider.value();
+
+    qDebug() << "--- PREFS debug output: ---";
+    qDebug() << "Levels: ";
+    qDebug() << "fv ceiling: " << prefs.frameViewCeiling;
+    qDebug() << "fv floor: " << prefs.frameViewFloor;
+    qDebug() << "dsf ceiling: " << prefs.dsfCeiling;
+    qDebug() << "dsf floor: " << prefs.dsfFloor;
+    qDebug() << "fft ceiling: " << prefs.fftCeiling;
+    qDebug() << "fft floor: " << prefs.fftFloor;
+    qDebug() << "stddevCeiling: " << prefs.stddevCeiling;
+    qDebug() << "stddevFloor: " << prefs.stddevFloor;
+    qDebug() << "--- END PREFS debug output ---";
+
     emit debugSignal();
 }
