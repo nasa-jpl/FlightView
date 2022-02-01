@@ -498,18 +498,14 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     connect(&redSpin,  QOverload<int>::of(&QSpinBox::valueChanged),
             [&](int value) {
-        red_slider.blockSignals(true);
         red_slider.setValue(value);
-        red_slider.blockSignals(false);
         bandRed = value;
         prefs.bandRed[rgbPresetCombo.currentIndex()] = value;
     });
 
     connect(&greenSpin,  QOverload<int>::of(&QSpinBox::valueChanged),
             [&](int value) {
-        green_slider.blockSignals(true);
         green_slider.setValue(value);
-        green_slider.blockSignals(false);
         bandGreen = value;
         prefs.bandGreen[rgbPresetCombo.currentIndex()] = value;
     });
@@ -517,9 +513,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     connect(&blueSpin,  QOverload<int>::of(&QSpinBox::valueChanged),
             [&](int value) {
-        blue_slider.blockSignals(true);
         blue_slider.setValue(value);
-        blue_slider.blockSignals(false);
         bandBlue = value;
         prefs.bandBlue[rgbPresetCombo.currentIndex()] = value;
     });
