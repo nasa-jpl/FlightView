@@ -3,10 +3,15 @@
 
 #include <unistd.h>
 #include <cstdio>
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
+#include <boost/system/error_code.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include <QObject>
 #include <QWidget>
 #include <QSplitter>
+#include <QTimer>
 
 #include <qcustomplot.h>
 
@@ -34,6 +39,8 @@ class flight_widget : public QWidget
     uint16_t gpsPort;
     bool startedPrimaryGPSLog = false;
     startupOptionsType options;
+    fs::space_info diskSpace;
+    QTimer *diskCheckerTimer;
 
     QSplitter lrSplitter;
     QSplitter rhSplitter;
@@ -104,6 +111,7 @@ public slots:
     void rescaleRange();
     void setUseDSF(bool useDSF);
     void updateFPS();
+    void checkDiskSpace();
     void setCrosshairs(QMouseEvent *event);
     void debugThis();
     // debug text handler:
@@ -114,8 +122,7 @@ signals:
     void connectToGPS(QString host, int port);
     void beginSecondaryLog(QString filename);
     void stopSecondaryLog();
-
-
+    void sendDiskSpaceAvailable(quint64 sizeTotal, quint64 available);
 };
 
 #endif // FLIGHT_WIDGET_H

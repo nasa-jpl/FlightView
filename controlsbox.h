@@ -19,6 +19,7 @@
 #include <QTabWidget>
 #include <QVBoxLayout>
 #include <QSettings>
+#include <QProgressBar>
 
 /* standard includes */
 #include <stdint.h>
@@ -117,6 +118,7 @@ public:
     QPushButton set_filename_button;
     QPushButton debugButton;
     QPushButton saveRGBPresetButton;
+    QProgressBar diskSpaceBar;
 
     // Overlay profile only:
     QSlider * overlay_lh_width;
@@ -212,6 +214,7 @@ private slots:
     void update_backend_delta();
     void updateFloor(int f);
     void updateCeiling(int c);
+    void updateDiskSpace(quint64 total, quint64 available);
 
     /*! \addtogroup savingfunc Frame saving functions
      * Contains functions which control the processes needed to save frames.

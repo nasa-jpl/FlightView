@@ -125,6 +125,12 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), gps, SLOT(clearStickyError()));
     connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), this, SLOT(resetFPSError()));
 
+    diskCheckerTimer = new QTimer();
+    diskCheckerTimer->setInterval(1000);
+    diskCheckerTimer->setSingleShot(false);
+    connect(diskCheckerTimer, SIGNAL(timeout()), this, SLOT(checkDiskSpace()));
+    diskCheckerTimer->start();
+
     emit statusMessage(QString("Finished flight constructor."));
 }
 
@@ -168,6 +174,23 @@ void flight_widget::updateFPS()
         // to reset the warning, but not the sticky error:
         this->cameraLinkLED.setState(QLedLabel::StateOk);
     }
+}
+
+void flight_widget::checkDiskSpace()
+{
+    if(options.dataLocationSet)
+    {
+        diskSpace = fs::space(options.dataLocation.toLocal8Bit().constData());
+    } else {
+        diskSpace = fs::space("/");
+    }
+    // Note:
+    // diskSpace.free is the total amount not being used.
+    // diskSpace.available is the amount not being used that is available to non-root processes.
+    // We are using the "avaliable" space, which may be the same as "free" for an extra non-OS disk.
+
+    //emit statusMessage(QString("Capacity: %1, available: %2 free: %3").arg(diskSpace.capacity).arg(diskSpace.available).arg(diskSpace.free));
+    emit sendDiskSpaceAvailable((quint64)diskSpace.capacity, (quint64)diskSpace.available);
 }
 
 void flight_widget::processFPSError()

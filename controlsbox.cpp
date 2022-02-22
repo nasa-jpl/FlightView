@@ -344,6 +344,11 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     saveRGBPresetButton.setToolTip("Press to save the current RGB sliders to the selected preset slot.\nSlots may be named in the settings file.");
     saveRGBPresetButton.setVisible(false);
 
+    diskSpaceBar.setToolTip("Disk Space Available\nas percent, at default data store location.");
+    diskSpaceBar.setMaximum(100);
+    diskSpaceBar.setMinimum(0);
+    diskSpaceBar.setVisible(false);
+
     save_layout = new QGridLayout();
     //First Row
     save_layout->addWidget(&select_save_location, 1, 1, 1, 3);
@@ -357,6 +362,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     save_layout->addWidget(&filename_edit, 3, 2, 1, 4);
     save_layout->addWidget(&debugButton, 4, 4, 1, 1);
     save_layout->addWidget(&saveRGBPresetButton, 4, 1, 1, 1);
+    save_layout->addWidget(&diskSpaceBar, 4, 2, 1, 2);
     if(options.flightMode)
     {
         filename_edit.setToolTip("Automatic in Flight Mode");
@@ -1120,6 +1126,13 @@ void ControlsBox::updateCeiling(int c)
     setLevelToPrefs(true, c);
 }
 
+void ControlsBox::updateDiskSpace(quint64 total, quint64 available)
+{
+    float percent = (100.0*(total-available) / total);
+    diskSpaceBar.setValue((int)percent);
+    diskSpaceBar.setToolTip(QString("Percent: %1").arg(percent));
+}
+
 void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
 {
     // This function takes a level (int val) and
@@ -1752,6 +1765,7 @@ void ControlsBox::waterfallControls(bool enabled)
     wflength_label.setVisible(enabled);
     rgbPresetCombo.setVisible(enabled);
     saveRGBPresetButton.setVisible(enabled);
+    diskSpaceBar.setVisible(enabled);
 }
 
 void ControlsBox::overlayControls(bool see_it)

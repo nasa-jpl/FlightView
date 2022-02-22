@@ -94,6 +94,8 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     connect(tabWidget,SIGNAL(currentChanged(int)),controlbox,SLOT(tab_changed_slot(int)));
     controlbox->tab_changed_slot(0);
 
+    connect(flight_screen, SIGNAL(sendDiskSpaceAvailable(quint64,quint64)), controlbox, SLOT(updateDiskSpace(quint64,quint64)));
+
     if(options.flightMode)
     {
         // Flight Tab

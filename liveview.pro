@@ -105,7 +105,7 @@ QMAKE_POST_LINK += cp ../LiveViewLegacy/LiveView.desktop $$DESTDIR;
 
 #unix:!macx:!symbian: LIBS += -L$$PWD/../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -lokFrontPanel -ldl # -lGL -lQtOpenGL
 
-unix:!macx:!symbian: LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl # -lGL -lQtOpenGL
+unix:!macx:!symbian: LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lboost_filesystem -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl # -lGL -lQtOpenGL
 INCLUDEPATH += $$PWD/cuda_take/include\
 /opt/EDTpdv /usr/local/cuda/include
 DEPENDPATH += $$PWD/cuda_take
