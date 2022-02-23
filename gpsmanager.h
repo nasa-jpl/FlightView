@@ -40,6 +40,11 @@ class gpsManager : public QObject
     QString gpsRecordingBinaryLogFilename;
     bool createLoggingDirectory();
 
+    QTimer gpsReconnectTimer;
+    QString host;
+    int port;
+    QString gpsBinaryLogFilename;
+
     // Update Frequency:
     // data come in at 200 Hz
     unsigned char updateLabelsInterval = 10;
@@ -156,6 +161,7 @@ public:
 public slots:
     void initiateGPSConnection(QString host, int port, QString gpsBinaryLogFilename);
     void initiateGPSDisconnect();
+    void handleGPSReconnectTimer();
     void handleStartsecondaryLog(QString filename);
     void handleStopSecondaryLog();
     void receiveGPSMessage(gpsMessage m); // from GPS network thread
@@ -166,6 +172,7 @@ signals:
     void connectToGPS(QString host, int port, QString gpsBinaryLogFilename);
     void startSecondaryLog(QString filename);
     void gpsStatusMessage(QString statusMessage);
+    void gpsConnectionError(int errorNumber);
     void stopSecondaryLog();
     void disconnectFromGPS();
     void getDebugInfo();

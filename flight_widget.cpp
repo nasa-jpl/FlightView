@@ -118,6 +118,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     // Connections to GPS:
     connect(gps, SIGNAL(gpsStatusMessage(QString)), this, SLOT(showDebugMessage(QString)));
+    connect(gps, SIGNAL(gpsConnectionError(int)), this, SLOT(handleGPSConnectionError(int)));
     gps->insertLEDs(&gpsLED);
     gps->insertLabels(&gpsLatData, &gpsLongData, &gpsAltitudeData,
                       &gpsUTCtimeData, &gpsUTCdateData, &gpsUTCValidityData,
@@ -361,6 +362,14 @@ void flight_widget::startGPS(QString gpsHostname, uint16_t gpsPort, QString prim
     } else {
         emit statusMessage(QString("Error, asked to connect to GPS twice."));
     }
+}
+
+void flight_widget::handleGPSConnectionError(int errorNum)
+{
+    // This usually means we could not connect to the GPS
+    // The error string is already handled.
+    gpsLED.setState(QLedLabel::StateError);
+    (void)errorNum;
 }
 
 void flight_widget::clearStickyErrors()

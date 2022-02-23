@@ -114,6 +114,7 @@ public slots:
 
     void handleNewColorScheme(int scheme, bool useDarkThemeVal);
     void handlePrefs(settingsT prefs);
+    void handleGPSConnectionError(int errorNum);
     void colorMapScrolledY(const QCPRange &newRange);
     void colorMapScrolledX(const QCPRange &newRange);
     void setScrollX(bool Yenabled);

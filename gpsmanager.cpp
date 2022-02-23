@@ -35,7 +35,13 @@ void gpsManager::initiateGPSConnection(QString host = "10.0.0.6", int port=(int)
         createLoggingDirectory();
         gpsBinaryLogFilename = filenamegen.getNewFullFilename(gpsBinaryLogFilename, QString(""), QString("-gpsPrimary"), QString("bin"));
     }
+    this->host = host;
+    this->port = port;
+    this->gpsBinaryLogFilename = gpsBinaryLogFilename;
     emit connectToGPS(host, port, gpsBinaryLogFilename);
+    gpsReconnectTimer.setInterval(1000);
+    gpsReconnectTimer.setSingleShot(true);
+    connect(&gpsReconnectTimer, SIGNAL(timeout()), this, SLOT(handleGPSReconnectTimer()));
     gnssStatusTime.restart();
 }
 
@@ -531,11 +537,24 @@ void gpsManager::handleGPSDataString(QString gpsString)
 void gpsManager::handleGPSConnectionError(int error)
 {
     emit gpsStatusMessage(QString("Error code from GPS connection: %1").arg(error));
+    emit gpsConnectionError(error);
+    statusStickyError = true;
+    processStatus();
+    gpsReconnectTimer.start();
+}
+
+void gpsManager::handleGPSReconnectTimer()
+{
+    // Going here means we have failed to connect and are trying again.
+    emit gpsStatusMessage(QString("Attempting to reconnect to GPS."));
+    emit connectToGPS(host, port, gpsBinaryLogFilename);
+    // If we fail, handleGPSConnectionError is called automatically
 }
 
 void gpsManager::handleGPSConnectionGood()
 {
     emit gpsStatusMessage(QString("GPS: Connection good"));
+    statusStickyError = false; // Safe to clear when a new connection has been made.
     statusConnectedToGPS = true;
 }
 
@@ -543,6 +562,7 @@ void gpsManager::handleGPSTimeout()
 {
     // Heartbeat fail
     statusGPSHeartbeatOk = false;
+    processStatus();
 }
 
 utcTime gpsManager::processUTCstamp(uint64_t t)
