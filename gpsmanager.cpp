@@ -536,7 +536,24 @@ void gpsManager::handleGPSDataString(QString gpsString)
 
 void gpsManager::handleGPSConnectionError(int error)
 {
-    emit gpsStatusMessage(QString("Error code from GPS connection: %1").arg(error));
+    switch(error) {
+        case 1:
+            {
+                emit gpsStatusMessage(QString("Error code from GPS connection: %1 (lost connection). Reconnecting in 1 second.").arg(error));
+                break;
+            }
+        case 7:
+            {
+                emit gpsStatusMessage(QString("Error code from GPS connection: %1 (could not connect). Reconnecting in 1 second.").arg(error));
+                break;
+            }
+        default:
+            {
+                emit gpsStatusMessage(QString("Error code from GPS connection: %1 (unknown). Reconnecting in 1 second.").arg(error));
+                break;
+            }
+    }
+
     emit gpsConnectionError(error);
     statusStickyError = true;
     processStatus();
