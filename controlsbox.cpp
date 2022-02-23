@@ -1135,7 +1135,7 @@ void ControlsBox::updateDiskSpace(quint64 total, quint64 available)
 {
     float percent = (100.0*(total-available) / total);
     diskSpaceBar.setValue((int)percent);
-    diskSpaceBar.setToolTip(QString("Percent: %1").arg(percent));
+    diskSpaceBar.setToolTip(QString("Available: %1 GiB").arg(available / 1024.0 / 1024.0 / 1024.0, 6, 'f', 1, QChar('0')));
     if(percent > prefs.percentDiskStop)
     {
         emit statusMessage(QString("ERROR: Disk nearly full at %1 percent used. Stopping data recording.").arg(percent));

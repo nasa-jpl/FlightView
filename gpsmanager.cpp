@@ -355,10 +355,24 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     bool doWidgetPaint = (msgsReceivedCount%updateAvionicsWidgetsInterval)==0;
     bool doLabelUpdate = (msgsReceivedCount%updateLabelsInterval)==0;
 
-    if(doLabelUpdate)
+    if(m.haveUTC)
     {
+        // This is only once per second, but we don't want to miss it.
+        utcTime UTCdataValidityTime = processUTCstamp(m.UTCdataValidityTime);
+        updateLabel(gpsUTCtime, UTCdataValidityTime.UTCstr);
         utcTime navValidity =  processUTCstamp(m.navDataValidityTime);
         updateLabel(gpsUTCValidity, navValidity.UTCValidityStr);
+    }
+
+    if(doLabelUpdate)
+    {
+        if(!m.haveUTC)
+        {
+            // If we just did this due to m.haveUTC, then no need to do it again.
+            // The validity time is always available, there isn't a boolean to check.
+            utcTime navValidity =  processUTCstamp(m.navDataValidityTime);
+            updateLabel(gpsUTCValidity, navValidity.UTCValidityStr);
+        }
 
         if(m.haveAltitudeHeading)
         {
@@ -378,11 +392,17 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             // Format specifier is number, TOTAL DIGITS (including the dot), float, and the number of decimal places desired (8), and the filler character for any front filling
             updateLabel(gpsLat, QString("%1").arg(m.latitude, 12, 'f', 8, QChar('0')));
             updateLabel(gpsLong, QString("%1").arg(longitude, 12, 'f', 8, QChar('0')));
-            updateLabel(gpsAltitude, QString("%1").arg(m.altitude));
+            // Native altitude is meters
+            // Converting to feet by multiplying by 3.28084
+            updateLabel(gpsAltitude, QString("%1 Ft").arg(m.altitude * 3.28084, 6, 'f', 1, QChar('0')));
         }
         if(m.haveCourseSpeedGroundData)
         {
-            updateLabel(gpsGroundSpeed, QString("%1").arg(m.speedOverGround * 1.94384));
+            // The native units are meters per second.
+            // the old conversion factor used was 1.94384, which converted to knots,
+            // useful for air speed but not so much ground speed.
+            // Now we convert to MPH using 2.23694
+            updateLabel(gpsGroundSpeed, QString("%1 MPH").arg(m.speedOverGround * 2.23694, 6, 'f', 2, QChar('0')));
         }
         if(m.haveSpeedData)
         {
@@ -392,11 +412,6 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         {
             QString date = QString("%1-%2-%3").arg(m.systemYear).arg(m.systemMonth, 2, 10, QChar('0')).arg(m.systemDay, 2, 10, QChar('0'));
             updateLabel(gpsUTCdate, date);
-        }
-        if(m.haveUTC)
-        {
-            utcTime UTCdataValidityTime = processUTCstamp(m.UTCdataValidityTime);
-            updateLabel(gpsUTCdate, UTCdataValidityTime.UTCstr);
         }
     }
 

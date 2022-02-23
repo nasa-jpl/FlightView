@@ -70,6 +70,11 @@ class flight_widget : public QWidget
     QLabel gpsHeadingData;
     QLabel gpsAltitudeText;
     QLabel gpsAltitudeData;
+    QLabel gpsUTCtimeData, gpsUTCdateData, gpsUTCValidityData;
+    QLabel gpsUTCtimeText, gpsUTCdateText, gpsUTCValidityText;
+    QLabel gpsGroundSpeedData, gpsGroundSpeedText;
+    QLabel gpsQualityData, gpsQualityText;
+
 
     // GPS Plots:
     QCustomPlot gpsPitchRollPlot;

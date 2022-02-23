@@ -20,13 +20,29 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     resetStickyErrorsBtn.setText("Clear Errors");
     instBtn.setText("Init");
     aircraftLbl.setText("AVIRIS-III");
-    gpsLatText.setText("GPS Latitude: ");
+    gpsLatText.setText("GPS Latitude:");
     gpsLatData.setText("########");
-    gpsLongText.setText("GPS Longitude: ");
+    gpsAltitudeText.setText("GPS Altitude:");
+    gpsAltitudeData.setText("########");
+    gpsLongText.setText("GPS Longitude:");
     gpsLongData.setText("########");
-    gpsLEDLabel.setText("GPS Status: ");
-    gpsHeadingText.setText("Heading: ");
+    gpsLEDLabel.setText("GPS Status:");
+    gpsHeadingText.setText("Heading:");
     gpsHeadingData.setText("###.###");
+
+    gpsUTCtimeText.setText("UTC Time:");
+    gpsUTCtimeData.setText("###TIME##");
+    gpsUTCdateText.setText("UTC Date:");
+    gpsUTCdateData.setText("########");
+    gpsUTCValidityText.setText("UTC Validity:");
+    gpsUTCValidityData.setText("##VAL TIME##");
+
+    gpsGroundSpeedText.setText("Ground Speed:");
+    gpsGroundSpeedData.setText("########");
+    gpsQualityText.setText("GPS Quality:");
+    gpsQualityData.setText("########");
+
+
     gpsLED.setState(QLedLabel::StateOkBlue);
     cameraLinkLEDLabel.setText("CameraLink Status:");
     cameraLinkLED.setState(QLedLabel::StateOk);
@@ -54,13 +70,26 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     flightControlLayout.addWidget(&gpsLatText, ++row,0,1,1);
     flightControlLayout.addWidget(&gpsLatData, row,1,1,1);
 
+    flightControlLayout.addWidget(&gpsAltitudeText, row,2,1,1);
+    flightControlLayout.addWidget(&gpsAltitudeData, row,3,1,1);
+    flightControlLayout.addWidget(&gpsUTCdateText, row,4,1,1);
+    flightControlLayout.addWidget(&gpsUTCdateData, row,5,1,1);
+
+
     flightControlLayout.addWidget(&gpsLongText, ++row,0,1,1);
     flightControlLayout.addWidget(&gpsLongData, row,1,1,1);
+    flightControlLayout.addWidget(&gpsGroundSpeedText, row,2,1,1);
+    flightControlLayout.addWidget(&gpsGroundSpeedData, row,3,1,1);
+    flightControlLayout.addWidget(&gpsUTCtimeText, row,4,1,1);
+    flightControlLayout.addWidget(&gpsUTCtimeData, row,5,1,1);
 
     flightControlLayout.addWidget(&gpsHeadingText, ++row,0,1,1);
     flightControlLayout.addWidget(&gpsHeadingData, row,1,1,1);
+    flightControlLayout.addWidget(&gpsUTCValidityText, row,4,1,1);
+    flightControlLayout.addWidget(&gpsUTCValidityData, row,5,1,1);
 
-    flightControlLayout.setColumnStretch(3,2);
+
+    flightControlLayout.setColumnStretch(5,2);
     flightControlLayout.setRowStretch(3,2);
 
 
@@ -90,11 +119,12 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     // Connections to GPS:
     connect(gps, SIGNAL(gpsStatusMessage(QString)), this, SLOT(showDebugMessage(QString)));
     gps->insertLEDs(&gpsLED);
-    gps->insertLabels(&gpsLatData, &gpsLongData,
-                      &gpsAltitudeData, NULL,
-                      NULL, NULL, NULL,
-                      &gpsHeadingData, NULL,
-                      NULL, NULL, NULL);
+    gps->insertLabels(&gpsLatData, &gpsLongData, &gpsAltitudeData,
+                      &gpsUTCtimeData, &gpsUTCdateData, &gpsUTCValidityData,
+                      &gpsGroundSpeedData,
+                      &gpsHeadingData, NULL, NULL,
+                      &gpsQualityData,
+                      NULL);
     gps->insertPlots(&gpsPitchRollPlot);
     gps->prepareElements();
 
