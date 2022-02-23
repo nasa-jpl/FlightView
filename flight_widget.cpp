@@ -36,7 +36,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     // Format is &item, row, col, rowSpan, colSpan. -1 = to "edge"
     int row=0;
 
-    flightControlLayout.addWidget(&gpsPitchRollPlot, row,0,4,3);
+    flightControlLayout.addWidget(&gpsPitchRollPlot, row,0,4,8);
 
     row += 4;
 
@@ -46,7 +46,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     flightControlLayout.addWidget(&gpsLEDLabel, ++row,0,1,1);
     flightControlLayout.addWidget(&gpsLED, row,1,1,1);
     flightControlLayout.addWidget(&diskLEDLabel, row, 2, 1, 1);
-    flightControlLayout.addWidget(&diskLED, row, 3, 1, 1);
+    flightControlLayout.addWidget(&diskLED, row, 3, 1, 1, Qt::AlignLeft);
 
     flightControlLayout.addWidget(&cameraLinkLEDLabel, ++row,0,1,1);
     flightControlLayout.addWidget(&cameraLinkLED, row,1,1,1);
@@ -60,7 +60,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     flightControlLayout.addWidget(&gpsHeadingText, ++row,0,1,1);
     flightControlLayout.addWidget(&gpsHeadingData, row,1,1,1);
 
-    flightControlLayout.setColumnStretch(2,2);
+    flightControlLayout.setColumnStretch(3,2);
     flightControlLayout.setRowStretch(3,2);
 
 
