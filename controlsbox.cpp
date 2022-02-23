@@ -174,7 +174,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     rgbPresets.append("Rename..."); // index = 10;
 
     rgbPresetCombo.addItems(rgbPresets);
-    rgbPresetCombo.setToolTip("Recall an RGB preset here.\n To save a preset to the settings file, adjust the sliders and then press Save Settings in the Preferences.");
+    rgbPresetCombo.setToolTip("Recall an RGB preset here.\n To save a preset to the settings file, adjust the sliders and then press Save Preset.");
     rgbPresetCombo.hide();
 
     wflength_slider.setOrientation(Qt::Horizontal);
