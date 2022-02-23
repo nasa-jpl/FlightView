@@ -791,6 +791,8 @@ void ControlsBox::saveSettings()
     settings->setValue("hideHistogramView", prefs.hideHistogramView);
     settings->setValue("hideStddeviation", prefs.hideStddeviation);
     settings->setValue("hideWaterfallTab", prefs.hideWaterfallTab);
+    settings->setValue("percentDiskWarning", prefs.percentDiskWarning);
+    settings->setValue("percentDiskStop", prefs.percentDiskStop);
     settings->endGroup();
 
     settings->sync();

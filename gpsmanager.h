@@ -57,6 +57,7 @@ class gpsManager : public QObject
     bool statusGPSHeartbeatOk = true; // Have received messages recently
     bool statusGPSMessagesDropped = false; // true if messages being dropped
     bool statusStickyError = false; // stays true until cleared
+    bool statusJustCleared = false; // True if we just cleared errors.
 
     // Record 1 out of every 40 points for 5 Hz updates to plots
     // therefore, for 90 seconds of data, we need 90*5 = 450 point vectors

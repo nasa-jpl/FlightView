@@ -533,10 +533,16 @@ void gpsManager::processStatus()
     } else {
         if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateOk);
     }
+    if(statusJustCleared && !trouble)
+    {
+        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateOkBlue);
+        statusJustCleared = false;
+    }
 }
 
 void gpsManager::clearStickyError()
 {
     statusStickyError = false;
+    statusJustCleared = true;
     processStatus();
 }
