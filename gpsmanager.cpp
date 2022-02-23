@@ -209,6 +209,9 @@ void gpsManager::setPlotTheme(bool isDark)
 
 void gpsManager::setPlotColors(QCustomPlot *p, bool dark)
 {
+    if(p == NULL)
+        return;
+
     if(dark)
     {
         p->setBackground(QBrush(Qt::black));
