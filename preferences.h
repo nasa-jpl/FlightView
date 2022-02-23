@@ -17,10 +17,6 @@ struct settingsT {
 
     // [Interface]:
     int frameColorScheme;
-//    int darkSubLow;
-//    int darkSubHigh;
-//    int rawLow;
-//    int rawHigh;
 
     int frameViewCeiling;
     int frameViewFloor;
@@ -33,10 +29,6 @@ struct settingsT {
 
     int stddevCeiling;
     int stddevFloor;
-
-
-
-
 
     // [RGB]:
     unsigned int bandRed[10];
@@ -55,6 +47,8 @@ struct settingsT {
     bool hideHistogramView = false;
     bool hideStddeviation = false;
     bool hideWaterfallTab = false;
+    int percentDiskWarning = 85;
+    int percentDiskStop = 99;
 };
 
 

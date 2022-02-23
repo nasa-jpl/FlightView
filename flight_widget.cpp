@@ -28,8 +28,10 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     gpsHeadingText.setText("Heading: ");
     gpsHeadingData.setText("###.###");
     gpsLED.setState(QLedLabel::StateOkBlue);
-    cameraLinkLEDLabel.setText("CameraLink Status: ");
+    cameraLinkLEDLabel.setText("CameraLink Status:");
     cameraLinkLED.setState(QLedLabel::StateOk);
+    diskLEDLabel.setText("Disk:");
+    diskLED.setState(QLedLabel::StateOkBlue);
 
     // Format is &item, row, col, rowSpan, colSpan. -1 = to "edge"
     int row=0;
@@ -43,6 +45,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     flightControlLayout.addWidget(&gpsLEDLabel, ++row,0,1,1);
     flightControlLayout.addWidget(&gpsLED, row,1,1,1);
+    flightControlLayout.addWidget(&diskLEDLabel, row, 2, 1, 1);
+    flightControlLayout.addWidget(&diskLED, row, 3, 1, 1);
 
     flightControlLayout.addWidget(&cameraLinkLEDLabel, ++row,0,1,1);
     flightControlLayout.addWidget(&cameraLinkLED, row,1,1,1);
@@ -55,9 +59,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     flightControlLayout.addWidget(&gpsHeadingText, ++row,0,1,1);
     flightControlLayout.addWidget(&gpsHeadingData, row,1,1,1);
-
-
-
 
     flightControlLayout.setColumnStretch(2,2);
     flightControlLayout.setRowStretch(3,2);
@@ -125,6 +126,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), gps, SLOT(clearStickyError()));
     connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), this, SLOT(resetFPSError()));
 
+    connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), this, SLOT(clearStickyErrors()));
+
     diskCheckerTimer = new QTimer();
     diskCheckerTimer->setInterval(1000);
     diskCheckerTimer->setSingleShot(false);
@@ -191,6 +194,23 @@ void flight_widget::checkDiskSpace()
 
     //emit statusMessage(QString("Capacity: %1, available: %2 free: %3").arg(diskSpace.capacity).arg(diskSpace.available).arg(diskSpace.free));
     emit sendDiskSpaceAvailable((quint64)diskSpace.capacity, (quint64)diskSpace.available);
+
+    int percent = (100.0 * (diskSpace.capacity - diskSpace.available) / diskSpace.capacity);
+
+    if(havePrefs)
+    {
+        if(percent > prefs.percentDiskStop)
+        {
+            diskLED.setState(QLedLabel::StateError);
+            stickyDiskFull = true;
+        } else if (percent > prefs.percentDiskWarning)
+        {
+            diskLED.setState(QLedLabel::StateWarning);
+        } else {
+            diskLED.setState(QLedLabel::StateOk);
+        }
+    }
+
 }
 
 void flight_widget::processFPSError()
@@ -218,6 +238,13 @@ void flight_widget::handleNewColorScheme(int scheme)
     // It should be ok to call these directly:
     //waterfall_widget->handleNewColorScheme(scheme);
     dsf_widget->handleNewColorScheme(scheme);
+}
+
+void flight_widget::handlePrefs(settingsT prefs)
+{
+    this->prefs = prefs;
+    havePrefs = true;
+    emit statusMessage("Have preferences inside flight_widget.");
 }
 
 void flight_widget::colorMapScrolledX(const QCPRange &newRange)
@@ -303,6 +330,12 @@ void flight_widget::startGPS(QString gpsHostname, uint16_t gpsPort, QString prim
     } else {
         emit statusMessage(QString("Error, asked to connect to GPS twice."));
     }
+}
+
+void flight_widget::clearStickyErrors()
+{
+    stickyDiskFull = false;
+    diskLED.setState(QLedLabel::StateOk);
 }
 
 void flight_widget::showDebugMessage(QString debugMessage)

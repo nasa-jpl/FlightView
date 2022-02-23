@@ -119,6 +119,7 @@ public:
     QPushButton debugButton;
     QPushButton saveRGBPresetButton;
     QProgressBar diskSpaceBar;
+    QLabel diskSpaceLabel;
 
     // Overlay profile only:
     QSlider * overlay_lh_width;

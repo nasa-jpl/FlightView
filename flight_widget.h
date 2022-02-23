@@ -22,6 +22,7 @@ namespace fs = boost::filesystem;
 #include "qledlabel.h"
 #include "startupOptions.h"
 #include "waterfall.h"
+#include "preferences.h"
 
 class flight_widget : public QWidget
 {
@@ -57,6 +58,8 @@ class flight_widget : public QWidget
     QLabel cameraLinkLEDLabel;
     QLedLabel cameraLinkLED;
     QLabel aircraftLbl;
+    QLabel diskLEDLabel;
+    QLedLabel diskLED;
 
     // GPS Text Labels:
     QLabel gpsLatText;
@@ -76,7 +79,11 @@ class flight_widget : public QWidget
     uint16_t greenRow;
     uint16_t blueRow;
 
+    settingsT prefs;
+    bool havePrefs = false;
+
     bool stickyFPSError;
+    bool stickyDiskFull;
     int FPSErrorCounter;
     void processFPSError();
 
@@ -92,6 +99,7 @@ public:
 public slots:
     void handleNewFrame();
     void resetFPSError();
+    void clearStickyErrors();
 
     void startGPS(QString gpsHostname, uint16_t gpsPort, QString primaryLogLocation); // connect to GPS and start primary log
 
@@ -100,6 +108,7 @@ public slots:
     void stopDataCollection();
 
     void handleNewColorScheme(int scheme);
+    void handlePrefs(settingsT prefs);
     void colorMapScrolledY(const QCPRange &newRange);
     void colorMapScrolledX(const QCPRange &newRange);
     void setScrollX(bool Yenabled);

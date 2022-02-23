@@ -115,6 +115,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     connect(controlbox, SIGNAL(stopSaving()),fw,SLOT(stopSavingRawData()));
     connect(controlbox->std_dev_N_slider, SIGNAL(valueChanged(int)), fw, SLOT(setStdDev_N(int)));
     connect(controlbox, SIGNAL(haveReadPreferences(settingsT)), this, SLOT(handlePreferenceRead(settingsT)));
+    connect(controlbox, SIGNAL(haveReadPreferences(settingsT)), flight_screen, SLOT(handlePrefs(settingsT)));
     connect(fw, SIGNAL(savingFrameNumChanged(unsigned int)), controlbox, SLOT(updateSaveFrameNum_slot(unsigned int)));
 
     controlbox->fps_label.setStyleSheet("QLabel {color: green;}");

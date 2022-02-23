@@ -349,6 +349,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     diskSpaceBar.setMinimum(0);
     diskSpaceBar.setVisible(false);
 
+    diskSpaceLabel.setText("Disk:");
+    diskSpaceLabel.setVisible(false);
+
     save_layout = new QGridLayout();
     //First Row
     save_layout->addWidget(&select_save_location, 1, 1, 1, 3);
@@ -360,9 +363,10 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     save_layout->addWidget(&save_finite_button, 1, 4, 1, 1);
     save_layout->addWidget(&frames_save_num_edit, 2, 4, 1, 1);
     save_layout->addWidget(&filename_edit, 3, 2, 1, 4);
-    save_layout->addWidget(&debugButton, 4, 4, 1, 1);
+    save_layout->addWidget(&debugButton, 4, 5, 1, 1);
     save_layout->addWidget(&saveRGBPresetButton, 4, 1, 1, 1);
-    save_layout->addWidget(&diskSpaceBar, 4, 2, 1, 2);
+    save_layout->addWidget(&diskSpaceLabel, 4, 2, 1, 1);
+    save_layout->addWidget(&diskSpaceBar, 4, 3, 1, 2);
     if(options.flightMode)
     {
         filename_edit.setToolTip("Automatic in Flight Mode");
@@ -670,6 +674,8 @@ void ControlsBox::loadSettings()
     prefs.hideHistogramView = settings->value("hideHistogramView", defaultPrefs.hideHistogramView).toBool();
     prefs.hideStddeviation = settings->value("hideStddeviation", defaultPrefs.hideStddeviation).toBool();
     prefs.hideWaterfallTab = settings->value("hideWaterfallTab", defaultPrefs.hideWaterfallTab).toBool();
+    prefs.percentDiskWarning = settings->value("percentDiskWarning", defaultPrefs.percentDiskWarning).toInt();
+    prefs.percentDiskStop = settings->value("percentDiskStop", defaultPrefs.percentDiskStop).toInt();
     settings->endGroup();
 
     prefs.readFile = true;
@@ -853,6 +859,9 @@ void ControlsBox::setDefaultSettings()
     defaultPrefs.hideHistogramView = false;
     defaultPrefs.hideStddeviation = false;
     defaultPrefs.hideWaterfallTab = false;
+
+    defaultPrefs.percentDiskWarning = 85;
+    defaultPrefs.percentDiskStop = 99;
 }
 
 // public slot(s)
@@ -1131,6 +1140,13 @@ void ControlsBox::updateDiskSpace(quint64 total, quint64 available)
     float percent = (100.0*(total-available) / total);
     diskSpaceBar.setValue((int)percent);
     diskSpaceBar.setToolTip(QString("Percent: %1").arg(percent));
+    if(percent > prefs.percentDiskStop)
+    {
+        emit statusMessage(QString("ERROR: Disk nearly full at %1 percent used. Stopping data recording.").arg(percent));
+        this->stop_continous_button_slot();
+    } else if (percent > prefs.percentDiskStop) {
+        emit statusMessage(QString("WARMING: Disk low, usage %1 percent.").arg(percent));
+    }
 }
 
 void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
@@ -1766,6 +1782,7 @@ void ControlsBox::waterfallControls(bool enabled)
     rgbPresetCombo.setVisible(enabled);
     saveRGBPresetButton.setVisible(enabled);
     diskSpaceBar.setVisible(enabled);
+    diskSpaceLabel.setVisible(enabled);
 }
 
 void ControlsBox::overlayControls(bool see_it)
