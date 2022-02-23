@@ -240,10 +240,9 @@ void gpsManager::setPlotColors(QCustomPlot *p, bool dark)
         p->legend->setTextColor(Qt::black);
         p->yAxis->setTickLabelColor(Qt::black);
         p->xAxis->setTickLabelColor(Qt::black);
-
         //p->graph()->setBrush(QBrush(Qt::black)); // sets an underfill for the line
     }
-
+    p->replot();
 }
 
 void gpsManager::showStatusMessage(QString s)
