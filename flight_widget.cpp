@@ -233,11 +233,12 @@ void flight_widget::resetFPSError()
     FPSErrorCounter = 0;
 }
 
-void flight_widget::handleNewColorScheme(int scheme)
+void flight_widget::handleNewColorScheme(int scheme, bool useDarkThemeVal)
 {
     // It should be ok to call these directly:
     //waterfall_widget->handleNewColorScheme(scheme);
-    dsf_widget->handleNewColorScheme(scheme);
+    //dsf_widget->handleNewColorScheme(scheme, useDarkThemeVal);
+    gps->setPlotTheme(useDarkThemeVal);
 }
 
 void flight_widget::handlePrefs(settingsT prefs)

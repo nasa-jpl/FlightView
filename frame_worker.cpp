@@ -375,11 +375,11 @@ void frameWorker::setStdDev_N(int newN)
     to.setStdDev_N(newN);
 }
 
-void frameWorker::setColorScheme(int scheme)
+void frameWorker::setColorScheme(int scheme, bool useDarkTheme)
 {
     /*! \brief Passes the color scheme integer through to the frameview_widget slot.
      *  \param scheme sets the scheme */
-    emit setColorScheme_signal(scheme);
+    emit setColorScheme_signal(scheme, useDarkTheme);
 }
 
 void frameWorker::stop()

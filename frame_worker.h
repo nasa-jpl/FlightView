@@ -130,7 +130,7 @@ signals:
     /*! \brief Closes the class event loop and calls to deallocate the workerThread. */
     void finished();
 
-    void setColorScheme_signal(int scheme);
+    void setColorScheme_signal(int scheme, bool useDarkTheme);
 
 public slots:
     /*! \addtogroup renderfunc
@@ -161,7 +161,7 @@ public slots:
     void updateCrossDiplay(bool checked);
     void setStdDev_N(int newN);
     void stop();
-    void setColorScheme(int scheme);
+    void setColorScheme(int scheme, bool useDarkTheme);
 
 };
 

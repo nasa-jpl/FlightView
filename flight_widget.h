@@ -107,7 +107,7 @@ public slots:
     void startDataCollection(QString secondaryLogFilename);
     void stopDataCollection();
 
-    void handleNewColorScheme(int scheme);
+    void handleNewColorScheme(int scheme, bool useDarkThemeVal);
     void handlePrefs(settingsT prefs);
     void colorMapScrolledY(const QCPRange &newRange);
     void colorMapScrolledX(const QCPRange &newRange);

@@ -142,7 +142,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     connect(&displayCrosshairCheck, SIGNAL(toggled(bool)), fw, SLOT(updateCrossDiplay(bool)));
     connect(&zoomXCheck, SIGNAL(toggled(bool)), this, SLOT(setScrollX(bool)));
     connect(&zoomYCheck, SIGNAL(toggled(bool)), this, SLOT(setScrollY(bool)));
-    connect(fw, SIGNAL(setColorScheme_signal(int)), this, SLOT(handleNewColorScheme(int)));
+    connect(fw, SIGNAL(setColorScheme_signal(int, bool)), this, SLOT(handleNewColorScheme(int, bool)));
 
     if (image_type==BASE || image_type==DSF) {
         this->setFocusPolicy(Qt::ClickFocus); //Focus accepted via clicking
@@ -196,7 +196,66 @@ void frameview_widget::toggleDisplayCrosshair()
 
 // public slots
 
-void frameview_widget::handleNewColorScheme(int scheme)
+void frameview_widget::useDarkTheme(bool useDark)
+{
+    QCustomPlot *p = this->qcp;
+
+    if(useDark)
+    {
+        p->setBackground(QBrush(Qt::black));
+        p->xAxis->setBasePen(QPen(Qt::green)); // lower line of axis
+        p->yAxis->setBasePen(QPen(Qt::green)); // left line of axis
+        p->xAxis->setTickPen(QPen(Qt::green));
+        p->yAxis->setTickPen(QPen(Qt::green));
+        p->xAxis->setLabelColor(QColor(Qt::white));
+        p->yAxis->setLabelColor(QColor(Qt::white));
+        p->yAxis->setTickLabelColor(Qt::white);
+        p->xAxis->setTickLabelColor(Qt::white);
+        p->legend->setBrush(QBrush(Qt::black));
+        p->legend->setTextColor(Qt::white);
+        colorMap->setBrush(QBrush(Qt::black));
+        colorMap->setPen(QPen(Qt::white));
+        colorMap->valueAxis()->setLabelColor(Qt::white);
+        colorMap->valueAxis()->setBasePen(QPen(Qt::white));
+        colorMap->valueAxis()->setTickLabelColor(Qt::white);
+        colorMap->keyAxis()->setLabelColor(Qt::white);
+        colorMap->keyAxis()->setBasePen(QPen(Qt::white));
+        colorMap->keyAxis()->setTickLabelColor(Qt::white);
+        colorMap->keyAxis()->setTickPen(QPen(Qt::white));
+
+        colorMap->colorScale()->axis()->setLabelColor(Qt::white);
+        colorMap->colorScale()->axis()->setBasePen(QPen(Qt::black)); // line on RH side of scale
+        colorMap->colorScale()->axis()->setTickLabelColor(Qt::white); // TEXT!!
+    } else {
+        p->setBackground(QBrush(Qt::white));
+        p->xAxis->setBasePen(QPen(Qt::black)); // lower line of axis
+        p->yAxis->setBasePen(QPen(Qt::black)); // left line of axis
+        p->xAxis->setTickPen(QPen(Qt::black));
+        p->yAxis->setTickPen(QPen(Qt::black));
+        p->xAxis->setLabelColor(QColor(Qt::black));
+        p->yAxis->setLabelColor(QColor(Qt::black));
+        p->legend->setBrush(QBrush(Qt::white));
+        p->legend->setTextColor(Qt::black);
+        p->yAxis->setTickLabelColor(Qt::black);
+        p->xAxis->setTickLabelColor(Qt::black);
+        colorMap->setBrush(QBrush(Qt::white));
+        colorMap->setPen(QPen(Qt::black));
+        colorMap->valueAxis()->setLabelColor(Qt::black);
+        colorMap->valueAxis()->setBasePen(QPen(Qt::black));
+        colorMap->valueAxis()->setTickLabelColor(Qt::black);
+        colorMap->keyAxis()->setLabelColor(Qt::black);
+        colorMap->keyAxis()->setBasePen(QPen(Qt::black));
+        colorMap->keyAxis()->setTickLabelColor(Qt::black);
+        colorMap->keyAxis()->setTickPen(QPen(Qt::black));
+
+        colorMap->colorScale()->axis()->setLabelColor(Qt::black);
+        colorMap->colorScale()->axis()->setBasePen(QPen(Qt::black)); // line on RH side of scale
+        colorMap->colorScale()->axis()->setTickLabelColor(Qt::black); // TEXT!!
+    }
+}
+
+
+void frameview_widget::handleNewColorScheme(int scheme, bool useDarkThemeVal)
 {
     switch(scheme)
     {
@@ -239,7 +298,7 @@ void frameview_widget::handleNewColorScheme(int scheme)
         break;
     }
 
-
+    useDarkTheme(useDarkThemeVal);
 }
 
 

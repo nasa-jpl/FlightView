@@ -127,6 +127,8 @@ void preferenceWindow::createRenderingTab()
     ColorScalePicker->addItem("Geography");
     ColorScalePicker->setToolTip("So many to choose from! Use the scroll wheel while hovering over the combo box");
 
+    darkThemeCheck = new QCheckBox("Use dark theme");
+    darkThemeCheck->setToolTip("Select this for a darker UI theme");
 
     /* If the data range needs to be adjustable later, uncomment this and the #include and definition line in the header
      * and commment out the setReadOnly lines below.
@@ -145,8 +147,7 @@ void preferenceWindow::createRenderingTab()
     connect(nativeScaleButton, SIGNAL(clicked()), this, SLOT(invertRange()));
     connect(paraPixCheck, SIGNAL(clicked(bool)), this, SLOT(enableParaPixMap(bool)));
     connect(ColorScalePicker, SIGNAL(activated(int)), this, SLOT(setColorScheme(int)));
-    //connect(ColorScalePicker, SIGNAL(activated(int)), this, SLOT(fw->setColorScheme(int)));
-
+    connect(darkThemeCheck, SIGNAL(clicked(bool)), this, SLOT(setDarkTheme(bool)));
 
 
     QGridLayout *layout = new QGridLayout();
@@ -163,6 +164,7 @@ void preferenceWindow::createRenderingTab()
     layout->addWidget(ignoreLastCheck, 4, 2, 1, 2);
     layout->addWidget(ColorLabel, 5, 0);
     layout->addWidget(ColorScalePicker, 5,1);
+    layout->addWidget(darkThemeCheck, 5, 2);
 
     renderingTab->setLayout(layout);
     //enableControls(mainWinTab->currentIndex());
@@ -217,6 +219,9 @@ void preferenceWindow::processPreferences()
 
     ColorScalePicker->setCurrentIndex(preferences.frameColorScheme);
     ColorScalePicker->activated(preferences.frameColorScheme);
+
+    darkThemeCheck->setChecked(preferences.useDarkTheme);
+    darkThemeCheck->clicked(preferences.useDarkTheme);
 }
 
 
@@ -269,9 +274,15 @@ void preferenceWindow::enableParaPixMap(bool checked)
 void preferenceWindow::setColorScheme(int index)
 {
     //fw->color_scheme = index;
-    fw->setColorScheme(index);
+    fw->setColorScheme(index, preferences.useDarkTheme);
     preferences.frameColorScheme = index;
     //std::cerr << "selected index: " << index << std::endl;
+}
+
+void preferenceWindow::setDarkTheme(bool useDarkChecked)
+{
+    preferences.useDarkTheme = useDarkChecked;
+    fw->setColorScheme(preferences.frameColorScheme, preferences.useDarkTheme);
 }
 
 void preferenceWindow::saveSettingsNow()

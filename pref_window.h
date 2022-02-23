@@ -74,6 +74,7 @@ class preferenceWindow : public QWidget
 
     QLabel *ColorLabel;
     QComboBox *ColorScalePicker;
+    QCheckBox *darkThemeCheck;
 
     bool havePreferencesLoaded = false;
     settingsT preferences;
@@ -98,6 +99,7 @@ private slots:
     void ignoreFirstRow(bool checked);
     void ignoreLastRow(bool checked);
     void setColorScheme(int index);
+    void setDarkTheme(bool useDarkChecked);
     void saveSettingsNow();
 
 signals:

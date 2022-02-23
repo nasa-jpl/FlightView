@@ -627,11 +627,7 @@ void ControlsBox::loadSettings()
     // [Interface]:
     settings->beginGroup("Interface");
     prefs.frameColorScheme = settings->value("frameColorScheme", defaultPrefs.frameColorScheme).toInt();
-//    prefs.darkSubLow = settings->value("darkSubLow", defaultPrefs.darkSubLow).toInt();
-//    prefs.darkSubHigh = settings->value("darkSubHigh", defaultPrefs.darkSubHigh).toInt();
-//    prefs.rawLow = settings->value("rawLow", defaultPrefs.rawLow).toInt();
-//    prefs.rawHigh = settings->value("rawHigh", defaultPrefs.rawHigh).toInt();
-
+    prefs.useDarkTheme = settings->value("useDarkTheme", defaultPrefs.useDarkTheme).toBool();
     prefs.frameViewCeiling = settings->value("frameViewCeiling", defaultPrefs.frameViewCeiling).toInt();
     prefs.frameViewFloor = settings->value("frameViewFloor", defaultPrefs.frameViewFloor).toInt();
     prefs.dsfCeiling = settings->value("dsfCeiling", defaultPrefs.dsfCeiling).toInt();
@@ -733,6 +729,7 @@ void ControlsBox::triggerSaveSettings()
     prefs.brightSwap16 = pwprefs.brightSwap16;
     prefs.frameColorScheme = pwprefs.frameColorScheme;
     prefs.use2sComp = pwprefs.use2sComp;
+    prefs.useDarkTheme = pwprefs.useDarkTheme;
 
     // Now save:
     saveSettings();
@@ -753,7 +750,7 @@ void ControlsBox::saveSettings()
     // [Interface]:
     settings->beginGroup("Interface");
     settings->setValue("frameColorScheme", prefs.frameColorScheme);
-
+    settings->setValue("useDarkTheme", prefs.useDarkTheme);
     settings->setValue("frameViewCeiling", prefs.frameViewCeiling);
     settings->setValue("frameViewFloor", prefs.frameViewFloor);
     settings->setValue("dsfCeiling", prefs.dsfCeiling);
@@ -826,10 +823,7 @@ void ControlsBox::setDefaultSettings()
 
     // [Interface]:
     defaultPrefs.frameColorScheme = 0; // Jet
-//    defaultPrefs.darkSubLow = -2000;
-//    defaultPrefs.darkSubHigh = 2000;
-//    defaultPrefs.rawLow = 0;
-//    defaultPrefs.rawHigh = 10000;
+    defaultPrefs.useDarkTheme = false;
 
     defaultPrefs.frameViewCeiling = 65000;
     defaultPrefs.frameViewFloor = 10000;

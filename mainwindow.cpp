@@ -130,6 +130,8 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
     connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
 
+    connect(fw, SIGNAL(setColorScheme_signal(int,bool)), flight_screen, SLOT(handleNewColorScheme(int,bool)));
+
     controlbox->getPrefsExternalTrig();
     qDebug() << __PRETTY_FUNCTION__ << "started";
 }

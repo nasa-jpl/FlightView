@@ -109,7 +109,7 @@ public slots:
     /*! \addtogroup renderfunc Rendering Functions
      * Functions which are responsible for the rendering of plots in a widget.
      * @{ */
-    void handleNewColorScheme(int scheme);
+    void handleNewColorScheme(int scheme, bool useDarkTheme);
     void handleNewFrame();
     /*! @} */
 
@@ -123,6 +123,7 @@ public slots:
     void updateCeiling(int c);
     void updateFloor(int f);
     void setUseDSF(bool useDSF);
+    void useDarkTheme(bool useDark);
     void rescaleRange();
     void setCrosshairs(QMouseEvent *event);
     /*! @} */

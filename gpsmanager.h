@@ -160,6 +160,7 @@ public slots:
     void handleStopSecondaryLog();
     void receiveGPSMessage(gpsMessage m); // from GPS network thread
     void clearStickyError();
+    void setPlotTheme(bool isDark);
 
 signals:
     void connectToGPS(QString host, int port, QString gpsBinaryLogFilename);

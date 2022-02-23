@@ -17,7 +17,7 @@ struct settingsT {
 
     // [Interface]:
     int frameColorScheme;
-
+    bool useDarkTheme;
     int frameViewCeiling;
     int frameViewFloor;
 

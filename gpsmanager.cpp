@@ -149,11 +149,17 @@ void gpsManager::preparePlots()
         plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis ); // Lat
         plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis ); // Long
         setTimeAxis(plotRollPitch->xAxis);
+        plotRollPitch->yAxis->setLabel("Degrees");
         setPlotTitle(plotRollPitch, titleLatLong, "Pitch and Roll");
         plotRollPitch->plotLayout()->addElement(0,-1,titleLatLong);
-        plotRollPitch->graph(0)->setPen(QPen(Qt::blue)); // roll
-        plotRollPitch->graph(1)->setPen(QPen(Qt::red)); // pitch
+        plotRollPitch->graph(0)->setPen(QPen(Qt::red)); // roll
+        plotRollPitch->graph(1)->setPen(QPen(Qt::green)); // pitch
         setPlotTitle(plotRollPitch, titleLatLong, "Pitch and Roll");
+        plotRollPitch->graph(0)->setName("Roll");
+        plotRollPitch->graph(1)->setName("Pitch");
+        plotRollPitch->removeGraph(2);
+        plotRollPitch->legend->setVisible(true);
+        setPlotColors(plotRollPitch, true);
     }
 }
 
@@ -196,21 +202,45 @@ void gpsManager::setPlotTitle(QCustomPlot *p, QCPPlotTitle *t, QString title)
     // The insert to the plot happens later.
 }
 
+void gpsManager::setPlotTheme(bool isDark)
+{
+    setPlotColors(plotRollPitch, isDark);
+}
+
 void gpsManager::setPlotColors(QCustomPlot *p, bool dark)
 {
     if(dark)
     {
         p->setBackground(QBrush(Qt::black));
-        p->xAxis->setBasePen(QPen(Qt::yellow)); // lower line of axis
-        p->yAxis->setBasePen(QPen(Qt::yellow)); // left line of axis
-        p->xAxis->setTickPen(QPen(Qt::yellow));
-        p->yAxis->setTickPen(QPen(Qt::yellow));
+        p->xAxis->setBasePen(QPen(Qt::green)); // lower line of axis
+        p->yAxis->setBasePen(QPen(Qt::green)); // left line of axis
+        p->xAxis->setTickPen(QPen(Qt::green));
+        p->yAxis->setTickPen(QPen(Qt::green));
         p->xAxis->setLabelColor(QColor(Qt::white));
         p->yAxis->setLabelColor(QColor(Qt::white));
-        p->graph()->setPen(QPen(Qt::red));
+        p->yAxis->setTickLabelColor(Qt::white);
+        p->xAxis->setTickLabelColor(Qt::white);
+        //p->graph()->setPen(QPen(Qt::red));
+        p->graph(0)->setPen(QPen(Qt::yellow));
+        p->graph(1)->setPen(QPen(Qt::red));
+        p->legend->setBrush(QBrush(Qt::black));
+        p->legend->setTextColor(Qt::white);
         //p->graph()->setBrush(QBrush(Qt::yellow)); // sets an underfill for the line
     } else {
         p->setBackground(QBrush(Qt::white));
+        p->xAxis->setBasePen(QPen(Qt::black)); // lower line of axis
+        p->yAxis->setBasePen(QPen(Qt::black)); // left line of axis
+        p->xAxis->setTickPen(QPen(Qt::black));
+        p->yAxis->setTickPen(QPen(Qt::black));
+        p->xAxis->setLabelColor(QColor(Qt::black));
+        p->yAxis->setLabelColor(QColor(Qt::black));
+        p->graph(0)->setPen(QPen(Qt::blue));
+        p->graph(1)->setPen(QPen(Qt::red));
+        p->legend->setBrush(QBrush(Qt::white));
+        p->legend->setTextColor(Qt::black);
+        p->yAxis->setTickLabelColor(Qt::black);
+        p->xAxis->setTickLabelColor(Qt::black);
+
         //p->graph()->setBrush(QBrush(Qt::black)); // sets an underfill for the line
     }
 
@@ -218,6 +248,7 @@ void gpsManager::setPlotColors(QCustomPlot *p, bool dark)
 
 void gpsManager::showStatusMessage(QString s)
 {
+    qDebug() << "GPS MANAGER DEBUG: " << s;
     (void)s;
 }
 
