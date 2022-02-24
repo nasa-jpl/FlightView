@@ -105,6 +105,7 @@ class gpsManager : public QObject
     void setPlotColors(QCustomPlot *p, bool dark);
 
     QTimer gpsMessageHeartbeat;
+    unsigned int hbErrorCount=0;
 
     QElapsedTimer gnssStatusTime;
     bool firstMessage;

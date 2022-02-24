@@ -573,13 +573,25 @@ void gpsManager::handleGPSConnectionGood()
     emit gpsStatusMessage(QString("GPS: Connection good"));
     statusStickyError = false; // Safe to clear when a new connection has been made.
     statusConnectedToGPS = true;
+    hbErrorCount = 0;
 }
 
 void gpsManager::handleGPSTimeout()
 {
     // Heartbeat fail
+    hbErrorCount++;
     statusGPSHeartbeatOk = false;
     processStatus();
+    if(hbErrorCount > 120)
+    {
+        hbErrorCount = 0;
+        // About 2 minutes of missed data
+        emit gpsStatusMessage(QString("Error, heartbeat errors exceed threshold, establishing new GPS connection."));
+        // disconnect
+        initiateGPSDisconnect();
+        // reconnect
+        handleGPSReconnectTimer();
+    }
 }
 
 utcTime gpsManager::processUTCstamp(uint64_t t)
