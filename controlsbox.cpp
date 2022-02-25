@@ -356,7 +356,12 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //First Row
     save_layout->addWidget(&select_save_location, 1, 1, 1, 3);
     save_layout->addWidget(new QLabel("Total #Frames / #Averaged:"), 2, 1, 1, 3);
-    save_layout->addWidget(new QLabel("Filename:"), 3, 1, 1, 1);
+    if(options.flightMode)
+    {
+        save_layout->addWidget(new QLabel("Data Location:"), 3, 1, 1, 1);
+    } else {
+        save_layout->addWidget(new QLabel("Filename:"), 3, 1, 1, 1);
+    }
 
     //Second Row
     //save_layout.addWidget(&start_saving_frames_button, 1, 2, 1, 1);
@@ -369,7 +374,13 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     save_layout->addWidget(&diskSpaceBar, 4, 3, 1, 2);
     if(options.flightMode)
     {
-        filename_edit.setToolTip("Automatic in Flight Mode");
+        filename_edit.setToolTip("Specified using --datastoragelocation option");
+        if(options.dataLocationSet)
+        {
+            filename_edit.setText(options.dataLocation);
+        } else {
+            filename_edit.setText("undefined");
+        }
         filename_edit.setEnabled(false);
     } else {
         filename_edit.setToolTip("Leave blank for automatic filename");

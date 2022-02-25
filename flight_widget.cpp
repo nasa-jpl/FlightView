@@ -9,12 +9,23 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     FPSErrorCounter = 0;
     this->fw = fw;
     this->options = options;
+    useAvionicsWidgets = false;
 
     waterfall_widget = new waterfall(fw, 1, 1024, this);
     dsf_widget = new frameview_widget(fw, DSF, this);
 
     startedPrimaryGPSLog = false;
     gps = new gpsManager();
+
+    if(useAvionicsWidgets)
+    {
+        EADI = new qfi_EADI();
+        EADI->setBaseSize(100,100);
+        EADI->setMaximumSize(200,200);
+        EADI->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        EADI->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    }
 
     // Group Box "Flight Instrument Controls" items:
     resetStickyErrorsBtn.setText("Clear Errors");
@@ -88,6 +99,10 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     flightControlLayout.addWidget(&gpsUTCValidityText, row,4,1,1);
     flightControlLayout.addWidget(&gpsUTCValidityData, row,5,1,1);
 
+    if(useAvionicsWidgets)
+    {
+        flightControlLayout.addWidget(EADI, 5, 6, 1, 1);
+    }
 
     flightControlLayout.setColumnStretch(5,2);
     flightControlLayout.setRowStretch(3,2);
@@ -127,6 +142,9 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
                       &gpsQualityData,
                       NULL);
     gps->insertPlots(&gpsPitchRollPlot);
+    if(useAvionicsWidgets)
+        gps->insertAvionicsWidgets(NULL, NULL, EADI, NULL);
+
     gps->prepareElements();
 
     if(options.flightMode && !options.disableGPS)

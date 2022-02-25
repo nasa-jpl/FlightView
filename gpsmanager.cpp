@@ -470,7 +470,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     {
         if(m.haveHeadingRollPitchRate)
         {
-            if(ehsi != NULL)
+            if(eadi != NULL)
             {
                 eadi->setHeading(m.heading);
                 eadi->setPitch(m.pitch * -1 );

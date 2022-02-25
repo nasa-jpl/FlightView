@@ -24,6 +24,8 @@ namespace fs = boost::filesystem;
 #include "waterfall.h"
 #include "preferences.h"
 
+#include "qfi/qfi_EADI.h"
+
 class flight_widget : public QWidget
 {
     Q_OBJECT
@@ -79,6 +81,10 @@ class flight_widget : public QWidget
     // GPS Plots:
     QCustomPlot gpsPitchRollPlot;
     QCustomPlot gpsHeadingPlot;
+
+    // GPS Widgets:
+    bool useAvionicsWidgets = false;
+    qfi_EADI *EADI;
 
     uint16_t redRow;
     uint16_t greenRow;
