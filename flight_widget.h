@@ -49,8 +49,10 @@ class flight_widget : public QWidget
     QSplitter rhSplitter;
     QGridLayout layout;
     QVBoxLayout rhLayout;
-    QGroupBox flightControls;
-    QGridLayout flightControlLayout;
+    QGroupBox flightControls; // All plots and controls are inside this
+    QGridLayout flightControlLayout; // Labels and buttons
+    QGridLayout flightPlotsLayout;
+    QGridLayout flightAvionicsLayout;
 
     // stand-in items for flight controls:
     QPushButton resetStickyErrorsBtn;

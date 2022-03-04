@@ -62,7 +62,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     // Format is &item, row, col, rowSpan, colSpan. -1 = to "edge"
     int row=0;
-
+    //flightPlotsLayout.addWidget(&gpsPitchRollPlot, 0,0,4,8);
     flightControlLayout.addWidget(&gpsPitchRollPlot, row,0,4,8);
 
     row += 4;
@@ -101,7 +101,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     if(useAvionicsWidgets)
     {
-        flightControlLayout.addWidget(EADI, 5, 6, 1, 1);
+        flightControlLayout.addWidget(EADI, 7, 6, 1, 1);
     }
 
     flightControlLayout.setColumnStretch(5,2);
@@ -112,6 +112,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     // Group Box "Flight Instrument Controls"
     flightControls.setTitle("Flight Instrument Controls");
     flightControls.setLayout(&flightControlLayout);
+
 
     rhSplitter.setOrientation(Qt::Vertical);
     rhSplitter.addWidget(dsf_widget);
