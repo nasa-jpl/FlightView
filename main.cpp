@@ -141,6 +141,21 @@ int main(int argc, char *argv[])
             exit(-1);
         }
 
+
+    }
+
+    if(startupOptions.flightMode && !startupOptions.dataLocationSet)
+    {
+        std::cout << "Error, flight mode specified without data storage location." << std::endl;
+        std::cout << helptext.toStdString() << std::endl;
+        exit(-1);
+    }
+
+    if(startupOptions.flightMode && !startupOptions.gpsIPSet && !startupOptions.disableGPS)
+    {
+        std::cout << "Error, flight mode specified without GPS IP address." << std::endl;
+        std::cout << helptext.toStdString() << std::endl;
+        exit(-1);
     }
 
 
