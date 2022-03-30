@@ -2,7 +2,7 @@
 
 flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidget *parent) : QWidget(parent)
 {
-    connect(this, SIGNAL(statusMessage(QString)), this, SLOT(showDebugMessage(QString)));
+    //connect(this, SIGNAL(statusMessage(QString)), this, SLOT(showDebugMessage(QString)));
 
     emit statusMessage(QString("Starting flight screen widget"));
     stickyFPSError = false;
@@ -295,7 +295,7 @@ void flight_widget::handlePrefs(settingsT prefs)
 {
     this->prefs = prefs;
     havePrefs = true;
-    emit statusMessage("Have preferences inside flight_widget.");
+    emit statusMessage("[Flight Widget]: Have preferences inside flight_widget.");
 }
 
 void flight_widget::colorMapScrolledX(const QCPRange &newRange)
@@ -353,13 +353,13 @@ void flight_widget::setCrosshairs(QMouseEvent *event)
 
 void flight_widget::startDataCollection(QString secondaryLogFilename)
 {
-    emit statusMessage(QString("User pressed START Recording button"));
+    emit statusMessage(QString("[Flight Widget]: User pressed START Recording button"));
     emit beginSecondaryLog(secondaryLogFilename);
 }
 
 void flight_widget::stopDataCollection()
 {
-    emit statusMessage(QString("User pressed STOP Recording button"));
+    emit statusMessage(QString("[Flight Widget]: User pressed STOP Recording button"));
     emit stopSecondaryLog();
 }
 
@@ -374,12 +374,12 @@ void flight_widget::startGPS(QString gpsHostname, uint16_t gpsPort, QString prim
         gps->initiateGPSConnection(gpsHostname, gpsPort, primaryLogLocation);
         startedPrimaryGPSLog = true;
 
-        emit statusMessage(QString("Connecting to GPS host %1:%2 with primary log location %3")\
+        emit statusMessage(QString("[GPS]: Connecting to GPS host %1:%2 with primary log location %3")\
                        .arg(gpsHostname)\
                        .arg(gpsPort)\
                        .arg(primaryLogLocation));
     } else {
-        emit statusMessage(QString("Error, asked to connect to GPS twice."));
+        emit statusMessage(QString("[GPS]: Error, asked to connect to GPS twice."));
     }
 }
 
@@ -402,6 +402,7 @@ void flight_widget::showDebugMessage(QString debugMessage)
     // This is the location to log and/or display debug messages
     // related to flight operations, including GPS and data recording.
     std::cout << "DEBUG MESSAGE IN FLIGHT WIDGET: " << debugMessage.toLocal8Bit().toStdString() << std::endl;
+    emit statusMessage("[Flight Widget]: " + debugMessage);
 }
 
 void flight_widget::debugThis()

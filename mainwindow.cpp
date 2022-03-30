@@ -50,6 +50,8 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     horiz_cross_widget = new profile_widget(fw, HORIZONTAL_CROSS);
     vert_overlay_widget = new profile_widget(fw, VERT_OVERLAY);
     fft_mean_widget = new fft_widget(fw);
+    cLog = new consoleLog();
+
     if(!options.flightMode)
     {
         raw_play_widget = new playback_widget(fw);
@@ -128,11 +130,16 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
 
     connect(controlbox, SIGNAL(startDataCollection(QString)), flight_screen, SLOT(startDataCollection(QString)));
     connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
+    connect(controlbox, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
     connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
 
     connect(fw, SIGNAL(setColorScheme_signal(int,bool)), flight_screen, SLOT(handleNewColorScheme(int,bool)));
 
     controlbox->getPrefsExternalTrig();
+    connect(controlbox, &ControlsBox::showConsoleLog,
+            [=]() {
+            cLog->show();
+    });
     qDebug() << __PRETTY_FUNCTION__ << "started";
 }
 
@@ -140,6 +147,7 @@ void MainWindow::handleStatusMessage(QString message)
 {
     std::cout << "STDOUT: Status Message: " << message.toLocal8Bit().toStdString() << std::endl;
     qDebug() << __PRETTY_FUNCTION__ << "Status message: " << message;
+    cLog->insertText(message);
 }
 
 void MainWindow::enableStdDevTabs()
@@ -285,6 +293,8 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
 void MainWindow::closeEvent(QCloseEvent *e)
 {
     Q_UNUSED(e);
+
+    cLog->close();
 
     QList<QWidget*> allWidgets = findChildren<QWidget*>();
     for(int i = 0; i < allWidgets.size(); ++i)

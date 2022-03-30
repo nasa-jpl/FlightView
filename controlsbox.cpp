@@ -90,6 +90,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     //Fourth Row
     collections_layout->addWidget(&server_port_label, 4, 1, 1, 1);
+    collections_layout->addWidget(&showConsoleLogBtn, 4, 2, 1, 1);
 
     //Fifth Row:
     collections_layout->addWidget(overlay_lh_width_label, 5,1,1,1);
@@ -319,7 +320,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
 /* ====================================================================== */
     //RIGHT SIDE BUTTONS (Save)
-    select_save_location.setText("Select Save Location");
+    select_save_location.setText("Save Location");
+    showConsoleLogBtn.setText("Log");
+    showConsoleLogBtn.setToolTip("Show console log");
 
     save_finite_button.setText("Save Frames");
 
@@ -354,7 +357,11 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     save_layout = new QGridLayout();
     //First Row
-    save_layout->addWidget(&select_save_location, 1, 1, 1, 3);
+    if(!options.flightMode)
+    {
+        // row, col, row span, col span
+        save_layout->addWidget(&select_save_location, 1, 1, 1, 2);
+    }
     save_layout->addWidget(new QLabel("Total #Frames / #Averaged:"), 2, 1, 1, 3);
     if(options.flightMode)
     {
@@ -365,7 +372,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     //Second Row
     //save_layout.addWidget(&start_saving_frames_button, 1, 2, 1, 1);
-    save_layout->addWidget(&save_finite_button, 1, 4, 1, 1);
+    save_layout->addWidget(&save_finite_button,        1, 4, 1, 1);
     save_layout->addWidget(&frames_save_num_edit, 2, 4, 1, 1);
     save_layout->addWidget(&filename_edit, 3, 2, 1, 4);
     save_layout->addWidget(&debugButton, 4, 5, 1, 1);
@@ -413,6 +420,11 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     connect(&stop_dark_collection_button, SIGNAL(clicked()), this, SLOT(stop_dark_collection_slot()));
     connect(&load_mask_from_file, SIGNAL(clicked()), this, SLOT(getMaskFile()));
     connect(&pref_button, SIGNAL(clicked()), this, SLOT(load_pref_window()));
+    connect(&showConsoleLogBtn, &QPushButton::pressed,
+            [&]() {
+            emit showConsoleLog();
+    });
+
     connect(fw, SIGNAL(updateFPS()), this, SLOT(update_backend_delta()));
 
     connect(std_dev_N_edit, SIGNAL(valueChanged(int)), std_dev_N_slider, SLOT(setValue(int)));
@@ -804,6 +816,7 @@ void ControlsBox::saveSettings()
     settings->endGroup();
 
     settings->sync();
+    emit statusMessage("[Controls Box]: Saved settings.");
 }
 
 void ControlsBox::saveSingleRGBPreset(int index, int r, int g, int b)
@@ -820,6 +833,7 @@ void ControlsBox::saveSingleRGBPreset(int index, int r, int g, int b)
 
     settings->endArray();
     settings->endGroup();
+    emit statusMessage(QString("[Controls Box]: Saved RGB setting to index %1 named %2.").arg(index).arg(rgbPresetCombo.itemText(index)));
 }
 
 void ControlsBox::setDefaultSettings()
@@ -1409,7 +1423,7 @@ void ControlsBox::save_finite_button_slot()
         // which is a flag to continuously save. Or, we can keep it as-is
         // and allow the operator to specify a number of frames.
         emit startSavingFinite(frames_save_num_edit.value(), rawDataFilename, 1);
-
+        emit statusMessage(QString("[Controls Box]: Saving data to file [%1]").arg(rawDataFilename));
         previousNumSaved = frames_save_num_edit.value();
         stop_saving_frames_button.setEnabled(true);
         start_saving_frames_button.setEnabled(false);
@@ -1430,6 +1444,7 @@ void ControlsBox::save_finite_button_slot()
                 frames_save_num_edit.setValue(frames_save_num_avgs_edit.value());
             }
             emit startSavingFinite(frames_save_num_edit.value(), filename_edit.text(), frames_save_num_avgs_edit.value());
+            emit statusMessage(QString("[Controls Box]: Saving data to file [%1]").arg(filename_edit.text()));
             previousNumSaved = frames_save_num_edit.value();
             stop_saving_frames_button.setEnabled(true);
             start_saving_frames_button.setEnabled(false);
@@ -1453,6 +1468,7 @@ void ControlsBox::stop_continous_button_slot()
     frames_save_num_edit.setEnabled(true);
     frames_save_num_avgs_edit.setEnabled(true);
     frames_save_num_edit.setValue(previousNumSaved);
+    emit statusMessage(QString("[Controls Box]: Stopping save data."));
     emit stopDataCollection();
 }
 void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
@@ -1528,6 +1544,7 @@ void ControlsBox::start_dark_collection_slot()
    */
     collect_dark_frames_button.setEnabled(false);
     stop_dark_collection_button.setEnabled(true);
+    emit statusMessage(QString("[Controls Box]: Collecting dark frames."));
     emit startDSFMaskCollection();
 }
 void ControlsBox::stop_dark_collection_slot()
@@ -1538,6 +1555,7 @@ void ControlsBox::stop_dark_collection_slot()
     emit stopDSFMaskCollection();
     collect_dark_frames_button.setEnabled(true);
     stop_dark_collection_button.setEnabled(false);
+    emit statusMessage(QString("[Controls Box]: Stopped collecting dark frames."));
 }
 void ControlsBox::getMaskFile()
 {

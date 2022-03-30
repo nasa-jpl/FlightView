@@ -16,6 +16,7 @@ TEMPLATE = app
 #CONFIG += warn_on
 
 SOURCES += main.cpp\
+    consolelog.cpp \
     filenamegenerator.cpp \
     flight_widget.cpp \
     gpsmanager.cpp \
@@ -37,6 +38,7 @@ SOURCES += main.cpp\
     waterfall.cpp
 
 HEADERS  += mainwindow.h \
+    consolelog.h \
     filenamegenerator.h \
     flight_widget.h \
     frameview_widget.h \

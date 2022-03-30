@@ -107,6 +107,7 @@ public:
 
     /* RIGHT SIDE BUTTONS (save) */
     QGridLayout *save_layout;
+    QPushButton showConsoleLogBtn;
     QWidget SaveButtonsBox;
     QPushButton save_finite_button;
     QPushButton start_saving_frames_button;
@@ -199,6 +200,7 @@ signals:
     void statusMessage(QString message);
     void warningMessage(QString message);
     void errorMessage(QString message);
+    void showConsoleLog();
     void debugSignal();
 
 public slots:

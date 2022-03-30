@@ -16,6 +16,7 @@
 #include "saveserver.h"
 #include "startupOptions.h"
 #include "preferences.h"
+#include "consolelog.h"
 
 // GPS includes:
 
@@ -62,6 +63,7 @@ private:
     profile_widget *vert_overlay_widget;
     fft_widget *fft_mean_widget;
     playback_widget *raw_play_widget;
+    consoleLog *cLog;
 
     /*! @} */
 

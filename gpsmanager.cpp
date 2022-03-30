@@ -622,7 +622,14 @@ void gpsManager::processStatus()
         if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateWarning);
     }
 
-    // Trouble is sticky (clearning is manually done by the user)
+    // Check and see if things are back to normal and could be unflagged:
+    if(!statusGPSHeartbeatOk && !statusUTCok && !statusGNSSReceptionOk && statusStickyError)
+    {
+        // There's a sticky error, but the system is working
+        // TODO: Alert the user, but only once.
+    }
+
+    // Trouble is sticky (clearing is manually done by the user)
     if(trouble)
     {
         if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateError);
