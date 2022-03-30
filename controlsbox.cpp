@@ -25,7 +25,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     current_tab = qobject_cast<frameview_widget*>(qtw->widget(qtw->currentIndex()));
     old_tab = NULL;
     this->options = options;
-    if(options.dataLocationSet)
+    if(options.dataLocationSet && !options.dataLocation.isEmpty())
     {
         fnamegen.setMainDirectory(options.dataLocation);
         emit statusMessage(QString("Setting data storage location to %1")\
