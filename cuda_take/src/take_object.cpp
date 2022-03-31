@@ -155,7 +155,12 @@ void take_object::start()
     meanWidth = frWidth;
 
 #ifdef EDT
-    pdv_multibuf(pdv_p,this->numbufs);
+    int rtnval = pdv_multibuf(pdv_p,this->numbufs);
+    if(rtnval != 0)
+    {
+        std::cout << "Error, could not initialize camera link multibuffer." << std::endl;
+        std::cout << "Make sure the camera link driver is loaded and that the camera link port has been initialized using initcam." << std::endl;
+    }
     numbufs = 16;
     pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
 #endif
