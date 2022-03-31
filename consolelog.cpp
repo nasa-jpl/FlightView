@@ -7,18 +7,22 @@ consoleLog::consoleLog(QWidget *parent) : QWidget(parent)
     this->resize(500, 200);
     connect(&annotateBtn, SIGNAL(pressed()), this, SLOT(onAnnotateBtnPushed()));
     connect(&clearBtn, SIGNAL(pressed()), this, SLOT(onClearBtnPushed()));
+    connect(&annotateText, SIGNAL(returnPressed()), this, SLOT(onAnnotateBtnPushed()));
 }
 
 void consoleLog::createUI()
 {
     logView.setMinimumHeight(200);
     logView.setMinimumWidth(230);
+    logView.setReadOnly(true);
     layout.addWidget(&logView);
     layout.addItem(&hLayout);
     annotateText.setMinimumWidth(200);
     annotateBtn.setMaximumWidth(75);
     annotateBtn.setText("Annotate");
     annotateBtn.setToolTip("Press to annotate the log");
+    annotateBtn.setDefault(true);
+    annotateBtn.setAutoDefault(true);
     hLayout.addWidget(&annotateText);
     hLayout.addWidget(&annotateBtn);
     this->setLayout(&layout);
