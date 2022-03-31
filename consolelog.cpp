@@ -2,12 +2,28 @@
 
 consoleLog::consoleLog(QWidget *parent) : QWidget(parent)
 {
-    createUI();
-    this->setWindowTitle("FlightView Console Log");
-    this->resize(500, 200);
-    connect(&annotateBtn, SIGNAL(pressed()), this, SLOT(onAnnotateBtnPushed()));
-    connect(&clearBtn, SIGNAL(pressed()), this, SLOT(onClearBtnPushed()));
-    connect(&annotateText, SIGNAL(returnPressed()), this, SLOT(onAnnotateBtnPushed()));
+    this->logFileName = "";
+    this->enableLogToFile = false;
+
+    this->createUI();
+    this->makeConnections();
+ }
+
+consoleLog::consoleLog(QString logFileName, QWidget *parent) : QWidget(parent)
+{
+    this->logFileName = createFilenameFromDirectory(logFileName);
+    this->enableLogToFile = true;
+
+    this->createUI();
+    this->makeConnections();
+
+    openFile(this->logFileName);
+}
+
+consoleLog::~consoleLog()
+{
+    this->destroyUI();
+    this->closeFile();
 }
 
 void consoleLog::createUI()
@@ -26,11 +42,78 @@ void consoleLog::createUI()
     hLayout.addWidget(&annotateText);
     hLayout.addWidget(&annotateBtn);
     this->setLayout(&layout);
+
+    this->setWindowTitle("FlightView Console Log");
+    this->resize(500, 200);
+}
+
+void consoleLog::makeConnections()
+{
+    connect(&annotateBtn, SIGNAL(pressed()), this, SLOT(onAnnotateBtnPushed()));
+    connect(&clearBtn, SIGNAL(pressed()), this, SLOT(onClearBtnPushed()));
+    connect(&annotateText, SIGNAL(returnPressed()), this, SLOT(onAnnotateBtnPushed()));
 }
 
 void consoleLog::destroyUI()
 {
 
+}
+
+void consoleLog::writeToFile(QString textOut)
+{
+    if(fileIsOpen)
+    {
+        textOut.append("\n");
+        outfile.write(textOut.toLocal8Bit().data(), textOut.length());
+        if ( (outfile.rdstate() & std::ifstream::failbit ) != 0 )
+        {
+            handleError("ERROR: Could not write text to file!");
+        }
+        outfile.flush();
+    } else {
+        handleError("Log file is not open, text not being logged (yet)");
+    }
+    return;
+}
+
+void consoleLog::openFile(QString filename)
+{
+    if(fileIsOpen)
+    {
+        // indicate error because file is already open
+        handleError("ConsoleLog was already opened, tried to open again.");
+        return;
+    } else {
+        if(filename.isEmpty())
+        {
+            handleError("ConsoleLog filename is empty. Cannot log to file.");
+            return;
+        }
+        this->logFileName = filename;
+        outfile.open(filename.toLocal8Bit().data(),  std::ios_base::app); // append
+        if ( (outfile.rdstate() & std::ifstream::failbit ) != 0 )
+        {
+            handleError(QString("ConsoleLog file [%1] could not be opened for appending.").arg(filename));
+            fileIsOpen = false;
+            return;
+        } else {
+            fileIsOpen = true;
+            insertText(QString("[ConsoleLog]: Opened file [%1] for logging.").arg(filename));
+        }
+    }
+
+    return;
+}
+
+void consoleLog::closeFile()
+{
+    if(fileIsOpen)
+    {
+        outfile.flush();
+        outfile.close();
+    } else {
+        handleError(QString("ConsoleLog file [%1] could not be closed"));
+    }
 }
 
 void consoleLog::onClearBtnPushed()
@@ -42,7 +125,7 @@ void consoleLog::onAnnotateBtnPushed()
 {
     if(annotateText.text().isEmpty())
         return;
-    insertText(annotateText.text());
+    insertText("[Operator Annotation]: " + annotateText.text());
     annotateText.clear();
 }
 
@@ -54,6 +137,9 @@ void consoleLog::insertText(QString text)
 void consoleLog::insertTextNoTagging(QString text)
 {
     logView.appendPlainText(text);
+    if(enableLogToFile)
+        writeToFile(text);
+
     /*
      * Aparently, the line edit already does this...
     if (text.endsWith("\n"))
@@ -71,4 +157,33 @@ QString consoleLog::createTimeStamp()
     QString dateString = now.toString("[yyyy-MM-dd hh:mm:ss]: ");
 
     return dateString;
+}
+
+QString consoleLog::createFilenameFromDirectory(QString directoryName)
+{
+    QString filename;
+    if(directoryName.isEmpty())
+    {
+        handleError("ERROR: Directory name supplied for logging is empty. Using /tmp.");
+        directoryName = QString("/tmp/");
+    }
+    if(!directoryName.endsWith("/"))
+        directoryName.append("/");
+
+    QDateTime now = QDateTime::currentDateTimeUtc();
+    QString dateString = now.toString("yyyy-MM-dd_hhmmss");
+
+    filename = directoryName + dateString + "-FlightView.log";
+    return filename;
+}
+
+void consoleLog::handleError(QString errorText)
+{
+    // This function is for errors *within* the consoleLog class.
+    // These errors are not logged to the file since they are likely
+    // caused by not beign able to log errors.
+
+    errorText.prepend("[ConsoleLog ERROR]: ");
+    logView.appendPlainText(errorText);
+    std::cout << errorText.toLocal8Bit().data() << std::endl;
 }
