@@ -141,16 +141,6 @@ void consoleLog::insertTextNoTagging(QString text)
     logView.appendPlainText(text);
     if(enableLogToFile)
         writeToFile(text);
-
-    /*
-     * Aparently, the line edit already does this...
-    if (text.endsWith("\n"))
-    {
-        logView.appendPlainText(text);
-    } else {
-        logView.appendPlainText(text.append("\n"));
-    }
-    */
 }
 
 QString consoleLog::createTimeStamp()
