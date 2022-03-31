@@ -29,7 +29,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     // Group Box "Flight Instrument Controls" items:
     resetStickyErrorsBtn.setText("Clear Errors");
-    instBtn.setText("Init");
     aircraftLbl.setText("AVIRIS-III");
     gpsLatText.setText("GPS Latitude:");
     gpsLatData.setText("########");
@@ -68,7 +67,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     row += 4;
 
     flightControlLayout.addWidget(&resetStickyErrorsBtn, ++row,0,1,1);
-    flightControlLayout.addWidget(&instBtn, row,1,1,1);
 
     flightControlLayout.addWidget(&gpsLEDLabel, ++row,0,1,1);
     flightControlLayout.addWidget(&gpsLED, row,1,1,1);

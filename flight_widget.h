@@ -56,7 +56,6 @@ class flight_widget : public QWidget
 
     // stand-in items for flight controls:
     QPushButton resetStickyErrorsBtn;
-    QCheckBox instBtn;
     QLabel gpsLEDLabel;
     QLedLabel gpsLED;
     QLabel cameraLinkLEDLabel;
