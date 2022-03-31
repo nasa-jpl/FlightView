@@ -85,7 +85,7 @@ class frameview_widget : public QWidget
     bool useDSF;
     bool havePrefs = false;
     settingsT *prefs;
-
+    void sMessage(QString statusMessageText);
 
 public:
     explicit frameview_widget(frameWorker *fw, image_t image_type , QWidget *parent = 0);
@@ -127,6 +127,8 @@ public slots:
     void rescaleRange();
     void setCrosshairs(QMouseEvent *event);
     /*! @} */
+signals:
+    void statusMessage(QString message);
 };
 
 #endif // FRAMEVIEW_WIDGET_H

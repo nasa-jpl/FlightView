@@ -253,9 +253,11 @@ void flight_widget::checkDiskSpace()
         {
             diskLED.setState(QLedLabel::StateError);
             stickyDiskFull = true;
+            emit statusMessage(QString("[Flight Widget]: ERROR: Disk too full to use at percent %1").arg(percent));
         } else if (percent > prefs.percentDiskWarning)
         {
             diskLED.setState(QLedLabel::StateWarning);
+            emit statusMessage(QString("[Flight Widget]: Warning: Disk quite full at percent %1").arg(percent));
         } else {
             diskLED.setState(QLedLabel::StateOk);
         }
@@ -395,13 +397,14 @@ void flight_widget::clearStickyErrors()
 {
     stickyDiskFull = false;
     diskLED.setState(QLedLabel::StateOk);
+    emit statusMessage("[Flight Widget]: User cleared sticky errors.");
 }
 
 void flight_widget::showDebugMessage(QString debugMessage)
 {
     // This is the location to log and/or display debug messages
     // related to flight operations, including GPS and data recording.
-    std::cout << "DEBUG MESSAGE IN FLIGHT WIDGET: " << debugMessage.toLocal8Bit().toStdString() << std::endl;
+    //std::cout << "DEBUG MESSAGE IN FLIGHT WIDGET: " << debugMessage.toLocal8Bit().toStdString() << std::endl;
     emit statusMessage("[Flight Widget]: " + debugMessage);
 }
 

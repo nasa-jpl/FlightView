@@ -132,6 +132,8 @@ signals:
 
     void setColorScheme_signal(int scheme, bool useDarkTheme);
 
+    void sendStatusMessage(QString statusMessage);
+
 public slots:
     /*! \addtogroup renderfunc
      * @{ */
@@ -162,7 +164,7 @@ public slots:
     void setStdDev_N(int newN);
     void stop();
     void setColorScheme(int scheme, bool useDarkTheme);
-
+    void sMessage(QString message);
 };
 
 

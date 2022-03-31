@@ -20,6 +20,24 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     this->fw = fw;
     this->options = options;
 
+    if(options.dataLocationSet)
+    {
+        cLog = new consoleLog(options.dataLocation);
+    } else {
+        cLog = new consoleLog();
+    }
+
+    if(options.flightMode)
+        handleStatusMessage(QString("[MainWindow]: This version of FlightView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
+    else
+        handleStatusMessage(QString("[MainWindow]: This version of LiveView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
+
+    handleStatusMessage(QString("[MainWindow]: The compilation was performed by %1@%2.").arg(QString(UNAME)).arg(QString(HOST)));
+
+
+    connect(fw, SIGNAL(sendStatusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
+
+
     /*! start the workerThread from main */
     qth->start();
 
@@ -50,12 +68,11 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     horiz_cross_widget = new profile_widget(fw, HORIZONTAL_CROSS);
     vert_overlay_widget = new profile_widget(fw, VERT_OVERLAY);
     fft_mean_widget = new fft_widget(fw);
-    if(options.dataLocationSet)
-    {
-        cLog = new consoleLog(options.dataLocation);
-    } else {
-        cLog = new consoleLog();
-    }
+
+    connect(unfiltered_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
+    connect(waterfall_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
+    connect(std_dev_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
+
 
     if(!options.flightMode)
     {
@@ -137,7 +154,6 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
     connect(controlbox, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
     connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
-
     connect(fw, SIGNAL(setColorScheme_signal(int,bool)), flight_screen, SLOT(handleNewColorScheme(int,bool)));
 
     controlbox->getPrefsExternalTrig();
@@ -145,13 +161,13 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
             [=]() {
             cLog->show();
     });
-    qDebug() << __PRETTY_FUNCTION__ << "started";
+    handleStatusMessage("[MainWindow]: Started");
 }
 
 void MainWindow::handleStatusMessage(QString message)
 {
-    std::cout << "STDOUT: Status Message: " << message.toLocal8Bit().toStdString() << std::endl;
-    qDebug() << __PRETTY_FUNCTION__ << "Status message: " << message;
+    //std::cout << "STDOUT: Status Message: " << message.toLocal8Bit().toStdString() << std::endl;
+    //qDebug() << __PRETTY_FUNCTION__ << "Status message: " << message;
     cLog->insertText(message);
 }
 
@@ -352,6 +368,7 @@ void MainWindow::removeTab(QString tabTitle)
 
 void MainWindow::debugThis()
 {
+    handleStatusMessage("[MainWindow]: Debug function reached.");
     qDebug() << __PRETTY_FUNCTION__ << ": Debug reached inside MainWindow class.";
     flight_screen->debugThis();
 }

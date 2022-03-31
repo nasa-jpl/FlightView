@@ -156,7 +156,8 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     }
     colorMap->setData(colorMapData);
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
-    qDebug() << __PRETTY_FUNCTION__ << ": Finished constructor";
+    sMessage(QString("%1: Finished constructor.").arg(QString(__PRETTY_FUNCTION__)));
+    //qDebug() << __PRETTY_FUNCTION__ << ": Finished constructor";
 }
 frameview_widget::~frameview_widget()
 {
@@ -185,7 +186,6 @@ double frameview_widget::getCeiling()
 double frameview_widget::getFloor()
 {
     /*! \brief Return the value of the floor for this widget as a double */
-    qDebug() << "Frameview Widget: Returning floor value from getFloor of " << floor;
     return floor;
 }
 void frameview_widget::toggleDisplayCrosshair()
@@ -293,7 +293,7 @@ void frameview_widget::handleNewColorScheme(int scheme, bool useDarkThemeVal)
         colorMap->setGradient(QCPColorGradient::gpGeography);
         break;
     default:
-        std::cerr << "color scheme not recognized, number: " << fw->color_scheme << std::endl;
+        sMessage(QString("color scheme [%1] not recognized.").arg(fw->color_scheme));
         colorMap->setGradient(QCPColorGradient::gpJet);
         break;
     }
@@ -605,4 +605,10 @@ void frameview_widget::setCrosshairs(QMouseEvent *event)
      * \author Jackie Ryan */
     fw->displayCross = displayCrosshairCheck.isChecked();
     fw->setCrosshairBackend(qcp->xAxis->pixelToCoord(event->pos().x()), qcp->yAxis->pixelToCoord(event->pos().y()));
+}
+
+void frameview_widget::sMessage(QString statusMessageText)
+{
+    statusMessageText.prepend("[frameview_widget]: ");
+    emit statusMessage(statusMessageText);
 }

@@ -15,6 +15,7 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
      * \author Jackie Ryan
      * \author Noah Levy
      */
+    sMessage("Starting frameWorker class and CUDA back-end");
     lastTime = 0;
     this->options = options;
 
@@ -159,13 +160,13 @@ void frameWorker::captureFrames()
 void frameWorker::startCapturingDSFMask()
 {
     /*! \brief Calls to start collecting dark frames in cuda_take. */
-    qDebug() << "Starting to record Dark Frames";
+    sMessage("Starting to record Dark Frames");
     to.startCapturingDSFMask();
 }
 void frameWorker::finishCapturingDSFMask()
 {
     /*! \brief Communicates to cuda_take to stop collecting dark frames. */
-    qDebug() << "Stop recording Dark Frames";
+    sMessage("Stop recording Dark Frames");
     to.finishCapturingDSFMask();
 }
 void frameWorker::toggleUseDSF(bool t)
@@ -304,7 +305,8 @@ void frameWorker::setCrosshairBackend(int pos_x, int pos_y)
         crosshair_x = crosshair_x >= int(frWidth) ? frWidth : crosshair_x;
         crosshair_y = crosshair_y < -1 ? 0 : crosshair_y;
         crosshair_y = crosshair_y >= int(frHeight) ? frHeight : crosshair_y;
-        qDebug()<<"x="<<crosshair_x<<"y="<<crosshair_y;
+        sMessage(QString("Crosshair position: x=%1, y=%2").arg(crosshair_x).arg(crosshair_y));
+        //qDebug()<<"x="<<crosshair_x<<"y="<<crosshair_y;
     }
 
     crossStartCol = -1;
@@ -389,4 +391,10 @@ void frameWorker::stop()
     qDebug() << "stop frameWorker";
 #endif
     doRun = false;
+}
+
+void frameWorker::sMessage(QString message)
+{
+    message.prepend("[frameWorker]: ");
+    emit sendStatusMessage(message);
 }
