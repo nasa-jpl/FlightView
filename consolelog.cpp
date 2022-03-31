@@ -45,6 +45,8 @@ void consoleLog::createUI()
 
     this->setWindowTitle("FlightView Console Log");
     this->resize(500, 200);
+
+    logView.scroll(0,200);
 }
 
 void consoleLog::makeConnections()
@@ -71,7 +73,7 @@ void consoleLog::writeToFile(QString textOut)
         }
         outfile.flush();
     } else {
-        handleError("Log file is not open, text not being logged (yet)");
+        handleError("Log file is not open, text not being logged.");
     }
     return;
 }
