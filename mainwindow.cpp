@@ -106,6 +106,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
 
     /* Create controls box */
     controlbox = new ControlsBox(fw, tabWidget, options);
+    connect(controlbox, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
     layout->addWidget(controlbox, 1);
 
     mainwidget->setLayout(layout);
@@ -152,7 +153,6 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
 
     connect(controlbox, SIGNAL(startDataCollection(QString)), flight_screen, SLOT(startDataCollection(QString)));
     connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
-    connect(controlbox, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
     connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
     connect(fw, SIGNAL(setColorScheme_signal(int,bool)), flight_screen, SLOT(handleNewColorScheme(int,bool)));
 
@@ -161,6 +161,10 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
             [=]() {
             cLog->show();
     });
+    if(options.dataLocationSet)
+    {
+        handleStatusMessage(QString("[MainWindow]: Data storage location: [%1]").arg(options.dataLocation));
+    }
     handleStatusMessage("[MainWindow]: Started");
 }
 
