@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QString>
 #include <QDateTime>
+#include <QDir>
 
 #include <fstream>
 #include <iostream>
@@ -39,6 +40,7 @@ private:
     void writeToFile(QString textOut);
     void openFile(QString filename);
     void closeFile();
+    void makeDirectory(QString directory);
     bool fileIsOpen = false;
     bool enableLogToFile = false;
     std::ofstream outfile;
@@ -52,6 +54,8 @@ private:
     QVBoxLayout layout;
     QHBoxLayout hLayout;
     void handleError(QString errorText);
+    void handleNote(QString noteText);
+    void handleWarning(QString warningText);
 };
 
 #endif // CONSOLELOG_H

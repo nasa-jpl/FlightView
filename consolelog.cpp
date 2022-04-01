@@ -162,11 +162,31 @@ QString consoleLog::createFilenameFromDirectory(QString directoryName)
     if(!directoryName.endsWith("/"))
         directoryName.append("/");
 
+    makeDirectory(directoryName);
+
     QDateTime now = QDateTime::currentDateTimeUtc();
     QString dateString = now.toString("yyyy-MM-dd_hhmmss");
 
     filename = directoryName + dateString + "-FlightView.log";
     return filename;
+}
+
+void consoleLog::makeDirectory(QString directoryName)
+{
+    QDir dir(directoryName);
+    if (!dir.exists())
+    {
+        // create directory
+        handleNote(QString("Creating directory [%1]").arg(directoryName));
+        dir.mkpath(".");
+    }
+
+    // Check our work:
+    if(!dir.exists())
+    {
+        handleError(QString("Could not create directory [%1]").arg(directoryName));
+    }
+    return;
 }
 
 void consoleLog::handleError(QString errorText)
@@ -178,4 +198,26 @@ void consoleLog::handleError(QString errorText)
     errorText.prepend("[ConsoleLog ERROR]: ");
     logView.appendPlainText(errorText);
     std::cout << errorText.toLocal8Bit().data() << std::endl;
+}
+
+void consoleLog::handleWarning(QString warningText)
+{
+    // This function is for warnings *within* the consoleLog class.
+    // These warnings are not logged to the file since they are likely
+    // caused by not beign able to log or setting up the log.
+
+    warningText.prepend("[ConsoleLog WARNING]: ");
+    logView.appendPlainText(warningText);
+    std::cout << warningText.toLocal8Bit().data() << std::endl;
+}
+
+void consoleLog::handleNote(QString noteText)
+{
+    // This function is for notes *within* the consoleLog class.
+    // These notes are not logged to the file since they are likely
+    // caused by not beign able to log or setting up the log.
+
+    noteText.prepend("[ConsoleLog NOTE]: ");
+    logView.appendPlainText(noteText);
+    std::cout << noteText.toLocal8Bit().data() << std::endl;
 }
