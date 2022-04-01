@@ -866,6 +866,7 @@ void ControlsBox::setDefaultSettings()
         defaultPrefs.bandRed[i] = 100;
         defaultPrefs.bandGreen[i] = 200;
         defaultPrefs.bandBlue[i] = 300;
+        defaultPrefs.presetName[i] = QString("%1").arg(i+1);
     }
 
     // [Flight]:
