@@ -156,10 +156,19 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
                             options.gpsPort,
                             options.dataLocation);
         } else {
-            emit statusMessage(QString("Error, cannot start flight mode with incomplete GPS settings."));
+            emit statusMessage(QString("ERROR, cannot start GPS in flight mode with incomplete GPS settings."));
         }
     } else {
         emit statusMessage(QString("Starting liveview in LAB mode."));
+        if(options.gpsIPSet && !options.disableGPS && options.dataLocationSet)
+        {
+            emit statusMessage(QString("Starting GPS in LAB mode."));
+            this->startGPS(options.gpsIP,
+                            options.gpsPort,
+                            options.dataLocation);
+        } else {
+            emit statusMessage(QString("Not starting GPS."));
+        }
     }
 
     // TODO:
