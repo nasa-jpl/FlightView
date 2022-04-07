@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     QString cmdName = QString("%1").arg(argv[0]);
     QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps "
                                "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 "
-                               "--deviceIHE /dev/ihe --deviceFPIED /dev/fpied")\
+                               "--no-stddev")\
             .arg(cmdName);
     QString currentArg;
     startupOptionsType startupOptions;
@@ -64,8 +64,7 @@ int main(int argc, char *argv[])
     startupOptions.gpsIP = QString("10.0.0.6");
     startupOptions.gpsPort = 8111;
     startupOptions.gpsPortSet = true;
-    startupOptions.deviceFPIED = QString("/dev/fpied");
-    startupOptions.deviceIHE = QString("/dev/ihe");
+
 
     // Basic CLI argument parser:
     for(int c=1; c < argc; c++)
@@ -111,37 +110,15 @@ int main(int argc, char *argv[])
                 exit(-1);
             }
         }
-        if(currentArg == "--deviceihe")
+        if(currentArg == "--no-stddev")
         {
-            // Use UDEV rules to give nice names
-            if((argc > c) && QString(argv[c+1]).contains("/dev"))
-            {
-                startupOptions.deviceIHE = argv[c+1];
-                startupOptions.deviceIHESet = true;
-            } else {
-                std::cout << helptext.toStdString() << std::endl;
-                exit(-1);
-            }
-        }
-        if(currentArg == "--devicefpied")
-        {
-            // Use UDEV rules to give nice names
-            if((argc > c) && QString(argv[c+1]).contains("/dev"))
-            {
-                startupOptions.deviceFPIED = argv[c+1];
-                startupOptions.deviceFPIEDSet = true;
-            } else {
-                std::cout << helptext.toStdString() << std::endl;
-                exit(-1);
-            }
+            startupOptions.runStdDevCalculation = false;
         }
         if(currentArg == "--help" || currentArg == "-h" || currentArg.contains("?"))
         {
             std::cout << helptext.toStdString() << std::endl;
             exit(-1);
         }
-
-
     }
 
     if(startupOptions.flightMode && !startupOptions.dataLocationSet)

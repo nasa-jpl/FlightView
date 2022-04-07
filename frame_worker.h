@@ -162,6 +162,7 @@ public slots:
     void setCrosshairBackend(int pos_x, int pos_y);
     void updateCrossDiplay(bool checked);
     void setStdDev_N(int newN);
+    void enableStdDevCalculation(bool enabled);
     void stop();
     void setColorScheme(int scheme, bool useDarkTheme);
     void sMessage(QString message);

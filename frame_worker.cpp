@@ -377,6 +377,11 @@ void frameWorker::setStdDev_N(int newN)
     to.setStdDev_N(newN);
 }
 
+void frameWorker::enableStdDevCalculation(bool enabled)
+{
+    to.toggleStdDevCalculation(enabled);
+}
+
 void frameWorker::setColorScheme(int scheme, bool useDarkTheme)
 {
     /*! \brief Passes the color scheme integer through to the frameview_widget slot.

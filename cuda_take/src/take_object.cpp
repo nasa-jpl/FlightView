@@ -1,7 +1,8 @@
 #include "take_object.hpp"
 #include "fft.hpp"
 
-take_object::take_object(int channel_num, int number_of_buffers, int frf)
+take_object::take_object(int channel_num, int number_of_buffers,
+                         int frf, bool runStdDev)
 {
     closing = false;
 #ifdef EDT
@@ -15,6 +16,7 @@ take_object::take_object(int channel_num, int number_of_buffers, int frf)
     //For the filters
     dsfMaskCollected = false;
     this->std_dev_filter_N = 400;
+    this->runStdDev = runStdDev;
     whichFFT = PLANE_MEAN;
 
     // for the overlay, zap everything to zero:
@@ -226,6 +228,11 @@ void take_object::setStdDev_N(int s)
     this->std_dev_filter_N = s;
 }
 
+void take_object::toggleStdDevCalculation(bool enabled)
+{
+    this->runStdDev = enabled;
+}
+
 void take_object::updateVertOverlayParams(int lh_start_in, int lh_end_in,
                                           int cent_start_in, int cent_end_in,
                                           int rh_start_in, int rh_end_in)
@@ -406,11 +413,14 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         }
 
         // Calculating the filters for this frame
-        sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
+        if(runStdDev)
+        {
+            sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
+        }
         dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
         mf->update(curFrame,count,meanStartCol,meanWidth,\
-                                           meanStartRow,meanHeight,frWidth,useDSF,\
-                                           whichFFT, lh_start, lh_end,\
+                   meanStartRow,meanHeight,frWidth,useDSF,\
+                   whichFFT, lh_start, lh_end,\
                                            cent_start, cent_end,\
                                            rh_start, rh_end);
 

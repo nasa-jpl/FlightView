@@ -139,6 +139,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     connect(controlbox, SIGNAL(startSavingFinite(unsigned int, QString, unsigned int)), fw, SLOT(startSavingRawData(unsigned int, QString, unsigned int)));
     connect(controlbox, SIGNAL(stopSaving()),fw,SLOT(stopSavingRawData()));
     connect(controlbox->std_dev_N_slider, SIGNAL(valueChanged(int)), fw, SLOT(setStdDev_N(int)));
+    connect(controlbox, SIGNAL(toggleStdDevCalculation(bool)), fw, SLOT(enableStdDevCalculation(bool)));
     connect(controlbox, SIGNAL(haveReadPreferences(settingsT)), this, SLOT(handlePreferenceRead(settingsT)));
     connect(controlbox, SIGNAL(haveReadPreferences(settingsT)), flight_screen, SLOT(handlePrefs(settingsT)));
     connect(fw, SIGNAL(savingFrameNumChanged(unsigned int)), controlbox, SLOT(updateSaveFrameNum_slot(unsigned int)));
@@ -155,7 +156,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
     connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
     connect(fw, SIGNAL(setColorScheme_signal(int,bool)), flight_screen, SLOT(handleNewColorScheme(int,bool)));
-
+    connect(this, SIGNAL(toggleStdDevCalc(bool)), fw, SLOT(enableStdDevCalculation(bool)));
     controlbox->getPrefsExternalTrig();
     connect(controlbox, &ControlsBox::showConsoleLog,
             [=]() {
@@ -165,6 +166,15 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     {
         handleStatusMessage(QString("[MainWindow]: Data storage location: [%1]").arg(options.dataLocation));
     }
+    if(options.runStdDevCalculation)
+    {
+        emit toggleStdDevCalc(true);
+        handleStatusMessage(QString("[MainWindow]: Standard Deviation calculation enabled"));
+    } else {
+        emit toggleStdDevCalc(false);
+        handleStatusMessage(QString("[MainWindow]: Standard Deviation calculation disabled"));
+    }
+
     handleStatusMessage("[MainWindow]: Started");
 }
 
@@ -351,6 +361,14 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
             removeTab("Std. Deviation");
         if(prefs.hideWaterfallTab)
             removeTab("Waterfall");
+    }
+
+    if(!options.runStdDevCalculation)
+    {
+        prefs.hideStddeviation = true;
+        removeTab("Std. Deviation");
+        prefs.hideHistogramView = true;
+        removeTab("Histogram View");
     }
 }
 

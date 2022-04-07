@@ -192,6 +192,8 @@ signals:
     /*! \brief Averages the collected frames and loads in the mask. */
     void stopDSFMaskCollection();
 
+    void toggleStdDevCalculation(bool enabled);
+
     /*! \brief Passes the information needed to generate the dark mask and load it into the DSF in the playback_widget. */
     void mask_selected(QString file_name, unsigned int bytes_to_read, long offset);
     void updateRGB(int r, int g, int b);

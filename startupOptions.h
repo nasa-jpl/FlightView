@@ -8,6 +8,7 @@ struct startupOptionsType
     bool flightMode = false;
     bool disableGPS = false;
     bool disableCamera = false;
+    bool runStdDevCalculation = true;
     bool dataLocationSet = false;
     QString dataLocation = QString("/data");
     bool gpsIPSet = false;
@@ -15,9 +16,7 @@ struct startupOptionsType
     bool gpsPortSet = false;
     uint16_t gpsPort = 8111;
     bool deviceFPIEDSet = false;
-    QString deviceFPIED = QString("/dev/fpied");
     bool deviceIHESet = false;
-    QString deviceIHE = QString("/dev/ihe");
 
 };
 

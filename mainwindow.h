@@ -76,7 +76,7 @@ public slots:
     void debugThis();
 
 signals:
-
+    void toggleStdDevCalc(bool enabled);
 
 protected:
     /*! \brief Defines keyboard controls for all components of Live View */

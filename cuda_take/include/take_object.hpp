@@ -71,6 +71,7 @@ class take_object {
 
     bool closing = false;
     bool grabbing = true;
+    bool runStdDev = true;
 
     boost::thread pdv_thread; // this thread controls the data collection
     int pdv_thread_run = 0;
@@ -100,7 +101,8 @@ class take_object {
 	uint16_t * raw_save_ptr;
 
 public:
-    take_object(int channel_num = 0, int number_of_buffers = 64, int filter_refresh_rate = 10);
+    take_object(int channel_num = 0, int number_of_buffers = 64,
+                int filter_refresh_rate = 10, bool runStdDev = true);
     virtual ~take_object();
 	void start();
 
@@ -122,6 +124,7 @@ public:
 
     // Std Dev Filter functions
     void setStdDev_N(int s);
+    void toggleStdDevCalculation(bool enabled);
 
     // Mean filter functions
     void updateVertRange(int br, int er);
