@@ -54,6 +54,9 @@ private:
 	unsigned int gpu_buffer_head;
 	unsigned int currentN;
 
+        unsigned int optimalBlockSizeY = 0;
+        unsigned int optimalBlockSizeX = 0;
+
 	uint16_t * pictures_device;
 	uint16_t * current_picture_device;
 
