@@ -23,7 +23,7 @@ fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
     tapPrfButton->setChecked(false);
 
     tapToProfile.setMinimum(0);
-    tapToProfile.setMaximum(number_of_taps[fw->camera_type()]);
+    tapToProfile.setMaximum(number_of_taps[fw->camera_type()]-1);
     tapToProfile.setSingleStep(1);
     tapToProfile.setEnabled(false);
     connect(tapPrfButton, SIGNAL(toggled(bool)), &tapToProfile, SLOT(setEnabled(bool)));
