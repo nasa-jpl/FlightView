@@ -9,7 +9,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     FPSErrorCounter = 0;
     this->fw = fw;
     this->options = options;
-    useAvionicsWidgets = false;
+    useAvionicsWidgets = true;
 
     waterfall_widget = new waterfall(fw, 1, 1024, this);
     dsf_widget = new frameview_widget(fw, DSF, this);
@@ -19,16 +19,65 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     if(useAvionicsWidgets)
     {
+        // NOTE: If a widget is set to NULL, it will not
+        // be updated and will not be added to the layout.
+        // Simply comment out the widgets not desired.
+
+        // See the "Avionics Widget Layout Placement" section
+        // for layout issues.
+
+        // QFlightInstruments Avionics Widgets are by Marek Cel:
+        // http://marekcel.pl/qflightinstruments
+        // https://github.com/marek-cel/QFlightinstruments
+
+        int avBase = 100;
+        int avMax = 150; // Larger values may require a window resize
+
+        // EADI: Electronic Attitude Direction Indicator
+        // shows speed, climb, heading, and ground orientation
         EADI = new qfi_EADI();
-        EADI->setBaseSize(100,100);
-        EADI->setMaximumSize(200,200);
+        EADI->setBaseSize(avBase,avBase);
+        EADI->setMaximumSize(avMax,avMax);
+        //EADI->setMinimumSize(200,200);
         EADI->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         EADI->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        EADI->setInteractive(false);
+        EADI->setEnabled(false);
 
+        // EHSI: Electronic Horizontal Situation Indicator
+        // shows heading and course
+        EHSI = new qfi_EHSI();
+        EHSI->setBaseSize(avBase,avBase);
+        EHSI->setMaximumSize(avMax,avMax);
+        EHSI->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        EHSI->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        EHSI->setInteractive(false);
+        EHSI->setEnabled(false);
+
+        // ASI: Air Speed Indicator
+        // air speed from GPS unit of course
+        ASI = new qfi_ASI();
+        ASI->setBaseSize(avBase,avBase);
+        ASI->setMaximumSize(avMax,avMax);
+        ASI->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        ASI->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        ASI->setInteractive(false);
+        ASI->setEnabled(false);
+
+        // VSI: Vertical Speed Indicator
+        // Shows rate of climb
+        VSI = new qfi_VSI();
+        VSI->setBaseSize(avBase,avBase);
+        VSI->setMaximumSize(avMax,avMax);
+        VSI->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        VSI->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        VSI->setInteractive(false);
+        VSI->setEnabled(false);
     }
 
     // Group Box "Flight Instrument Controls" items:
     resetStickyErrorsBtn.setText("Clear Errors");
+    resetStickyErrorsBtn.setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     aircraftLbl.setText("AVIRIS-III");
     gpsLatText.setText("GPS Latitude:");
     gpsLatData.setText("########");
@@ -66,57 +115,82 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     row += 4;
 
-    flightControlLayout.addWidget(&resetStickyErrorsBtn, ++row,0,1,1);
+    // First row of widgets:
+    ++row;
+    flightControlLayout.addWidget(&gpsLEDLabel,   row,0,1,1);
+    flightControlLayout.addWidget(&gpsLED,        row,1,1,1);
+    flightControlLayout.addWidget(&diskLEDLabel,  row,2,1,1);
+    flightControlLayout.addWidget(&diskLED,       row,3,1,1, Qt::AlignLeft);
 
-    flightControlLayout.addWidget(&gpsLEDLabel, ++row,0,1,1);
-    flightControlLayout.addWidget(&gpsLED, row,1,1,1);
-    flightControlLayout.addWidget(&diskLEDLabel, row, 2, 1, 1);
-    flightControlLayout.addWidget(&diskLED, row, 3, 1, 1, Qt::AlignLeft);
+    // Second row:
+    row++;
+    flightControlLayout.addWidget(&cameraLinkLEDLabel,  row,0,1,1);
+    flightControlLayout.addWidget(&cameraLinkLED,       row,1,1,1);
+    flightControlLayout.addWidget(&resetStickyErrorsBtn,row,2,1,1);
 
-    flightControlLayout.addWidget(&cameraLinkLEDLabel, ++row,0,1,1);
-    flightControlLayout.addWidget(&cameraLinkLED, row,1,1,1);
+    // Third row:
+    row++;
+    flightControlLayout.addWidget(&gpsLatText,  row,0,1,1);
+    flightControlLayout.addWidget(&gpsLatData,  row,1,1,1);
+    flightControlLayout.addWidget(&gpsLongText, row,2,1,1);
+    flightControlLayout.addWidget(&gpsLongData, row,3,1,1);
 
-    flightControlLayout.addWidget(&gpsLatText, ++row,0,1,1);
-    flightControlLayout.addWidget(&gpsLatData, row,1,1,1);
-
-    flightControlLayout.addWidget(&gpsAltitudeText, row,2,1,1);
-    flightControlLayout.addWidget(&gpsAltitudeData, row,3,1,1);
-    flightControlLayout.addWidget(&gpsUTCdateText, row,4,1,1);
-    flightControlLayout.addWidget(&gpsUTCdateData, row,5,1,1);
-
-
-    flightControlLayout.addWidget(&gpsLongText, ++row,0,1,1);
-    flightControlLayout.addWidget(&gpsLongData, row,1,1,1);
+    // Fourth row:
+    row++;
+    flightControlLayout.addWidget(&gpsAltitudeText,    row,0,1,1);
+    flightControlLayout.addWidget(&gpsAltitudeData,    row,1,1,1);
     flightControlLayout.addWidget(&gpsGroundSpeedText, row,2,1,1);
     flightControlLayout.addWidget(&gpsGroundSpeedData, row,3,1,1);
-    flightControlLayout.addWidget(&gpsUTCtimeText, row,4,1,1);
-    flightControlLayout.addWidget(&gpsUTCtimeData, row,5,1,1);
 
-    flightControlLayout.addWidget(&gpsHeadingText, ++row,0,1,1);
-    flightControlLayout.addWidget(&gpsHeadingData, row,1,1,1);
-    flightControlLayout.addWidget(&gpsUTCValidityText, row,4,1,1);
-    flightControlLayout.addWidget(&gpsUTCValidityData, row,5,1,1);
+    // Fifth row:
+    row++;
+    flightControlLayout.addWidget(&gpsHeadingText,     row,0,1,1);
+    flightControlLayout.addWidget(&gpsHeadingData,     row,1,1,1);
+    flightControlLayout.addWidget(&gpsUTCValidityText, row,2,1,1);
+    flightControlLayout.addWidget(&gpsUTCValidityData, row,3,1,1);
 
+    // Sixth row:
+    row++;
+    flightControlLayout.addWidget(&gpsUTCdateText, row,0,1,1);
+    flightControlLayout.addWidget(&gpsUTCdateData, row,1,1,1);
+    flightControlLayout.addWidget(&gpsUTCtimeText, row,2,1,1);
+    flightControlLayout.addWidget(&gpsUTCtimeData, row,3,1,1);
+
+    // Avionics Widget Layout Placement
     if(useAvionicsWidgets)
     {
-        flightControlLayout.addWidget(EADI, 7, 6, 1, 1);
+        // Note: If widget size is > 150, widgets will generally
+        // span larger than one column. A window resize
+        // will cause the widgets to re-draw and fit nicely without
+        // having to fine-tune the layout.
+
+        // Arguments are: widgetPointer, ROW, COL, ROW SPAN, COL SPAN
+        int avColumn = 7; // starting at column 7
+        if(EADI!=NULL) flightControlLayout.addWidget(EADI, 4, avColumn--, -1, 1); // col 7
+        if(EHSI!=NULL) flightControlLayout.addWidget(EHSI, 4, avColumn--, -1, 1); // col 6
+        if(ASI!=NULL)  flightControlLayout.addWidget(ASI,  4, avColumn--, -1, 1); // col 5
+        if(VSI!=NULL)  flightControlLayout.addWidget(VSI,  4, avColumn--, -1, 1); // col 4
     }
 
-    flightControlLayout.setColumnStretch(5,2);
-    flightControlLayout.setRowStretch(3,2);
+    flightControlLayout.setColumnStretch(0,0);
+    flightControlLayout.setColumnStretch(1,0);
+    flightControlLayout.setColumnStretch(2,0);
+    flightControlLayout.setColumnStretch(3,1); // this is between the text and the avionics widgets
 
+    flightControlLayout.setColumnStretch(4,0);
+    flightControlLayout.setColumnStretch(5,0);
+    flightControlLayout.setColumnStretch(6,0);
+    flightControlLayout.setColumnStretch(7,0);
 
+    flightControlLayout.setRowStretch(3,2); // stretch the plot area
 
     // Group Box "Flight Instrument Controls"
     flightControls.setTitle("Flight Instrument Controls");
     flightControls.setLayout(&flightControlLayout);
 
-
     rhSplitter.setOrientation(Qt::Vertical);
     rhSplitter.addWidget(dsf_widget);
     rhSplitter.addWidget(&flightControls);
-
-
 
     lrSplitter.addWidget(waterfall_widget);
     lrSplitter.addWidget(&rhSplitter);
@@ -142,7 +216,9 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
                       NULL);
     gps->insertPlots(&gpsPitchRollPlot);
     if(useAvionicsWidgets)
-        gps->insertAvionicsWidgets(NULL, NULL, EADI, NULL);
+    {
+        gps->insertAvionicsWidgets(ASI, VSI, EADI, EHSI);
+    }
 
     gps->prepareElements();
 

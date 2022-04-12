@@ -85,7 +85,10 @@ class flight_widget : public QWidget
 
     // GPS Widgets:
     bool useAvionicsWidgets = false;
-    qfi_EADI *EADI;
+    qfi_EADI *EADI = NULL;
+    qfi_EHSI *EHSI = NULL;
+    qfi_ASI *ASI = NULL;
+    qfi_VSI *VSI = NULL;
 
     uint16_t redRow;
     uint16_t greenRow;
