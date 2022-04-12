@@ -327,6 +327,9 @@ void frameview_widget::handleNewFrame()
      * \author Noah Levy
      */
 
+    if(fw->curFrame == NULL)
+        return;
+
     if((fw->curFrame->image_data_ptr != NULL) && image_type == WATERFALL)
     {
         // Copy waterfall data in, even if hidden:

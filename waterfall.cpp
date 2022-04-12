@@ -118,6 +118,12 @@ void waterfall::addNewFrame()
     addingFrame.lock();
     float *local_image_ptr;
     uint16_t* local_image_ptr_uint16;
+    if(fw->curFrame == NULL)
+    {
+        addingFrame.unlock();
+        return;
+    }
+
     local_image_ptr = fw->curFrame->dark_subtracted_data;
     local_image_ptr_uint16 = fw->curFrame->image_data_ptr;
 
