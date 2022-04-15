@@ -30,10 +30,14 @@ void consoleLog::createUI()
 {
     logView.setMinimumHeight(200);
     logView.setMinimumWidth(230);
-    logView.setReadOnly(true);
+    logView.setReadOnly(true);    
+    QFont font("monospace");
+    font.setStyleHint(QFont::Monospace);
+    logView.setFont(font);
     layout.addWidget(&logView);
     layout.addItem(&hLayout);
     annotateText.setMinimumWidth(200);
+    annotateText.setFont(font);
     annotateBtn.setMaximumWidth(75);
     annotateBtn.setText("Annotate");
     annotateBtn.setToolTip("Press to annotate the log");
