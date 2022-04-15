@@ -178,12 +178,12 @@ void take_object::setInversion(bool checked, unsigned int factor)
 void take_object::paraPixRemap(bool checked )
 {
     pixRemap = checked;
-	std::cout << "2s Compliment Filter ";
-	if(pixRemap) {
-		std::cout << "ENABLED" << std::endl;
-	} else {
-		std::cout << "DISABLED" << std::endl;
-	}
+    std::cout << "2s Compliment Filter ";
+    if(pixRemap) {
+        std::cout << "ENABLED" << std::endl;
+    } else {
+        std::cout << "DISABLED" << std::endl;
+    }
 }
 void take_object::startCapturingDSFMask()
 {

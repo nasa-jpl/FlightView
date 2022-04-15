@@ -370,6 +370,8 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
         prefs.hideHistogramView = true;
         removeTab("Histogram View");
     }
+
+    handleStatusMessage(QString("[MainWindow]: 2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
 }
 
 void MainWindow::removeTab(QString tabTitle)

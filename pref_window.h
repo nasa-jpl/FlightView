@@ -88,7 +88,7 @@ private:
     void createLogFileTab();
     void createRenderingTab();
     void processPreferences();
-
+    void makeStatusMessage(QString internalMessage);
 
 private slots:
     void getFilePath();
@@ -104,6 +104,7 @@ private slots:
 
 signals:
     void saveSettings();
+    void statusMessage(QString message);
 };
 
 #endif

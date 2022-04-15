@@ -44,6 +44,11 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     loadSettings();
 
     prefWindow = new preferenceWindow(fw, tw, prefs);
+    connect(prefWindow, &preferenceWindow::statusMessage,
+            [=](const QString msg)
+    {
+        emit statusMessage(msg);
+    });
 
 /* ====================================================================== */
     // LEFT SIDE BUTTONS (Collections)
@@ -699,6 +704,7 @@ void ControlsBox::loadSettings()
 
     prefs.readFile = true;
     updateUIToPrefs();
+    emit statusMessage(QString("[Controls Box]: 2s compliment setting from preferences: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
     emit haveReadPreferences(prefs);
 }
 
