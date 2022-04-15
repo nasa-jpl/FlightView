@@ -664,6 +664,8 @@ void ControlsBox::loadSettings()
     prefs.fftFloor = settings->value("fftFloor", defaultPrefs.fftFloor).toInt();
     prefs.stddevCeiling = settings->value("stddevCeiling", defaultPrefs.stddevCeiling).toInt();
     prefs.stddevFloor = settings->value("stddevFloor", defaultPrefs.stddevFloor).toInt();
+    prefs.preferredWindowWidth = settings->value("preferredWindowWidth", defaultPrefs.preferredWindowWidth).toInt();
+    prefs.preferredWindowHeight = settings->value("preferredWindowHeight", defaultPrefs.preferredWindowHeight).toInt();
     settings->endGroup();
 
     // [RGB]:
@@ -788,6 +790,8 @@ void ControlsBox::saveSettings()
     settings->setValue("fftFloor", prefs.fftFloor);
     settings->setValue("stddevCeiling", prefs.stddevCeiling);
     settings->setValue("stddevFloor", prefs.stddevFloor);
+    settings->setValue("preferredWindowWidth", prefs.preferredWindowWidth);
+    settings->setValue("preferredWindowHeight", prefs.preferredWindowHeight);
 
     settings->endGroup();
 
@@ -864,6 +868,8 @@ void ControlsBox::setDefaultSettings()
     defaultPrefs.fftFloor = 0;
     defaultPrefs.stddevCeiling = 1000;
     defaultPrefs.stddevFloor = 0;
+    defaultPrefs.preferredWindowWidth = 1280;
+    defaultPrefs.preferredWindowHeight = 1024;
 
 
     // [RGB]:

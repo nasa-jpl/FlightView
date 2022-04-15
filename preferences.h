@@ -30,6 +30,9 @@ struct settingsT {
     int stddevCeiling;
     int stddevFloor;
 
+    int preferredWindowWidth = 1280;
+    int preferredWindowHeight = 1024;
+
     // [RGB]:
     unsigned int bandRed[10];
     unsigned int bandBlue[10];

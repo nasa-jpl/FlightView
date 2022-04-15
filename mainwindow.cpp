@@ -44,7 +44,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
 #ifdef VERBOSE
     qDebug() << "fw passed to MainWindow";
 #endif
-    this->resize(1280, 1024);
+    //this->resize(1280, 1024);
     mainwidget = new QWidget();
     QVBoxLayout *layout = new QVBoxLayout;
 
@@ -372,6 +372,10 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
     }
 
     handleStatusMessage(QString("[MainWindow]: 2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
+    if( (prefs.preferredWindowWidth < 4096 ) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
+    {
+        this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
+    }
 }
 
 void MainWindow::removeTab(QString tabTitle)
