@@ -365,7 +365,6 @@ void flight_widget::resetFPSError()
 {
     this->cameraLinkLED.setState(QLedLabel::StateOk);
     stickyFPSError = false;
-    FPSErrorCounter = 0;
 }
 
 void flight_widget::handleNewColorScheme(int scheme, bool useDarkThemeVal)
