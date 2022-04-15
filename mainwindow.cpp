@@ -375,6 +375,8 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
     if( (prefs.preferredWindowWidth < 4096 ) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
     {
         this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
+    } else {
+        handleStatusMessage(QString("[MainWindow]: Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
     }
 }
 
