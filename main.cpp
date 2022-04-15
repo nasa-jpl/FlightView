@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
     QString cmdName = QString("%1").arg(argv[0]);
     QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps "
                                "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 "
+                               "--gpsport 5661 "
                                "--no-stddev")\
             .arg(cmdName);
     QString currentArg;
@@ -93,6 +94,7 @@ int main(int argc, char *argv[])
             {
                 startupOptions.dataLocation = argv[c+1];
                 startupOptions.dataLocationSet = true;
+                c++;
             } else {
                 std::cout << helptext.toStdString() << std::endl;
                 exit(-1);
@@ -105,11 +107,32 @@ int main(int argc, char *argv[])
             {
                 startupOptions.gpsIP = argv[c+1];
                 startupOptions.gpsIPSet = true;
+                c++;
             } else {
                 std::cout << helptext.toStdString() << std::endl;
                 exit(-1);
             }
         }
+        if(currentArg == "--gpsport")
+        {
+            if(argc > c)
+            {
+                int portTemp=0;
+                bool ok = false;
+                portTemp = QString(argv[c+1]).toInt(&ok);
+                if(ok)
+                {
+                    startupOptions.gpsPort = portTemp;
+                    startupOptions.gpsPortSet = true;
+                    c++;
+                } else {
+                    std::cout << "Invalid GPS Port set." << std::endl;
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            }
+        }
+
         if(currentArg == "--no-stddev")
         {
             startupOptions.runStdDevCalculation = false;
