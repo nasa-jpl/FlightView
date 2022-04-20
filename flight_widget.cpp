@@ -438,13 +438,15 @@ void flight_widget::setCrosshairs(QMouseEvent *event)
 void flight_widget::startDataCollection(QString secondaryLogFilename)
 {
     emit statusMessage(QString("[Flight Widget]: User pressed START Recording button"));
-    emit beginSecondaryLog(secondaryLogFilename);
+    if(!options.disableGPS)
+        emit beginSecondaryLog(secondaryLogFilename);
 }
 
 void flight_widget::stopDataCollection()
 {
     emit statusMessage(QString("[Flight Widget]: User pressed STOP Recording button"));
-    emit stopSecondaryLog();
+    if(!options.disableGPS)
+        emit stopSecondaryLog();
 }
 
 void flight_widget::startGPS(QString gpsHostname, uint16_t gpsPort, QString primaryLogLocation)
