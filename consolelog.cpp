@@ -7,6 +7,7 @@ consoleLog::consoleLog(QWidget *parent) : QWidget(parent)
 
     this->createUI();
     this->makeConnections();
+    this->logSystemConfig();
  }
 
 consoleLog::consoleLog(QString logFileName, QWidget *parent) : QWidget(parent)
@@ -18,6 +19,7 @@ consoleLog::consoleLog(QString logFileName, QWidget *parent) : QWidget(parent)
     this->makeConnections();
 
     openFile(this->logFileName);
+    this->logSystemConfig();
 }
 
 consoleLog::~consoleLog()
@@ -191,6 +193,48 @@ void consoleLog::makeDirectory(QString directoryName)
         handleError(QString("Could not create directory [%1]").arg(directoryName));
     }
     return;
+}
+
+void consoleLog::logSystemConfig()
+{
+    struct utsname info;
+    int rtnval = 0;
+    rtnval = uname(&info);
+    if(rtnval)
+        return;
+    handleOwnText(QString("Sysname: %1").arg(info.sysname));
+    handleOwnText(QString("Hostname: %1").arg(info.nodename));
+    handleOwnText(QString("Kernel release: %1").arg(info.release));
+    handleOwnText(QString("Kernel version: %1").arg(info.version));
+    handleOwnText(QString("Machine Type: %1").arg(info.machine));
+#ifdef _GNU_SOURCE
+    handleOwnText(QString("Domainname: %1").arg(info.domainname));
+#endif
+
+    // Distribution name:
+    FILE *fp;
+    char lsbInfo[1024] = {'\0'};
+    QString infoStr;
+    fp = popen("/usr/bin/lsb_release -d", "r");
+    if(fp==NULL)
+    {
+        handleOwnText("Could not determine lsb_release");
+        return;
+    }
+    if(fgets(lsbInfo, sizeof(lsbInfo), fp))
+    {
+        infoStr = QString(lsbInfo);
+        infoStr.replace(QString("\t"), QString(" ")).replace("\n", "");
+        handleOwnText(QString("Linux LSB %1").arg(infoStr));
+    } else {
+        handleOwnText("Could not determine lsb_release");
+    }
+    pclose(fp);
+}
+
+void consoleLog::handleOwnText(QString message)
+{
+    insertText(QString("[ConsoleLog]: %1").arg(message));
 }
 
 void consoleLog::handleError(QString errorText)

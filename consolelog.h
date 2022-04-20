@@ -13,6 +13,8 @@
 
 #include <fstream>
 #include <iostream>
+#include <sys/utsname.h>
+#include <stdlib.h>
 
 class consoleLog : public QWidget
 {
@@ -41,6 +43,7 @@ private:
     void openFile(QString filename);
     void closeFile();
     void makeDirectory(QString directory);
+    void logSystemConfig();
     bool fileIsOpen = false;
     bool enableLogToFile = false;
     std::ofstream outfile;
@@ -53,6 +56,7 @@ private:
     QLineEdit annotateText;
     QVBoxLayout layout;
     QHBoxLayout hLayout;
+    void handleOwnText(QString message);
     void handleError(QString errorText);
     void handleNote(QString noteText);
     void handleWarning(QString warningText);
