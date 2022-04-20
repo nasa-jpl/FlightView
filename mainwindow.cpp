@@ -59,7 +59,10 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     //dsf_widget = new frameview_widget(fw, DSF);
     dsf_widget = NULL;
     waterfall_widget = new frameview_widget(fw, WATERFALL);
+
     flight_screen = new flight_widget(fw, options);
+    connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
+
     std_dev_widget = new frameview_widget(fw, STD_DEV);
     hist_widget = new histogram_widget(fw);
     vert_mean_widget = new profile_widget(fw, VERTICAL_MEAN);
@@ -154,7 +157,6 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
 
     connect(controlbox, SIGNAL(startDataCollection(QString)), flight_screen, SLOT(startDataCollection(QString)));
     connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
-    connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
     connect(fw, SIGNAL(setColorScheme_signal(int,bool)), flight_screen, SLOT(handleNewColorScheme(int,bool)));
     connect(this, SIGNAL(toggleStdDevCalc(bool)), fw, SLOT(enableStdDevCalculation(bool)));
     controlbox->getPrefsExternalTrig();

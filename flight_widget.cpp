@@ -236,7 +236,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
         }
     } else {
         emit statusMessage(QString("Starting liveview in LAB mode."));
-        if(options.gpsIPSet && !options.disableGPS && options.dataLocationSet)
+        if(options.gpsIPSet && !options.disableGPS && options.dataLocationSet && (!options.disableGPS))
         {
             emit statusMessage(QString("Starting GPS in LAB mode."));
             this->startGPS(options.gpsIP,

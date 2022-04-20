@@ -166,6 +166,11 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+    if(startupOptions.flightMode && startupOptions.disableGPS)
+    {
+        std::cout << "WARNING:, flight mode specified with disabled GPS." << std::endl;
+    }
+
 
     /* Step 2: Load the splash screen */
     QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
