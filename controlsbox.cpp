@@ -1061,7 +1061,6 @@ void ControlsBox::tab_changed_slot(int index)
             } else {
                 std_dev_N_slider->setEnabled(false);
                 std_dev_N_edit->setEnabled(false);
-                use_DSF_cbox.setEnabled(false);
             }
             use_DSF_cbox.setChecked(fw->usingDSF());
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
