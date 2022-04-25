@@ -122,7 +122,8 @@ class gpsManager : public QObject
     // UI elements (set to NULL if unused):
     QLedLabel *gpsOkLED = NULL;
     QCustomPlot *plotRollPitch = NULL;
-    QCPPlotTitle *titleLatLong = NULL;
+    bool usePlotTitle = false;
+    QCPPlotTitle *titleRollPitch = NULL;
     QLabel *gpsLat = NULL;
     QLabel *gpsLong = NULL;
     QLabel *gpsAltitude = NULL;

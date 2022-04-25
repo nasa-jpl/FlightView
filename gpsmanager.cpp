@@ -141,6 +141,7 @@ void gpsManager::prepareGPS()
 
 void gpsManager::preparePlots()
 {
+    bool ok = false;
     // Time axis:
     uint16_t t=0;
     for(int i=vecSize; i > 0; i--)
@@ -156,11 +157,21 @@ void gpsManager::preparePlots()
         plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis ); // Long
         setTimeAxis(plotRollPitch->xAxis);
         plotRollPitch->yAxis->setLabel("Degrees");
-        setPlotTitle(plotRollPitch, titleLatLong, "Pitch and Roll");
-        plotRollPitch->plotLayout()->addElement(0,-1,titleLatLong);
+        if(titleRollPitch==NULL)
+        {
+            titleRollPitch = new QCPPlotTitle(plotRollPitch);
+        }
+        setPlotTitle(plotRollPitch, titleRollPitch, "Pitch and Roll");
+        if(usePlotTitle)
+        {
+            ok = plotRollPitch->plotLayout()->addElement(1,1,titleRollPitch);
+            if(!ok){
+                handleGPSStatusMessage("Error, could not add element to gps plot.");
+                qDebug() << "Error, could not add element to gps plot.";
+            }
+        }
         plotRollPitch->graph(0)->setPen(QPen(Qt::red)); // roll
         plotRollPitch->graph(1)->setPen(QPen(Qt::green)); // pitch
-        setPlotTitle(plotRollPitch, titleLatLong, "Pitch and Roll");
         plotRollPitch->graph(0)->setName("Roll");
         plotRollPitch->graph(1)->setName("Pitch");
         plotRollPitch->removeGraph(2);

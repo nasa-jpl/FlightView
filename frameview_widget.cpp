@@ -27,6 +27,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     prefs = NULL;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
+    bool ok = false;
 
     switch(image_type) {
     case BASE:
@@ -81,8 +82,11 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qcp->addPlottable(colorMap);
 
     colorScale = new QCPColorScale(qcp);
-    qcp->plotLayout()->addElement(0, 1, colorScale); // add it to the right of the main axis rect
-
+    ok = qcp->plotLayout()->addElement(0, 1, colorScale); // add it to the right of the main axis rect
+    if(!ok) {
+        sMessage("Error, could not add element to frameview plot.");
+        qDebug() << "Error, could not add element to frameview plot.";
+    }
     colorScale->setType(QCPAxis::atRight);
 
     colorMap->setColorScale(colorScale);
