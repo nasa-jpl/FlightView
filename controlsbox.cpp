@@ -1010,7 +1010,6 @@ void ControlsBox::tab_changed_slot(int index)
         display_std_dev_slider();
         if (p_frameview){
             ceiling_maximum = p_frameview->slider_max;
-            // TEST TEST TEST disable:
             floor_slider.blockSignals(true);
             ceiling_slider.blockSignals(true);
             floor_edit.blockSignals(true);
