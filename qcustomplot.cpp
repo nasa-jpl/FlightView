@@ -10436,8 +10436,9 @@ void QCustomPlot::replot(QCustomPlot::RefreshPriority refreshPriority)
     else
       update();
   } else // might happen if QCustomPlot has width or height zero
-    qDebug() << Q_FUNC_INFO << "Couldn't activate painter on buffer";
-  
+#ifdef QT_DEBUG
+      qDebug() << Q_FUNC_INFO << "Couldn't activate painter on buffer";
+#endif
   emit afterReplot();
   mReplotting = false;
 }

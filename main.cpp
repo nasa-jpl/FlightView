@@ -41,6 +41,17 @@
 
 int main(int argc, char *argv[])
 {
+    /* Step 0: Set environment variables: */
+
+#ifndef QT_DEBUG
+    (void)putenv((char*)"QT_LOGGING_RULES=*=false");
+#endif
+
+    // If the GUI does not scale correctly,
+    // this may be enabled to fix it.
+    // (void)putenv((char*)"QT_AUTO_SCREEN_SCALE_FACTOR=1");
+
+
     /* Step 1: Setup this QApplication */
     //QApplication::setGraphicsSystem("raster"); //This is intended to make 2D rendering faster
     QApplication a(argc, argv);
