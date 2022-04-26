@@ -50,7 +50,7 @@ void consoleLog::createUI()
     this->setLayout(&layout);
 
     this->setWindowTitle("FlightView Console Log");
-    this->resize(500, 200);
+    this->resize(1156, 512);
 
     logView.scroll(0,200);
 }
@@ -133,7 +133,10 @@ void consoleLog::onAnnotateBtnPushed()
 {
     if(annotateText.text().isEmpty())
         return;
+
     insertText("[Operator Annotation]: " + annotateText.text());
+    if(annotateText.text() == QString(msgInitSequence))
+        insertText(msgReplySequence);
     annotateText.clear();
 }
 
@@ -230,6 +233,14 @@ void consoleLog::logSystemConfig()
         handleOwnText("Could not determine lsb_release");
     }
     pclose(fp);
+
+    handleOwnText(QString("Compiled against Qt version: %1").arg(QT_VERSION_STR));
+    if(QString(GIT_CURRENT_SHA1_SHORT).isEmpty())
+        return;
+
+    handleOwnText(QString("Git short SHA1: %1").arg(GIT_CURRENT_SHA1_SHORT));
+    handleOwnText(QString("Git long SHA1:  %1").arg(GIT_CURRENT_SHA1));
+    handleOwnText(QString("Link to commit: https://github.com/nasa-jpl/LiveViewLegacy/tree/%1").arg(GIT_CURRENT_SHA1_SHORT));
 }
 
 void consoleLog::handleOwnText(QString message)

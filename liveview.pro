@@ -8,6 +8,8 @@ QT       += core gui
 QT       += network svg
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
+DEFINES += GIT_CURRENT_SHA1="\\\"$(shell git -C $$PWD rev-parse HEAD)\\\""
+DEFINES += GIT_CURRENT_SHA1_SHORT="\\\"$(shell git -C $$PWD rev-parse --short HEAD)\\\""
 
 TARGET = liveview
 TEMPLATE = app
@@ -85,6 +87,7 @@ QMAKE_CXXFLAGS += -O2 -std=c++11 -march=native -Wno-class-memaccess -Wno-unused-
 
 # Used for build tracking:
 DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
+
 
 # qmake will create this directory automatically:
 DESTDIR = ./lv_release
