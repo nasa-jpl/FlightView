@@ -52,7 +52,10 @@ void consoleLog::createUI()
     this->setWindowTitle("FlightView Console Log");
     this->resize(1156, 512);
 
+    logView.setFocusPolicy(Qt::NoFocus);
+    annotateBtn.setFocusPolicy(Qt::NoFocus);
     logView.scroll(0,200);
+    annotateText.setFocus();
 }
 
 void consoleLog::makeConnections()
