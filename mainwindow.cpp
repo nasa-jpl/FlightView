@@ -177,6 +177,13 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
         handleStatusMessage(QString("[MainWindow]: Standard Deviation calculation disabled"));
     }
 
+    if(options.flightMode)
+    {
+        handleStatusMessage("[MainWindow]: Flight Mode ENABLED.");
+    } else {
+        handleStatusMessage("[MainWindow]: Flight Mode DISABLED.");
+    }
+
     handleStatusMessage("[MainWindow]: Started");
 }
 
