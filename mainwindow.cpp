@@ -28,11 +28,11 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     }
 
     if(options.flightMode)
-        handleStatusMessage(QString("[MainWindow]: This version of FlightView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
+        handleStatusMessage(QString("This version of FlightView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
     else
-        handleStatusMessage(QString("[MainWindow]: This version of LiveView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
+        handleStatusMessage(QString("This version of LiveView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
 
-    handleStatusMessage(QString("[MainWindow]: The compilation was performed by %1@%2.").arg(QString(UNAME)).arg(QString(HOST)));
+    handleStatusMessage(QString("The compilation was performed by %1@%2.").arg(QString(UNAME)).arg(QString(HOST)));
 
 
     connect(fw, SIGNAL(sendStatusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
@@ -151,6 +151,8 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     if(save_server->isListening()) {
         controlbox->server_ip_label.setText(tr("Server IP: %1").arg(save_server->ipAddress.toString()));
         controlbox->server_port_label.setText(tr("Server Port: %1").arg(save_server->port));
+        handleStatusMessage(QString("Server IP: %1").arg(save_server->ipAddress.toString()));
+        handleStatusMessage(QString("Server Port: %1").arg(save_server->port));
     }
 
     connect(controlbox, SIGNAL(debugSignal()), this, SLOT(debugThis()));
@@ -166,32 +168,32 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     });
     if(options.dataLocationSet)
     {
-        handleStatusMessage(QString("[MainWindow]: Data storage location: [%1]").arg(options.dataLocation));
+        handleStatusMessage(QString("Data storage location: [%1]").arg(options.dataLocation));
     }
     if(options.runStdDevCalculation)
     {
         emit toggleStdDevCalc(true);
-        handleStatusMessage(QString("[MainWindow]: Standard Deviation calculation enabled"));
+        handleStatusMessage(QString("Standard Deviation calculation enabled"));
     } else {
         emit toggleStdDevCalc(false);
-        handleStatusMessage(QString("[MainWindow]: Standard Deviation calculation disabled"));
+        handleStatusMessage(QString("Standard Deviation calculation disabled"));
     }
 
     if(options.flightMode)
     {
-        handleStatusMessage("[MainWindow]: Flight Mode ENABLED.");
+        handleStatusMessage("Flight Mode ENABLED.");
     } else {
-        handleStatusMessage("[MainWindow]: Flight Mode DISABLED.");
+        handleStatusMessage("Flight Mode DISABLED.");
     }
 
-    handleStatusMessage("[MainWindow]: Started");
+    handleStatusMessage("Started");
 }
 
 void MainWindow::handleStatusMessage(QString message)
 {
     //std::cout << "STDOUT: Status Message: " << message.toLocal8Bit().toStdString() << std::endl;
     //qDebug() << __PRETTY_FUNCTION__ << "Status message: " << message;
-    cLog->insertText(message);
+    cLog->insertText(QString("[MainWindow]: ") + message);
 }
 
 void MainWindow::enableStdDevTabs()
@@ -380,12 +382,12 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
         removeTab("Histogram View");
     }
 
-    handleStatusMessage(QString("[MainWindow]: 2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
+    handleStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
     if( (prefs.preferredWindowWidth < 4096 ) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
     {
         this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
     } else {
-        handleStatusMessage(QString("[MainWindow]: Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
+        handleStatusMessage(QString("Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
     }
 }
 
@@ -407,7 +409,7 @@ void MainWindow::removeTab(QString tabTitle)
 
 void MainWindow::debugThis()
 {
-    handleStatusMessage("[MainWindow]: Debug function reached.");
+    handleStatusMessage("Debug function reached.");
     qDebug() << __PRETTY_FUNCTION__ << ": Debug reached inside MainWindow class.";
     flight_screen->debugThis();
 }
