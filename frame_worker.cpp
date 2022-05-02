@@ -17,6 +17,7 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
      */
     sMessage("Starting frameWorker class and CUDA back-end");
     lastTime = 0;
+    this->setObjectName("lv:frameWorker");
     this->options = options;
 
     to.start(); // begin cuda_take

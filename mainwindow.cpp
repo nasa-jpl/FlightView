@@ -16,7 +16,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     qRegisterMetaType<frame_c*>("frame_c*");
     //qRegisterMetaType<QVector<double>>("QVector<double>");
     //qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");
-
+    const QString name = "lv:";
     this->fw = fw;
     this->options = options;
 
@@ -39,6 +39,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
 
 
     /*! start the workerThread from main */
+    qth->setObjectName(name + "worker");
     qth->start();
 
 #ifdef VERBOSE

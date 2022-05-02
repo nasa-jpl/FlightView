@@ -133,6 +133,7 @@ void gpsManager::prepareGPS()
     connect(this, SIGNAL(startSecondaryLog(QString)), gps, SLOT(beginSecondaryBinaryLog(QString)));
     connect(this, SIGNAL(stopSecondaryLog()), gps, SLOT(stopSecondaryBinaryLog()));
 
+    gpsThread->setObjectName(name + "gps");
     gpsThread->start();
 
     gpsMessageHeartbeat.setInterval(500); // half second, expected is 5ms.

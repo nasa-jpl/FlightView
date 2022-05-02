@@ -9,6 +9,7 @@ saveServer::saveServer(frameWorker *fw, QObject *parent ) :
     this->reference = fw;
     port = 65000; // we'll hardcode the port number for now
     clientConnection = new QTcpSocket();
+    clientConnection->setObjectName("lv:saveconn");
 
     QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
     // use the first non-localhost IPv4 address

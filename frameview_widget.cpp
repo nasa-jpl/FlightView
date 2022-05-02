@@ -21,6 +21,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
 {
     this->fw = fw;
     this->image_type = image_type;
+    this->setObjectName("lv:frameview");
     floor = 0;
     useDSF = false;
     havePrefs = false;

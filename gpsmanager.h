@@ -30,6 +30,8 @@ class gpsManager : public QObject
 {
     Q_OBJECT
 
+    const QString name = "lv:";
+
     QThread *gpsThread;
     gpsNetwork *gps;
     gpsMessage m;

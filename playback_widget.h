@@ -87,6 +87,8 @@ class playback_widget : public QWidget
 {
     Q_OBJECT
 
+    const QString name = "lv:";
+
     frameWorker *fw;
     dark_subtraction_filter *dark;
     QTimer render_timer; // Enables us to have time between handling frames for manipulating GUI elements

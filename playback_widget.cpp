@@ -278,6 +278,7 @@ playback_widget::playback_widget(frameWorker *fw, QWidget *parent) :
     qgl.addWidget(statusLabel, 8, 5, 1, 3);
     this->setLayout(&qgl);
 
+    buffer_thread->setObjectName(name + "pbBuffer");
     buffer_thread->start();
 }
 playback_widget::~playback_widget()
