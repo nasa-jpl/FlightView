@@ -1685,6 +1685,8 @@ void ControlsBox::load_pref_window()
         pos.setY(0);
     prefWindow->move(pos);
     prefWindow->show();
+    prefWindow->setWindowState(Qt::WindowActive);
+    prefWindow->raise();
 }
 void ControlsBox::transmitChange(int linesToAverage)
 {

@@ -22,7 +22,7 @@ preferenceWindow::preferenceWindow(frameWorker *fw, QTabWidget *qtw, settingsT p
 
     closeButton = new QPushButton(tr("&Close"));
     saveSettingsBtn = new QPushButton(tr("&Save Settings"));
-    createLogFileTab();
+    //createLogFileTab();
     createRenderingTab();
 
     connect(closeButton, SIGNAL(clicked()), this, SLOT(close()));
