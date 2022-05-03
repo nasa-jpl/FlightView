@@ -101,7 +101,7 @@ void frameWorker::captureFrames()
     // int flags=1;
 
     while(doRun) {
-        QCoreApplication::processEvents();
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 1); // 1ms maximum delay permitted
         usleep(50); //So that CPU utilization is not 100%
         workingFrame = &to.frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
         if(std_dev_processing_frame != NULL) {
