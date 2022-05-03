@@ -166,6 +166,8 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     connect(controlbox, &ControlsBox::showConsoleLog,
             [=]() {
             cLog->show();
+            cLog->setWindowState(Qt::WindowActive);
+            cLog->raise();
     });
     if(options.dataLocationSet)
     {
