@@ -336,11 +336,11 @@ void flight_widget::checkDiskSpace()
         {
             diskLED.setState(QLedLabel::StateError);
             stickyDiskFull = true;
-            emit statusMessage(QString("[Flight Widget]: ERROR: Disk too full to use at percent %1").arg(percent));
+            //emit statusMessage(QString("[Flight Widget]: ERROR: Disk too full to use at percent %1").arg(percent));
         } else if (percent > prefs.percentDiskWarning)
         {
             diskLED.setState(QLedLabel::StateWarning);
-            emit statusMessage(QString("[Flight Widget]: Warning: Disk quite full at percent %1").arg(percent));
+            //emit statusMessage(QString("[Flight Widget]: Warning: Disk quite full at percent %1").arg(percent));
         } else {
             diskLED.setState(QLedLabel::StateOk);
         }
