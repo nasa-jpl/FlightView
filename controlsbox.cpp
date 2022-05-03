@@ -1171,7 +1171,19 @@ void ControlsBox::updateDiskSpace(quint64 total, quint64 available)
 {
     float percent = (100.0*(total-available) / total);
     diskSpaceBar.setValue((int)percent);
-    diskSpaceBar.setToolTip(QString("Available: %1 GiB").arg(available / 1024.0 / 1024.0 / 1024.0, 6, 'f', 1, QChar('0')));
+    unsigned int frameSpaceBytes = 2 * frWidth * frHeight;
+    float BytesPerSecond = frameSpaceBytes * fps_float;
+    float hoursRemaining = 0.0;
+    if(BytesPerSecond > 1024)
+    {
+        hoursRemaining = (available / BytesPerSecond) / 60.0 / 60.0;
+        diskSpaceBar.setToolTip(QString("Available: %1 GiB\nHours: %2").arg(available / 1024.0 / 1024.0 / 1024.0, 6, 'f', 1, QChar('0'))
+                                .arg(hoursRemaining, 4, 'f', 3, QChar('0')));
+    } else {
+        diskSpaceBar.setToolTip(QString("Available: %1 GiB\nHours: %2").arg(available / 1024.0 / 1024.0 / 1024.0, 6, 'f', 1, QChar('0'))
+                                .arg("Unknown"));
+    }
+
     if(percent > prefs.percentDiskStop)
     {
         emit statusMessage(QString("ERROR: Disk nearly full at %1 percent used. Stopping data recording.").arg(percent));
@@ -1382,7 +1394,8 @@ void ControlsBox::update_backend_delta()
     /*! \brief Update the QLabel text of the frame rate measured by the frameWorker event loop.
     * \author Noah Levy
     */
-    fps = QString::number(fw->delta, 'f', 1);
+    fps_float = fw->delta;
+    fps = QString::number(fps_float, 'f', 1);
     fps_label.setText(QString("FPS @ backend:%1").arg(fps));
 }
 void ControlsBox::show_save_dialog()

@@ -73,6 +73,7 @@ public:
     QPushButton load_mask_from_file;
     QPushButton pref_button;
     QString fps;
+    float fps_float = 0.0;
     QLabel fps_label;
     QLabel server_ip_label;
     QLabel server_port_label;
