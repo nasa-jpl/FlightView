@@ -1174,6 +1174,7 @@ void ControlsBox::updateDiskSpace(quint64 total, quint64 available)
     unsigned int frameSpaceBytes = 2 * frWidth * frHeight;
     float BytesPerSecond = frameSpaceBytes * fps_float;
     float hoursRemaining = 0.0;
+
     if(BytesPerSecond > 1024)
     {
         hoursRemaining = (available / BytesPerSecond) / 60.0 / 60.0;
@@ -1186,10 +1187,15 @@ void ControlsBox::updateDiskSpace(quint64 total, quint64 available)
 
     if(percent > prefs.percentDiskStop)
     {
-        emit statusMessage(QString("ERROR: Disk nearly full at %1 percent used. Stopping data recording.").arg(percent));
+        if((diskErrorCounter++ % 10) == 0)
+            emit statusMessage(QString("ERROR: Disk nearly full at %1 percent used. Stopping data recording.").arg(percent));
         this->stop_continous_button_slot();
-    } else if (percent > prefs.percentDiskStop) {
-        emit statusMessage(QString("WARMING: Disk low, usage %1 percent.").arg(percent));
+    } else if (percent > prefs.percentDiskWarning) {
+        if((diskWarningCounter++ % 10) == 0)
+            emit statusMessage(QString("WARMING: Disk low, usage %1 percent.").arg(percent));
+    } else {
+        diskErrorCounter = 0;
+        diskWarningCounter = 0;
     }
 }
 

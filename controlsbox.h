@@ -148,6 +148,8 @@ private:
     QTabWidget *qtw;
     QWidget *old_tab;
     QWidget *current_tab;
+    int diskWarningCounter = 0;
+    int diskErrorCounter = 0;
     int ceiling_maximum;
     int previousNumSaved;
     bool checkForOverwrites = true;
