@@ -30,7 +30,8 @@ preferenceWindow::preferenceWindow(frameWorker *fw, QTabWidget *qtw, settingsT p
 
     QTabWidget *tabs = new QTabWidget();
     tabs->addTab(renderingTab, "Rendering");
-    tabs->addTab(logFileTab, "Log Files");
+    if(logFileTab != NULL)
+        tabs->addTab(logFileTab, "Log Files");
 
     enableControls(index = mainWinTab->currentIndex());
     connect(mainWinTab, SIGNAL(currentChanged(int)), this, SLOT(enableControls(int)));

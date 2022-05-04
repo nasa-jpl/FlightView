@@ -47,7 +47,7 @@ class preferenceWindow : public QWidget
     QTabWidget *mainWinTab;
     frameWorker *fw;
 
-    QWidget *logFileTab;
+    QWidget *logFileTab = NULL;
     QWidget *renderingTab;
 
     QLabel *camera_label;
