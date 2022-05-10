@@ -95,6 +95,8 @@ class flight_widget : public QWidget
     uint16_t greenRow;
     uint16_t blueRow;
 
+    bool showRGBp = false;
+
     settingsT prefs;
     bool havePrefs = false;
 

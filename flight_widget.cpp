@@ -299,8 +299,10 @@ void flight_widget::toggleDisplayCrosshair()
 
 void flight_widget::hideRGB()
 {
+    // Timer signal "timeout" hits here.
     hideRGBTimer.stop();
-    dsf_widget->toggleDrawRGBRow(false);
+    if(!showRGBp)
+        dsf_widget->toggleDrawRGBRow(false);
 }
 
 void flight_widget::handleNewFrame()
@@ -442,8 +444,9 @@ void flight_widget::changeRGB(int r, int g, int b)
 void flight_widget::setShowRGBLines(bool showLines)
 {
     //emit statusMessage(QString("Showline status: %1").arg(showLines));
-    dsf_widget->toggleDrawRGBRow(showLines);
     hideRGBTimer.stop();
+    showRGBp = showLines;
+    dsf_widget->toggleDrawRGBRow(showLines);
 }
 
 void flight_widget::changeWFLength(int length)
