@@ -665,7 +665,7 @@ void frameview_widget::showRGB(int r, int g, int b)
     this->greenRow = g;
     this->blueRow = b;
     this->toggleDrawRGBRow(true);
-    sMessage(QString("Showing RGB for r: %1, g: %2, b: %3").arg(r).arg(g).arg(b));
+    //sMessage(QString("Showing RGB for r: %1, g: %2, b: %3").arg(r).arg(g).arg(b));
 }
 
 void frameview_widget::sMessage(QString statusMessageText)

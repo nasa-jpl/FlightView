@@ -271,7 +271,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     hideRGBTimer.stop();
     connect(&hideRGBTimer, SIGNAL(timeout()), this, SLOT(hideRGB()));
 
-
     emit statusMessage(QString("Finished flight constructor."));
 }
 
