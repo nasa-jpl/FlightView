@@ -212,6 +212,8 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     low_increment_cbox.setText("Precision Slider");
     use_DSF_cbox.setText("Apply Dark Subtraction Filter");
 
+    show_rgb_lines_cbox.setText("Show RGB Lines");
+    show_rgb_lines_cbox.setToolTip("Shows the RGB lines on the\n flight interface frame view\n at all times if checked. Otherwise just for 30 seconds");
 
 
     //center:
@@ -279,6 +281,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //Second Row
     sliders_layout->addWidget(&low_increment_cbox, 2, 1, 1, 1);
     sliders_layout->addWidget(&use_DSF_cbox, 2, 2, 1, 1);
+    sliders_layout->addWidget(&show_rgb_lines_cbox, 2, 3, 1, 1);
 
     //Third Row
     sliders_layout->addWidget(new QLabel("Ceiling:"),3,1,1,1);
@@ -486,6 +489,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 //    });
 
     connect(&use_DSF_cbox, SIGNAL(toggled(bool)), this, SLOT(use_DSF_general(bool)));
+    connect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)));
     connect(&low_increment_cbox, SIGNAL(toggled(bool)), this, SLOT(increment_slot(bool)));
     connect(&save_finite_button, SIGNAL(clicked()), this, SLOT(save_finite_button_slot()));
     connect(&stop_saving_frames_button, SIGNAL(clicked()), this, SLOT(stop_continous_button_slot()));
@@ -915,6 +919,7 @@ void ControlsBox::tab_changed_slot(int index)
     current_tab = qtw->widget(index);
     disconnect_old_tab();
     attempt_pointers(current_tab);
+    show_rgb_lines_cbox.setEnabled(false);
     if (p_profile) {
         int frameMax, startVal;
         bool enable;
@@ -1077,7 +1082,6 @@ void ControlsBox::tab_changed_slot(int index)
             increment_slot(low_increment_cbox.isChecked());
             //ceiling_edit.setValue(p_flight->getCeiling());
             //floor_edit.setValue(p_flight->getFloor());
-
             if(use_DSF_cbox.isChecked())
             {
                 // DSF
@@ -1111,6 +1115,7 @@ void ControlsBox::tab_changed_slot(int index)
 
             use_DSF_cbox.setEnabled(true);
             use_DSF_cbox.setChecked(false);
+            show_rgb_lines_cbox.setEnabled(true);
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_flight->rescaleRange();
 

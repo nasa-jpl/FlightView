@@ -133,6 +133,7 @@ public slots:
     void updateCeiling(int c);
     void updateFloor(int f);
     void changeRGB(int r, int g, int b);
+    void setShowRGBLines(bool showLines);
     void changeWFLength(int length);
     void rescaleRange();
     void setUseDSF(bool useDSF);

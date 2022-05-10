@@ -437,6 +437,12 @@ void flight_widget::changeRGB(int r, int g, int b)
     hideRGBTimer.start();
 }
 
+void flight_widget::setShowRGBLines(bool showLines)
+{
+    dsf_widget->toggleDrawRGBRow(showLines);
+    hideRGBTimer.stop();
+}
+
 void flight_widget::changeWFLength(int length)
 {
     waterfall_widget->changeWFLength(length);

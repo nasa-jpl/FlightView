@@ -105,6 +105,7 @@ public:
     QLabel *lines_label;
     QCheckBox low_increment_cbox;
     QCheckBox use_DSF_cbox;
+    QCheckBox show_rgb_lines_cbox;
 
     /* RIGHT SIDE BUTTONS (save) */
     QGridLayout *save_layout;
