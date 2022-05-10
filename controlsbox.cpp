@@ -213,8 +213,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     use_DSF_cbox.setText("Apply Dark Subtraction Filter");
 
     show_rgb_lines_cbox.setText("Show RGB Lines");
-    show_rgb_lines_cbox.setToolTip("Shows the RGB lines on the\n flight interface frame view\n at all times if checked. Otherwise just for 30 seconds");
-
+    show_rgb_lines_cbox.setToolTip("Shows the RGB lines on the flight interface frame view\n at all times if checked. Otherwise just for 30 seconds");
 
     //center:
     overlay_cent_width = new QSlider(this);
