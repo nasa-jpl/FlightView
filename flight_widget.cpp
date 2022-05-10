@@ -268,6 +268,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     diskCheckerTimer->start();
 
     hideRGBTimer.setInterval(30000);
+    hideRGBTimer.setSingleShot(true);
     hideRGBTimer.stop();
     connect(&hideRGBTimer, SIGNAL(timeout()), this, SLOT(hideRGB()));
 
@@ -435,10 +436,12 @@ void flight_widget::changeRGB(int r, int g, int b)
     waterfall_widget->changeRGB(r,g,b);
     dsf_widget->showRGB(r,g,b);
     hideRGBTimer.start();
+    //emit statusMessage(QString("Updated RGB lines: r:%1, g:%2, b:%3").arg(r).arg(g).arg(b));
 }
 
 void flight_widget::setShowRGBLines(bool showLines)
 {
+    //emit statusMessage(QString("Showline status: %1").arg(showLines));
     dsf_widget->toggleDrawRGBRow(showLines);
     hideRGBTimer.stop();
 }
