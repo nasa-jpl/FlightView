@@ -267,6 +267,11 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(diskCheckerTimer, SIGNAL(timeout()), this, SLOT(checkDiskSpace()));
     diskCheckerTimer->start();
 
+    hideRGBTimer.setInterval(30000);
+    hideRGBTimer.stop();
+    connect(&hideRGBTimer, SIGNAL(timeout()), this, SLOT(hideRGB()));
+
+
     emit statusMessage(QString("Finished flight constructor."));
 }
 
@@ -290,6 +295,12 @@ void flight_widget::setUseDSF(bool useDSF)
 void flight_widget::toggleDisplayCrosshair()
 {
     dsf_widget->toggleDisplayCrosshair();
+}
+
+void flight_widget::hideRGB()
+{
+    hideRGBTimer.stop();
+    dsf_widget->toggleDrawRGBRow(false);
 }
 
 void flight_widget::handleNewFrame()
@@ -423,6 +434,8 @@ void flight_widget::rescaleRange()
 void flight_widget::changeRGB(int r, int g, int b)
 {
     waterfall_widget->changeRGB(r,g,b);
+    dsf_widget->showRGB(r,g,b);
+    hideRGBTimer.start();
 }
 
 void flight_widget::changeWFLength(int length)

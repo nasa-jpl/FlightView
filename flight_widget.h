@@ -44,6 +44,7 @@ class flight_widget : public QWidget
     startupOptionsType options;
     fs::space_info diskSpace;
     QTimer *diskCheckerTimer;
+    QTimer hideRGBTimer;
 
     QSplitter lrSplitter;
     QSplitter rhSplitter;
@@ -135,6 +136,7 @@ public slots:
     void changeWFLength(int length);
     void rescaleRange();
     void setUseDSF(bool useDSF);
+    void hideRGB();
     void updateFPS();
     void checkDiskSpace();
     void setCrosshairs(QMouseEvent *event);

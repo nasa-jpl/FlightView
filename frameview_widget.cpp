@@ -412,6 +412,43 @@ void frameview_widget::handleNewFrame()
                         }
                 }
             }
+
+            if(drawrgbRow)
+            {
+                int ifloor = (int)this->floor;
+                int iceiling = (int)this->ceiling;
+                int imid = (ifloor - iceiling)/2;
+
+                if( (redRow < frHeight) && (greenRow < frHeight) && (blueRow < frHeight) )
+                {
+                    for(int col=0; col < frWidth; col++)
+                    {
+                        colorMap->data()->setCell(col, redRow, iceiling);
+                        colorMap->data()->setCell(col, ((redRow+1)<frHeight)?redRow+1:redRow-1, iceiling);
+
+                        colorMap->data()->setCell(col, greenRow, imid);
+                        colorMap->data()->setCell(col, ((greenRow+1)<frHeight)?greenRow+1:greenRow-1, imid);
+
+                        colorMap->data()->setCell(col, blueRow, ifloor);
+                        colorMap->data()->setCell(col, ((blueRow+1)<frHeight)?blueRow+1:blueRow-1, ifloor);
+                    }
+
+                    for(int col=0; col < frWidth/10; col++)
+                    {
+                        colorMap->data()->setCell(col, redRow, ((col%2)==0)?iceiling:ifloor);
+                        colorMap->data()->setCell(col, ((redRow+1)<frHeight)?redRow+1:redRow-1, ((col%2)==0)?iceiling:ifloor);
+
+                        colorMap->data()->setCell(col, greenRow, ((col%2)==0)?iceiling:ifloor);
+                        colorMap->data()->setCell(col, ((greenRow+1)<frHeight)?greenRow+1:greenRow-1, ((col%2)==0)?iceiling:ifloor);
+
+                        colorMap->data()->setCell(col, blueRow, ((col%2)==0)?iceiling:ifloor);
+                        colorMap->data()->setCell(col, ((blueRow+1)<frHeight)?blueRow+1:blueRow-1, ((col%2)==0)?iceiling:ifloor);
+                    }
+
+
+                }
+            }
+
             qcp->replot();
             goto done_here;
         }
@@ -613,6 +650,22 @@ void frameview_widget::setCrosshairs(QMouseEvent *event)
      * \author Jackie Ryan */
     fw->displayCross = displayCrosshairCheck.isChecked();
     fw->setCrosshairBackend(qcp->xAxis->pixelToCoord(event->pos().x()), qcp->yAxis->pixelToCoord(event->pos().y()));
+}
+
+void frameview_widget::toggleDrawRGBRow(bool draw)
+{
+    this->drawrgbRow = draw;
+    colorMap->setInterpolate(draw);
+    colorMap->setAntialiased(draw);
+}
+
+void frameview_widget::showRGB(int r, int g, int b)
+{
+    this->redRow = r;
+    this->greenRow = g;
+    this->blueRow = b;
+    this->toggleDrawRGBRow(true);
+    sMessage(QString("Showing RGB for r: %1, g: %2, b: %3").arg(r).arg(g).arg(b));
 }
 
 void frameview_widget::sMessage(QString statusMessageText)

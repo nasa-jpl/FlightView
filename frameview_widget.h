@@ -72,6 +72,13 @@ class frameview_widget : public QWidget
     volatile double ceiling;
     volatile double floor;
 
+
+    int redRow = 0;
+    int greenRow = 0;
+    int blueRow = 0;
+
+    bool drawrgbRow = false;
+
     bool scrollXenabled = true;
     bool scrollYenabled = true;
 
@@ -99,6 +106,8 @@ public:
     /*! @} */
 
     void toggleDisplayCrosshair();
+    void toggleDrawRGBRow(bool draw);
+    void showRGB(int r, int g, int b);
 
     image_t image_type;
     const unsigned int slider_max = (1<<16) * 1.1;

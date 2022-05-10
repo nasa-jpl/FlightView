@@ -1871,6 +1871,7 @@ void ControlsBox::setRGBWaterfall(int value)
     (void)value;
     emit updateRGB(red_slider.value(), green_slider.value(),
                    blue_slider.value());
+
 }
 
 void ControlsBox::debugThis()
