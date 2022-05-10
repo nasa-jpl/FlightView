@@ -417,7 +417,7 @@ void frameview_widget::handleNewFrame()
             {
                 int ifloor = (int)this->floor;
                 int iceiling = (int)this->ceiling;
-                int imid = (ifloor - iceiling)/2;
+                int imid = (iceiling - ifloor)/2;
 
                 if( (redRow < frHeight) && (greenRow < frHeight) && (blueRow < frHeight) )
                 {
