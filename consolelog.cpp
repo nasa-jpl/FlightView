@@ -7,6 +7,8 @@ consoleLog::consoleLog(QWidget *parent) : QWidget(parent)
 
     this->createUI();
     this->makeConnections();
+    insertText(QString("[ConsoleLog]: Warning: Not logging text to a file."));
+
     this->logSystemConfig();
  }
 
