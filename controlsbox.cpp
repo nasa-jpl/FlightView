@@ -594,6 +594,13 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
                             bandBlue);
     });
 
+    connect(&show_rgb_lines_cbox, &QCheckBox::toggled,
+            [&](bool checked) {
+        if(checked)
+            emit updateRGB(bandRed, bandGreen, bandBlue);
+    });
+
+
 
     // Preferences:
     connect(prefWindow, SIGNAL(saveSettings()), this, SLOT(triggerSaveSettings()));
