@@ -926,6 +926,7 @@ void ControlsBox::tab_changed_slot(int index)
     disconnect_old_tab();
     attempt_pointers(current_tab);
     show_rgb_lines_cbox.setEnabled(false);
+    show_rgb_lines_cbox.setVisible(false);
     if (p_profile) {
         int frameMax, startVal;
         bool enable;
@@ -1123,6 +1124,7 @@ void ControlsBox::tab_changed_slot(int index)
             use_DSF_cbox.setEnabled(true);
             use_DSF_cbox.setChecked(false);
             show_rgb_lines_cbox.setEnabled(true);
+            show_rgb_lines_cbox.setVisible(true);
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_flight->rescaleRange();
 
