@@ -48,9 +48,6 @@ take_object::~take_object()
     if(pdv_thread_run != 0) {
         pdv_thread_run = 0;
 
-#ifdef OPALKELLY
-        usleep(1000);
-#endif
 
 #ifdef EDT
         int dummy;
@@ -100,29 +97,7 @@ void take_object::start()
     frWidth = pdv_get_width(pdv_p);
     dataHeight = pdv_get_height(pdv_p);
 #endif
-#ifdef OPALKELLY
-    // Step 1: Check that the Opal Kelly DLL is loaded
-    if(!okFrontPanelDLL_LoadLib(NULL)) {
-        std::cerr << "Front Panel DLL could not be loaded." << std::endl;
-        return;
-    }
 
-    // Step 2: Initialize the device, and check that the initialization was valid
-    xem = initializeFPGA();
-    if(!xem)
-        return;
-
-    // Step 3: Initialize some values that we will need to hardcode for this device
-    frWidth = NCOL;
-    frHeight = NROW;
-    dataHeight = frHeight;
-    size = frHeight * frWidth * sizeof(uint16_t);
-    framelen = 2 * frWidth * frHeight / NCHUNX;
-    blocklen = BLOCK_LEN;
-
-    // Step 4: Begin writing values to the pipe
-    ok_init_pipe();
-#endif
 
     switch(size) {
     case 481*640*sizeof(uint16_t): cam_type = CL_6604A; break;
@@ -355,10 +330,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 #ifdef EDT
 	unsigned char* wait_ptr;
 #endif
-#ifdef OPALKELLY
-    unsigned char wait_ptr[framelen];
-    long prev_result = 0;
-#endif
+
 
     mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
                                        meanStartRow,meanHeight,frWidth,useDSF,\
@@ -384,9 +356,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         }
         pdv_thread_start_complete=true;
 #endif
-#ifdef OPALKELLY
-        prev_result = ok_read_frame(wait_ptr, prev_result);
-#endif
+
         /* In this section of the code, after we have copied the memory from the camera link
          * buffer into the raw_data_ptr, we will check various parameters to see if we need to
          * modify the data based on our hardware.
@@ -594,101 +564,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     savingMutex.unlock();
     savingData = false;
 }
-/*void take_object::saveFramesInBuffer()
-{
-    register int ndx = count % CPU_FRAME_BUFFER_SIZE;
-    // We need to make a copy of the frame ring buffer so that we can
-    // take the raws out of the frames. So we should copy frames starting from the current framecount
-    // to the end of the array then from the beginning of the array to the current framecount.
 
-    frame_c* buf_copy = new frame_c[CPU_FRAME_BUFFER_SIZE];
-    memcpy(buf_copy + ndx*sizeof(frame_c),frame_ring_buffer + ndx*sizeof(frame_c),(CPU_FRAME_BUFFER_SIZE - ndx)*sizeof(frame_c));
-    memcpy(buf_copy,frame_ring_buffer,(ndx -1)*sizeof(frame_c));
-    // we need to do one iteration of the saving loop first so that it doesn't immediately end the while loop...
-    uint16_t raw_copy[frWidth*frHeight];
-    memcpy(raw_copy,(buf_copy[ndx++]).raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
-    saving_list.push_front(raw_copy);
-    while( ndx != (int)(count % CPU_FRAME_BUFFER_SIZE) )
-    {
-        uint16_t raw_copy[frWidth*frHeight];
-        memcpy(raw_copy,(buf_copy[ndx++]).raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
-        saving_list.push_front(raw_copy);
-        if( ndx == CPU_FRAME_BUFFER_SIZE )
-            ndx = 0;
-    }
-    delete[] buf_copy;
-}*/
-#ifdef OPALKELLY
-// depreciated, no longer maintained
-okCFrontPanel* take_object::initializeFPGA()
-{
-    // Open the first XEM - try all board types.
-    okCFrontPanel *dev = new okCFrontPanel;
-    if (okCFrontPanel::NoError != dev->OpenBySerial()) {
-        std::cerr << "Could not open device through serial port. Is one connected?" << std::endl;
-        delete dev;
-        return NULL;
-    }
-    std::cout << "Found a device: " << dev->GetBoardModelString(dev->GetBoardModel()).c_str() << std::endl;
-
-    dev->LoadDefaultPLLConfiguration();
-
-    // Get some general information about the XEM.
-    std::string str;
-    std::cout << "Device firmware version: " << dev->GetDeviceMajorVersion() << "." << dev->GetDeviceMinorVersion() << std::endl;
-    str = dev->GetSerialNumber();
-    std::cout << "Device serial number: " << str.c_str() << std::endl;
-    str = dev->GetDeviceID();
-    std::cout << "Device device ID: " << str.c_str() << std::endl;
-
-    // Download the configuration file.
-    if(okCFrontPanel::NoError != dev->ConfigureFPGA(FPGA_CONFIG_FILE)) {
-        std::cerr << "FPGA configuration failed." << std::endl;
-        delete dev;
-        return(NULL);
-    }
-
-    // Check for FrontPanel support in the FPGA configuration.
-    if (dev->IsFrontPanelEnabled())
-        std::cout << "FrontPanel support is enabled." << std::endl;
-    else
-        std::cerr << "FrontPanel support is not enabled." << std::endl;
-
-    return dev;
-}
-void take_object::ok_init_pipe()
-{
-    xem->SetWireInValue(0x00, clock_div|clock_delay);
-    xem->SetWireInValue(0x01, FIFO_THRESH);
-    xem->UpdateWireIns();
-    do {
-        xem->UpdateWireOuts();
-        usleep(250);
-    } while(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_WRITE_MASK);
-}
-long take_object::ok_read_frame(unsigned char *wait_ptr, long prev_result)
-{
-    xem->ActivateTriggerIn(FIFO_RESET_TRIG, 0);
-    xem->ActivateTriggerIn(ACQ_TRIG, 0);
-    xem->UpdateWireOuts();
-    if((xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_FULL_MASK) || (prev_result != framelen)) {
-        std::cerr << "WARNING: MISSED FRAME" << std::endl;
-
-        // Reset the buffer
-        xem->ActivateTriggerIn(FIFO_RESET_TRIG, 0);
-        usleep(10000);
-        xem->ActivateTriggerIn(ACQ_TRIG, 0);
-    }
-    //Check for FIFO_WRITE
-    while(!(xem->GetWireOutValue(FIFO_STATUS_REG) & FIFO_WRITE_MASK)) {
-        xem->UpdateWireOuts();
-        usleep(1);
-    }
-    long result = xem->ReadFromBlockPipeOut(0xA0, blocklen, framelen, wait_ptr);
-    // std::cout << "Result of ReadFromBlockPipeOut = " << result << std::endl;
-    return result;
-}
-#endif
 
 void take_object::errorMessage(const char *message)
 {

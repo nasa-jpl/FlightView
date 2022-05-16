@@ -28,16 +28,7 @@
 
 //** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
 #define EDT
-//#define OPALKELLY
 
-#ifdef OPALKELLY
-//OpalKelly Device Support
-#include "okFrontPanelDLL.h"
-#include "ok_addresses.h"
-
-// the location of the OpalKelly bit file which configures the  FPGA
-#define FPGA_CONFIG_FILE "/home/jryan/NGIS_DATA/jryan/top4ch.bit"
-#endif
 
 //** Debug Macros **
 //#define RESET_GPUS // will reset the GPU hardware on closing the program
@@ -61,13 +52,7 @@ class take_object {
     unsigned int numbufs;
     unsigned int filter_refresh_rate;
 #endif
-#ifdef OPALKELLY
-    okCFrontPanel* xem;
-    unsigned long clock_div = CLOCK_DIV;
-    unsigned long clock_delay = CLOCK_DLY;
-    int blocklen;
-    long framelen;
-#endif
+
 
     bool closing = false;
     bool grabbing = true;
@@ -161,11 +146,6 @@ private:
      * to a pre-specified raw file. For the moment, it stops the take_object loop
      * until it has finished saving. Not fully implemented. */
 
-#ifdef OPALKELLY
-    okCFrontPanel* initializeFPGA();
-    void ok_init_pipe();
-    long ok_read_frame(unsigned char *wait_ptr, long prev_result);
-#endif
     void errorMessage(const char* message);
     void warningMessage(const char* message);
     void statusMessage(const char* message);
