@@ -17,6 +17,9 @@ struct startupOptionsType
     uint16_t gpsPort = 8111;
     bool deviceFPIEDSet = false;
     bool deviceIHESet = false;
+    bool xioCam = false;
+    uint16_t height;
+    uint16_t width;
 
 };
 

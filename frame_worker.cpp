@@ -20,6 +20,9 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
     this->setObjectName("lv:frameWorker");
     this->options = options;
 
+    if(options.xioCam)
+        to.changeOptions(options);
+
     to.start(); // begin cuda_take
 
 #ifdef VERBOSE

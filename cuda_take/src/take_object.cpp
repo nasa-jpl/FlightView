@@ -49,11 +49,10 @@ take_object::~take_object()
         pdv_thread_run = 0;
 
 
-#ifdef EDT
+
         int dummy;
         pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
         pdv_close(pdv_p);
-#endif
 
 #ifdef VERBOSE
         printf("about to delete filters!\n");
@@ -78,6 +77,12 @@ take_object::~take_object()
 }
 
 //public functions
+void take_object::changeOptions(startupOptionsType options)
+{
+    this->options = options;
+    statusMessage("Accepted startup options");
+}
+
 void take_object::start()
 {
     pdv_thread_run = 1;
@@ -85,19 +90,27 @@ void take_object::start()
     std::cout << "This version of cuda_take was compiled on " << __DATE__ << " at " << __TIME__ << " using gcc " << __GNUC__ << std::endl;
     std::cout << "The compilation was perfromed by " << UNAME << " @ " << HOST << std::endl;
 
-#ifdef EDT
     this->pdv_p = NULL;
-    this->pdv_p = pdv_open_channel(EDT_INTERFACE,0,this->channel);
-    if(pdv_p == NULL) {
-        std::cerr << "Could not open device channel. Is one connected?" << std::endl;
-        return;
-    }
-    size = pdv_get_dmasize(pdv_p); // this size is only used to determine the camera type
-    // actual grabbing of the dimensions
-    frWidth = pdv_get_width(pdv_p);
-    dataHeight = pdv_get_height(pdv_p);
-#endif
 
+    if(options.xioCam)
+    {
+        frWidth = options.width;
+        frHeight = options.height;
+        dataHeight = options.height;
+        size = frWidth * frHeight * sizeof(uint16_t);
+        statusMessage("Created XIO camera");
+    } else {
+        this->pdv_p = pdv_open_channel(EDT_INTERFACE,0,this->channel);
+        if(pdv_p == NULL) {
+            std::cerr << "Could not open device channel. Is one connected?" << std::endl;
+            return;
+        }
+        size = pdv_get_dmasize(pdv_p); // this size is only used to determine the camera type
+        // actual grabbing of the dimensions
+        frWidth = pdv_get_width(pdv_p);
+        dataHeight = pdv_get_height(pdv_p);
+
+    }
 
     switch(size) {
     case 481*640*sizeof(uint16_t): cam_type = CL_6604A; break;

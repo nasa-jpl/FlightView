@@ -25,6 +25,7 @@
 #include "mean_filter.hpp"
 #include "camera_types.h"
 #include "constants.h"
+#include "../../startupOptions.h"
 
 //** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
 #define EDT
@@ -89,7 +90,8 @@ public:
     take_object(int channel_num = 0, int number_of_buffers = 64,
                 int filter_refresh_rate = 10, bool runStdDev = true);
     virtual ~take_object();
-	void start();
+    void start();
+    void changeOptions(startupOptionsType options);
 
     dark_subtraction_filter* dsf;
     camera_t cam_type;
@@ -141,10 +143,8 @@ private:
     void savingLoop(std::string, unsigned int num_avgs, unsigned int num_frames);
     std::mutex savingMutex;
     bool savingData = false;
-    //void saveFramesInBuffer();
-    /* This function will save all the frames currently in the frame_ring_buffer
-     * to a pre-specified raw file. For the moment, it stops the take_object loop
-     * until it has finished saving. Not fully implemented. */
+
+    startupOptionsType options;
 
     void errorMessage(const char* message);
     void warningMessage(const char* message);

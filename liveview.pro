@@ -19,6 +19,7 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
     consolelog.cpp \
+    cuda_take/src/take_object.cpp \
     filenamegenerator.cpp \
     flight_widget.cpp \
     gpsmanager.cpp \
@@ -66,6 +67,27 @@ HEADERS  += mainwindow.h \
     startupOptions.h \
     waterfall.h \
     preferences.h
+
+DISTFILES +=    cuda_take/include/take_object.hpp \
+                cuda_take/include/chroma_translate_filter.hpp \
+                cuda_take/include/std_dev_filter_device_code.cuh \
+                cuda_take/include/mean_filter.hpp \
+                cuda_take/include/frame_c.hpp \
+                cuda_take/include/fft.hpp \
+                cuda_take/include/dark_subtraction_filter.hpp \
+                cuda_take/include/cuda_utils.hpp \
+                cuda_take/include/constants.h \
+                cuda_take/include/camera_types.hpp
+
+DISTFILES +=    cuda_take/src/take_object.cpp \
+                cuda_take/src/std_dev_filter_device_code.cu \
+                cuda_take/src/std_dev_filter.cpp \
+                cuda_take/src/mean_filter.cpp \
+                cuda_take/src/main.cpp \
+                cuda_take/src/fft.cpp \
+                cuda_take/src/dark_subtraction_filter.cpp \
+                cuda_take/src/chroma_translate_filter.cpp
+
 
 
 # the following two lines are needed for the QFI widgets:
