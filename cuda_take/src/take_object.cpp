@@ -117,7 +117,7 @@ void take_object::start()
         frHeight = options.height;
         dataHeight = options.height;
         size = frWidth * frHeight * sizeof(uint16_t);
-        statusMessage("started with XIO camera settings");
+        statusMessage("start() with XIO camera settings");
     } else {
         this->pdv_p = pdv_open_channel(EDT_INTERFACE,0,this->channel);
         if(pdv_p == NULL) {
@@ -164,19 +164,14 @@ void take_object::start()
     meanWidth = frWidth;
 
 
-    int rtnval = pdv_multibuf(pdv_p,this->numbufs);
-    if(rtnval != 0)
-    {
-        std::cout << "Error, could not initialize camera link multibuffer." << std::endl;
-        std::cout << "Make sure the camera link driver is loaded and that the camera link port has been initialized using initcam." << std::endl;
-    }
     numbufs = 16;
+    int rtnval = 0;
     if(options.xioCam)
     {
         statusMessage("Creating an XIO camera take_object.");
         prepareFileReading(); // make a camera
         statusMessage("Creating an XIO camera thread inside take_object.");
-        pdv_thread = boost::thread(&take_object::fileReadingLoop, this);
+        cam_thread = boost::thread(&take_object::fileReadingLoop, this);
         statusMessage("Created thread.");
         while(pdv_thread_start_complete)
             usleep(1);
@@ -184,8 +179,17 @@ void take_object::start()
         // However, in the case of the XIO, there isn't anything else that would happen anyway!
 
     } else {
+        if(pdv_p != NULL)
+            rtnval = pdv_multibuf(pdv_p,this->numbufs);
+        if(rtnval != 0)
+        {
+            std::cout << "Error, could not initialize camera link multibuffer." << std::endl;
+            std::cout << "Make sure the camera link driver is loaded and that the camera link port has been initialized using initcam." << std::endl;
+        }
+
+
         pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
-        pdv_thread = boost::thread(&take_object::pdv_loop, this);
+        cam_thread = boost::thread(&take_object::pdv_loop, this);
         //usleep(350000);
         while(!pdv_thread_start_complete) usleep(1); // Added by Michael Bernas 2016. Used to prevent thread error when starting without a camera
     }
@@ -506,13 +510,23 @@ void take_object::fileReadingLoop()
 void take_object::setReadDirectory(const char *directory)
 {
     if(directory == NULL)
+    {
+        errorMessage("directory is empty string or NULL, cannot set directory.");
         return;
+    }
+
+    if(Camera == NULL)
+    {
+        errorMessage("Camera is NULL! Cannot set directory (yet).");
+        return;
+    }
 
     if(sizeof(directory) != 0)
     {
-
         statusMessage(string("Setting directory to: ") + directory);
         Camera->setDir(directory);
+    } else {
+        errorMessage("Cannot set directory to zero-length string.");
     }
 }
 

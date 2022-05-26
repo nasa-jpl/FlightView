@@ -18,12 +18,19 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
     sMessage("Starting frameWorker class and CUDA back-end");
     lastTime = 0;
     this->setObjectName("lv:frameWorker");
+    // FORCE XIO MODE FOR TESTING:
+    options.xioCam = true;
     this->options = options;
+    convertOptions();
 
     if(options.xioCam)
-        to.changeOptions(options);
-
+    {
+        takeOptions.height = 480;
+        takeOptions.width = 640;
+        to.changeOptions(takeOptions);
+    }
     to.start(); // begin cuda_take
+    to.setReadDirectory("/mnt/DATA/xio/20170828_DCSEFM_TVAC_AMBIENTFUNCTIONAL_COMPRESS_Test1_ROICIMAGE/");
 
 #ifdef VERBOSE
     qDebug("starting capture");
@@ -41,6 +48,22 @@ frameWorker::~frameWorker()
     qDebug() << "end frameWorker";
 #endif
     doRun = false;
+}
+
+void frameWorker::convertOptions()
+{
+    takeOptions.debug = options.debug;
+    takeOptions.flightMode = options.flightMode;
+    takeOptions.disableGPS = options.disableGPS;
+    takeOptions.disableCamera = options.disableCamera;
+    takeOptions.runStdDevCalculation = options.runStdDevCalculation;
+    takeOptions.dataLocationSet = options.dataLocationSet;
+    takeOptions.gpsIPSet = options.gpsIPSet;
+    takeOptions.gpsPortSet = options.gpsPortSet;
+    takeOptions.gpsPort = options.gpsPort;
+    takeOptions.xioCam = options.xioCam;
+    takeOptions.height = options.height;
+    takeOptions.width = options.width;
 }
 
 // public functions

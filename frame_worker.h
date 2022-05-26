@@ -18,6 +18,7 @@
 #include "frame_c_meta.h"
 #include "image_type.h"
 #include "startupOptions.h"
+#include "cuda_take/include/takeoptions.h"
 
 /*! \file
  * \brief Communicates with the backend and connects public information between widgets.
@@ -61,6 +62,8 @@ class frameWorker : public QObject
     bool doRun = true;
 
     startupOptionsType options;
+    takeOptionsType takeOptions;
+    void convertOptions(); // startup options to take options
 
 public:
     explicit frameWorker(startupOptionsType options, QObject *parent = 0);

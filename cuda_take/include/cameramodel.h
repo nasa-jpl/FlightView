@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <atomic>
 #include <string>
+#include <iostream>
 
 #ifdef FAIL
 #include <QObject>
@@ -25,7 +26,9 @@ public:
     virtual bool start() { return true; }
     virtual uint16_t *getFrame() = 0;
 
-    virtual void setDir(const char *filename) { (void)(filename); }
+    virtual void setDir(const char *filename) {
+        std::cout << "WARNING: using wrong setDir." << std::endl;
+    }
 
     virtual bool isRunning() { return running.load(); }
 

@@ -64,7 +64,7 @@ class take_object {
     bool grabbing = true;
     bool runStdDev = true;
 
-    boost::thread pdv_thread; // this thread controls the data collection
+    boost::thread cam_thread; // this thread controls the data collection
     int pdv_thread_run = 0;
 	bool pdv_thread_start_complete=false; // added by Michael Bernas 2016
 
