@@ -25,22 +25,22 @@ XIOCamera::XIOCamera(int frWidth,
     for (int n = 0; n < nFrames; n++) {
         frame_buf.emplace_back(std::vector<uint16_t>(size_t(frame_width * data_height), 0));
     }
-    cout << __PRETTY_FUNCTION__ << "finished XIO Camera constructor for ID: " << this;
+    cout << __PRETTY_FUNCTION__ << "finished XIO Camera constructor for ID: " << this << endl;;
 }
 
 XIOCamera::~XIOCamera()
 {
-    cout << __PRETTY_FUNCTION__ << "Running XIO camera destructor for ID: " << this;
+    cout << __PRETTY_FUNCTION__ << "Running XIO camera destructor for ID: " << this << endl;
     running.store(false);
     //emit timeout();
     is_reading = false;
     //readLoopFuture.waitForFinished();
-    cout << __PRETTY_FUNCTION__ << "Completed XIO camera destructor for ID: " << this;
+    cout << __PRETTY_FUNCTION__ << "Completed XIO camera destructor for ID: " << this << endl;
 }
 
 void XIOCamera::setDir(const char *dirname)
 {
-    cout << __PRETTY_FUNCTION__ << "Starting setDIR function for dirname " << dirname;
+    cout << __PRETTY_FUNCTION__ << "Starting setDIR function for dirname " << dirname << endl;
     is_reading = false;
     while (!frame_buf.empty()) {
         frame_buf.pop_back();
@@ -56,7 +56,7 @@ void XIOCamera::setDir(const char *dirname)
     if (data_dir.empty()) {
         if (running.load()) {
             running.store(false);
-            cout << __PRETTY_FUNCTION__ << "emit timeout(), dir_data empty and running.load true";
+            cout << __PRETTY_FUNCTION__ << "emit timeout(), dir_data empty and running.load true" << endl;
             //emit timeout();
         }
         cout << __PRETTY_FUNCTION__ << "dir_data empty.";
@@ -77,10 +77,15 @@ void XIOCamera::setDir(const char *dirname)
     for (auto &f : fname_list) {
         std::string ext = os::getext(f);
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-        if (f.empty() or std::strcmp(ext.data(), "xio") != 0 or std::strcmp(ext.data(), "decomp") != 0)
+        if (f.empty())
             continue;
-
-        xio_files.emplace_back(f);
+        if( (std::strcmp(ext.data(), "xio") != 0) and (std::strcmp(ext.data(), "decomp") != 0))
+        {
+            cout << "Rejecting file " << f << endl;
+        } else {
+            cout << "Accepting file " << f << endl;
+            xio_files.push_back(f);
+        }
     }
 
     cout << "Finished for loop in dir file search (part of setDir)" << endl;

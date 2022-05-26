@@ -70,8 +70,15 @@ take_object::~take_object()
 
 
         int dummy;
-        pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
-        pdv_close(pdv_p);
+        if(pdv_p)
+        {
+            pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
+            pdv_close(pdv_p);
+        }
+        if(Camera)
+        {
+            delete Camera;
+        }
 
 #ifdef VERBOSE
         printf("about to delete filters!\n");
@@ -173,7 +180,7 @@ void take_object::start()
         statusMessage("Creating an XIO camera thread inside take_object.");
         cam_thread = boost::thread(&take_object::fileReadingLoop, this);
         statusMessage("Created thread.");
-        while(pdv_thread_start_complete)
+        while(cam_thread_start_complete)
             usleep(1);
         // The idea is to hold off on doing anything else until some setup is finished.
         // However, in the case of the XIO, there isn't anything else that would happen anyway!
@@ -191,7 +198,7 @@ void take_object::start()
         pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
         cam_thread = boost::thread(&take_object::pdv_loop, this);
         //usleep(350000);
-        while(!pdv_thread_start_complete) usleep(1); // Added by Michael Bernas 2016. Used to prevent thread error when starting without a camera
+        while(!cam_thread_start_complete) usleep(1); // Added by Michael Bernas 2016. Used to prevent thread error when starting without a camera
     }
 }
 void take_object::setInversion(bool checked, unsigned int factor)
@@ -433,7 +440,7 @@ void take_object::fileReadingLoop()
                 // start image collection on the camera
 
             }
-            pdv_thread_start_complete=true;
+            cam_thread_start_complete=true;
 
             uint16_t* temp_frame = Camera->getFrame();
 
@@ -562,7 +569,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             // Have seen Segmentation faults here on closing liveview:
             if(!closing) wait_ptr = pdv_wait_image(pdv_p);
         }
-        pdv_thread_start_complete=true;
+        cam_thread_start_complete=true;
 
         /* In this section of the code, after we have copied the memory from the camera link
          * buffer into the raw_data_ptr, we will check various parameters to see if we need to
