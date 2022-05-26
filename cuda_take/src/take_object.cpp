@@ -1,15 +1,33 @@
 #include "take_object.hpp"
 #include "fft.hpp"
 
+
+take_object::take_object(takeOptionsType options, int channel_num, int number_of_buffers,
+                         int filter_refresh_rate, bool runStdDev)
+{
+    changeOptions(options);
+    initialSetup(channel_num, number_of_buffers,
+                 filter_refresh_rate, runStdDev);
+}
+
 take_object::take_object(int channel_num, int number_of_buffers,
                          int frf, bool runStdDev)
 {
+    warningMessage("Starting with assumed options. XIO disabled.");
+    takeOptionsType options;
+    options.xioCam = false;
+    changeOptions(options);
+    initialSetup(channel_num, number_of_buffers,
+                 frf, runStdDev);
+}
+
+void take_object::initialSetup(int channel_num, int number_of_buffers,
+                               int filter_refresh_rate, bool runStdDev)
+{
     closing = false;
-#ifdef EDT
     this->channel = channel_num;
     this->numbufs = number_of_buffers;
-    this->filter_refresh_rate =frf;
-#endif
+    this->filter_refresh_rate = filter_refresh_rate;
 
     frame_ring_buffer = new frame_c[CPU_FRAME_BUFFER_SIZE];
 
@@ -37,6 +55,7 @@ take_object::take_object(int channel_num, int number_of_buffers,
     save_num_avgs=1;
     saving_list.clear();
 }
+
 take_object::~take_object()
 {
     closing = true;
@@ -77,10 +96,10 @@ take_object::~take_object()
 }
 
 //public functions
-void take_object::changeOptions(startupOptionsType options)
+void take_object::changeOptions(takeOptionsType options)
 {
     this->options = options;
-    statusMessage("Accepted startup options");
+    statusMessage("Accepted startup options.");
 }
 
 void take_object::start()
@@ -98,7 +117,7 @@ void take_object::start()
         frHeight = options.height;
         dataHeight = options.height;
         size = frWidth * frHeight * sizeof(uint16_t);
-        statusMessage("Created XIO camera");
+        statusMessage("started with XIO camera settings");
     } else {
         this->pdv_p = pdv_open_channel(EDT_INTERFACE,0,this->channel);
         if(pdv_p == NULL) {
@@ -115,7 +134,7 @@ void take_object::start()
     switch(size) {
     case 481*640*sizeof(uint16_t): cam_type = CL_6604A; break;
     case 285*640*sizeof(uint16_t): cam_type = CL_6604A; break;
-    case 480*640*sizeof(uint16_t): cam_type = FPGA; pixRemap = true; break;
+    case 480*640*sizeof(uint16_t): cam_type = CL_6604B; pixRemap = true; break;
     default: cam_type = CL_6604B; pixRemap = true; break;
     }
 	setup_filter(cam_type);
@@ -144,7 +163,7 @@ void take_object::start()
     meanHeight = frHeight;
     meanWidth = frWidth;
 
-#ifdef EDT
+
     int rtnval = pdv_multibuf(pdv_p,this->numbufs);
     if(rtnval != 0)
     {
@@ -152,11 +171,24 @@ void take_object::start()
         std::cout << "Make sure the camera link driver is loaded and that the camera link port has been initialized using initcam." << std::endl;
     }
     numbufs = 16;
-    pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
-#endif
-    pdv_thread = boost::thread(&take_object::pdv_loop, this);
-	//usleep(350000);	
-	while(!pdv_thread_start_complete) usleep(1); // Added by Michael Bernas 2016. Used to prevent thread error when starting without a camera
+    if(options.xioCam)
+    {
+        statusMessage("Creating an XIO camera take_object.");
+        prepareFileReading(); // make a camera
+        statusMessage("Creating an XIO camera thread inside take_object.");
+        pdv_thread = boost::thread(&take_object::fileReadingLoop, this);
+        statusMessage("Created thread.");
+        while(pdv_thread_start_complete)
+            usleep(1);
+        // The idea is to hold off on doing anything else until some setup is finished.
+        // However, in the case of the XIO, there isn't anything else that would happen anyway!
+
+    } else {
+        pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
+        pdv_thread = boost::thread(&take_object::pdv_loop, this);
+        //usleep(350000);
+        while(!pdv_thread_start_complete) usleep(1); // Added by Michael Bernas 2016. Used to prevent thread error when starting without a camera
+    }
 }
 void take_object::setInversion(bool checked, unsigned int factor)
 {
@@ -334,6 +366,156 @@ FFT_t take_object::getFFTtype()
 }
 
 // private functions
+
+void take_object::prepareFileReading()
+{
+    // Makes an XIO file reading camera
+
+    if(Camera == NULL)
+    {
+        Camera = new XIOCamera(frWidth,
+                               frHeight,
+                               frHeight);
+        if(Camera == NULL)
+        {
+            errorMessage("XIO Camera could not be created, was NULL.");
+        } else {
+            statusMessage(string("XIO Camera was made"));
+        }
+    } else {
+        errorMessage("XIO Camera should be NULL at start but isn't");
+    }
+
+    bool cam_started = Camera->start();
+    if(cam_started)
+    {
+        statusMessage("XIO Camera started.");
+    } else {
+        errorMessage("XIO Camera not started");
+    }
+}
+
+void take_object::fileReadingLoop()
+{
+    // This thread reads data from xio files and places the data
+    // inside the correct data types for use in the rest
+    // of the program.
+
+    if(Camera)
+    {
+        count = 0;
+        uint16_t framecount = 1;
+        uint16_t last_framecount = 0;
+        (void)last_framecount; // use count
+        uint16_t* temp_frame = Camera->getFrame();
+
+        mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
+                                           meanStartRow,meanHeight,frWidth,useDSF,\
+                                           whichFFT, lh_start, lh_end,\
+                                           cent_start, cent_end,\
+                                           rh_start, rh_end);
+        fileReadingLoopRun = true;
+        while(fileReadingLoopRun)
+        {
+            grabbing = true;
+            curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+            curFrame->reset();
+
+            if(closing)
+            {
+                fileReadingLoopRun = false;
+                break;
+            } else {
+                // start image collection on the camera
+
+            }
+            pdv_thread_start_complete=true;
+
+            uint16_t* temp_frame = Camera->getFrame();
+
+            if(temp_frame)
+            {
+                memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight);
+            } else {
+                errorMessage("Frame was NULL!");
+                // die here in shame
+            }
+
+            // From here on out, the code should be
+            // very similar to the EDT frame grabber code.
+
+            if(pixRemap)
+                apply_chroma_translate_filter(curFrame->raw_data_ptr);
+            if(cam_type == CL_6604A)
+                curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
+            else
+                curFrame->image_data_ptr = curFrame->raw_data_ptr;
+            if(inverted)
+            { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
+                for(uint i = 0; i < frHeight*frWidth; i++ )
+                    curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
+            }
+
+            // Calculating the filters for this frame
+            if(runStdDev)
+            {
+                sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
+            }
+            dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
+            mf->update(curFrame,count,meanStartCol,meanWidth,\
+                       meanStartRow,meanHeight,frWidth,useDSF,\
+                       whichFFT, lh_start, lh_end,\
+                                               cent_start, cent_end,\
+                                               rh_start, rh_end);
+
+            mf->start_mean();
+
+            if((save_framenum > 0) || continuousRecording)
+            {
+                uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
+                memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
+                saving_list.push_front(raw_copy);
+                save_framenum--;
+            }
+
+            framecount = *(curFrame->raw_data_ptr + 160); // The framecount is stored 160 bytes offset from the beginning of the data
+            /*
+            if(CHECK_FOR_MISSED_FRAMES_6604A && cam_type == CL_6604A)
+            {
+                if( (framecount - 1 != last_framecount) && (last_framecount != UINT16_MAX) )
+                {
+                    std::cerr << "WARNING: MISSED FRAME " << framecount << std::endl;
+                }
+            }
+            */
+
+            last_framecount = framecount;
+            count++;
+            grabbing = false;
+            if(closing)
+            {
+                fileReadingLoopRun = false;
+                break;
+            }
+        }
+    } else {
+        errorMessage("Camera was NULL!");
+    }
+}
+
+void take_object::setReadDirectory(const char *directory)
+{
+    if(directory == NULL)
+        return;
+
+    if(sizeof(directory) != 0)
+    {
+
+        statusMessage(string("Setting directory to: ") + directory);
+        Camera->setDir(directory);
+    }
+}
+
 void take_object::pdv_loop() //Producer Thread (pdv_thread)
 {
 	count = 0;
@@ -356,7 +538,6 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         grabbing = true;
         curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
         curFrame->reset();
-#ifdef EDT
         if(closing)
         {
             pdv_thread_run = 0;
@@ -368,7 +549,6 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             if(!closing) wait_ptr = pdv_wait_image(pdv_p);
         }
         pdv_thread_start_complete=true;
-#endif
 
         /* In this section of the code, after we have copied the memory from the camera link
          * buffer into the raw_data_ptr, we will check various parameters to see if we need to
@@ -578,7 +758,6 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     savingData = false;
 }
 
-
 void take_object::errorMessage(const char *message)
 {
     std::cout << "take_object: ERROR: " << message << std::endl;
@@ -590,6 +769,21 @@ void take_object::warningMessage(const char *message)
 }
 
 void take_object::statusMessage(const char *message)
+{
+    std::cout << "take_object: STATUS: " << message << std::endl;
+}
+
+void take_object::errorMessage(const string message)
+{
+    std::cout << "take_object: ERROR: " << message << std::endl;
+}
+
+void take_object::warningMessage(const string message)
+{
+    std::cout << "take_object: WARNING: " << message << std::endl;
+}
+
+void take_object::statusMessage(const string message)
 {
     std::cout << "take_object: STATUS: " << message << std::endl;
 }

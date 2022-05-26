@@ -4,6 +4,7 @@
 //standard includes
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <ostream>
 #include <string>
 #include <iostream>
@@ -24,8 +25,10 @@
 #include "dark_subtraction_filter.hpp"
 #include "mean_filter.hpp"
 #include "camera_types.h"
+#include "cameramodel.h"
+#include "xiocamera.h"
 #include "constants.h"
-#include "../../startupOptions.h"
+#include "takeoptions.h"
 
 //** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
 #define EDT
@@ -44,11 +47,13 @@
 #define UNAME "unknown person"
 #endif
 
+using std::string;
+
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence or absence of the "WARNING: MISSED FRAME X" line
 
 class take_object {
 #ifdef EDT
-    PdvDev * pdv_p;
+    PdvDev * pdv_p = NULL;
     unsigned int channel;
     unsigned int numbufs;
     unsigned int filter_refresh_rate;
@@ -89,10 +94,14 @@ class take_object {
 public:
     take_object(int channel_num = 0, int number_of_buffers = 64,
                 int filter_refresh_rate = 10, bool runStdDev = true);
+    take_object(takeOptionsType options, int channel_num = 0, int number_of_buffers = 64,
+                int filter_refresh_rate = 10, bool runStdDev = true);
     virtual ~take_object();
+    void initialSetup(int channel_num = 0, int number_of_buffers = 64,
+                      int filter_refresh_rate = 10, bool runStdDev = true);
     void start();
-    void changeOptions(startupOptionsType options);
-
+    void changeOptions(takeOptionsType options);
+    void setReadDirectory(const char* directory);
     dark_subtraction_filter* dsf;
     camera_t cam_type;
     frame_c * frame_ring_buffer;
@@ -140,15 +149,23 @@ public:
 
 private:
     void pdv_loop();
+    void fileReadingLoop();
+    void prepareFileReading();
+    CameraModel *Camera = NULL;
+    bool fileReadingLoopRun = false;
+
     void savingLoop(std::string, unsigned int num_avgs, unsigned int num_frames);
     std::mutex savingMutex;
     bool savingData = false;
 
-    startupOptionsType options;
+    takeOptionsType options;
 
     void errorMessage(const char* message);
     void warningMessage(const char* message);
     void statusMessage(const char* message);
+    void errorMessage(const string message);
+    void warningMessage(const string message);
+    void statusMessage(const string message);
     // variables needed by the Raw Filters
     unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
     bool inverted = false;

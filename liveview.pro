@@ -77,7 +77,13 @@ DISTFILES +=    cuda_take/include/take_object.hpp \
                 cuda_take/include/dark_subtraction_filter.hpp \
                 cuda_take/include/cuda_utils.hpp \
                 cuda_take/include/constants.h \
-                cuda_take/include/camera_types.hpp
+                cuda_take/include/camera_types.hpp \
+                cuda_take/include/xiocamera.h \
+                cuda_take/include/osutils.h \
+                cuda_take/include/alphanum.hpp \
+                cuda_take/include/camera_types.h \
+                cuda_take/include/cameramodel.h \
+                cuda_take/include/takeoptions.h
 
 DISTFILES +=    cuda_take/src/take_object.cpp \
                 cuda_take/src/std_dev_filter_device_code.cu \
@@ -86,7 +92,8 @@ DISTFILES +=    cuda_take/src/take_object.cpp \
                 cuda_take/src/main.cpp \
                 cuda_take/src/fft.cpp \
                 cuda_take/src/dark_subtraction_filter.cpp \
-                cuda_take/src/chroma_translate_filter.cpp
+                cuda_take/src/chroma_translate_filter.cpp \
+                cuda_take/src/xiocamera.cpp
 
 
 
