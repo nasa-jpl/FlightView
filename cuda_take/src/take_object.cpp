@@ -116,6 +116,8 @@ void take_object::start()
     std::cout << "This version of cuda_take was compiled on " << __DATE__ << " at " << __TIME__ << " using gcc " << __GNUC__ << std::endl;
     std::cout << "The compilation was perfromed by " << UNAME << " @ " << HOST << std::endl;
 
+    pthread_setname_np(pthread_self(), "TAKE");
+
     this->pdv_p = NULL;
 
     if(options.xioCam)
@@ -151,9 +153,9 @@ void take_object::start()
 		std::cout << "2s compliment filter DISABLED" << std::endl;
 	}
 
-#ifdef EDT
+
     frHeight = cam_type == CL_6604A ? dataHeight - 1 : dataHeight;
-#endif
+
 #ifdef VERBOSE
     std::cout << "Camera Type: " << cam_type << ". Frame Width: " << frWidth << \
                  " Data Height: " << dataHeight << " Frame Height: " << frHeight << std::endl;
@@ -175,15 +177,44 @@ void take_object::start()
     int rtnval = 0;
     if(options.xioCam)
     {
+        cam_thread_start_complete = false;
         statusMessage("Creating an XIO camera take_object.");
         prepareFileReading(); // make a camera
         statusMessage("Creating an XIO camera thread inside take_object.");
-        cam_thread = boost::thread(&take_object::fileReadingLoop, this);
+        cam_thread = boost::thread(&take_object::fileImageCopyLoop, this);
+        cam_thread_handler = cam_thread.native_handle();
+        pthread_setname_np(cam_thread_handler, "XIOCAM");
         statusMessage("Created thread.");
-        while(cam_thread_start_complete)
-            usleep(1);
+        while(!cam_thread_start_complete)
+            usleep(100);
         // The idea is to hold off on doing anything else until some setup is finished.
-        // However, in the case of the XIO, there isn't anything else that would happen anyway!
+
+        statusMessage("Creating XIO File reading thread reading_thread.");
+        reading_thread = boost::thread(&take_object::fileImageReadingLoop, this);
+        reading_thread_handler = reading_thread.native_handle();
+        pthread_setname_np(reading_thread_handler, "READING");
+        statusMessage("Done creating XIO File reading thread reading_thread.");
+
+        char threadinfo[16];
+        statusMessage("Thread Information: ");
+        std::ostringstream info;
+
+        pthread_getname_np(cam_thread_handler, threadinfo, 16);
+        info << "Cam thread name: " << threadinfo;
+        statusMessage(info);
+
+        info.str("");
+
+        pthread_getname_np(reading_thread_handler, threadinfo, 16);
+        info << "Reading thread name: " << string(threadinfo);
+        statusMessage(info);
+
+        info.str("");
+
+        pthread_getname_np(pthread_self(), threadinfo, 16);
+        info << "Self thread name: " << string(threadinfo);
+        statusMessage(info);
+
 
     } else {
         if(pdv_p != NULL)
@@ -197,6 +228,8 @@ void take_object::start()
 
         pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
         cam_thread = boost::thread(&take_object::pdv_loop, this);
+        cam_thread_handler = cam_thread.native_handle();
+        pthread_setname_np(cam_thread_handler, "PDVCAM");
         //usleep(350000);
         while(!cam_thread_start_complete) usleep(1); // Added by Michael Bernas 2016. Used to prevent thread error when starting without a camera
     }
@@ -406,11 +439,31 @@ void take_object::prepareFileReading()
     }
 }
 
-void take_object::fileReadingLoop()
+void take_object::fileImageReadingLoop()
 {
-    // This thread reads data from xio files and places the data
-    // inside the correct data types for use in the rest
-    // of the program.
+    // This thread makes the camera keep reading files
+    // readLoop() runs readFile() inside.
+
+    if(Camera)
+    {
+        statusMessage("Starting XIO Camera readLoop() function.");
+        // TODO: Come up with a switchable condition here
+        while(!closing)
+        {
+            Camera->readLoop();
+            statusMessage("Completed readLoop(), pausing and then running again.");
+            usleep(100000);
+        }
+        statusMessage("completed XIO Camera readLoop() while function. No more files can be read once completed. ");
+    } else {
+        errorMessage("XIO Camera is NULL, cannot readLoop().");
+    }
+}
+
+void take_object::fileImageCopyLoop()
+{
+    // This thread copies data from the XIO Camera's buffer
+    // and into curFrane of take_object.
 
     if(Camera)
     {
@@ -426,7 +479,13 @@ void take_object::fileReadingLoop()
                                            cent_start, cent_end,\
                                            rh_start, rh_end);
         fileReadingLoopRun = true;
-        while(fileReadingLoopRun)
+
+        // This readLoop has to run constantly to read the data out of the file.
+        // At the same time, we have to run THIS loop to move data into cuda_take.
+
+        //boost::thread producer = boost::thread(&XIOCamera::readLoop(), this);
+
+        while(fileReadingLoopRun && (!closing))
         {
             grabbing = true;
             curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
@@ -807,4 +866,9 @@ void take_object::warningMessage(const string message)
 void take_object::statusMessage(const string message)
 {
     std::cout << "take_object: STATUS: " << message << std::endl;
+}
+
+void take_object::statusMessage(std::ostringstream &message)
+{
+    std::cout << "take_object: STATUS: " << message.str() << std::endl;
 }

@@ -51,11 +51,11 @@ public:
     virtual void setDir(const char *dirname);
 
     virtual uint16_t* getFrame();
+    void readLoop();
 
 private:
     std::string getFname();
     void readFile();
-    void readLoop();
 
     bool is_reading; // Flag that is true while reading from a directory
     std::ifstream dev_p;
@@ -72,6 +72,9 @@ private:
     std::vector<unsigned char> header;
     std::vector<uint16_t> dummy;
     std::vector<uint16_t> temp_frame;
+
+    // atomic bool vectorLocked = false;
+    std::atomic_bool frameVecLocked;
 
     //QFuture<void> readLoopFuture;
     int tmoutPeriod;

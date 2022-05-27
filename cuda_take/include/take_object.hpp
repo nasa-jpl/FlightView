@@ -15,6 +15,7 @@
 #include <boost/shared_array.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
+#include <pthread.h>
 #include <mutex>
 //#include <boost/atomic.hpp>
 
@@ -65,6 +66,10 @@ class take_object {
     bool runStdDev = true;
 
     boost::thread cam_thread; // this thread controls the data collection
+    boost::thread reading_thread; // this is used for file reading in the XIO camera.
+    boost::thread::native_handle_type cam_thread_handler;
+    boost::thread::native_handle_type reading_thread_handler;
+
     int pdv_thread_run = 0;
     bool cam_thread_start_complete=false; // added by Michael Bernas 2016
 
@@ -149,7 +154,8 @@ public:
 
 private:
     void pdv_loop();
-    void fileReadingLoop();
+    void fileImageCopyLoop();
+    void fileImageReadingLoop();
     void prepareFileReading();
     CameraModel *Camera = NULL;
     bool fileReadingLoopRun = false;
@@ -166,6 +172,8 @@ private:
     void errorMessage(const string message);
     void warningMessage(const string message);
     void statusMessage(const string message);
+    void statusMessage(std::ostringstream &message);
+
     // variables needed by the Raw Filters
     unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
     bool inverted = false;

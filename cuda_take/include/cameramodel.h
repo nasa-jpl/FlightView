@@ -25,9 +25,11 @@ public:
 
     virtual bool start() { return true; }
     virtual uint16_t *getFrame() = 0;
-
+    virtual void readLoop() {
+        std::cout << "WARNING: using default readLoop." << std::endl;
+    }
     virtual void setDir(const char *filename) {
-        std::cout << "WARNING: using wrong setDir." << std::endl;
+        std::cout << "WARNING: using default setDir." << std::endl;
     }
 
     virtual bool isRunning() { return running.load(); }
