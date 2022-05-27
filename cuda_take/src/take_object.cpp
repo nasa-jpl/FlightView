@@ -471,7 +471,7 @@ void take_object::fileImageCopyLoop()
         uint16_t framecount = 1;
         uint16_t last_framecount = 0;
         (void)last_framecount; // use count
-        uint16_t* temp_frame = Camera->getFrame();
+        uint16_t* temp_frame = Camera->getFrame(); // drops first frame
 
         mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
                                            meanStartRow,meanHeight,frWidth,useDSF,\
@@ -479,11 +479,6 @@ void take_object::fileImageCopyLoop()
                                            cent_start, cent_end,\
                                            rh_start, rh_end);
         fileReadingLoopRun = true;
-
-        // This readLoop has to run constantly to read the data out of the file.
-        // At the same time, we have to run THIS loop to move data into cuda_take.
-
-        //boost::thread producer = boost::thread(&XIOCamera::readLoop(), this);
 
         while(fileReadingLoopRun && (!closing))
         {
@@ -567,6 +562,8 @@ void take_object::fileImageCopyLoop()
                 fileReadingLoopRun = false;
                 break;
             }
+            // Wait as to generate FPS
+            usleep(1000 * 10);
         }
     } else {
         errorMessage("Camera was NULL!");
