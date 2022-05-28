@@ -75,6 +75,7 @@ private:
 
     // atomic bool vectorLocked = false;
     std::atomic_bool frameVecLocked;
+    std::atomic_bool fileListVecLocked;
 
     //QFuture<void> readLoopFuture;
     int tmoutPeriod;

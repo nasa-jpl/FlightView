@@ -37,15 +37,25 @@ XIOCamera::XIOCamera(int frWidth,
     cout << __PRETTY_FUNCTION__ << ": Initial size of frame_buf: " << frame_buf.size() << endl;
     cout << __PRETTY_FUNCTION__ << ": finished XIO Camera constructor for ID: " << this << endl;
     frameVecLocked = false;
+    fileListVecLocked = false;
 }
 
 XIOCamera::~XIOCamera()
 {
-    cout << __PRETTY_FUNCTION__ << " Running XIO camera destructor for ID: " << this << endl;
+    cout << __PRETTY_FUNCTION__ << " Running XIO camera destructor for ID:   " << this << endl;
     running.store(false);
     //emit timeout();
     is_reading = false;
+    while(frameVecLocked)
+    {
+        usleep(1);
+    }
     frameVecLocked = true;
+    while(fileListVecLocked)
+    {
+        usleep(1);
+    }
+    fileListVecLocked = true;
     //readLoopFuture.waitForFinished();
     cout << __PRETTY_FUNCTION__ << " Completed XIO camera destructor for ID: " << this << endl;
 }
@@ -76,6 +86,14 @@ void XIOCamera::setDir(const char *dirname)
 
         return;
     }
+
+    while(fileListVecLocked)
+    {
+        // tap tap tap
+        usleep(1);
+    }
+
+    fileListVecLocked = true;
     xio_files.clear();
     dev_p.clear();
     dev_p.close();
@@ -109,6 +127,7 @@ void XIOCamera::setDir(const char *dirname)
 
     is_reading = true;
     //readLoopFuture = QtConcurrent::run(this, &XIOCamera::readLoop);
+    fileListVecLocked = false;
     cout << "Finished XIO setDir." << endl;
 }
 
@@ -121,6 +140,13 @@ std::string XIOCamera::getFname()
     if (data_dir.empty()) {
         return fname;
     }
+
+    while(fileListVecLocked)
+    {
+        usleep(1);
+    }
+    fileListVecLocked = true;
+
     if (image_no < xio_files.size()) {
         fname = xio_files[image_no++];
     } else {
@@ -129,6 +155,7 @@ std::string XIOCamera::getFname()
 
         if (fname_list.size() < 1) {
             cout << __PRETTY_FUNCTION__ << " Finished XIO getFname() early, found filename: " << fname << endl;
+            fileListVecLocked = false;
             return fname;
         }
         /* if necessary, there may need to be code to sort the "frames" in the data directory
@@ -150,13 +177,21 @@ std::string XIOCamera::getFname()
 
         }
 
+
+
         if (image_no < xio_files.size()) {
             if(sizeof(xio_files.at(image_no)) != 0 )
+            {
                 fname = xio_files.at(image_no++);
+            }
         }
     }
+    fileListVecLocked = false;
 
-    cout << __PRETTY_FUNCTION__ << " Finished XIO getFname(), found filename: " << fname << endl;
+    if(fname.length() > 0)
+        cout << __PRETTY_FUNCTION__ << " Finished XIO getFname(), found filename: " << fname << endl;
+    else
+        cout << __PRETTY_FUNCTION__ << " Finished XIO getFname(), zero-length string." << endl;
     return fname;
 }
 
