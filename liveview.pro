@@ -83,6 +83,7 @@ DISTFILES +=    cuda_take/include/take_object.hpp \
                 cuda_take/include/alphanum.hpp \
                 cuda_take/include/camera_types.h \
                 cuda_take/include/cameramodel.h \
+                cuda_take/include/cudalog.h \
                 cuda_take/include/takeoptions.h
 
 DISTFILES +=    cuda_take/src/take_object.cpp \

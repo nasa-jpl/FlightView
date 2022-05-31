@@ -10,14 +10,14 @@ XIOCamera::XIOCamera(int frWidth,
 {
     frameVecLocked = true;
 
-    cout <<  __PRETTY_FUNCTION__ << ": Starting xio camera class, ID: " << this << endl;
+    LOG << ": Starting xio camera class, ID: " << this;
     source_type = XIO;
     camera_type = SSD_XIO;
     frame_width = frWidth;
     frame_height = frHeight;
     data_height = dataHeight;
     is_reading = false;
-    cout <<  __PRETTY_FUNCTION__ << ": rsv - headsize: " << headsize << " frWidth: " << frWidth << ", data_height: " << data_height << ", size of pixel: " << int(sizeof(uint16_t))  << endl;
+    LOG << ": rsv - headsize: " << headsize << " frWidth: " << frWidth << ", data_height: " << data_height << ", size of pixel: " << int(sizeof(uint16_t));
 
     header.resize(size_t(headsize));
     std::fill(header.begin(), header.end(), 0);
@@ -34,15 +34,25 @@ XIOCamera::XIOCamera(int frWidth,
     for (int n = 0; n < nFrames; n++) {
         frame_buf.emplace_back(std::vector<uint16_t>(size_t(frame_width * data_height), n*1000));
     }
-    cout << __PRETTY_FUNCTION__ << ": Initial size of frame_buf: " << frame_buf.size() << endl;
-    cout << __PRETTY_FUNCTION__ << ": finished XIO Camera constructor for ID: " << this << endl;
+    LOG << ": Initial size of frame_buf: " << frame_buf.size() ;
+    LOG << ": finished XIO Camera constructor for ID: " << this;
     frameVecLocked = false;
     fileListVecLocked = false;
+
+    // LOG TEST:
+    LOG << "Testing the log.";
+    LOG << "Current log level: " << logginglevel;
+    // Change in cudalog.h
+    for(int n=0; n < 10; n++)
+    {
+        LL(n) << "Testing log level " << n;
+    }
+    LOG << "Done testing log.";
 }
 
 XIOCamera::~XIOCamera()
 {
-    cout << __PRETTY_FUNCTION__ << " Running XIO camera destructor for ID:   " << this << endl;
+    LOG << " Running XIO camera destructor for ID:   " << this;
     running.store(false);
     //emit timeout();
     is_reading = false;
@@ -57,14 +67,14 @@ XIOCamera::~XIOCamera()
     }
     fileListVecLocked = true;
     //readLoopFuture.waitForFinished();
-    cout << __PRETTY_FUNCTION__ << " Completed XIO camera destructor for ID: " << this << endl;
+    LOG << " Completed XIO camera destructor for ID: " << this;
 }
 
 void XIOCamera::setDir(const char *dirname)
 {
-    cout << __PRETTY_FUNCTION__ << ": Starting setDIR function for dirname " << dirname << endl;
+    LOG << ": Starting setDIR function for dirname " << dirname;
     is_reading = false;
-    cout << __PRETTY_FUNCTION__ << ": Clearing frame_buf. Initial size: " << frame_buf.size() << endl;
+    LOG << ": Clearing frame_buf. Initial size: " << frame_buf.size();
     while (!frame_buf.empty()) {
         frame_buf.pop_back();
     }
@@ -79,10 +89,10 @@ void XIOCamera::setDir(const char *dirname)
     if (data_dir.empty()) {
         if (running.load()) {
             running.store(false);
-            cout << __PRETTY_FUNCTION__ << ": emit timeout(), dir_data empty and running.load true" << endl;
+            LOG << ": emit timeout(), dir_data empty and running.load true";
             //emit timeout();
         }
-        cout << __PRETTY_FUNCTION__ << ": dir_data empty." << endl;
+        LOG << ": dir_data empty.";
 
         return;
     }
@@ -100,7 +110,7 @@ void XIOCamera::setDir(const char *dirname)
     image_no = 0;
     std::vector<std::string> fname_list;
     os::listdir(fname_list, data_dir);
-    cout << __PRETTY_FUNCTION__ << ": os::listdir found this many files: " << fname_list.size() << " while looking in " << data_dir << endl;
+    LOG << ": os::listdir found this many files: " << fname_list.size() << " while looking in " << data_dir;
 
     // Sort the frames in the product directory by filename, as mtime is unreliable.
     std::sort(fname_list.begin(), fname_list.end(), doj::alphanum_less<std::string>());
@@ -112,15 +122,15 @@ void XIOCamera::setDir(const char *dirname)
             continue;
         if( (std::strcmp(ext.data(), "xio") != 0) and (std::strcmp(ext.data(), "decomp") != 0))
         {
-            cout << "Rejecting file " << f << endl;
+            LOG << "Rejecting file " << f;
         } else {
-            cout << "Accepting file " << f << endl;
+            LOG << "Accepting file " << f;
             xio_files.push_back(f);
         }
     }
 
-    cout << "Finished for loop in dir file search (part of setDir)" << endl;
-    cout << "Found this many files: " <<  xio_files.size() << endl;
+    LOG << "Finished for loop in dir file search (part of setDir)";
+    LOG << "Found this many files: " <<  xio_files.size();
 
     running.store(true);
     //emit started(); // seems to work without this
@@ -128,12 +138,12 @@ void XIOCamera::setDir(const char *dirname)
     is_reading = true;
     //readLoopFuture = QtConcurrent::run(this, &XIOCamera::readLoop);
     fileListVecLocked = false;
-    cout << "Finished XIO setDir." << endl;
+    LOG << "Finished XIO setDir.";
 }
 
 std::string XIOCamera::getFname()
 {
-    cout << __PRETTY_FUNCTION__ << " Starting getFname() in XIO camera" << endl;
+    LOG << " Starting getFname() in XIO camera";
     std::string fname; // will return empty string if no unread files are found.
     std::vector<std::string> fname_list;
     bool has_file = false;
@@ -154,7 +164,7 @@ std::string XIOCamera::getFname()
         os::listdir(fname_list, data_dir);
 
         if (fname_list.size() < 1) {
-            cout << __PRETTY_FUNCTION__ << " Finished XIO getFname() early, found filename: " << fname << endl;
+            LOG << " Finished XIO getFname() early, found filename: " << fname;
             fileListVecLocked = false;
             return fname;
         }
@@ -189,15 +199,15 @@ std::string XIOCamera::getFname()
     fileListVecLocked = false;
 
     if(fname.length() > 0)
-        cout << __PRETTY_FUNCTION__ << " Finished XIO getFname(), found filename: " << fname << endl;
+        LOG << " Finished XIO getFname(), found filename: " << fname;
     else
-        cout << __PRETTY_FUNCTION__ << " Finished XIO getFname(), zero-length string." << endl;
+        LOG << " Finished XIO getFname(), zero-length string.";
     return fname;
 }
 
 void XIOCamera::readFile()
 {
-    cout << __PRETTY_FUNCTION__ << " Starting readfile" << endl;
+    LOG << " Starting readfile";
     bool validFile = false;
     while(!validFile) {
         ifname = getFname();
@@ -210,20 +220,20 @@ void XIOCamera::readFile()
                 running.store(false);
                 //emit timeout();
             }
-            cout << __PRETTY_FUNCTION__ << ": All out of files, give up." << endl;
+            LOG << ": All out of files, give up.";
             this->is_reading = false; // otherwise we get stuck reading and not reading.
             return; //If we're out of files, give up
         }
         // otherwise check if data is valid
         dev_p.open(ifname, std::ios::in | std::ios::binary);
         if (!dev_p.is_open()) {
-            cout << __PRETTY_FUNCTION__ << ": Could not open file" << ifname.data() << ". Does it exist?" << endl;
+            LOG << ": Could not open file" << ifname.data() << ". Does it exist?";
             dev_p.clear();
             //readFile(); // circular?
             return;
         }
 
-        cout << __PRETTY_FUNCTION__ << ": Successfully opened " << ifname.data() << endl;
+        LOG << ": Successfully opened " << ifname.data();
         dev_p.unsetf(std::ios::skipws);
 
         dev_p.read(reinterpret_cast<char*>(header.data()), headsize);
@@ -235,25 +245,25 @@ void XIOCamera::readFile()
             dev_p.seekg(0, std::ios::end);
             filesize = dev_p.tellg();
             dev_p.seekg(headsize, std::ios::beg);
-            cout << __PRETTY_FUNCTION__ << ": decomp read, filesize read from actual file stream is: " << filesize<< endl;
+            LOG << ": decomp read, filesize read from actual file stream is: " << filesize;
         } else {
             // convert the raw hex string to decimal, one digit at a time.
             filesize = int(header[7]) * 16777216 + int(header[6]) * 65536 + int(header[5]) * 256 + int(header[4]);
-            cout << __PRETTY_FUNCTION__ << ": Not-decomp, filesize read from header is: " << filesize<< endl;
+            LOG << ": Not-decomp, filesize read from header is: " << filesize;
         }
 
         framesize = static_cast<size_t>(filesize / nFrames);
         if (framesize == 0) { //If header reports a 0 filesize (invalid data), then skip this file.
             dev_p.close();
-            cout  << __PRETTY_FUNCTION__ << ": Skipped file \"" << ifname.data() << "\" due to invalid data. size: "
-                               << framesize << ", nFrames: " << nFrames<< endl;
+            LOG << ": Skipped file \"" << ifname.data() << "\" due to invalid data. size: "
+                               << framesize << ", nFrames: " << nFrames;
         } else { //otherwise we load it
             validFile = true;
-            cout <<__PRETTY_FUNCTION__<< ": rsv - dev_p.seekg(): " << headsize  << endl;
+            LOG <<__PRETTY_FUNCTION__<< ": rsv - dev_p.seekg(): " << headsize;
             dev_p.seekg(headsize, std::ios::beg);
 
-            cout <<__PRETTY_FUNCTION__<< ": File size is " << filesize << " bytes, which corresponds to a framesize of " << framesize << " bytes."<< endl;
-            cout <<__PRETTY_FUNCTION__<< ": nFrames: " << nFrames << endl;
+            LOG << ": File size is " << filesize << " bytes, which corresponds to a framesize of " << framesize << " bytes.";
+            LOG << ": nFrames: " << nFrames;
             std::vector<uint16_t> zero_vec(size_t(frame_width * data_height) - (size_t(framesize) / sizeof(uint16_t)));
             std::fill(zero_vec.begin(), zero_vec.end(), 10000); // fill with value 10k so that I can spot it during debug.
 
@@ -264,9 +274,9 @@ void XIOCamera::readFile()
             for (volatile int n = 0; n < nFrames; ++n) {
                 dev_p.read(reinterpret_cast<char*>(copy_vec.data()), std::streamsize(framesize));
                 read_size = dev_p.gcount();
-                cout << __PRETTY_FUNCTION__ << ": Read " << read_size << " bytes from frame " << n << ", copy_vec size is: " << copy_vec.size() << endl;
+                LL(3)  << ": Read " << read_size << " bytes from frame " << n << ", copy_vec size is: " << copy_vec.size();
                 //frame_buf.emplace_front(copy_vec);  // double-ended queue of a vector of uint_16.
-                cout << __PRETTY_FUNCTION__ << ": Size of frame_buf pre-push: " << frame_buf.size() << endl;
+                LL(2) << ": Size of frame_buf pre-push: " << frame_buf.size();
 
                 while(frameVecLocked)
                     usleep(1);
@@ -274,15 +284,15 @@ void XIOCamera::readFile()
                 frame_buf.push_front(copy_vec);  // double-ended queue of a vector of uint_16.
                                                  // each frame_buf unit is a frame vector.
                 frameVecLocked = false;
-                cout << __PRETTY_FUNCTION__ << ": Size of frame_buf post-push: " << frame_buf.size() << endl;
+                LL(2) << ": Size of frame_buf post-push: " << frame_buf.size();
 
                 // If the frame data is smaller than a frame, fill the rest of the frame with zeros:
                 if (framesize / sizeof(uint16_t) < size_t(frame_width * data_height)) {
                     // We can't copy to space inside the frame_buf[n] that has not been allocated yet!!
-                    cout << __PRETTY_FUNCTION__ << ": size of frame_buf: " << frame_buf.size()<< endl;
+                    LL(2) << ": size of frame_buf: " << frame_buf.size();
                     //qDebug() << __PRETTY_FUNCTION__ << "size of frame_buf[0]:" << frame_buf[0].size();
-                    cout << __PRETTY_FUNCTION__ << ": framesize: " << framesize << ",framesize in uint16 size:     " << framesize/sizeof(uint16_t)<< endl;
-                    cout << __PRETTY_FUNCTION__ << ": frame_width: " << frame_width << ", data_height: " << data_height << ", product: " << frame_width*data_height<< endl;
+                    LL(2) << ": framesize: " << framesize << ",framesize in uint16 size:     " << framesize/sizeof(uint16_t);
+                    LL(2) << ": frame_width: " << frame_width << ", data_height: " << data_height << ", product: " << frame_width*data_height;
 
                     if(frame_buf[size_t(n)].size() != 0)
                     {
@@ -292,23 +302,23 @@ void XIOCamera::readFile()
                         std::copy(zero_vec.begin(), zero_vec.end(), frame_buf[size_t(n)].begin() + framesize / sizeof(uint16_t));
                         frameVecLocked = false;
                     } else {
-                        cout << __PRETTY_FUNCTION__ << ": ERROR, frame_buf at [" << n << "].size() is zero." << endl;
+                        LOG << ": ERROR, frame_buf at [" << n << "].size() is zero.";
                     }
                 }
             }
 
             running.store(true);
-            cout << __PRETTY_FUNCTION__ << ": About done, emitting started signal."<< endl;
+            LOG << ": About done, emitting started signal.";
             //emit started(); // doesn't seem to be needed?
             dev_p.close();
         }
     }
-    cout << __PRETTY_FUNCTION__ << ": is done."<< endl;
+    LOG << ": is done.";
 }
 
 void XIOCamera::readLoop()
 {
-    cout << __PRETTY_FUNCTION__ << ": Entering readLoop()"<< endl;
+    LOG << ": Entering readLoop()";
     int waits = 1;
     do {
         // Yeah yeah whatever it's a magic buffer size recommendation
@@ -317,11 +327,11 @@ void XIOCamera::readLoop()
             readFile();
 
         } else {
-            cout << __PRETTY_FUNCTION__ << ": Waiting: Wait step: " << waits++<< endl; // hapens 8 times in between files.
+            LOG << ": Waiting: Wait step: " << waits++; // hapens 8 times in between files.
             usleep(1000*tmoutPeriod);
         }
     } while (is_reading);
-    cout << __PRETTY_FUNCTION__ << ": finished readLoop()" << endl;
+    LOG << ": finished readLoop()";
 }
 
 uint16_t* XIOCamera::getFrame()
@@ -332,7 +342,7 @@ uint16_t* XIOCamera::getFrame()
 
     if(showOutput)
     {
-        cout << __PRETTY_FUNCTION__ << ": Getting frame: " << getFrameCounter << ", empty status: " << frame_buf.empty() << ", is_reading: " << is_reading << ", locked: " << frameVecLocked << endl;
+        LOG << ": Getting frame: " << getFrameCounter << ", empty status: " << frame_buf.empty() << ", is_reading: " << is_reading << ", locked: " << frameVecLocked;
     }
     getFrameCounter++;
 
@@ -352,17 +362,19 @@ uint16_t* XIOCamera::getFrame()
         return temp_frame.data();
     } else {
         //if(showOutput) cout << __PRETTY_FUNCTION__ << ": Returning dummy data. locked: " << frameVecLocked << ", is_reading: " << is_reading << "empty status: " << frame_buf.empty() << endl;
-        return dummy.data();
+        return dummy.data(); // rainbow test pattern
     }
 }
 
 // Helper functions:
 void XIOCamera::debugMessage(const char *msg)
 {
-    std::cout << "XIO Camera, " << __PRETTY_FUNCTION__ << ", debug message: " << msg << std::endl;
+    // std::cout << "XIO Camera, " << __PRETTY_FUNCTION__ << ", debug message: " << msg << std::endl;
+    LOG << "DEBUG MESSAGE: " << msg;
 }
 
 void XIOCamera::debugMessage(const std::string msg)
 {
-    std::cout << "XIO Camera, " << __PRETTY_FUNCTION__ << ", debug message: " << msg << std::endl;
+    // std::cout << "XIO Camera, " << __PRETTY_FUNCTION__ << ", debug message: " << msg << std::endl;
+    LOG << "DEBUG MESSAGE: " << msg;
 }

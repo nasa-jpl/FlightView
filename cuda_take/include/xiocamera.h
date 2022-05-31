@@ -32,6 +32,8 @@
 #include "cameramodel.h"
 #include "constants.h"
 
+#include "cudalog.h"
+
 #define TIMEOUT_DURATION 100
 
 using namespace std::chrono;
