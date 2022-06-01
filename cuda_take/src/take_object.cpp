@@ -446,8 +446,9 @@ void take_object::fileImageReadingLoop()
 
     if(Camera)
     {
-        statusMessage("Starting XIO Camera readLoop() function.");
+        statusMessage(std::string("Starting XIO Camera readLoop() function. Initial closing value: ") + std::string(closing?"true":"false"));
         // TODO: Come up with a switchable condition here
+        // One-shot mode:
         while(!closing)
         {
             Camera->readLoop();
@@ -465,13 +466,23 @@ void take_object::fileImageCopyLoop()
     // This thread copies data from the XIO Camera's buffer
     // and into curFrane of take_object.
 
+    uint16_t *zeroFrame = NULL;
+    zeroFrame = (uint16_t*)calloc(frWidth*dataHeight , sizeof(uint16_t));
+    if(zeroFrame == NULL)
+    {
+        errorMessage("Zero-frame could not be established.");
+        abort();
+    }
+
+    bool hasBeenNull = false;
+
     if(Camera)
     {
         count = 0;
         uint16_t framecount = 1;
         uint16_t last_framecount = 0;
         (void)last_framecount; // use count
-        uint16_t* temp_frame = Camera->getFrame(); // drops first frame
+        //uint16_t* temp_frame = Camera->getFrame(); // drops first frame
 
         mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
                                            meanStartRow,meanHeight,frWidth,useDSF,\
@@ -501,8 +512,12 @@ void take_object::fileImageCopyLoop()
             if(temp_frame)
             {
                 memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight);
+                if(hasBeenNull)
+                    statusMessage("Note: frame was NULL, but is not anymore. ");
             } else {
+                hasBeenNull = true;
                 errorMessage("Frame was NULL!");
+                memcpy(curFrame->raw_data_ptr,zeroFrame,frWidth*dataHeight);
                 // die here in shame
             }
 
@@ -568,6 +583,8 @@ void take_object::fileImageCopyLoop()
     } else {
         errorMessage("Camera was NULL!");
     }
+    if(zeroFrame != NULL)
+        free(zeroFrame);
 }
 
 void take_object::setReadDirectory(const char *directory)

@@ -148,6 +148,8 @@ std::string XIOCamera::getFname()
     std::vector<std::string> fname_list;
     bool has_file = false;
     if (data_dir.empty()) {
+        // This usually happens if the directory hasn't been set yet on startup.
+        LOG << "Empty data_dir. Leaving early.";
         return fname;
     }
 
@@ -171,6 +173,9 @@ std::string XIOCamera::getFname()
         /* if necessary, there may need to be code to sort the "frames" in the data directory
         * by product name, as mtime is unreliable.
         */
+        // Each time we ask for a new filename, we sort the entire list.
+        // We also sort the list when the directory is set.
+
         std::sort(fname_list.begin(), fname_list.end(), doj::alphanum_less<std::string>());
         for (auto f = fname_list.end() - 1; f != fname_list.begin(); --f) {
             has_file = std::find(xio_files.begin(), xio_files.end(), *f) != xio_files.end();
@@ -220,7 +225,7 @@ void XIOCamera::readFile()
                 running.store(false);
                 //emit timeout();
             }
-            LOG << ": All out of files, give up.";
+            LOG << ": All out of files, give up. ifname from getFname() was an empty string.";
             this->is_reading = false; // otherwise we get stuck reading and not reading.
             return; //If we're out of files, give up
         }
@@ -275,6 +280,7 @@ void XIOCamera::readFile()
                 dev_p.read(reinterpret_cast<char*>(copy_vec.data()), std::streamsize(framesize));
                 read_size = dev_p.gcount();
                 LL(3)  << ": Read " << read_size << " bytes from frame " << n << ", copy_vec size is: " << copy_vec.size();
+                LL(3)  << "Rows: " << read_size / frame_width;
                 //frame_buf.emplace_front(copy_vec);  // double-ended queue of a vector of uint_16.
                 LL(2) << ": Size of frame_buf pre-push: " << frame_buf.size();
 
@@ -283,7 +289,6 @@ void XIOCamera::readFile()
                 frameVecLocked = true;
                 frame_buf.push_front(copy_vec);  // double-ended queue of a vector of uint_16.
                                                  // each frame_buf unit is a frame vector.
-                frameVecLocked = false;
                 LL(2) << ": Size of frame_buf post-push: " << frame_buf.size();
 
                 // If the frame data is smaller than a frame, fill the rest of the frame with zeros:
@@ -296,15 +301,12 @@ void XIOCamera::readFile()
 
                     if(frame_buf[size_t(n)].size() != 0)
                     {
-                        while(frameVecLocked)
-                            usleep(1);
-                        frameVecLocked = true;
-                        std::copy(zero_vec.begin(), zero_vec.end(), frame_buf[size_t(n)].begin() + framesize / sizeof(uint16_t));
-                        frameVecLocked = false;
+                        //std::copy(zero_vec.begin(), zero_vec.end(), frame_buf[size_t(n)].begin() + framesize / sizeof(uint16_t));
                     } else {
                         LOG << ": ERROR, frame_buf at [" << n << "].size() is zero.";
                     }
                 }
+                frameVecLocked = false;
             }
 
             running.store(true);
@@ -322,16 +324,17 @@ void XIOCamera::readLoop()
     int waits = 1;
     do {
         // Yeah yeah whatever it's a magic buffer size recommendation
-        if (frame_buf.size() <= 96) {
-            waits = 1;
-            readFile();
+        // if( we have fewer than 97 frames)
+        if (frame_buf.size() <= 10) {
+            waits = 1; //reset wait counter
+            readFile(); // read in the next files, runs getFname() over and over
 
         } else {
-            LOG << ": Waiting: Wait step: " << waits++; // hapens 8 times in between files.
-            usleep(1000*tmoutPeriod);
+            LOG << ": Waiting: Wait step: " << waits++ << ", frame_buf.size(): " << frame_buf.size(); // hapens 8 times in between files.
+            usleep(10*tmoutPeriod);
         }
     } while (is_reading);
-    LOG << ": finished readLoop()";
+    LOG << ": finished readLoop(). is_reading must be false now: " << is_reading;
 }
 
 uint16_t* XIOCamera::getFrame()
@@ -351,7 +354,7 @@ uint16_t* XIOCamera::getFrame()
     // so this gives us a chance to use the new data.
 
     while(frameVecLocked)
-        usleep(10);
+        usleep(1);
 
     if ( (!frameVecLocked) && (!frame_buf.empty()) ) {
         frameVecLocked = true;
@@ -359,10 +362,42 @@ uint16_t* XIOCamera::getFrame()
         // prev_frame = &temp_frame;
         frame_buf.pop_back();
         frameVecLocked = false;
+        dummyrepeats = 0;
+        LL(4) << "Returning good data.";
         return temp_frame.data();
     } else {
         //if(showOutput) cout << __PRETTY_FUNCTION__ << ": Returning dummy data. locked: " << frameVecLocked << ", is_reading: " << is_reading << "empty status: " << frame_buf.empty() << endl;
-        return dummy.data(); // rainbow test pattern
+
+        // Check the dummy for corruption:
+        uint16_t check = 0;
+        bool foundIssue = false;
+        for (size_t n=0; n < dummy.size(); n++)
+        {
+            check = ((float)n/((float)frame_width * data_height)) * 65535;
+            if(dummy.at(n) != check)
+            {
+                LL(4) << "--------- CORRUPTION IN THE DUMMY! -----------------------------------------------";
+                LL(4) << "--------- Expected value: " << check << ", actual value: " << dummy.at(n) << ", n: " << n;
+                foundIssue = true;
+            }
+        }
+
+        if(foundIssue)
+        {
+            LL(4) << "---- BAD DATA -- BAD DATA ----";
+            abort(); // crash, debugger will catch it and let us peek inside.
+        } else {
+            LL(4) << "---- Data check OK ----";
+        }
+
+        LL(4) << "Dummy count total: " << ++dummycounttotal << ", repeated dummies: " << ++dummyrepeats;
+
+        if((dummyrepeats==0) && (dummycounttotal!=0))
+        {
+            LL(4) << "DUMMY WAS ZERO!! MAYBE IT RESET! -----------------------------------------------";
+        }
+        return NULL; // returning NULL is ok
+        //return dummy.data(); // rainbow test pattern
     }
 }
 

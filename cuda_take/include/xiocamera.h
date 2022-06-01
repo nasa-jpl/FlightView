@@ -67,6 +67,8 @@ private:
     const int nFrames;
     size_t framesize;
     const int headsize;
+    volatile int dummycounttotal=0;
+    volatile int dummyrepeats=0;
 
     size_t image_no;
     std::vector<std::string> xio_files;
