@@ -360,7 +360,7 @@ uint16_t* XIOCamera::getFrame()
         frameVecLocked = true;
         temp_frame = frame_buf.back();
         // prev_frame = &temp_frame;
-        frame_buf.pop_back();
+        frame_buf.pop_back(); // I have seen it crash here. We really need to assure exclusive access or use another method of storage.
         frameVecLocked = false;
         dummyrepeats = 0;
         LL(4) << "Returning good data.";

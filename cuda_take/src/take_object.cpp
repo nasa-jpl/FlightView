@@ -461,6 +461,115 @@ void take_object::fileImageReadingLoop()
     }
 }
 
+void take_object::markFrameForChecking(uint16_t *frame)
+{
+    // This function overrides some data in the top three rows of the frame.
+    // This is only to be used for debugging.
+
+    // Pattern:
+    // X 0 X 0 X X 0 X 0 X
+    // X 0 X 0 X X 0 X 0 X
+    // X 0 X 0 X X 0 X 0 X
+
+    frame[0] = (uint16_t)0xffff;
+    frame[1] = (uint16_t)0x0000;
+    frame[2] = (uint16_t)0xffff;
+    frame[3] = (uint16_t)0x0000;
+    frame[4] = (uint16_t)0xffff;
+    frame[5] = (uint16_t)0xffff;
+    frame[6] = (uint16_t)0x0000;
+    frame[7] = (uint16_t)0xffff;
+    frame[8] = (uint16_t)0x0000;
+    frame[9] = (uint16_t)0xffff;
+
+    frame[0+640] = (uint16_t)0xffff;
+    frame[1+640] = (uint16_t)0x0000;
+    frame[2+640] = (uint16_t)0xffff;
+    frame[3+640] = (uint16_t)0x0000;
+    frame[4+640] = (uint16_t)0xffff;
+    frame[5+640] = (uint16_t)0xffff;
+    frame[6+640] = (uint16_t)0x0000;
+    frame[7+640] = (uint16_t)0xffff;
+    frame[8+640] = (uint16_t)0x0000;
+    frame[9+640] = (uint16_t)0xffff;
+
+    frame[0+640+640] = (uint16_t)0xffff;
+    frame[1+640+640] = (uint16_t)0x0000;
+    frame[2+640+640] = (uint16_t)0xffff;
+    frame[3+640+640] = (uint16_t)0x0000;
+    frame[4+640+640] = (uint16_t)0xffff;
+    frame[5+640+640] = (uint16_t)0xffff;
+    frame[6+640+640] = (uint16_t)0x0000;
+    frame[7+640+640] = (uint16_t)0xffff;
+    frame[8+640+640] = (uint16_t)0x0000;
+    frame[9+640+640] = (uint16_t)0xffff;
+}
+
+bool take_object::checkFrame(uint16_t* Frame)
+{
+    bool ok = true;
+    ok &= Frame[1] == (uint16_t)0x0000;
+    ok &= Frame[2] == (uint16_t)0xffff;
+    ok &= Frame[3] == (uint16_t)0x0000;
+    ok &= Frame[4] == (uint16_t)0xffff;
+    ok &= Frame[5] == (uint16_t)0xffff;
+    ok &= Frame[6] == (uint16_t)0x0000;
+    ok &= Frame[7] == (uint16_t)0xffff;
+    ok &= Frame[8] == (uint16_t)0x0000;
+    ok &= Frame[9] == (uint16_t)0xffff;
+    statusMessage(std::string("Frame check result (1 of 3): ") + std::string(ok?"GOOD":"BAD"));
+
+    // Test for bad data:
+    // Frame[4+640] = (uint16_t)0xABCD; // intentional
+
+    ok &= Frame[0+640] == (uint16_t)0xffff;
+    ok &= Frame[1+640] == (uint16_t)0x0000;
+    ok &= Frame[2+640] == (uint16_t)0xffff;
+    ok &= Frame[3+640] == (uint16_t)0x0000;
+    ok &= Frame[4+640] == (uint16_t)0xffff;
+    ok &= Frame[5+640] == (uint16_t)0xffff;
+    ok &= Frame[6+640] == (uint16_t)0x0000;
+    ok &= Frame[7+640] == (uint16_t)0xffff;
+    ok &= Frame[8+640] == (uint16_t)0x0000;
+    ok &= Frame[9+640] == (uint16_t)0xffff;
+    statusMessage(std::string("Frame check result: (2 of 3): ") + std::string(ok?"GOOD":"BAD"));
+
+    ok &= Frame[0+640+640] == (uint16_t)0xffff;
+    ok &= Frame[1+640+640] == (uint16_t)0x0000;
+    ok &= Frame[2+640+640] == (uint16_t)0xffff;
+    ok &= Frame[3+640+640] == (uint16_t)0x0000;
+    ok &= Frame[4+640+640] == (uint16_t)0xffff;
+    ok &= Frame[5+640+640] == (uint16_t)0xffff;
+    ok &= Frame[6+640+640] == (uint16_t)0x0000;
+    ok &= Frame[7+640+640] == (uint16_t)0xffff;
+    ok &= Frame[8+640+640] == (uint16_t)0x0000;
+    ok &= Frame[9+640+640] == (uint16_t)0xffff;
+
+    statusMessage(std::string("Frame check result: (3 of 3): ") + std::string(ok?"GOOD":"BAD"));
+
+    return ok;
+}
+
+void take_object::clearAllRingBuffer()
+{
+    frame_c *curFrame = NULL;
+    uint16_t *zeroFrame = NULL;
+    zeroFrame = (uint16_t*)calloc(frWidth*dataHeight , sizeof(uint16_t));
+    if(zeroFrame == NULL)
+    {
+        errorMessage("Zero-frame could not be established.");
+        abort();
+    }
+
+    for(size_t f=0; f < CPU_FRAME_BUFFER_SIZE; f++)
+    {
+        curFrame = &frame_ring_buffer[f];
+        curFrame->reset();
+        memcpy(curFrame->raw_data_ptr,zeroFrame,frWidth*dataHeight);
+    }
+    statusMessage("Done zero-setting memory in frame_ring_buffer");
+}
+
 void take_object::fileImageCopyLoop()
 {
     // This thread copies data from the XIO Camera's buffer
@@ -472,6 +581,51 @@ void take_object::fileImageCopyLoop()
     {
         errorMessage("Zero-frame could not be established.");
         abort();
+    }
+
+    // Test pattern which should always be present in the zero-frame.
+    // This is easy to see in all the plots and views, as well
+    // as from GDB.
+    zeroFrame[0] = (uint16_t)0xffff;
+    zeroFrame[1] = (uint16_t)0x0000;
+    zeroFrame[2] = (uint16_t)0xffff;
+    zeroFrame[3] = (uint16_t)0x0000;
+    zeroFrame[4] = (uint16_t)0xffff;
+    zeroFrame[5] = (uint16_t)0xffff;
+    zeroFrame[6] = (uint16_t)0x0000;
+    zeroFrame[7] = (uint16_t)0xffff;
+    zeroFrame[8] = (uint16_t)0x0000;
+    zeroFrame[9] = (uint16_t)0xffff;
+
+    zeroFrame[0+640] = (uint16_t)0xffff;
+    zeroFrame[1+640] = (uint16_t)0x0000;
+    zeroFrame[2+640] = (uint16_t)0xffff;
+    zeroFrame[3+640] = (uint16_t)0x0000;
+    zeroFrame[4+640] = (uint16_t)0xffff;
+    zeroFrame[5+640] = (uint16_t)0xffff;
+    zeroFrame[6+640] = (uint16_t)0x0000;
+    zeroFrame[7+640] = (uint16_t)0xffff;
+    zeroFrame[8+640] = (uint16_t)0x0000;
+    zeroFrame[9+640] = (uint16_t)0xffff;
+
+    zeroFrame[0+640+640] = (uint16_t)0xffff;
+    zeroFrame[1+640+640] = (uint16_t)0x0000;
+    zeroFrame[2+640+640] = (uint16_t)0xffff;
+    zeroFrame[3+640+640] = (uint16_t)0x0000;
+    zeroFrame[4+640+640] = (uint16_t)0xffff;
+    zeroFrame[5+640+640] = (uint16_t)0xffff;
+    zeroFrame[6+640+640] = (uint16_t)0x0000;
+    zeroFrame[7+640+640] = (uint16_t)0xffff;
+    zeroFrame[8+640+640] = (uint16_t)0x0000;
+    zeroFrame[9+640+640] = (uint16_t)0xffff;
+
+    bool goodResult = checkFrame(zeroFrame);
+    if(goodResult == false)
+    {
+        errorMessage("ERROR, BAD data detected");
+        abort();
+    } else {
+        statusMessage("Initial data check passed.");
     }
 
     bool hasBeenNull = false;
@@ -511,19 +665,48 @@ void take_object::fileImageCopyLoop()
 
             if(temp_frame)
             {
+                markFrameForChecking(temp_frame);
                 memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight);
+                goodResult = checkFrame(curFrame->raw_data_ptr);
+                if(!goodResult)
+                {
+                    errorMessage("Frame failed early check");
+                    errorMessage(std::string("pixel 0: ") + std::to_string((int)curFrame->raw_data_ptr[0]));
+                    errorMessage(std::string("pixel 1: ") + std::to_string((int)curFrame->raw_data_ptr[1]));
+                    abort();
+                }
                 if(hasBeenNull)
+                {
+                    // This is here to catch if the frame is NULL, meaning
+                    // data has finished, but then the frame goes back to
+                    // being valid data.
                     statusMessage("Note: frame was NULL, but is not anymore. ");
+                    hasBeenNull = false;
+                    abort(); // test, remove later.
+                }
             } else {
+                if(!hasBeenNull)
+                    clearAllRingBuffer();
+
                 hasBeenNull = true;
                 errorMessage("Frame was NULL!");
                 memcpy(curFrame->raw_data_ptr,zeroFrame,frWidth*dataHeight);
-                // die here in shame
+
+                // Check frame intregity:
+                goodResult = checkFrame(curFrame->raw_data_ptr);
+                if(!goodResult)
+                {
+                    errorMessage("Frame failed check");
+                    abort();
+                }
+
             }
 
             // From here on out, the code should be
             // very similar to the EDT frame grabber code.
 
+            if(false)
+            {
             if(pixRemap)
                 apply_chroma_translate_filter(curFrame->raw_data_ptr);
             if(cam_type == CL_6604A)
@@ -534,6 +717,9 @@ void take_object::fileImageCopyLoop()
             { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
                 for(uint i = 0; i < frHeight*frWidth; i++ )
                     curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
+            }
+            } else {
+                curFrame->image_data_ptr = curFrame->raw_data_ptr;
             }
 
             // Calculating the filters for this frame
@@ -569,6 +755,18 @@ void take_object::fileImageCopyLoop()
             }
             */
 
+
+            goodResult = checkFrame(curFrame->raw_data_ptr);
+            if(!goodResult)
+            {
+                errorMessage("Frame failed late check");
+                errorMessage(std::string("pixel 0: ") + std::to_string((int)curFrame->raw_data_ptr[0]));
+                errorMessage(std::string("pixel 1: ") + std::to_string((int)curFrame->raw_data_ptr[1]));
+
+                abort();
+            }
+
+
             last_framecount = framecount;
             count++;
             grabbing = false;
@@ -580,6 +778,7 @@ void take_object::fileImageCopyLoop()
             // Wait as to generate FPS
             usleep(1000 * 10);
         }
+        statusMessage("Done providing frames");
     } else {
         errorMessage("Camera was NULL!");
     }

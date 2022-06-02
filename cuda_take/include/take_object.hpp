@@ -166,6 +166,10 @@ private:
 
     takeOptionsType options;
 
+    void markFrameForChecking(uint16_t * frame);
+    bool checkFrame(uint16_t *Frame);
+    void clearAllRingBuffer();
+
     void errorMessage(const char* message);
     void warningMessage(const char* message);
     void statusMessage(const char* message);
