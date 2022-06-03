@@ -353,6 +353,9 @@ uint16_t* XIOCamera::getFrame()
     // but the idea is to not feed dummy frames unless we really have to,
     // so this gives us a chance to use the new data.
 
+
+    // TODO: Strong mutex with timeout
+
     while(frameVecLocked)
         usleep(1);
 
@@ -364,40 +367,12 @@ uint16_t* XIOCamera::getFrame()
         frameVecLocked = false;
         dummyrepeats = 0;
         LL(4) << "Returning good data.";
+        usleep(1000 * 10);
         return temp_frame.data();
     } else {
         //if(showOutput) cout << __PRETTY_FUNCTION__ << ": Returning dummy data. locked: " << frameVecLocked << ", is_reading: " << is_reading << "empty status: " << frame_buf.empty() << endl;
-
-        // Check the dummy for corruption:
-        uint16_t check = 0;
-        bool foundIssue = false;
-        for (size_t n=0; n < dummy.size(); n++)
-        {
-            check = ((float)n/((float)frame_width * data_height)) * 65535;
-            if(dummy.at(n) != check)
-            {
-                LL(4) << "--------- CORRUPTION IN THE DUMMY! -----------------------------------------------";
-                LL(4) << "--------- Expected value: " << check << ", actual value: " << dummy.at(n) << ", n: " << n;
-                foundIssue = true;
-            }
-        }
-
-        if(foundIssue)
-        {
-            LL(4) << "---- BAD DATA -- BAD DATA ----";
-            abort(); // crash, debugger will catch it and let us peek inside.
-        } else {
-            LL(4) << "---- Data check OK ----";
-        }
-
-        LL(4) << "Dummy count total: " << ++dummycounttotal << ", repeated dummies: " << ++dummyrepeats;
-
-        if((dummyrepeats==0) && (dummycounttotal!=0))
-        {
-            LL(4) << "DUMMY WAS ZERO!! MAYBE IT RESET! -----------------------------------------------";
-        }
-        return NULL; // returning NULL is ok
-        //return dummy.data(); // rainbow test pattern
+        usleep(1000 * 1000); // 1 FPS, "timeout" style framerate, like the PDV driver.
+        return NULL;
     }
 }
 

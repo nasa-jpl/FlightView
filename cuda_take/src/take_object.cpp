@@ -579,45 +579,11 @@ void take_object::fileImageCopyLoop()
     zeroFrame = (uint16_t*)calloc(frWidth*dataHeight , sizeof(uint16_t));
     if(zeroFrame == NULL)
     {
-        errorMessage("Zero-frame could not be established.");
+        errorMessage("Zero-frame could not be established. You may be out of memory.");
         abort();
     }
 
-    // Test pattern which should always be present in the zero-frame.
-    // This is easy to see in all the plots and views, as well
-    // as from GDB.
-    zeroFrame[0] = (uint16_t)0xffff;
-    zeroFrame[1] = (uint16_t)0x0000;
-    zeroFrame[2] = (uint16_t)0xffff;
-    zeroFrame[3] = (uint16_t)0x0000;
-    zeroFrame[4] = (uint16_t)0xffff;
-    zeroFrame[5] = (uint16_t)0xffff;
-    zeroFrame[6] = (uint16_t)0x0000;
-    zeroFrame[7] = (uint16_t)0xffff;
-    zeroFrame[8] = (uint16_t)0x0000;
-    zeroFrame[9] = (uint16_t)0xffff;
-
-    zeroFrame[0+640] = (uint16_t)0xffff;
-    zeroFrame[1+640] = (uint16_t)0x0000;
-    zeroFrame[2+640] = (uint16_t)0xffff;
-    zeroFrame[3+640] = (uint16_t)0x0000;
-    zeroFrame[4+640] = (uint16_t)0xffff;
-    zeroFrame[5+640] = (uint16_t)0xffff;
-    zeroFrame[6+640] = (uint16_t)0x0000;
-    zeroFrame[7+640] = (uint16_t)0xffff;
-    zeroFrame[8+640] = (uint16_t)0x0000;
-    zeroFrame[9+640] = (uint16_t)0xffff;
-
-    zeroFrame[0+640+640] = (uint16_t)0xffff;
-    zeroFrame[1+640+640] = (uint16_t)0x0000;
-    zeroFrame[2+640+640] = (uint16_t)0xffff;
-    zeroFrame[3+640+640] = (uint16_t)0x0000;
-    zeroFrame[4+640+640] = (uint16_t)0xffff;
-    zeroFrame[5+640+640] = (uint16_t)0xffff;
-    zeroFrame[6+640+640] = (uint16_t)0x0000;
-    zeroFrame[7+640+640] = (uint16_t)0xffff;
-    zeroFrame[8+640+640] = (uint16_t)0x0000;
-    zeroFrame[9+640+640] = (uint16_t)0xffff;
+    markFrameForChecking(zeroFrame);
 
     bool goodResult = checkFrame(zeroFrame);
     if(goodResult == false)
@@ -636,7 +602,6 @@ void take_object::fileImageCopyLoop()
         uint16_t framecount = 1;
         uint16_t last_framecount = 0;
         (void)last_framecount; // use count
-        //uint16_t* temp_frame = Camera->getFrame(); // drops first frame
 
         mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
                                            meanStartRow,meanHeight,frWidth,useDSF,\
@@ -661,20 +626,13 @@ void take_object::fileImageCopyLoop()
             }
             cam_thread_start_complete=true;
 
-            uint16_t* temp_frame = Camera->getFrame();
+            uint16_t* temp_frame = Camera->getFrame(); // this is where the FPS should be set
 
             if(temp_frame)
             {
-                markFrameForChecking(temp_frame);
+                //markFrameForChecking(temp_frame);
                 memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight);
-                goodResult = checkFrame(curFrame->raw_data_ptr);
-                if(!goodResult)
-                {
-                    errorMessage("Frame failed early check");
-                    errorMessage(std::string("pixel 0: ") + std::to_string((int)curFrame->raw_data_ptr[0]));
-                    errorMessage(std::string("pixel 1: ") + std::to_string((int)curFrame->raw_data_ptr[1]));
-                    abort();
-                }
+                //goodResult = checkFrame(curFrame->raw_data_ptr);
                 if(hasBeenNull)
                 {
                     // This is here to catch if the frame is NULL, meaning
@@ -682,30 +640,33 @@ void take_object::fileImageCopyLoop()
                     // being valid data.
                     statusMessage("Note: frame was NULL, but is not anymore. ");
                     hasBeenNull = false;
-                    abort(); // test, remove later.
+                    //abort(); // test, remove later.
                 }
             } else {
                 if(!hasBeenNull)
-                    clearAllRingBuffer();
+                {
+                    // What if we don't do it?
+                    // clearAllRingBuffer();
+                }
 
-                hasBeenNull = true;
-                errorMessage("Frame was NULL!");
+                //hasBeenNull = true;
+                //errorMessage("Frame was NULL!");
                 memcpy(curFrame->raw_data_ptr,zeroFrame,frWidth*dataHeight);
 
                 // Check frame intregity:
-                goodResult = checkFrame(curFrame->raw_data_ptr);
-                if(!goodResult)
-                {
-                    errorMessage("Frame failed check");
-                    abort();
-                }
+                //goodResult = checkFrame(curFrame->raw_data_ptr);
+//                if(!goodResult)
+//                {
+//                    errorMessage("Frame failed check");
+//                    abort();
+//                }
 
             }
 
             // From here on out, the code should be
             // very similar to the EDT frame grabber code.
 
-            if(false)
+            if(true)
             {
             if(pixRemap)
                 apply_chroma_translate_filter(curFrame->raw_data_ptr);
@@ -756,15 +717,15 @@ void take_object::fileImageCopyLoop()
             */
 
 
-            goodResult = checkFrame(curFrame->raw_data_ptr);
-            if(!goodResult)
-            {
-                errorMessage("Frame failed late check");
-                errorMessage(std::string("pixel 0: ") + std::to_string((int)curFrame->raw_data_ptr[0]));
-                errorMessage(std::string("pixel 1: ") + std::to_string((int)curFrame->raw_data_ptr[1]));
+//            goodResult = checkFrame(curFrame->raw_data_ptr);
+//            if(!goodResult)
+//            {
+//                errorMessage("Frame failed late check");
+//                errorMessage(std::string("pixel 0: ") + std::to_string((int)curFrame->raw_data_ptr[0]));
+//                errorMessage(std::string("pixel 1: ") + std::to_string((int)curFrame->raw_data_ptr[1]));
 
-                abort();
-            }
+//                abort();
+//            }
 
 
             last_framecount = framecount;
@@ -776,11 +737,12 @@ void take_object::fileImageCopyLoop()
                 break;
             }
             // Wait as to generate FPS
-            usleep(1000 * 10);
+            //usleep(1000 * 10);
         }
         statusMessage("Done providing frames");
     } else {
         errorMessage("Camera was NULL!");
+        abort();
     }
     if(zeroFrame != NULL)
         free(zeroFrame);
