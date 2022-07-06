@@ -106,7 +106,7 @@ take_object::~take_object()
 void take_object::changeOptions(takeOptionsType options)
 {
     this->options = options;
-    statusMessage("Accepted startup options.");
+    statusMessage(std::string("Accepted startup options. Target FPS: ") + std::to_string(options.targetFPS));
 }
 
 void take_object::start()
@@ -573,7 +573,8 @@ void take_object::clearAllRingBuffer()
 void take_object::fileImageCopyLoop()
 {
     // This thread copies data from the XIO Camera's buffer
-    // and into curFrane of take_object.
+    // and into curFrane of take_object. It is the "consumer"
+    // thread in a way.
 
     uint16_t *zeroFrame = NULL;
     zeroFrame = (uint16_t*)calloc(frWidth*dataHeight , sizeof(uint16_t));
@@ -583,7 +584,8 @@ void take_object::fileImageCopyLoop()
         abort();
     }
 
-    markFrameForChecking(zeroFrame);
+    // Verify our frame data stability:
+    markFrameForChecking(zeroFrame); // adds special data to the frame which can be checked for later.
 
     bool goodResult = checkFrame(zeroFrame);
     if(goodResult == false)
@@ -593,6 +595,7 @@ void take_object::fileImageCopyLoop()
     } else {
         statusMessage("Initial data check passed.");
     }
+    // End verification.
 
     bool hasBeenNull = false;
 
@@ -608,10 +611,21 @@ void take_object::fileImageCopyLoop()
                                            whichFFT, lh_start, lh_end,\
                                            cent_start, cent_end,\
                                            rh_start, rh_end);
+
+        if(options.targetFPS == 0.0)
+            options.targetFPS = 100.0;
+
+        float deltaT_micros = 1000000.0 / options.targetFPS;
+        int measuredDelta_micros = 0;
         fileReadingLoopRun = true;
+
+        std::chrono::steady_clock::time_point begintp;
+        std::chrono::steady_clock::time_point endtp;
 
         while(fileReadingLoopRun && (!closing))
         {
+            begintp = std::chrono::steady_clock::now();
+
             grabbing = true;
             curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
             curFrame->reset();
@@ -736,8 +750,22 @@ void take_object::fileImageCopyLoop()
                 fileReadingLoopRun = false;
                 break;
             }
-            // Wait as to generate FPS
-            //usleep(1000 * 10);
+
+
+            // Forced FPS
+            endtp = std::chrono::steady_clock::now();
+            measuredDelta_micros = std::chrono::duration_cast<std::chrono::microseconds>(endtp-begintp).count();
+            if(measuredDelta_micros < deltaT_micros)
+            {
+                // wait
+                statusMessage(std::string("Waiting additional ") + std::to_string(deltaT_micros - measuredDelta_micros) + std::string(" microseconds."));
+                usleep(deltaT_micros - measuredDelta_micros);
+            } else {
+                warningMessage("Cannot guarentee requested frame rate. Frame rate is too fast or computation is too slow.");
+                warningMessage(std::string("Requested deltaT: ") + std::to_string(deltaT_micros) + std::string(", measured delta microseconds: ") + std::to_string(measuredDelta_micros));
+            }
+            // if elapsed time < required time
+            // wait delta.
         }
         statusMessage("Done providing frames");
     } else {

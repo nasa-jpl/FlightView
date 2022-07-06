@@ -9,6 +9,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 //multithreading includes
 #include <atomic>

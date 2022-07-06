@@ -19,7 +19,7 @@ struct takeOptionsType
     bool xioCam = false;
     uint16_t height;
     uint16_t width;
-
+    float targetFPS = 96.00;
 };
 
 

@@ -212,6 +212,7 @@ std::string XIOCamera::getFname()
 
 void XIOCamera::readFile()
 {
+    // Reads a SINGLE file, processing all available frames within the file.
     LOG << " Starting readfile";
     bool validFile = false;
     while(!validFile) {
@@ -325,13 +326,13 @@ void XIOCamera::readLoop()
     do {
         // Yeah yeah whatever it's a magic buffer size recommendation
         // if( we have fewer than 97 frames)
-        if (frame_buf.size() <= 10) {
+        if (frame_buf.size() <= 96) {
             waits = 1; //reset wait counter
             readFile(); // read in the next files, runs getFname() over and over
 
         } else {
             LOG << ": Waiting: Wait step: " << waits++ << ", frame_buf.size(): " << frame_buf.size(); // hapens 8 times in between files.
-            usleep(10*tmoutPeriod);
+            // usleep(10*tmoutPeriod);
         }
     } while (is_reading);
     LOG << ": finished readLoop(). is_reading must be false now: " << is_reading;
@@ -359,6 +360,7 @@ uint16_t* XIOCamera::getFrame()
     while(frameVecLocked)
         usleep(1);
 
+    // We have seen segfaults here, need a better locking mechanism.
     if ( (!frameVecLocked) && (!frame_buf.empty()) ) {
         frameVecLocked = true;
         temp_frame = frame_buf.back();
@@ -367,7 +369,7 @@ uint16_t* XIOCamera::getFrame()
         frameVecLocked = false;
         dummyrepeats = 0;
         LL(4) << "Returning good data.";
-        usleep(1000 * 10);
+        // usleep(1000 * 10);
         return temp_frame.data();
     } else {
         //if(showOutput) cout << __PRETTY_FUNCTION__ << ": Returning dummy data. locked: " << frameVecLocked << ", is_reading: " << is_reading << "empty status: " << frame_buf.empty() << endl;
