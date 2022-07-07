@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <mutex>
 
 #ifdef FAIL_PLZ
 
@@ -73,6 +74,7 @@ private:
     size_t image_no;
     std::vector<std::string> xio_files;
     std::deque< std::vector<uint16_t> > frame_buf;
+    std::mutex frame_buf_lock;
     std::vector<unsigned char> header;
     std::vector<uint16_t> dummy;
     std::vector<uint16_t> temp_frame;

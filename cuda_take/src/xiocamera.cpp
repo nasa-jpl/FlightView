@@ -75,8 +75,12 @@ void XIOCamera::setDir(const char *dirname)
     LOG << ": Starting setDIR function for dirname " << dirname;
     is_reading = false;
     LOG << ": Clearing frame_buf. Initial size: " << frame_buf.size();
-    while (!frame_buf.empty()) {
-        frame_buf.pop_back();
+
+    {
+        std::lock_guard<std::mutex> lock(frame_buf_lock);
+        while (!frame_buf.empty()) {
+            frame_buf.pop_back();
+        }
     }
 
     /*
@@ -277,38 +281,41 @@ void XIOCamera::readFile()
 
             int read_size = 0;
 
-            for (volatile int n = 0; n < nFrames; ++n) {
-                dev_p.read(reinterpret_cast<char*>(copy_vec.data()), std::streamsize(framesize));
-                read_size = dev_p.gcount();
-                LL(3)  << ": Read " << read_size << " bytes from frame " << n << ", copy_vec size is: " << copy_vec.size();
-                LL(3)  << "Rows: " << read_size / frame_width;
-                //frame_buf.emplace_front(copy_vec);  // double-ended queue of a vector of uint_16.
-                LL(2) << ": Size of frame_buf pre-push: " << frame_buf.size();
+            {
+                std::lock_guard<std::mutex> lock(frame_buf_lock); // wait until we have a lock
+                for (volatile int n = 0; n < nFrames; ++n) {
+                    dev_p.read(reinterpret_cast<char*>(copy_vec.data()), std::streamsize(framesize));
+                    read_size = dev_p.gcount();
+                    LL(3)  << ": Read " << read_size << " bytes from frame " << n << ", copy_vec size is: " << copy_vec.size();
+                    LL(3)  << "Rows: " << read_size / frame_width;
+                    //frame_buf.emplace_front(copy_vec);  // double-ended queue of a vector of uint_16.
+                    LL(2) << ": Size of frame_buf pre-push: " << frame_buf.size();
 
-                while(frameVecLocked)
-                    usleep(1);
-                frameVecLocked = true;
-                frame_buf.push_front(copy_vec);  // double-ended queue of a vector of uint_16.
-                                                 // each frame_buf unit is a frame vector.
-                LL(2) << ": Size of frame_buf post-push: " << frame_buf.size();
+//                    while(frameVecLocked)
+//                        usleep(1);
+                    frameVecLocked = true;
+                    frame_buf.push_front(copy_vec);  // double-ended queue of a vector of uint_16.
+                    // each frame_buf unit is a frame vector.
+                    LL(2) << ": Size of frame_buf post-push: " << frame_buf.size();
 
-                // If the frame data is smaller than a frame, fill the rest of the frame with zeros:
-                if (framesize / sizeof(uint16_t) < size_t(frame_width * data_height)) {
-                    // We can't copy to space inside the frame_buf[n] that has not been allocated yet!!
-                    LL(2) << ": size of frame_buf: " << frame_buf.size();
-                    //qDebug() << __PRETTY_FUNCTION__ << "size of frame_buf[0]:" << frame_buf[0].size();
-                    LL(2) << ": framesize: " << framesize << ",framesize in uint16 size:     " << framesize/sizeof(uint16_t);
-                    LL(2) << ": frame_width: " << frame_width << ", data_height: " << data_height << ", product: " << frame_width*data_height;
+                    // If the frame data is smaller than a frame, fill the rest of the frame with zeros:
+                    if (framesize / sizeof(uint16_t) < size_t(frame_width * data_height)) {
+                        // We can't copy to space inside the frame_buf[n] that has not been allocated yet!!
+                        LL(2) << ": size of frame_buf: " << frame_buf.size();
+                        //qDebug() << __PRETTY_FUNCTION__ << "size of frame_buf[0]:" << frame_buf[0].size();
+                        LL(2) << ": framesize: " << framesize << ",framesize in uint16 size:     " << framesize/sizeof(uint16_t);
+                        LL(2) << ": frame_width: " << frame_width << ", data_height: " << data_height << ", product: " << frame_width*data_height;
 
-                    if(frame_buf[size_t(n)].size() != 0)
-                    {
-                        //std::copy(zero_vec.begin(), zero_vec.end(), frame_buf[size_t(n)].begin() + framesize / sizeof(uint16_t));
-                    } else {
-                        LOG << ": ERROR, frame_buf at [" << n << "].size() is zero.";
+                        if(frame_buf[size_t(n)].size() != 0)
+                        {
+                            //std::copy(zero_vec.begin(), zero_vec.end(), frame_buf[size_t(n)].begin() + framesize / sizeof(uint16_t));
+                        } else {
+                            LOG << ": ERROR, frame_buf at [" << n << "].size() is zero.";
+                        }
                     }
+                    frameVecLocked = false;
                 }
-                frameVecLocked = false;
-            }
+            } // end lock
 
             running.store(true);
             LOG << ": About done, emitting started signal.";
@@ -323,15 +330,25 @@ void XIOCamera::readLoop()
 {
     LOG << ": Entering readLoop()";
     int waits = 1;
+    bool sizeSmall = false;
+
     do {
         // Yeah yeah whatever it's a magic buffer size recommendation
         // if( we have fewer than 97 frames)
-        if (frame_buf.size() <= 96) {
+
+        {
+            std::lock_guard<std::mutex> lock(frame_buf_lock);
+            sizeSmall = (frame_buf.size() <= 96);
+        }
+
+        if (sizeSmall) {
             waits = 1; //reset wait counter
             readFile(); // read in the next files, runs getFname() over and over
 
         } else {
-            LOG << ": Waiting: Wait step: " << waits++ << ", frame_buf.size(): " << frame_buf.size(); // hapens 8 times in between files.
+            //LOG << ": Waiting: Wait step: " << waits++ << ", frame_buf.size(): " << frame_buf.size(); // hapens 8 times in between files.
+            LOG << ": Waiting: Wait step: " << waits++; // hapens 8 times in between files.
+
             // usleep(10*tmoutPeriod);
         }
     } while (is_reading);
@@ -357,24 +374,27 @@ uint16_t* XIOCamera::getFrame()
 
     // TODO: Strong mutex with timeout
 
-    while(frameVecLocked)
-        usleep(1);
+//    while(frameVecLocked)
+//        usleep(1);
 
     // We have seen segfaults here, need a better locking mechanism.
-    if ( (!frameVecLocked) && (!frame_buf.empty()) ) {
-        frameVecLocked = true;
-        temp_frame = frame_buf.back();
-        // prev_frame = &temp_frame;
-        frame_buf.pop_back(); // I have seen it crash here. We really need to assure exclusive access or use another method of storage.
-        frameVecLocked = false;
-        dummyrepeats = 0;
-        LL(4) << "Returning good data.";
-        // usleep(1000 * 10);
-        return temp_frame.data();
-    } else {
-        //if(showOutput) cout << __PRETTY_FUNCTION__ << ": Returning dummy data. locked: " << frameVecLocked << ", is_reading: " << is_reading << "empty status: " << frame_buf.empty() << endl;
-        usleep(1000 * 1000); // 1 FPS, "timeout" style framerate, like the PDV driver.
-        return NULL;
+    {
+        std::lock_guard<std::mutex> lock(frame_buf_lock); // gone once out of scope.
+        if ( (!frameVecLocked) && (!frame_buf.empty()) ) {
+            frameVecLocked = true;
+            temp_frame = frame_buf.back();
+            // prev_frame = &temp_frame;
+            frame_buf.pop_back(); // I have seen it crash here. We really need to assure exclusive access or use another method of storage.
+            frameVecLocked = false;
+            dummyrepeats = 0;
+            LL(4) << "Returning good data.";
+            // usleep(1000 * 10);
+            return temp_frame.data();
+        } else {
+            //if(showOutput) cout << __PRETTY_FUNCTION__ << ": Returning dummy data. locked: " << frameVecLocked << ", is_reading: " << is_reading << "empty status: " << frame_buf.empty() << endl;
+            usleep(1000 * 1000); // 1 FPS, "timeout" style framerate, like the PDV driver.
+            return NULL;
+        }
     }
 }
 
