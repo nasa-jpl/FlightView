@@ -8,7 +8,7 @@
 #define logginglevel (2)
 
 // If you #define MUTE_LOG, then no output at all.
-// # define MUTE_LOG
+# define MUTE_LOG
 
 // usage:
 // LOG << "thing to be logged";

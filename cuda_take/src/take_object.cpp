@@ -452,7 +452,7 @@ void take_object::fileImageReadingLoop()
         while(!closing)
         {
             Camera->readLoop();
-            statusMessage("Completed readLoop(), pausing and then running again.");
+            //statusMessage("Completed readLoop(), pausing and then running again.");
             usleep(100000);
         }
         statusMessage("completed XIO Camera readLoop() while function. No more files can be read once completed. ");
@@ -758,11 +758,11 @@ void take_object::fileImageCopyLoop()
             if(measuredDelta_micros < deltaT_micros)
             {
                 // wait
-                statusMessage(std::string("Waiting additional ") + std::to_string(deltaT_micros - measuredDelta_micros) + std::string(" microseconds."));
+                //statusMessage(std::string("Waiting additional ") + std::to_string(deltaT_micros - measuredDelta_micros) + std::string(" microseconds."));
                 usleep(deltaT_micros - measuredDelta_micros);
             } else {
-                warningMessage("Cannot guarentee requested frame rate. Frame rate is too fast or computation is too slow.");
-                warningMessage(std::string("Requested deltaT: ") + std::to_string(deltaT_micros) + std::string(", measured delta microseconds: ") + std::to_string(measuredDelta_micros));
+                //warningMessage("Cannot guarentee requested frame rate. Frame rate is too fast or computation is too slow.");
+                //warningMessage(std::string("Requested deltaT: ") + std::to_string(deltaT_micros) + std::string(", measured delta microseconds: ") + std::to_string(measuredDelta_micros));
             }
             // if elapsed time < required time
             // wait delta.

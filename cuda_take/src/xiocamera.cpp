@@ -66,7 +66,6 @@ XIOCamera::~XIOCamera()
         usleep(1);
     }
     fileListVecLocked = true;
-    //readLoopFuture.waitForFinished();
     LOG << " Completed XIO camera destructor for ID: " << this;
 }
 
@@ -75,19 +74,12 @@ void XIOCamera::setDir(const char *dirname)
     LOG << ": Starting setDIR function for dirname " << dirname;
     is_reading = false;
     LOG << ": Clearing frame_buf. Initial size: " << frame_buf.size();
-
     {
         std::lock_guard<std::mutex> lock(frame_buf_lock);
         while (!frame_buf.empty()) {
             frame_buf.pop_back();
         }
     }
-
-    /*
-    if (readLoopFuture.isRunning()) {
-        readLoopFuture.waitForFinished();
-    }
-    */
 
     data_dir = dirname;
     if (data_dir.empty()) {
@@ -140,7 +132,6 @@ void XIOCamera::setDir(const char *dirname)
     //emit started(); // seems to work without this
 
     is_reading = true;
-    //readLoopFuture = QtConcurrent::run(this, &XIOCamera::readLoop);
     fileListVecLocked = false;
     LOG << "Finished XIO setDir.";
 }
@@ -239,7 +230,6 @@ void XIOCamera::readFile()
         if (!dev_p.is_open()) {
             LOG << ": Could not open file" << ifname.data() << ". Does it exist?";
             dev_p.clear();
-            //readFile(); // circular?
             return;
         }
 
@@ -288,11 +278,8 @@ void XIOCamera::readFile()
                     read_size = dev_p.gcount();
                     LL(3)  << ": Read " << read_size << " bytes from frame " << n << ", copy_vec size is: " << copy_vec.size();
                     LL(3)  << "Rows: " << read_size / frame_width;
-                    //frame_buf.emplace_front(copy_vec);  // double-ended queue of a vector of uint_16.
                     LL(2) << ": Size of frame_buf pre-push: " << frame_buf.size();
 
-//                    while(frameVecLocked)
-//                        usleep(1);
                     frameVecLocked = true;
                     frame_buf.push_front(copy_vec);  // double-ended queue of a vector of uint_16.
                     // each frame_buf unit is a frame vector.
@@ -333,23 +320,19 @@ void XIOCamera::readLoop()
     bool sizeSmall = false;
 
     do {
-        // Yeah yeah whatever it's a magic buffer size recommendation
-        // if( we have fewer than 97 frames)
-
         {
             std::lock_guard<std::mutex> lock(frame_buf_lock);
             sizeSmall = (frame_buf.size() <= 96);
         }
-
+        // if( we have fewer than 97 frames)
         if (sizeSmall) {
             waits = 1; //reset wait counter
             readFile(); // read in the next files, runs getFname() over and over
 
         } else {
+            waits++;
             //LOG << ": Waiting: Wait step: " << waits++ << ", frame_buf.size(): " << frame_buf.size(); // hapens 8 times in between files.
-            LOG << ": Waiting: Wait step: " << waits++; // hapens 8 times in between files.
-
-            // usleep(10*tmoutPeriod);
+            //LOG << ": Waiting: Wait step: " << waits++; // hapens 8 times in between files.
         }
     } while (is_reading);
     LOG << ": finished readLoop(). is_reading must be false now: " << is_reading;
@@ -367,17 +350,6 @@ uint16_t* XIOCamera::getFrame()
     }
     getFrameCounter++;
 
-    // This is not ideal because it could become locked after,
-    // but the idea is to not feed dummy frames unless we really have to,
-    // so this gives us a chance to use the new data.
-
-
-    // TODO: Strong mutex with timeout
-
-//    while(frameVecLocked)
-//        usleep(1);
-
-    // We have seen segfaults here, need a better locking mechanism.
     {
         std::lock_guard<std::mutex> lock(frame_buf_lock); // gone once out of scope.
         if ( (!frameVecLocked) && (!frame_buf.empty()) ) {
