@@ -20,13 +20,26 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
     this->setObjectName("lv:frameWorker");
     // FORCE XIO MODE FOR TESTING:
     options.xioCam = true;
+    options.xioHeight = 480;
+    options.xioWidth = 640;
+    options.heightWidthSet = true;
+
     this->options = options;
     convertOptions();
 
     if(options.xioCam)
     {
-        takeOptions.height = 480;
-        takeOptions.width = 640;
+
+        setupUI.acceptOptions(&options);
+        setupUI.setModal(true);
+        setupUI.exec();
+        sMessage("Selected directory: ");
+        sMessage(options.xioDirectory);
+        takeOptions.height = takeOptions.xioHeight;
+        takeOptions.width = takeOptions.xioWidth;
+
+
+
         to.changeOptions(takeOptions);
     }
     to.start(); // begin cuda_take
@@ -64,6 +77,9 @@ void frameWorker::convertOptions()
     takeOptions.xioCam = options.xioCam;
     takeOptions.height = options.height;
     takeOptions.width = options.width;
+    takeOptions.xioHeight = options.xioHeight;
+    takeOptions.xioWidth = options.xioWidth;
+    takeOptions.heightWidthSet = options.heightWidthSet;
 }
 
 // public functions
@@ -428,5 +444,6 @@ void frameWorker::stop()
 void frameWorker::sMessage(QString message)
 {
     message.prepend("[frameWorker]: ");
+    std::cout << message.toLocal8Bit().toStdString() << std::endl;
     emit sendStatusMessage(message);
 }

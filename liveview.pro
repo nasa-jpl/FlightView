@@ -23,6 +23,7 @@ SOURCES += main.cpp\
     filenamegenerator.cpp \
     flight_widget.cpp \
     gpsmanager.cpp \
+    initialsetup.cpp \
     mainwindow.cpp \
     frameview_widget.cpp \
     controlsbox.cpp \
@@ -49,6 +50,7 @@ HEADERS  += mainwindow.h \
     frame_worker.h \
     gpsmanager.h \
     image_type.h \
+    initialsetup.h \
     preferences.h \
     qcustomplot.h \
     histogram_widget.h \
@@ -146,3 +148,6 @@ INCLUDEPATH += $$PWD/cuda_take/include\
 DEPENDPATH += $$PWD/cuda_take
 
 unix:!macx:!symbian: PRE_TARGETDEPS += $$PWD/cuda_take/libcuda_take.a
+
+FORMS += \
+    initialsetup.ui

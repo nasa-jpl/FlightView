@@ -122,9 +122,15 @@ void take_object::start()
 
     if(options.xioCam)
     {
-        frWidth = options.width;
-        frHeight = options.height;
-        dataHeight = options.height;
+        if(!options.heightWidthSet)
+        {
+            options.xioHeight = 480;
+            options.xioWidth = 640;
+            warningMessage("Warning: XIO Height and Width not specified. Assuming 640x480 geometry.");
+        }
+        frWidth = options.xioWidth;
+        frHeight = options.xioHeight;
+        dataHeight = options.xioHeight;
         size = frWidth * frHeight * sizeof(uint16_t);
         statusMessage("start() with XIO camera settings");
     } else {

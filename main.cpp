@@ -77,6 +77,8 @@ int main(int argc, char *argv[])
     startupOptions.gpsPort = 8111;
     startupOptions.gpsPortSet = true;
 
+    bool heightSet = false;
+    bool widthSet = false;
 
     // Basic CLI argument parser:
     for(int c=1; c < argc; c++)
@@ -111,6 +113,51 @@ int main(int argc, char *argv[])
                 exit(-1);
             }
         }
+
+        if(currentArg == "--xioheight")
+        {
+            if(argc > c)
+            {
+                int xioheighttemp = 0;
+                bool ok = false;
+                xioheighttemp = QString(argv[c+1]).toUInt(&ok);
+                if(ok)
+                {
+                    heightSet = true;
+                    startupOptions.xioHeight = xioheighttemp;
+                    c++;
+                } else {
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        if(currentArg == "--xiowidth")
+        {
+            if(argc > c)
+            {
+                int xiowidthtemp = 0;
+                bool ok = false;
+                xiowidthtemp = QString(argv[c+1]).toUInt(&ok);
+                if(ok)
+                {
+                    widthSet = true;
+                    startupOptions.xioWidth = xiowidthtemp;
+                    c++;
+                } else {
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
         if(currentArg == "--gpsip")
         {
             // Only IPV4 supported, and no hostnames please, let's not depend upon DNS or resolv in the airplane...
@@ -137,7 +184,7 @@ int main(int argc, char *argv[])
                     startupOptions.gpsPortSet = true;
                     c++;
                 } else {
-                    std::cout << "Invalid GPS Port set." << std::endl;
+                    std::cerr << "Invalid GPS Port set." << std::endl;
                     std::cout << helptext.toStdString() << std::endl;
                     exit(-1);
                 }
@@ -157,14 +204,14 @@ int main(int argc, char *argv[])
 
     if(startupOptions.flightMode && !startupOptions.dataLocationSet)
     {
-        std::cout << "Error, flight mode specified without data storage location." << std::endl;
+        std::cerr << "Error, flight mode specified without data storage location." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
     }
 
     if(startupOptions.flightMode && startupOptions.dataLocation.isEmpty())
     {
-        std::cout << "Error, flight mode specified without complete data storage location." << std::endl;
+        std::cerr << "Error, flight mode specified without complete data storage location." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
     }
@@ -172,7 +219,7 @@ int main(int argc, char *argv[])
 
     if(startupOptions.flightMode && !startupOptions.gpsIPSet && !startupOptions.disableGPS)
     {
-        std::cout << "Error, flight mode specified without GPS IP address." << std::endl;
+        std::cerr << "Error, flight mode specified without GPS IP address." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
     }
@@ -180,6 +227,18 @@ int main(int argc, char *argv[])
     if(startupOptions.flightMode && startupOptions.disableGPS)
     {
         std::cout << "WARNING:, flight mode specified with disabled GPS." << std::endl;
+    }
+
+    if(heightSet ^ widthSet)
+    {
+        // XOR, only one was set
+        std::cerr << "Error, height and width must both be specified." << std::endl;
+        exit(-1);
+    }
+
+    if(heightSet && widthSet)
+    {
+        startupOptions.heightWidthSet = true;
     }
 
 
@@ -202,6 +261,7 @@ int main(int argc, char *argv[])
 
     /* Step 5: Open the main window (GUI/frontend) */
     MainWindow w(startupOptions, workerThread, fw);
+    //QObject::connect(fw, SIGNAL(sendStatusMessage(QString)), w, SLOT(handleStatusMessage(QString)));
     w.setGeometry(   QStyle::alignedRect(
                          Qt::LeftToRight,
                          Qt::AlignCenter,

@@ -19,6 +19,7 @@
 #include "image_type.h"
 #include "startupOptions.h"
 #include "cuda_take/include/takeoptions.h"
+#include "initialsetup.h"
 
 /*! \file
  * \brief Communicates with the backend and connects public information between widgets.
@@ -61,6 +62,7 @@ class frameWorker : public QObject
     float *histogram_bins;
     bool doRun = true;
 
+    initialSetup setupUI;
     startupOptionsType options;
     takeOptionsType takeOptions;
     void convertOptions(); // startup options to take options

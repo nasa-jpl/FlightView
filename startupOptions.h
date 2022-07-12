@@ -18,8 +18,13 @@ struct startupOptionsType
     bool deviceFPIEDSet = false;
     bool deviceIHESet = false;
     bool xioCam = false;
+    bool heightWidthSet = false;
+    QString xioDirectory = QString("/");
+    uint16_t xioHeight;
+    uint16_t xioWidth;
     uint16_t height;
     uint16_t width;
+    float targetFPS;
 
 };
 
