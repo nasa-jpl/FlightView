@@ -33,8 +33,23 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
         setupUI.acceptOptions(&options);
         setupUI.setModal(true);
         setupUI.exec();
-        sMessage("Selected directory: ");
-        sMessage(options.xioDirectory);
+
+        if(!options.xioDirectory.isEmpty())
+        {
+            takeOptions.xioDirectory = (char*)malloc((size_t)(options.xioDirectory.length() + 1));
+            if(takeOptions.xioDirectory == NULL)
+            {
+                sMessage("ERROR, could not allocate memory for the xio directory string.");
+                abort();
+            } else {
+                strncpy(takeOptions.xioDirectory,
+                        options.xioDirectory.toLocal8Bit().data(),
+                        options.xioDirectory.length());
+                takeOptions.xioDirectory[options.xioDirectory.length()] = '\0';
+            }
+
+        }
+
         takeOptions.height = takeOptions.xioHeight;
         takeOptions.width = takeOptions.xioWidth;
 
@@ -43,7 +58,12 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
         to.changeOptions(takeOptions);
     }
     to.start(); // begin cuda_take
-    to.setReadDirectory("/mnt/DATA/xio/20170828_DCSEFM_TVAC_AMBIENTFUNCTIONAL_COMPRESS_Test1_ROICIMAGE/");
+    //to.setReadDirectory("/mnt/DATA/xio/20170828_DCSEFM_TVAC_AMBIENTFUNCTIONAL_COMPRESS_Test1_ROICIMAGE/");
+    if( (!options.xioDirectory.isEmpty()) && options.xioCam)
+    {
+        to.setReadDirectory(options.xioDirectory.toLocal8Bit().data());
+    }
+
 
 #ifdef VERBOSE
     qDebug("starting capture");

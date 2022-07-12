@@ -31,6 +31,8 @@ struct takeOptionsType
     uint16_t height;
     uint16_t width;
     float targetFPS = 100.00;
+    bool xioDirSet = false;
+    char *xioDirectory = NULL;
 };
 
 

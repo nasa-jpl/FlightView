@@ -103,10 +103,47 @@ take_object::~take_object()
 }
 
 //public functions
-void take_object::changeOptions(takeOptionsType options)
+void take_object::changeOptions(takeOptionsType optionsIn)
 {
-    this->options = options;
+    this->options = optionsIn;
+
+    if(optionsIn.xioDirSet)
+    {
+        if(optionsIn.xioDirectory == NULL)
+        {
+            errorMessage("Cannot have set directory that is null.");
+            abort();
+        } else {
+            // NOTE: Strings at this point already end in '\0',
+            // so it should be safe to work with them.
+            size_t len = strlen(optionsIn.xioDirectory);
+            if(len < 4096)
+            {
+                options.xioDirectory = (char*)malloc(len);
+                if(options.xioDirectory == NULL)
+                {
+                    errorMessage("Could not allocate memory for directory string.");
+                    abort();
+                } else {
+                    strncpy(options.xioDirectory,
+                            optionsIn.xioDirectory,
+                            len);
+                }
+            } else {
+                errorMessage("Path length exceeds 4096 bytes or string corruption.");
+                abort();
+            }
+        }
+    } else {
+        // TODO: Wait safely for a directory, and do not try reading yet.
+        errorMessage("xio directory not set. Cannot proceed to read from directory.");
+    }
+
     statusMessage(std::string("Accepted startup options. Target FPS: ") + std::to_string(options.targetFPS));
+    if(options.xioDirSet)
+    {
+        statusMessage(std::string("XIO directory: ") + options.xioDirectory);
+    }
 }
 
 void take_object::start()
