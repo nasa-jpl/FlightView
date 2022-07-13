@@ -114,6 +114,14 @@ int main(int argc, char *argv[])
             }
         }
 
+        if(currentArg == "--xiocam")
+        {
+            startupOptions.xioCam = true;
+        } else {
+            startupOptions.xioCam = false;
+        }
+
+
         if(currentArg == "--xioheight")
         {
             if(argc > c)

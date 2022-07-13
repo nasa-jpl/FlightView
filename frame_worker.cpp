@@ -19,17 +19,18 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
     lastTime = 0;
     this->setObjectName("lv:frameWorker");
     // FORCE XIO MODE FOR TESTING:
-    options.xioCam = true;
-    options.xioHeight = 480;
-    options.xioWidth = 640;
-    options.heightWidthSet = true;
+    //options.xioCam = true;
+    //options.xioHeight = 480;
+    //options.xioWidth = 640;
+    //options.heightWidthSet = true;
 
     this->options = options;
     convertOptions();
 
     if(options.xioCam)
     {
-
+        // Initial Setup. Program is paused while this dialog is open.
+        // options are modified in-place, and then copied over to the takeOptionsType for take_object.
         setupUI.acceptOptions(&options);
         setupUI.setModal(true);
         setupUI.exec();
@@ -46,6 +47,7 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
                         options.xioDirectory.toLocal8Bit().data(),
                         options.xioDirectory.length());
                 takeOptions.xioDirectory[options.xioDirectory.length()] = '\0';
+                takeOptions.xioDirSet = true;
             }
 
         }

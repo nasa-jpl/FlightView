@@ -125,7 +125,7 @@ void take_object::changeOptions(takeOptionsType optionsIn)
                     errorMessage("Could not allocate memory for directory string.");
                     abort();
                 } else {
-                    strncpy(options.xioDirectory,
+                    memcpy(options.xioDirectory,
                             optionsIn.xioDirectory,
                             len);
                 }
