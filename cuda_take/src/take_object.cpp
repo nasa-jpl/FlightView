@@ -795,6 +795,7 @@ void take_object::fileImageCopyLoop()
             }
             finaltp = std::chrono::steady_clock::now();
             measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
+            meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
 
             // if elapsed time < required time
             // wait delta.
@@ -810,7 +811,14 @@ void take_object::fileImageCopyLoop()
 
 int take_object::getMicroSecondsPerFrame()
 {
-    return measuredDelta_micros_final;
+    int max = (meanDeltaArrayPos < meanDeltaSize)?meanDeltaArrayPos:meanDeltaSize;
+    int sum = 0;
+    for(int i=0; i < max; i++)
+    {
+        sum += meanDeltaArray[i];
+    }
+    return sum / max;
+    // return measuredDelta_micros_final;
 }
 
 void take_object::setReadDirectory(const char *directory)
@@ -938,7 +946,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 
         finaltp = std::chrono::steady_clock::now();
         measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
-
+        meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
 
         grabbing = false;
         if(closing)

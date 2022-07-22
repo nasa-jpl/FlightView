@@ -54,6 +54,8 @@ using std::string;
 
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence or absence of the "WARNING: MISSED FRAME X" line
 
+#define meanDeltaSize (20)
+
 class take_object {
 #ifdef EDT
     PdvDev * pdv_p = NULL;
@@ -168,8 +170,11 @@ private:
     bool savingData = false;
 
     takeOptionsType options;
+
     float deltaT_micros = 100.0;
     int measuredDelta_micros_final = 0;
+    int meanDeltaArrayPos = 0;
+    int meanDeltaArray[meanDeltaSize] = {10}; // = {10,10,10,10,10,10,10,10,10,10};
 
     void markFrameForChecking(uint16_t * frame);
     bool checkFrame(uint16_t *Frame);
