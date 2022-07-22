@@ -1,6 +1,8 @@
 #ifndef TAKEOPTIONS_H
 #define TAKEOPTIONS_H
 
+#include <string>
+
 // This struct is similar to the one in startupOptions.h,
 // but it does not require any qt libraries.
 // It is used by take_object and the cuda back-end.
@@ -32,7 +34,7 @@ struct takeOptionsType
     uint16_t width;
     float targetFPS = 100.00;
     bool xioDirSet = false;
-    char *xioDirectory = NULL;
+    std::string *xioDirectory = NULL;
 };
 
 

@@ -28,7 +28,7 @@ LIBOUT = libcuda_take.a
 
 ######################################
 #Here we specify what source files are needed for the program/library, and we create virtual paths so that we don't have to refer to the source directory all the time
-SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter_device_code.cu std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp osutils.cpp
+SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter_device_code.cu std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp osutils.cpp safestringset.cpp
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 
 
@@ -67,7 +67,7 @@ OBJDIR = obj
 
 ######################################
 #Here we set the directories containing necessary header files (.h,.cuh,.hpp); ones specific to this program are kept in include/, ones needed for cameralink stuff in EDT_include/
-IDIR      = -Iinclude -I/opt/EDTpdv -I/usr/local/cuda/include
+IDIR      = -Iinclude -I/opt/EDTpdv -I/usr/local/cuda/include 
 #IDIR      = -Iinclude -I/opt/EDTpdv -I/usr/local/cuda/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCore
 
 #SECOND NOTE: ONLY BUILD WITH O1! Somehow, someway, O2 optimizes out things that nvcc needs and O0 has linker redefinition errors. #JankCity <- This has been fixed, but still a good idea

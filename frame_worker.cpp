@@ -5,7 +5,7 @@
 #include <QSharedPointer>
 #include <QDebug>
 
-frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
+frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     QObject(parent)
 {
     /*! \brief Launches cuda_take using the take_object.
@@ -24,8 +24,13 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
     //options.xioWidth = 640;
     //options.heightWidthSet = true;
 
-    this->options = options;
-    convertOptions();
+    this->options = optionsIn;
+    this->takeOptions.xioDirectory = new std::string();
+
+    if(options.xioDirectory == NULL)
+    {
+        options.xioDirectory = new QString("");
+    }
 
     if(options.xioCam)
     {
@@ -35,35 +40,23 @@ frameWorker::frameWorker(startupOptionsType options, QObject *parent) :
         setupUI.setModal(true);
         setupUI.exec();
 
-        if(!options.xioDirectory.isEmpty())
+        if(options.xioDirectory == NULL)
         {
-            takeOptions.xioDirectory = (char*)malloc((size_t)(options.xioDirectory.length() + 1));
-            if(takeOptions.xioDirectory == NULL)
-            {
-                sMessage("ERROR, could not allocate memory for the xio directory string.");
-                abort();
-            } else {
-                strncpy(takeOptions.xioDirectory,
-                        options.xioDirectory.toLocal8Bit().data(),
-                        options.xioDirectory.length());
-                takeOptions.xioDirectory[options.xioDirectory.length()] = '\0';
-                takeOptions.xioDirSet = true;
-            }
-
+            abort();
+        } else {
+            std::cout << "Variable is not null. Contents: ";
+            std::cout << options.xioDirectory->toLocal8Bit().data() << std::endl;
         }
 
-        takeOptions.height = takeOptions.xioHeight;
-        takeOptions.width = takeOptions.xioWidth;
-
-
+        convertOptions();
 
         to.changeOptions(takeOptions);
     }
     to.start(); // begin cuda_take
     //to.setReadDirectory("/mnt/DATA/xio/20170828_DCSEFM_TVAC_AMBIENTFUNCTIONAL_COMPRESS_Test1_ROICIMAGE/");
-    if( (!options.xioDirectory.isEmpty()) && options.xioCam)
+    if( (!options.xioDirectory->isEmpty()) && options.xioCam)
     {
-        to.setReadDirectory(options.xioDirectory.toLocal8Bit().data());
+        to.setReadDirectory(options.xioDirectory->toLocal8Bit().data());
     }
 
 
@@ -85,8 +78,38 @@ frameWorker::~frameWorker()
     doRun = false;
 }
 
+void frameWorker::useNewOptions(startupOptionsType newOpts)
+{
+    this->options = newOpts;
+    convertOptions();
+    to.changeOptions(takeOptions);
+    if( (!options.xioDirectory->isEmpty()) && options.xioCam)
+    {
+        // This not only sets the directory,
+        // it also kicks off reading files from the directory.
+        to.setReadDirectory(options.xioDirectory->toLocal8Bit().data());
+    }
+}
+
 void frameWorker::convertOptions()
 {
+    if(!options.xioDirectory->isEmpty())
+    {
+        safeStringSet(takeOptions.xioDirectory, options.xioDirectory->toStdString());
+        takeOptions.xioDirSet = true;
+        if(takeOptions.xioDirectory == NULL)
+        {
+            abort();
+        } else {
+            std::cout << "takeOptions xio directory: " << takeOptions.xioDirectory->c_str() << std::endl;
+        }
+    } else {
+        abort();
+    }
+
+    takeOptions.height = takeOptions.xioHeight;
+    takeOptions.width = takeOptions.xioWidth;
+
     takeOptions.debug = options.debug;
     takeOptions.flightMode = options.flightMode;
     takeOptions.disableGPS = options.disableGPS;

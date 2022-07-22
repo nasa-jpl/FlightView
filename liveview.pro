@@ -33,6 +33,7 @@ SOURCES += main.cpp\
     fft_widget.cpp \
     profile_widget.cpp \
     pref_window.cpp \
+    cuda_take/src/safestringset.cpp \
     saveserver.cpp \
     playback_widget.cpp \
     gpsGUI/qledlabel.cpp \
@@ -57,6 +58,7 @@ HEADERS  += mainwindow.h \
     fft_widget.h \
     frame_c_meta.h \
     rgbline.h \
+    cuda_take/include/safestringset.h \
     settings.h \
     profile_widget.h \
     pref_window.h \

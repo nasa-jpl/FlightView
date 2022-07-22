@@ -76,6 +76,7 @@ int main(int argc, char *argv[])
     startupOptions.gpsIP = QString("10.0.0.6");
     startupOptions.gpsPort = 8111;
     startupOptions.gpsPortSet = true;
+    startupOptions.xioDirectory = new QString("");
 
     bool heightSet = false;
     bool widthSet = false;

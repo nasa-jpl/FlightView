@@ -30,6 +30,7 @@
 #include "cameramodel.h"
 #include "xiocamera.h"
 #include "constants.h"
+#include "safestringset.h"
 #include "takeoptions.h"
 
 //** Harware Macros ** These Macros set the hardware type that take_object will use to collect data

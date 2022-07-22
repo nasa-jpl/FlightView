@@ -19,7 +19,7 @@ struct startupOptionsType
     bool deviceIHESet = false;
     bool xioCam = false;
     bool heightWidthSet = false;
-    QString xioDirectory = QString("/");
+    QString *xioDirectory = NULL;
     uint16_t xioHeight;
     uint16_t xioWidth;
     uint16_t height;

@@ -113,6 +113,7 @@ public:
     unsigned int getFrameWidth();
     bool dsfMaskCollected();
     bool usingDSF();
+    void useNewOptions(startupOptionsType newOpts);
 
 signals:
     /*! \brief Calls to update the value of the backend FPS label */

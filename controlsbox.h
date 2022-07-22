@@ -38,6 +38,7 @@
 #include "preferences.h"
 #include "startupOptions.h"
 #include "filenamegenerator.h"
+#include "initialsetup.h"
 
 /*! \file
  *  \brief Widget which contains the GUI elements common to several or all plotting widgets.
@@ -64,6 +65,7 @@ public:
     frameWorker *fw;
     preferenceWindow *prefWindow;
     QHBoxLayout controls_layout;
+    initialSetup setupUI;
 
     /* LEFT SIDE BUTTONS (Collections) */
     QGridLayout *collections_layout;
@@ -110,6 +112,7 @@ public:
     /* RIGHT SIDE BUTTONS (save) */
     QGridLayout *save_layout;
     QPushButton showConsoleLogBtn;
+    QPushButton showXioSetupBtn;
     QWidget SaveButtonsBox;
     QPushButton save_finite_button;
     QPushButton start_saving_frames_button;
@@ -224,6 +227,8 @@ private slots:
     void updateFloor(int f);
     void updateCeiling(int c);
     void updateDiskSpace(quint64 total, quint64 available);
+    void showSetup();
+
 
     /*! \addtogroup savingfunc Frame saving functions
      * Contains functions which control the processes needed to save frames.

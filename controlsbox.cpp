@@ -50,6 +50,10 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         emit statusMessage(msg);
     });
 
+
+    setupUI.acceptOptions(&options);
+    setupUI.setModal(true);
+
 /* ====================================================================== */
     // LEFT SIDE BUTTONS (Collections)
     collect_dark_frames_button.setText("Record Dark Frames");
@@ -96,6 +100,10 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //Fourth Row
     collections_layout->addWidget(&server_port_label, 4, 1, 1, 1);
     collections_layout->addWidget(&showConsoleLogBtn, 4, 2, 1, 1);
+    if(!options.flightMode)
+    {
+        collections_layout->addWidget(&showXioSetupBtn, 4, 3, 1, 1);
+    }
 
     //Fifth Row:
     collections_layout->addWidget(overlay_lh_width_label, 5,1,1,1);
@@ -331,6 +339,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     showConsoleLogBtn.setText("Log");
     showConsoleLogBtn.setToolTip("Show console log");
 
+    showXioSetupBtn.setText("Xio Setup");
+    showXioSetupBtn.setToolTip("Setup reading XIO files");
+
     save_finite_button.setText("Save Frames");
 
     start_saving_frames_button.setText("Start Saving");
@@ -431,6 +442,11 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
             [&]() {
             emit showConsoleLog();
     });
+    connect(&showXioSetupBtn, &QPushButton::pressed,
+            [&]() {
+            showSetup();
+    });
+
 
     connect(fw, SIGNAL(updateFPS()), this, SLOT(update_backend_delta()));
 
@@ -1211,6 +1227,15 @@ void ControlsBox::updateDiskSpace(quint64 total, quint64 available)
         diskErrorCounter = 0;
         diskWarningCounter = 0;
     }
+}
+
+void ControlsBox::showSetup()
+{
+    // Pause this thread while open
+    setupUI.exec();
+    // At this point, options have changed.
+    // so we need to communicate this to fw.
+    fw->useNewOptions(options);
 }
 
 void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
