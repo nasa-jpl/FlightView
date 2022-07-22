@@ -126,6 +126,9 @@ void take_object::changeOptions(takeOptionsType optionsIn)
     {
         statusMessage(std::string("XIO directory: ") + *options.xioDirectory);
     }
+
+    // Recalculate the frame-to-frame delay:
+    deltaT_micros = 1000000.0 / options.targetFPS;
 }
 
 void take_object::start()
@@ -640,12 +643,13 @@ void take_object::fileImageCopyLoop()
         if(options.targetFPS == 0.0)
             options.targetFPS = 100.0;
 
-        float deltaT_micros = 1000000.0 / options.targetFPS;
+        deltaT_micros = 1000000.0 / options.targetFPS;
         int measuredDelta_micros = 0;
         fileReadingLoopRun = true;
 
         std::chrono::steady_clock::time_point begintp;
         std::chrono::steady_clock::time_point endtp;
+        std::chrono::steady_clock::time_point finaltp;
 
         while(fileReadingLoopRun && (!closing))
         {
@@ -789,6 +793,9 @@ void take_object::fileImageCopyLoop()
                 //warningMessage("Cannot guarentee requested frame rate. Frame rate is too fast or computation is too slow.");
                 //warningMessage(std::string("Requested deltaT: ") + std::to_string(deltaT_micros) + std::string(", measured delta microseconds: ") + std::to_string(measuredDelta_micros));
             }
+            finaltp = std::chrono::steady_clock::now();
+            measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
+
             // if elapsed time < required time
             // wait delta.
         }
@@ -799,6 +806,11 @@ void take_object::fileImageCopyLoop()
     }
     if(zeroFrame != NULL)
         free(zeroFrame);
+}
+
+int take_object::getMicroSecondsPerFrame()
+{
+    return measuredDelta_micros_final;
 }
 
 void take_object::setReadDirectory(const char *directory)
@@ -841,9 +853,13 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
                                        cent_start, cent_end,\
                                        rh_start, rh_end);
 
+    std::chrono::steady_clock::time_point finaltp;
+    std::chrono::steady_clock::time_point begintp;
+
     while(pdv_thread_run == 1)
     {	
         grabbing = true;
+        begintp = std::chrono::steady_clock::now();
         curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
         curFrame->reset();
         if(closing)
@@ -919,6 +935,11 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         }
         last_framecount = framecount;
         count++;
+
+        finaltp = std::chrono::steady_clock::now();
+        measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
+
+
         grabbing = false;
         if(closing)
         {

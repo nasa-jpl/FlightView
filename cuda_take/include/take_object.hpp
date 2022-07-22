@@ -113,6 +113,7 @@ public:
     camera_t cam_type;
     frame_c * frame_ring_buffer;
     unsigned long count = 0; // frame count
+    int getMicroSecondsPerFrame();
 
     //Frame filters that affect everything at the raw data level
     void setInversion(bool checked, unsigned int factor);
@@ -167,6 +168,8 @@ private:
     bool savingData = false;
 
     takeOptionsType options;
+    float deltaT_micros = 100.0;
+    int measuredDelta_micros_final = 0;
 
     void markFrameForChecking(uint16_t * frame);
     bool checkFrame(uint16_t *Frame);

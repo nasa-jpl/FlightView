@@ -180,12 +180,14 @@ void frameWorker::captureFrames()
     unsigned long count = 0;
     QTime clock;
     clock.start();
+    int restart = 0;
     lastTime = clock.elapsed();
     unsigned int last_savenum = 0; // unused, really?
     unsigned int last_savect = 0;
     unsigned int save_num;
     unsigned int save_ct;
     frame_c *workingFrame;
+    int microSecondsPerFrame = 0;
     // int flags=1;
 
     while(doRun) {
@@ -213,30 +215,41 @@ void frameWorker::captureFrames()
             last_savenum = save_num;
             count++;
 
-            // This is to detect and report slow frame rates:
-            if(clock.elapsed() - lastTime > 30)
+            // Every 25 frames, or, every 200ms, whichever comes first.
+            if( (count%25 == 0) || (clock.elapsed() - lastTime > 200) )
             {
-                int restart = clock.restart();
-                if(restart != 0)
+                microSecondsPerFrame = to.getMicroSecondsPerFrame();
+                if(microSecondsPerFrame != 0)
                 {
-                    delta = 1000.0f / restart;
-                } else {
-                    delta = 0.0f;
-                }
-                emit updateFPS();
-            } else {
-                // Calcualte normal frame rate:
-                if (count % 25 == 0 && count != 0) {
-                    int restart = clock.restart();
-                    if(restart != 0)
-                    {
-                        delta = 25.0 / restart * 1000.0;
-                    } else {
-                        delta = 0;
-                    }
+                    delta = 1000000.0f / microSecondsPerFrame;
                     emit updateFPS();
                 }
             }
+
+            // This is to detect and report slow frame rates:
+//            if(clock.elapsed() - lastTime > 30)
+//            {
+//                restart = clock.restart();
+//                if(restart != 0)
+//                {
+//                    delta = 1000.0f / restart;
+//                    emit updateFPS();
+//                } else {
+//                    delta = 0.0f;
+//                }
+//            } else {
+//                // Calcualte normal frame rate:
+//                if (count % 25 == 0 && count != 0) {
+//                    restart = clock.restart();
+//                    if(restart != 0)
+//                    {
+//                        delta = 25.0 / restart * 1000.0;
+//                        emit updateFPS();
+//                    } else {
+//                        delta = 0;
+//                    }
+//                }
+//            }
             lastTime = clock.elapsed();
         }
 

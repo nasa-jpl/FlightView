@@ -1441,7 +1441,7 @@ void ControlsBox::update_backend_delta()
     * \author Noah Levy
     */
     fps_float = fw->delta;
-    fps = QString::number(fps_float, 'f', 1);
+    fps = QString::number(fps_float, 'f', 1).rightJustified(6, ' ');
     fps_label.setText(QString("FPS @ backend:%1").arg(fps));
 }
 void ControlsBox::show_save_dialog()
