@@ -10,7 +10,7 @@
 #include "mainwindow.h"
 #include "image_type.h"
 
-MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw, QWidget *parent)
+MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *fw, QWidget *parent)
     : QMainWindow(parent)
 {
     qRegisterMetaType<frame_c*>("frame_c*");
@@ -20,14 +20,14 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     this->fw = fw;
     this->options = options;
 
-    if(options.dataLocationSet)
+    if(options->dataLocationSet)
     {
-        cLog = new consoleLog(options.dataLocation);
+        cLog = new consoleLog(options->dataLocation);
     } else {
         cLog = new consoleLog();
     }
 
-    if(options.flightMode)
+    if(options->flightMode)
         handleStatusMessage(QString("This version of FlightView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
     else
         handleStatusMessage(QString("This version of LiveView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
@@ -61,7 +61,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     dsf_widget = NULL;
     waterfall_widget = new frameview_widget(fw, WATERFALL);
 
-    flight_screen = new flight_widget(fw, options);
+    flight_screen = new flight_widget(fw, *options);
     connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
 
     std_dev_widget = new frameview_widget(fw, STD_DEV);
@@ -78,7 +78,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     connect(std_dev_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
 
 
-    if(!options.flightMode)
+    if(!options->flightMode)
     {
         raw_play_widget = new playback_widget(fw);
         setWindowTitle("Ground Mode");
@@ -99,7 +99,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     tabWidget->addTab(horiz_cross_widget, QString("Horizontal Crosshair Profile"));
     tabWidget->addTab(vert_overlay_widget, QString("Vertical Overlay"));
     tabWidget->addTab(fft_mean_widget, QString("FFT Profile"));
-    if(!options.flightMode)
+    if(!options->flightMode)
     {
         tabWidget->addTab(raw_play_widget, QString("Playback View"));
     } else {
@@ -109,7 +109,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
     layout->addWidget(tabWidget, 3);
 
     /* Create controls box */
-    controlbox = new ControlsBox(fw, tabWidget, options);
+    controlbox = new ControlsBox(fw, tabWidget, *options);
     connect(controlbox, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
     layout->addWidget(controlbox, 1);
 
@@ -125,7 +125,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
 
     connect(flight_screen, SIGNAL(sendDiskSpaceAvailable(quint64,quint64)), controlbox, SLOT(updateDiskSpace(quint64,quint64)));
 
-    if(options.flightMode)
+    if(options->flightMode)
     {
         // Flight Tab
         int flightIndex = tabWidget->indexOf(flight_screen);
@@ -169,11 +169,11 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
             cLog->setWindowState(Qt::WindowActive);
             cLog->raise();
     });
-    if(options.dataLocationSet)
+    if(options->dataLocationSet)
     {
-        handleStatusMessage(QString("Data storage location: [%1]").arg(options.dataLocation));
+        handleStatusMessage(QString("Data storage location: [%1]").arg(options->dataLocation));
     }
-    if(options.runStdDevCalculation)
+    if(options->runStdDevCalculation)
     {
         emit toggleStdDevCalc(true);
         handleStatusMessage(QString("Standard Deviation calculation enabled"));
@@ -182,7 +182,7 @@ MainWindow::MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw
         handleStatusMessage(QString("Standard Deviation calculation disabled"));
     }
 
-    if(options.flightMode)
+    if(options->flightMode)
     {
         handleStatusMessage("Flight Mode ENABLED.");
     } else {
@@ -353,7 +353,7 @@ void MainWindow::closeEvent(QCloseEvent *e)
 void MainWindow::handlePreferenceRead(settingsT prefs)
 {
     QString title;
-    if(options.flightMode)
+    if(options->flightMode)
     {
         if(prefs.hideFFT)
             removeTab("FFT Profile");
@@ -377,7 +377,7 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
             removeTab("Waterfall");
     }
 
-    if(!options.runStdDevCalculation)
+    if(!options->runStdDevCalculation)
     {
         prefs.hideStddeviation = true;
         removeTab("Std. Deviation");

@@ -33,7 +33,7 @@ class MainWindow : public QMainWindow
 public:
     /*! The main window must be passed a QThread to ensure that GUI commands are handled
      * separately from backend commands. This improves the overall responsiveness of the software. */
-    MainWindow(startupOptionsType options, QThread *qth, frameWorker *fw, QWidget *parent = 0);
+    MainWindow(startupOptionsType *options, QThread *qth, frameWorker *fw, QWidget *parent = 0);
 
 private:
     frameWorker *fw;
@@ -42,7 +42,7 @@ private:
     ControlsBox *controlbox;
     saveServer *save_server; // Save Server is a non-GUI component that should be open regardless of the current view widget
 
-    startupOptionsType options;
+    startupOptionsType *options;
     QString settingsFilename;
 
     void prepareGPS();

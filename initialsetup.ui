@@ -155,6 +155,38 @@
     </item>
    </layout>
   </widget>
+  <widget class="QLabel" name="fpsLabel">
+   <property name="geometry">
+    <rect>
+     <x>170</x>
+     <y>130</y>
+     <width>81</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Target FPS:</string>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="fpsSpin">
+   <property name="geometry">
+    <rect>
+     <x>250</x>
+     <y>130</y>
+     <width>91</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="decimals">
+    <number>1</number>
+   </property>
+   <property name="minimum">
+    <double>1.000000000000000</double>
+   </property>
+   <property name="maximum">
+    <double>150.000000000000000</double>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections>

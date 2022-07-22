@@ -36,6 +36,8 @@ private slots:
 
     void on_buttonBox_accepted();
 
+    void on_fpsSpin_valueChanged(double arg1);
+
 private:
     Ui::initialSetup *ui;
     startupOptionsType *options;

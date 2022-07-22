@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
     startupOptions.gpsPort = 8111;
     startupOptions.gpsPortSet = true;
     startupOptions.xioDirectory = new QString("");
+    startupOptions.targetFPS = 50.0;
 
     bool heightSet = false;
     bool widthSet = false;
@@ -156,6 +157,26 @@ int main(int argc, char *argv[])
                 {
                     widthSet = true;
                     startupOptions.xioWidth = xiowidthtemp;
+                    c++;
+                } else {
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if(currentArg == "--targetfps")
+        {
+            if(argc > c)
+            {
+                float targetfpstemp = 0;
+                bool ok = false;
+                targetfpstemp = QString(argv[c+1]).toFloat(&ok);
+                if(ok)
+                {
+                    startupOptions.targetFPS = targetfpstemp;
                     c++;
                 } else {
                     std::cout << helptext.toStdString() << std::endl;
@@ -269,7 +290,7 @@ int main(int argc, char *argv[])
     std::cout << "The compilation was performed by " << UNAME << " @ " << HOST << std::endl;
 
     /* Step 5: Open the main window (GUI/frontend) */
-    MainWindow w(startupOptions, workerThread, fw);
+    MainWindow w(&startupOptions, workerThread, fw);
     //QObject::connect(fw, SIGNAL(sendStatusMessage(QString)), w, SLOT(handleStatusMessage(QString)));
     w.setGeometry(   QStyle::alignedRect(
                          Qt::LeftToRight,

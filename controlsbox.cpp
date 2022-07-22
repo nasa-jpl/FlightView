@@ -1232,6 +1232,7 @@ void ControlsBox::updateDiskSpace(quint64 total, quint64 available)
 void ControlsBox::showSetup()
 {
     // Pause this thread while open
+    setupUI.acceptOptions(&options);
     setupUI.exec();
     // At this point, options have changed.
     // so we need to communicate this to fw.

@@ -39,6 +39,8 @@ void initialSetup::acceptOptions(startupOptionsType *opts)
     {
         ui->xioPathText->setText(*options->xioDirectory);
     }
+
+    ui->fpsSpin->setValue((double)options->targetFPS);
 }
 
 startupOptionsType *initialSetup::getOptions()
@@ -129,4 +131,9 @@ void initialSetup::on_buttonBox_accepted()
     {
         abort();
     }
+}
+
+void initialSetup::on_fpsSpin_valueChanged(double arg1)
+{
+    options->targetFPS = (float)arg1;
 }

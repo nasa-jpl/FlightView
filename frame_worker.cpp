@@ -125,6 +125,7 @@ void frameWorker::convertOptions()
     takeOptions.xioHeight = options.xioHeight;
     takeOptions.xioWidth = options.xioWidth;
     takeOptions.heightWidthSet = options.heightWidthSet;
+    takeOptions.targetFPS = options.targetFPS;
 }
 
 // public functions
