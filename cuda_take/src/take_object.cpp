@@ -249,8 +249,9 @@ void take_object::start()
             rtnval = pdv_multibuf(pdv_p,this->numbufs);
         if(rtnval != 0)
         {
-            std::cout << "Error, could not initialize camera link multibuffer." << std::endl;
-            std::cout << "Make sure the camera link driver is loaded and that the camera link port has been initialized using initcam." << std::endl;
+            std::cerr << "Error, could not initialize camera link multibuffer." << std::endl;
+            std::cerr << "Make sure the camera link driver is loaded and that the camera link port has been initialized using initcam." << std::endl;
+            abort();
         }
 
 
@@ -1097,7 +1098,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
 void take_object::errorMessage(const char *message)
 {
-    std::cout << "take_object: ERROR: " << message << std::endl;
+    std::cerr << "take_object: ERROR: " << message << std::endl;
 }
 
 void take_object::warningMessage(const char *message)
