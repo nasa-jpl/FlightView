@@ -245,17 +245,17 @@ void XIOCamera::readFile()
             dev_p.seekg(0, std::ios::end);
             filesize = dev_p.tellg();
             dev_p.seekg(headsize, std::ios::beg);
-            LOG << ": decomp read, filesize read from actual file stream is: " << filesize;
+            LL(3) << ": decomp read, filesize read from actual file stream is: " << filesize;
         } else {
             // convert the raw hex string to decimal, one digit at a time.
             filesize = int(header[7]) * 16777216 + int(header[6]) * 65536 + int(header[5]) * 256 + int(header[4]);
-            LOG << ": Not-decomp, filesize read from header is: " << filesize;
+            LL(9) << ": Not-decomp, filesize read from header is: " << filesize;
         }
 
         framesize = static_cast<size_t>(filesize / nFrames);
         if (framesize == 0) { //If header reports a 0 filesize (invalid data), then skip this file.
             dev_p.close();
-            LOG << ": Skipped file \"" << ifname.data() << "\" due to invalid data. size: "
+            LL(8) << ": Skipped file \"" << ifname.data() << "\" due to invalid data. size: "
                                << framesize << ", nFrames: " << nFrames;
         } else { //otherwise we load it
             validFile = true;

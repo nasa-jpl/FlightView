@@ -104,7 +104,8 @@ void frameWorker::convertOptions()
             std::cout << "takeOptions xio directory: " << takeOptions.xioDirectory->c_str() << std::endl;
         }
     } else {
-        abort();
+        std::cerr << "Error, xio directory blank." << std::endl;
+        exit(-1);
     }
 
     takeOptions.height = takeOptions.xioHeight;

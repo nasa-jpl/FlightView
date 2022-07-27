@@ -813,13 +813,16 @@ void take_object::fileImageCopyLoop()
 int take_object::getMicroSecondsPerFrame()
 {
     int max = (meanDeltaArrayPos < meanDeltaSize)?meanDeltaArrayPos:meanDeltaSize;
+    // If max is 0, we have not actually taken a reading yet.
+    if(max == 0)
+        return 0;
+
     int sum = 0;
     for(int i=0; i < max; i++)
     {
         sum += meanDeltaArray[i];
     }
     return sum / max;
-    // return measuredDelta_micros_final;
 }
 
 void take_object::setReadDirectory(const char *directory)

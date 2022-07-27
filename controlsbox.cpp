@@ -100,7 +100,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //Fourth Row
     collections_layout->addWidget(&server_port_label, 4, 1, 1, 1);
     collections_layout->addWidget(&showConsoleLogBtn, 4, 2, 1, 1);
-    if(!options.flightMode)
+    if((!options.flightMode) && options.xioCam)
     {
         collections_layout->addWidget(&showXioSetupBtn, 4, 3, 1, 1);
     }

@@ -5,10 +5,10 @@
 
 // Lower numbers are lower-level things, which are hidden unless logginglevel is set to a lower number.
 
-#define logginglevel (2)
+#define logginglevel (8)
 
 // If you #define MUTE_LOG, then no output at all.
-# define MUTE_LOG
+// define MUTE_LOG
 
 // usage:
 // LOG << "thing to be logged";
