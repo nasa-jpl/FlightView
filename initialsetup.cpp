@@ -123,6 +123,9 @@ void initialSetup::on_buttonBox_rejected()
 
 void initialSetup::on_buttonBox_accepted()
 {
+    if((options->xioHeight !=0) && (options->xioWidth != 0))
+        options->heightWidthSet = true;
+
     if(options->xioDirectory == NULL)
     {
         abort();

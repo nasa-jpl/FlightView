@@ -674,37 +674,10 @@ void take_object::fileImageCopyLoop()
 
             if(temp_frame)
             {
-                //markFrameForChecking(temp_frame);
-                memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight);
-                //goodResult = checkFrame(curFrame->raw_data_ptr);
-                if(hasBeenNull)
-                {
-                    // This is here to catch if the frame is NULL, meaning
-                    // data has finished, but then the frame goes back to
-                    // being valid data.
-                    statusMessage("Note: frame was NULL, but is not anymore. ");
-                    hasBeenNull = false;
-                    //abort(); // test, remove later.
-                }
+                memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight*2);
             } else {
-                if(!hasBeenNull)
-                {
-                    // What if we don't do it?
-                    // clearAllRingBuffer();
-                }
-
-                //hasBeenNull = true;
                 //errorMessage("Frame was NULL!");
-                memcpy(curFrame->raw_data_ptr,zeroFrame,frWidth*dataHeight);
-
-                // Check frame intregity:
-                //goodResult = checkFrame(curFrame->raw_data_ptr);
-//                if(!goodResult)
-//                {
-//                    errorMessage("Frame failed check");
-//                    abort();
-//                }
-
+                memcpy(curFrame->raw_data_ptr,zeroFrame,frWidth*dataHeight*2);
             }
 
             // From here on out, the code should be
@@ -712,17 +685,17 @@ void take_object::fileImageCopyLoop()
 
             if(true)
             {
-            if(pixRemap)
-                apply_chroma_translate_filter(curFrame->raw_data_ptr);
-            if(cam_type == CL_6604A)
-                curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
-            else
-                curFrame->image_data_ptr = curFrame->raw_data_ptr;
-            if(inverted)
-            { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
-                for(uint i = 0; i < frHeight*frWidth; i++ )
-                    curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
-            }
+                if(pixRemap)
+                    apply_chroma_translate_filter(curFrame->raw_data_ptr);
+                if(cam_type == CL_6604A)
+                    curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
+                else
+                    curFrame->image_data_ptr = curFrame->raw_data_ptr;
+                if(inverted)
+                { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
+                    for(uint i = 0; i < frHeight*frWidth; i++ )
+                        curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
+                }
             } else {
                 curFrame->image_data_ptr = curFrame->raw_data_ptr;
             }
@@ -760,18 +733,6 @@ void take_object::fileImageCopyLoop()
             }
             */
 
-
-//            goodResult = checkFrame(curFrame->raw_data_ptr);
-//            if(!goodResult)
-//            {
-//                errorMessage("Frame failed late check");
-//                errorMessage(std::string("pixel 0: ") + std::to_string((int)curFrame->raw_data_ptr[0]));
-//                errorMessage(std::string("pixel 1: ") + std::to_string((int)curFrame->raw_data_ptr[1]));
-
-//                abort();
-//            }
-
-
             last_framecount = framecount;
             count++;
             grabbing = false;
@@ -797,9 +758,6 @@ void take_object::fileImageCopyLoop()
             finaltp = std::chrono::steady_clock::now();
             measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
             meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
-
-            // if elapsed time < required time
-            // wait delta.
         }
         statusMessage("Done providing frames");
     } else {

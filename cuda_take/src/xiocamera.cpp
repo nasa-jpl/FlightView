@@ -23,11 +23,22 @@ XIOCamera::XIOCamera(int frWidth,
     std::fill(header.begin(), header.end(), 0);
 
     dummy.resize(size_t(frame_width * data_height));
+    // dummyPtr is the size of two frames, this is just to make things safer.
+    dummyPtr = (uint16_t*)malloc(frame_width * data_height * sizeof(uint16_t) * 2);
+    if(dummyPtr == NULL)
+        abort();
 
-    // Test image gradient:
+    // Test image gradients:
+    // Values are zero to 65534, data type is uint16_t, may be substituted
+    // in for the frame to verify data.
     for (size_t n=0; n < dummy.size(); n++)
     {
         dummy.at(n) = ((float)n/((float)frame_width * data_height)) * 65535;
+    }
+
+    for(int n=0; n < frame_width * data_height; n++)
+    {
+        dummyPtr[n] = ((float)n/((float)frame_width * data_height)) * 65535;
     }
 
     //std::fill(dummy.begin(), dummy.end(), 0);
@@ -66,6 +77,9 @@ XIOCamera::~XIOCamera()
         usleep(1);
     }
     fileListVecLocked = true;
+
+    free(dummyPtr);
+
     LOG << " Completed XIO camera destructor for ID: " << this;
 }
 
@@ -264,8 +278,13 @@ void XIOCamera::readFile()
 
             LOG << ": File size is " << filesize << " bytes, which corresponds to a framesize of " << framesize << " bytes.";
             LOG << ": nFrames: " << nFrames;
+/*
+            if( (int)(framesize / sizeof(uint16_t)) > (int)(frame_width * data_height))
+                abort();
             std::vector<uint16_t> zero_vec(size_t(frame_width * data_height) - (size_t(framesize) / sizeof(uint16_t)));
             std::fill(zero_vec.begin(), zero_vec.end(), 10000); // fill with value 10k so that I can spot it during debug.
+*/
+
 
             std::vector<uint16_t> copy_vec(size_t(framesize), 5000); // fill with value 5k so that I can spot it during debug.
 
@@ -342,6 +361,8 @@ uint16_t* XIOCamera::getFrame()
 {
     // This seems to run constantly.
 
+    uint16_t *framePtr = NULL;
+
     bool showOutput = ((getFrameCounter % 100) == 0);
 
     if(showOutput)
@@ -352,20 +373,24 @@ uint16_t* XIOCamera::getFrame()
 
     {
         std::lock_guard<std::mutex> lock(frame_buf_lock); // gone once out of scope.
-        if ( (!frameVecLocked) && (!frame_buf.empty()) ) {
+        if ( (!frame_buf.empty()) ) {
             frameVecLocked = true;
-            temp_frame = frame_buf.back();
+            //temp_frame = frame_buf.back();
+            framePtr = frame_buf.back().data();
+            // While the frame_buf is locked, this is a good time to copy memory out and provide it to the caller
+            // TODO: Add simple malloc'd ring-buffer; copy to pos++, return pos,
+            // this way if the caller is slow to use the data, we have some "space" between us.
             // prev_frame = &temp_frame;
             frame_buf.pop_back(); // I have seen it crash here. We really need to assure exclusive access or use another method of storage.
             frameVecLocked = false;
             dummyrepeats = 0;
             LL(4) << "Returning good data.";
-            // usleep(1000 * 10);
-            return temp_frame.data();
+            //return temp_frame.data();
+            return framePtr;
         } else {
             //if(showOutput) cout << __PRETTY_FUNCTION__ << ": Returning dummy data. locked: " << frameVecLocked << ", is_reading: " << is_reading << "empty status: " << frame_buf.empty() << endl;
             usleep(1000 * 1000); // 1 FPS, "timeout" style framerate, like the PDV driver.
-            return NULL;
+            return dummyPtr;
         }
     }
 }

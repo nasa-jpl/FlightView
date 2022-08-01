@@ -77,6 +77,7 @@ private:
     std::mutex frame_buf_lock;
     std::vector<unsigned char> header;
     std::vector<uint16_t> dummy;
+    uint16_t *dummyPtr = NULL;
     std::vector<uint16_t> temp_frame;
 
     // atomic bool vectorLocked = false;
