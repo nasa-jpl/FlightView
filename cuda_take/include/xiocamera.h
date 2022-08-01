@@ -36,6 +36,7 @@
 #include "cudalog.h"
 
 #define TIMEOUT_DURATION 100
+#define guaranteedBufferFramesCount (8)
 
 using namespace std::chrono;
 
@@ -78,6 +79,8 @@ private:
     std::vector<unsigned char> header;
     std::vector<uint16_t> dummy;
     uint16_t *dummyPtr = NULL;
+    uint16_t *guaranteedBufferFrames[guaranteedBufferFramesCount] = {NULL};
+    int gbPos = 0;
     std::vector<uint16_t> temp_frame;
 
     // atomic bool vectorLocked = false;

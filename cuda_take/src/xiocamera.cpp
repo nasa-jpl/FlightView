@@ -45,6 +45,15 @@ XIOCamera::XIOCamera(int frWidth,
     for (int n = 0; n < nFrames; n++) {
         frame_buf.emplace_back(std::vector<uint16_t>(size_t(frame_width * data_height), n*1000));
     }
+
+    // Frame buffer to hold guaranteed safe data. This buffer never chagnes size:
+    for(int f = 0; f < guaranteedBufferFramesCount; f++)
+    {
+        guaranteedBufferFrames[f] = (uint16_t*)calloc(frame_width*data_height, sizeof(uint16_t));
+        if(guaranteedBufferFrames[f] == NULL)
+            abort();
+    }
+
     LOG << ": Initial size of frame_buf: " << frame_buf.size() ;
     LOG << ": finished XIO Camera constructor for ID: " << this;
     frameVecLocked = false;
@@ -361,7 +370,8 @@ uint16_t* XIOCamera::getFrame()
 {
     // This seems to run constantly.
 
-    uint16_t *framePtr = NULL;
+    uint16_t *frameVecPtr = NULL;
+    uint16_t *doneFramePtr = NULL;
 
     bool showOutput = ((getFrameCounter % 100) == 0);
 
@@ -374,19 +384,22 @@ uint16_t* XIOCamera::getFrame()
     {
         std::lock_guard<std::mutex> lock(frame_buf_lock); // gone once out of scope.
         if ( (!frame_buf.empty()) ) {
+            LL(4) << "Returning good data.";
             frameVecLocked = true;
             //temp_frame = frame_buf.back();
-            framePtr = frame_buf.back().data();
-            // While the frame_buf is locked, this is a good time to copy memory out and provide it to the caller
-            // TODO: Add simple malloc'd ring-buffer; copy to pos++, return pos,
-            // this way if the caller is slow to use the data, we have some "space" between us.
-            // prev_frame = &temp_frame;
-            frame_buf.pop_back(); // I have seen it crash here. We really need to assure exclusive access or use another method of storage.
+            frameVecPtr = frame_buf.back().data();
+
+            // This memory was allocated with the class constructor; it is always valid and
+            // does not change size. Data are copied from the locked vector into
+            // this guarenteed space so that the calling function will never come up
+            // with invalid memory.
+            memcpy(guaranteedBufferFrames[gbPos%guaranteedBufferFramesCount], frameVecPtr, frame_height*frame_width*sizeof(uint16_t));
+
+            frame_buf.pop_back();
             frameVecLocked = false;
-            dummyrepeats = 0;
-            LL(4) << "Returning good data.";
-            //return temp_frame.data();
-            return framePtr;
+            doneFramePtr = guaranteedBufferFrames[gbPos%guaranteedBufferFramesCount];
+            gbPos++;
+            return doneFramePtr;
         } else {
             //if(showOutput) cout << __PRETTY_FUNCTION__ << ": Returning dummy data. locked: " << frameVecLocked << ", is_reading: " << is_reading << "empty status: " << frame_buf.empty() << endl;
             usleep(1000 * 1000); // 1 FPS, "timeout" style framerate, like the PDV driver.
