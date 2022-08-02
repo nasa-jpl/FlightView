@@ -18,7 +18,8 @@ XIOCamera::XIOCamera(int frWidth,
     data_height = dataHeight;
     is_reading = false;
     LOG << ": rsv - headsize: " << headsize << " frWidth: " << frWidth << ", data_height: " << data_height << ", size of pixel: " << int(sizeof(uint16_t));
-
+    xioHeadsize = headsize;
+    nFramesXio = nFrames;
     header.resize(size_t(headsize));
     std::fill(header.begin(), header.end(), 0);
 
@@ -139,7 +140,9 @@ void XIOCamera::setDir(const char *dirname)
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         if (f.empty())
             continue;
-        if( (std::strcmp(ext.data(), "xio") != 0) and (std::strcmp(ext.data(), "decomp") != 0))
+        if(  (std::strcmp(ext.data(), "xio")    != 0) and
+             (std::strcmp(ext.data(), "decomp") != 0) and
+             (std::strcmp(ext.data(), "raw")    != 0))
         {
             LOG << "Rejecting file " << f;
         } else {
@@ -200,7 +203,8 @@ std::string XIOCamera::getFname()
             std::string ext = os::getext(*f);
             std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
             if ((*f).empty() or (std::strcmp(ext.data(), "xio") != 0 and
-                                 std::strcmp(ext.data(), "decomp") != 0)) {
+                                 std::strcmp(ext.data(), "decomp") != 0 and
+                                 std::strcmp(ext.data(), "raw") != 0  )) {
                 continue;
             } else if (has_file) {
                 break;
@@ -232,6 +236,7 @@ void XIOCamera::readFile()
 {
     // Reads a SINGLE file, processing all available frames within the file.
     LOG << " Starting readfile";
+    bool isRawFile = false;
     bool validFile = false;
     while(!validFile) {
         ifname = getFname();
@@ -257,6 +262,12 @@ void XIOCamera::readFile()
         }
 
         LOG << ": Successfully opened " << ifname.data();
+
+        if(ifname.size() > 3 && ifname.compare(ifname.size()-3, 3, "raw") == 0)
+        {
+            isRawFile = true;
+        }
+
         dev_p.unsetf(std::ios::skipws);
 
         dev_p.read(reinterpret_cast<char*>(header.data()), headsize);
@@ -265,11 +276,21 @@ void XIOCamera::readFile()
         std::string ext = os::getext(ifname);
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         if (!std::strcmp(ext.data(), "decomp")) {
+            headsize = xioHeadsize;
+            nFrames = nFramesXio;
             dev_p.seekg(0, std::ios::end);
             filesize = dev_p.tellg();
             dev_p.seekg(headsize, std::ios::beg);
             LL(3) << ": decomp read, filesize read from actual file stream is: " << filesize;
+        } else if (isRawFile){
+            dev_p.seekg(0, std::ios::end);
+            filesize = dev_p.tellg();
+            nFrames = filesize / (frame_width * frame_height * sizeof(uint16_t));
+            headsize = 0;
+            dev_p.seekg(std::ios::beg);
         } else {
+            headsize = xioHeadsize;
+            nFrames = nFramesXio;
             // convert the raw hex string to decimal, one digit at a time.
             filesize = int(header[7]) * 16777216 + int(header[6]) * 65536 + int(header[5]) * 256 + int(header[4]);
             LL(9) << ": Not-decomp, filesize read from header is: " << filesize;

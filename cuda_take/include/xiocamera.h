@@ -66,9 +66,11 @@ private:
     std::string ifname;
     std::string data_dir;
     std::streampos bufsize;
-    const int nFrames;
+    int nFrames; // number of frames inside each file
+    int nFramesXio;
     size_t framesize;
-    const int headsize;
+    int headsize; // size of header for decomp and xio data files
+    int xioHeadsize;
     volatile int dummycounttotal=0;
     volatile int dummyrepeats=0;
 
