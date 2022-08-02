@@ -812,9 +812,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 
     uint16_t framecount = 1;
     uint16_t last_framecount = 0;
-#ifdef EDT
 	unsigned char* wait_ptr;
-#endif
 
 
     mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
@@ -890,10 +888,6 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             saving_list.push_front(raw_copy);
             save_framenum--;
         }
-
-#ifdef EDT
-
-#endif
 
         framecount = *(curFrame->raw_data_ptr + 160); // The framecount is stored 160 bytes offset from the beginning of the data
         if(CHECK_FOR_MISSED_FRAMES_6604A && cam_type == CL_6604A)

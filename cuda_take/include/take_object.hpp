@@ -57,12 +57,10 @@ static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence
 #define meanDeltaSize (20)
 
 class take_object {
-#ifdef EDT
     PdvDev * pdv_p = NULL;
     unsigned int channel;
     unsigned int numbufs;
     unsigned int filter_refresh_rate;
-#endif
 
 
     bool closing = false;
