@@ -42,6 +42,9 @@ XIOCamera::XIOCamera(int frWidth,
         dummyPtr[n] = ((float)n/((float)frame_width * data_height)) * 65535;
     }
 
+    zero_vec = std::vector<uint16_t>(size_t(frame_width * data_height) - (size_t(framesize) / sizeof(uint16_t)));
+    std::fill(zero_vec.begin(), zero_vec.end(), 10000); // fill with value 10k so that I can spot it during debug.
+
     //std::fill(dummy.begin(), dummy.end(), 0);
     for (int n = 0; n < nFrames; n++) {
         frame_buf.emplace_back(std::vector<uint16_t>(size_t(frame_width * data_height), n*1000));
@@ -266,6 +269,8 @@ void XIOCamera::readFile()
         if(ifname.size() > 3 && ifname.compare(ifname.size()-3, 3, "raw") == 0)
         {
             isRawFile = true;
+        } else {
+            isRawFile = false;
         }
 
         dev_p.unsetf(std::ios::skipws);
@@ -316,39 +321,29 @@ void XIOCamera::readFile()
 */
 
 
-            std::vector<uint16_t> copy_vec(size_t(framesize), 5000); // fill with value 5k so that I can spot it during debug.
+            // std::vector<uint16_t> copy_vec(size_t(framesize), 5000); // fill with value 5k so that I can spot it during debug.
+            std::vector<uint16_t> copy_vec(size_t(frame_height * frame_width * sizeof(uint16_t)), 5000); // fill with value 5k so that I can spot it during debug.
 
             int read_size = 0;
 
             {
                 std::lock_guard<std::mutex> lock(frame_buf_lock); // wait until we have a lock
                 for (volatile int n = 0; n < nFrames; ++n) {
+                    //copy_vec.clear();
+                    //copy_vec.resize(size_t(frame_height * frame_width * sizeof(uint16_t)));
                     dev_p.read(reinterpret_cast<char*>(copy_vec.data()), std::streamsize(framesize));
                     read_size = dev_p.gcount();
                     LL(3)  << ": Read " << read_size << " bytes from frame " << n << ", copy_vec size is: " << copy_vec.size();
                     LL(3)  << "Rows: " << read_size / frame_width;
                     LL(2) << ": Size of frame_buf pre-push: " << frame_buf.size();
 
+                    if (framesize / sizeof(uint16_t) < size_t(frame_width * data_height)) {
+                        std::copy(zero_vec.begin(), zero_vec.begin() + ( ((frame_width * data_height)) - (framesize / sizeof(uint16_t)) ), copy_vec.data() + framesize / sizeof(uint16_t));
+                    }
                     frameVecLocked = true;
                     frame_buf.push_front(copy_vec);  // double-ended queue of a vector of uint_16.
                     // each frame_buf unit is a frame vector.
                     LL(2) << ": Size of frame_buf post-push: " << frame_buf.size();
-
-                    // If the frame data is smaller than a frame, fill the rest of the frame with zeros:
-                    if (framesize / sizeof(uint16_t) < size_t(frame_width * data_height)) {
-                        // We can't copy to space inside the frame_buf[n] that has not been allocated yet!!
-                        LL(2) << ": size of frame_buf: " << frame_buf.size();
-                        //qDebug() << __PRETTY_FUNCTION__ << "size of frame_buf[0]:" << frame_buf[0].size();
-                        LL(2) << ": framesize: " << framesize << ",framesize in uint16 size:     " << framesize/sizeof(uint16_t);
-                        LL(2) << ": frame_width: " << frame_width << ", data_height: " << data_height << ", product: " << frame_width*data_height;
-
-                        if(frame_buf[size_t(n)].size() != 0)
-                        {
-                            //std::copy(zero_vec.begin(), zero_vec.end(), frame_buf[size_t(n)].begin() + framesize / sizeof(uint16_t));
-                        } else {
-                            LOG << ": ERROR, frame_buf at [" << n << "].size() is zero.";
-                        }
-                    }
                     frameVecLocked = false;
                 }
             } // end lock
@@ -409,7 +404,8 @@ uint16_t* XIOCamera::getFrame()
             frameVecLocked = true;
             //temp_frame = frame_buf.back();
             frameVecPtr = frame_buf.back().data();
-
+            if(frameVecPtr == NULL)
+                abort();
             // This memory was allocated with the class constructor; it is always valid and
             // does not change size. Data are copied from the locked vector into
             // this guarenteed space so that the calling function will never come up

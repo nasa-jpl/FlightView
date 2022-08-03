@@ -36,7 +36,7 @@
 #include "cudalog.h"
 
 #define TIMEOUT_DURATION 100
-#define guaranteedBufferFramesCount (8)
+#define guaranteedBufferFramesCount (3)
 
 using namespace std::chrono;
 
@@ -71,6 +71,7 @@ private:
     size_t framesize;
     int headsize; // size of header for decomp and xio data files
     int xioHeadsize;
+    std::vector<uint16_t> zero_vec;
     volatile int dummycounttotal=0;
     volatile int dummyrepeats=0;
 
