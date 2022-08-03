@@ -626,8 +626,8 @@ void take_object::fileImageCopyLoop()
     }
     // End verification.
 
-    bool hasBeenNull = false;
-
+    volatile bool hasBeenNull = false;
+    (void)hasBeenNull;
     if(Camera)
     {
         count = 0;
@@ -676,7 +676,8 @@ void take_object::fileImageCopyLoop()
             {
                 memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight*2);
             } else {
-                //errorMessage("Frame was NULL!");
+                hasBeenNull = true;
+                errorMessage("Frame was NULL!");
                 memcpy(curFrame->raw_data_ptr,zeroFrame,frWidth*dataHeight*2);
             }
 

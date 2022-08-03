@@ -194,7 +194,10 @@ void frameWorker::captureFrames()
     while(doRun) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 1); // 1ms maximum delay permitted
         usleep(50); //So that CPU utilization is not 100%
-        workingFrame = &to.frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+        count = (to.count - 1) % CPU_FRAME_BUFFER_SIZE;
+        workingFrame = &to.frame_ring_buffer[count];
+        //workingFrame = &to.frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+
         if(std_dev_processing_frame != NULL) {
             if(std_dev_processing_frame->has_valid_std_dev == 2) {
                 std_dev_frame = std_dev_processing_frame;
@@ -214,7 +217,7 @@ void frameWorker::captureFrames()
 			}
             last_savect = save_ct;
             last_savenum = save_num;
-            count++;
+            // count++;
 
             // Every 25 frames, or, every 200ms, whichever comes first.
             if( (count%25 == 0) || (clock.elapsed() - lastTime > 200) )
@@ -226,32 +229,11 @@ void frameWorker::captureFrames()
                     emit updateFPS();
                 }
             }
-
-            // This is to detect and report slow frame rates:
-//            if(clock.elapsed() - lastTime > 30)
-//            {
-//                restart = clock.restart();
-//                if(restart != 0)
-//                {
-//                    delta = 1000.0f / restart;
-//                    emit updateFPS();
-//                } else {
-//                    delta = 0.0f;
-//                }
-//            } else {
-//                // Calcualte normal frame rate:
-//                if (count % 25 == 0 && count != 0) {
-//                    restart = clock.restart();
-//                    if(restart != 0)
-//                    {
-//                        delta = 25.0 / restart * 1000.0;
-//                        emit updateFPS();
-//                    } else {
-//                        delta = 0;
-//                    }
-//                }
-//            }
             lastTime = clock.elapsed();
+        } else {
+            // This happens when the program is drawing the screen faster than the
+            // frames arrive. It is generally not a problem.
+            // sMessage("NOTE: Frame not updated.");
         }
 
     }
