@@ -19,6 +19,20 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
     consolelog.cpp \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/buffer.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/buffer_decomp.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/comp_engine.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/decomp_engine.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/engine_common.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/envi_header_read.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/flex.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/flex_envi.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/flex_packetized.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/flex_util.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/iec_decode.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/iec_encode.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/image_io.c \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/simple_packer.c \
     cuda_take/src/take_object.cpp \
     filenamegenerator.cpp \
     flight_widget.cpp \
@@ -44,6 +58,19 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     consolelog.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/api_headers/flex.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/api_headers/flex_envi.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/api_headers/flex_packetized.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/api_headers/flex_types.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/api_headers/flex_util.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/api_headers/generic_types.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/buffer.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/buffer_decomp.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/engine.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/envi_header_read.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/iec.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/image_io.h \
+    cuda_take/EMIT_FLEX_codec/flex_api/source/simple_packer.h \
     filenamegenerator.h \
     flight_widget.h \
     frameview_widget.h \
@@ -73,6 +100,7 @@ HEADERS  += mainwindow.h \
     preferences.h
 
 DISTFILES +=    cuda_take/include/take_object.hpp \
+                cuda_take/EMIT_FLEX_codec/flex_api/lib/libflexAPI.a \
                 cuda_take/include/chroma_translate_filter.hpp \
                 cuda_take/include/std_dev_filter_device_code.cuh \
                 cuda_take/include/mean_filter.hpp \
