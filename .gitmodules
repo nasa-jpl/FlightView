@@ -1,3 +1,6 @@
 [submodule "gpsGUI"]
 	path = gpsGUI
 	url = https://github.com/nasa-jpl/gpsGUI.git
+[submodule "cuda_take/EMIT_FLEX_codec"]
+	path = cuda_take/EMIT_FLEX_codec
+	url = git@github.jpl.nasa.gov:flex-data-compression/EMIT_FLEX_codec.git
