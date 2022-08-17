@@ -56,6 +56,7 @@ protected:
 
 signals:
     void startSavingRemote(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs);
+    void sigMessage(QString message);
 
 private slots:
     void readCommand();

@@ -70,7 +70,9 @@ private:
     void removeTab(QString tabTitle);
 
 public slots:
-    void handleStatusMessage(QString message);
+    void handleMainWindowStatusMessage(QString message);
+    void handleGeneralStatusMessage(QString message);
+
     void handlePreferenceRead(settingsT prefs);
     void enableStdDevTabs();
     void debugThis();

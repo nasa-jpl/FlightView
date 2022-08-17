@@ -45,14 +45,15 @@ void saveServer::connected_to_client()
 
 void saveServer::new_conn_slot()
 {
-    genStatusMessage("New TCP connection exists.");
+    // This indicates a client has connected.
+    // genStatusMessage("New TCP connection exists.");
 }
 
 bool saveServer::checkValues(uint16_t framesToSaveCount,
                              QString filename, uint16_t naverages)
 {
     bool ok = true;
-    if(framesToSaveCount > 35000)
+    if(framesToSaveCount > 60000)
         ok = false;
     if((filename.length() < 4) or (filename.length() > 4096))
         ok = false;
@@ -64,8 +65,6 @@ bool saveServer::checkValues(uint16_t framesToSaveCount,
 
 void saveServer::readCommand()
 {
-    std::cout << "in readCommand()" << std::endl;
-
     QDataStream in(clientConnection);
     in.setVersion(QDataStream::Qt_4_0);
     blockSize = 0;
@@ -87,22 +86,28 @@ void saveServer::readCommand()
     }
 
     in >> commandType;
-    genStatusMessage("Command received.");
+    // genStatusMessage("Command received.");
 
     switch (commandType) {
     case START_SAVING:
-        in >> framesToSave;
-        in >> fname;
-        in >> navgs;
-        if(checkValues(framesToSave, fname, navgs))
+        genStatusMessage("SAVE command received.");
+        if(reference->to.save_framenum == 0)
         {
-            reference->navgs = navgs;
-            reference->startSavingRawData(framesToSave, fname, navgs);
+            in >> framesToSave;
+            in >> fname;
+            in >> navgs;
+            if(checkValues(framesToSave, fname, navgs))
+            {
+                reference->navgs = navgs;
+                reference->startSavingRawData(framesToSave, fname, navgs);
+            }
+        } else {
+            genErrorMessage("Received SAVE command while already saving.");
         }
         break;
     case STATUS:
     {
-        genStatusMessage("Sending information back.");
+        genStatusMessage("Sending STATUS information back.");
         QByteArray block;
         QDataStream out( &block, QIODevice::WriteOnly );
         out.setVersion(QDataStream::Qt_4_0);
@@ -118,7 +123,7 @@ void saveServer::readCommand()
     }
     case STATUS_EXTENDED:
     {
-        genStatusMessage("Sending extended information back.");
+        genStatusMessage("Sending STATUS_EXTENDED information back.");
         QByteArray block;
         QDataStream out( &block, QIODevice::WriteOnly );
         out.setVersion(QDataStream::Qt_4_0);
@@ -137,7 +142,7 @@ void saveServer::readCommand()
         break;
     }
     default:
-        genErrorMessage("Unknown command received.");
+        genErrorMessage("Unknown command received: " + QString("0x%1").arg(commandType, 2, 16, QChar('0')));
         break;
     }
     blockSize = 0;
@@ -149,6 +154,7 @@ void saveServer::genErrorMessage(QString errorMessage)
     QString msg = "[saveServer]: ERROR: ";
     msg.append(errorMessage);
     std::cout << msg.toStdString() << std::endl;
+    emit sigMessage(msg);
 }
 
 void saveServer::genStatusMessage(QString statusMessage)
@@ -156,6 +162,7 @@ void saveServer::genStatusMessage(QString statusMessage)
     QString msg = "[saveServer]: Status: ";
     msg.append(statusMessage);
     std::cout << msg.toStdString() << std::endl;
+    emit sigMessage(msg);
 }
 
 void saveServer::printHex(QByteArray *b)
