@@ -91,7 +91,7 @@ void Client::sendMessage()
     our_host.setAddress( "10.0.0.1" ); // replace with the ip address of the computer running liveview
     int portNumber = 65000;
 
-    tcpSocket->connectToHost( aviris_cal, portNumber );
+    tcpSocket->connectToHost( "127.0.0.1" , portNumber );
     tcpSocket->waitForConnected(10);
     tcpSocket->write(block);
 }

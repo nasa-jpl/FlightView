@@ -1,6 +1,7 @@
 import sys
+from time import sleep
 #from time import sleep
-from PyQt4 import QtCore, QtNetwork
+from PyQt5 import QtCore, QtNetwork
 #from PyQt4 import QtGui; # only if a GUI is desired
 
 class saveClient(QtCore.QObject):
@@ -100,14 +101,29 @@ class saveClient(QtCore.QObject):
         message = errors.get(socket_error,
             "The following error occurred: %s." % self.socket.errorString())
         if message is not None:
-            print message
+            print(message)
 
 if __name__ == '__main__':
     #app = QtGui.QApplication(sys.argv) # not needed unless you want a GUI
     client = saveClient("127.0.0.1", 65000)
     # Save 1024 frames:
-    client.requestFrames("/tmp/10_2_socket.raw", 10, 2); # returns immediately
+    client.requestFrames("/tmp/10_2_socket.raw", 1000, 1); # returns immediately
     status = client.requestStatus(True)
-    print('(Frames remaining, FPS, averages_per_frame)')
-    print(status)
+    estimateRemainingTimeSec = 1.00
+    estimateRemainingTimeInitialSec = 1.00
+    if(status[2] != 0):
+        estimateRemainingTimeInitialSec = status[0] / status[1]
+    else:
+        estimateRemainingTimeInitialSec = 0
+        
+    while(status[0] != 0):
+        print('(Frames remaining, FPS, averages_per_frame)')
+        print(status)
+        status = client.requestStatus(True)
+        if(status[1] != 0):
+            estimateRemainingTimeSec = status[0] / status[1]
+        else:
+            estimateRemainingTimeSec = 0
+        # Update status about ten times per collection
+        sleep(estimateRemainingTimeInitialSec / 10)
     # see save_helpers.py for an example on how to wait carefully

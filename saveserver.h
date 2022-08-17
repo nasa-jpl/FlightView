@@ -35,6 +35,10 @@ class saveServer : public QTcpServer
     QString fname;
     uint16_t navgs;
 
+    bool checkValues(uint16_t framesToSaveCount,
+                     QString filename,
+                     uint16_t naverages);
+
 public:
     saveServer(frameWorker *fw, QObject *parent = 0);
 

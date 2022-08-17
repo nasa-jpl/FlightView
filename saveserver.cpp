@@ -55,6 +55,19 @@ void saveServer::new_conn_slot()
     // clientConnection->setSocketDescriptor(socketDescriptor());
 }
 
+void saveServer::checkValues(uint16_t framesToSaveCount,
+                             QString filename, uint16_t naverages)
+{
+    bool ok = true;
+    if(framesToSaveCount > 35000)
+        ok = false;
+    if(filename.length() < 4)
+        ok = false;
+    if( (naverages > 2000) or (naverages > framesToSaveCount))
+        ok = false;
+    return ok;
+}
+
 
 void saveServer::readCommand()
 {
@@ -86,8 +99,11 @@ void saveServer::readCommand()
         in >> framesToSave;
         in >> fname;
         in >> navgs;
-        reference->navgs = navgs;
-        reference->startSavingRawData(framesToSave, fname, navgs);
+        if(checkValues(framesToSave, filename, naverages))
+        {
+            reference->navgs = navgs;
+            reference->startSavingRawData(framesToSave, fname, navgs);
+        }
         break;
     case STATUS:
         std::cout << "Sending back information!" << std::endl;
