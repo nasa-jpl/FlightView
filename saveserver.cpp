@@ -33,35 +33,28 @@ void saveServer::incomingConnection(qintptr socketDescriptor)
 {
     std::cout << "incomingConnection() called!\n";
     if(!clientConnection->setSocketDescriptor(socketDescriptor)) {
-        std::cout << "Client Connection refused by host! :(" << std::endl;
+        genErrorMessage("Client connection refused by host.");
         return;
     }
 }
 
 void saveServer::connected_to_client()
 {
-    std::cout << "called connected()\n";
+    genStatusMessage("Called connected()");
 }
 
 void saveServer::new_conn_slot()
 {
-    std::cout << "new_conn_slot(): A new TCP connection exists.\n";
-    // does not work:
-    // incomingConnection(this->socketDescriptor());
-
-    // Gets to readCommand(), pretty cool, seg faults after that.
-    // Because, clientConnection is set to 0x0
-    // clientConnection = nextPendingConnection();
-    // clientConnection->setSocketDescriptor(socketDescriptor());
+    genStatusMessage("New TCP connection exists.");
 }
 
-void saveServer::checkValues(uint16_t framesToSaveCount,
+bool saveServer::checkValues(uint16_t framesToSaveCount,
                              QString filename, uint16_t naverages)
 {
     bool ok = true;
     if(framesToSaveCount > 35000)
         ok = false;
-    if(filename.length() < 4)
+    if((filename.length() < 4) or (filename.length() > 4096))
         ok = false;
     if( (naverages > 2000) or (naverages > framesToSaveCount))
         ok = false;
@@ -79,34 +72,37 @@ void saveServer::readCommand()
     if (blockSize == 0) {
         if (clientConnection->bytesAvailable() < (qint64) sizeof(quint16)) {
             clientConnection->disconnectFromHost();
-            std::cout << "No data received..." << std::endl;
+            genErrorMessage("No data received.");
             return;
         }
         in >> blockSize;
     }
 
     if (clientConnection->bytesAvailable() < blockSize) {
-        std::cout << "Only " << clientConnection->bytesAvailable() << " bytes to read compared with block of " << blockSize << " bytes." << std::endl;
+        std::stringstream msg;
+        msg << "Only " << clientConnection->bytesAvailable() << " bytes to read compared with block of " << blockSize << " bytes." << std::endl;
+        genErrorMessage(QString::fromStdString(msg.str()));
         clientConnection->disconnectFromHost();
         return;
     }
 
     in >> commandType;
-    std::cout << "Command received!" << std::endl;
+    genStatusMessage("Command received.");
 
     switch (commandType) {
     case START_SAVING:
         in >> framesToSave;
         in >> fname;
         in >> navgs;
-        if(checkValues(framesToSave, filename, naverages))
+        if(checkValues(framesToSave, fname, navgs))
         {
             reference->navgs = navgs;
             reference->startSavingRawData(framesToSave, fname, navgs);
         }
         break;
     case STATUS:
-        std::cout << "Sending back information!" << std::endl;
+    {
+        genStatusMessage("Sending information back.");
         QByteArray block;
         QDataStream out( &block, QIODevice::WriteOnly );
         out.setVersion(QDataStream::Qt_4_0);
@@ -120,6 +116,25 @@ void saveServer::readCommand()
         clientConnection->write(block);
         break;
     }
+    default:
+        genErrorMessage("Unknown command received.");
+        break;
+    }
     blockSize = 0;
     clientConnection->disconnectFromHost();
 }
+
+void saveServer::genErrorMessage(QString errorMessage)
+{
+    QString msg = "[saveServer]: ERROR: ";
+    msg.append(errorMessage);
+    std::cout << msg.toStdString() << std::endl;
+}
+
+void saveServer::genStatusMessage(QString statusMessage)
+{
+    QString msg = "[saveServer]: Status: ";
+    msg.append(statusMessage);
+    std::cout << msg.toStdString() << std::endl;
+}
+

@@ -4,6 +4,8 @@
 #include <QtNetwork/QTcpServer>
 #include <QtNetwork/QTcpSocket>
 #include <QDataStream>
+#include <QString>
+#include <sstream>
 
 #include "frame_worker.h"
 
@@ -38,6 +40,8 @@ class saveServer : public QTcpServer
     bool checkValues(uint16_t framesToSaveCount,
                      QString filename,
                      uint16_t naverages);
+    void genErrorMessage(QString errorMessage);
+    void genStatusMessage(QString statusMessage);
 
 public:
     saveServer(frameWorker *fw, QObject *parent = 0);
