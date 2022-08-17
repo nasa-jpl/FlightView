@@ -82,9 +82,10 @@ void Client::sendMessage()
     out << messageType;
     out << (quint16)100;
     out << fname;
-    out << (quint16)1; //  added number of averages to send to saveserver
+    out << (quint16)512; //  added number of averages to send to saveserver
     out.device()->seek(0);
     out << (quint16)(block.size() - sizeof(quint16));
+    printHex(&block);
 
     // hardcoding
     QHostAddress our_host;
@@ -143,4 +144,33 @@ void Client::sessionOpened()
                             "Live View2 as well."));
 
     enableConnectButton();
+}
+
+void Client::printHex(QByteArray *b)
+{
+    qDebug() << "Begin byte array debug: ";
+    QString i;
+    QString h;
+    for(int p=0; p < b->length(); p++)
+    {
+        i.append(QString("[%1]").arg(p,2,10,QChar('0')));
+        h.append(QString("[%1]").arg((unsigned char)b->at(p), 2, 16, QChar('0')));
+    }
+    qDebug() << i;
+    qDebug() << h;
+    qDebug() << "End byte array debug.";
+}
+
+void Client::genErrorMessage(QString msg)
+{
+    QString m = "[Client]: ERROR: ";
+    m.append(msg);
+    qDebug() << m;
+}
+
+void Client::genStatusMessage(QString msg)
+{
+    QString m = "[Client]: ";
+    m.append(msg);
+    qDebug() << m;
 }

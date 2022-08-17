@@ -11,6 +11,7 @@
 
 const quint16 START_SAVING = 2;
 const quint16 STATUS = 3;
+const quint16 STATUS_EXTENDED = 4;
 
 /*! \file
  *  \brief Establishes a server which can accept remote frame saving commands.
@@ -42,6 +43,7 @@ class saveServer : public QTcpServer
                      uint16_t naverages);
     void genErrorMessage(QString errorMessage);
     void genStatusMessage(QString statusMessage);
+    void printHex(QByteArray *b);
 
 public:
     saveServer(frameWorker *fw, QObject *parent = 0);

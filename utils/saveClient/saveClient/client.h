@@ -21,6 +21,9 @@ private slots:
     void displayError(QAbstractSocket::SocketError socketError);
     void enableConnectButton();
     void sessionOpened();
+    void genStatusMessage(QString msg);
+    void genErrorMessage(QString msg);
+    void printHex(QByteArray *d);
 
 private:
     QLabel* statusLabel;

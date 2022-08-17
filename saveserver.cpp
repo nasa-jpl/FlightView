@@ -112,7 +112,27 @@ void saveServer::readCommand()
         out << (uint16_t)reference->navgs;                       // number of averages, new code, bogus
         out.device()->seek(0);
         out << (uint16_t)(block.size() - sizeof(quint16));
-
+        //printHex(&block);
+        clientConnection->write(block);
+        break;
+    }
+    case STATUS_EXTENDED:
+    {
+        genStatusMessage("Sending extended information back.");
+        QByteArray block;
+        QDataStream out( &block, QIODevice::WriteOnly );
+        out.setVersion(QDataStream::Qt_4_0);
+        out << (uint16_t)0;
+        out << (uint16_t)reference->to.save_framenum; // send the number of frames left to save, and
+        out << (uint16_t)reference->delta;            // send the frames per second
+        out << (uint16_t)reference->navgs;                       // number of averages, new code, bogus
+        if(fname.isEmpty())
+            out << QString("");
+        else
+            out << fname;
+        out.device()->seek(0);
+        out << (uint16_t)(block.size() - sizeof(quint16));
+        //printHex(&block);
         clientConnection->write(block);
         break;
     }
@@ -137,4 +157,20 @@ void saveServer::genStatusMessage(QString statusMessage)
     msg.append(statusMessage);
     std::cout << msg.toStdString() << std::endl;
 }
+
+void saveServer::printHex(QByteArray *b)
+{
+    qDebug() << "Begin byte array debug: ";
+    QString i;
+    QString h;
+    for(int p=0; p < b->length(); p++)
+    {
+        i.append(QString("[%1]").arg(p,2,10,QChar('0')));
+        h.append(QString("[%1]").arg((unsigned char)b->at(p), 2, 16, QChar('0')));
+    }
+    qDebug() << i;
+    qDebug() << h;
+    qDebug() << "End byte array debug.";
+}
+
 
