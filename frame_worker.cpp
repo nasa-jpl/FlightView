@@ -38,6 +38,7 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
         // options are modified in-place, and then copied over to the takeOptionsType for take_object.
         setupUI.acceptOptions(&options);
         setupUI.setModal(true);
+        setupUI.setWindowFlag(Qt::WindowStaysOnTopHint, true);
         setupUI.exec();
 
         if(options.xioDirectory == NULL)

@@ -6,6 +6,7 @@
 #include <QStyle>
 #include <QThread>
 #include <QTime>
+#include <QTimer>
 
 #include <cstdio>
 #include <QDebug>
@@ -273,11 +274,17 @@ int main(int argc, char *argv[])
 
 
     /* Step 2: Load the splash screen */
+
+
     QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
     QSplashScreen splash(logo_pixmap);
-    splash.show();
-    splash.showMessage(QObject::tr("Loading AVIRIS-Next Generation LiveView. Compiled on " __DATE__ ", " __TIME__ " PDT by " UNAME "@" HOST  ),
-                       Qt::AlignCenter | Qt::AlignBottom, Qt::gray);
+    if(!startupOptions.xioCam)
+    {
+        // On some displays, the splash screen covers the setup dialog box
+        splash.show();
+        splash.showMessage(QObject::tr("Loading AVIRIS-Next Generation LiveView. Compiled on " __DATE__ ", " __TIME__ " PDT by " UNAME "@" HOST  ),
+                           Qt::AlignCenter | Qt::AlignBottom, Qt::gray);
+    }
 
     /* Step 3: Load the parallel worker object which will act as a "backend" for LiveView */
     frameWorker *fw = new frameWorker(startupOptions);

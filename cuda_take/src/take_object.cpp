@@ -13,7 +13,7 @@ take_object::take_object(takeOptionsType options, int channel_num, int number_of
 take_object::take_object(int channel_num, int number_of_buffers,
                          int frf, bool runStdDev)
 {
-    warningMessage("Starting with assumed options. XIO disabled.");
+    statusMessage("Starting take_object with default options.");
     takeOptionsType options;
     options.xioCam = false;
     changeOptions(options);
