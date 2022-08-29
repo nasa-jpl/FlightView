@@ -118,7 +118,7 @@ void take_object::changeOptions(takeOptionsType optionsIn)
             }
    } else {
         // TODO: Wait safely for a directory, and do not try reading yet.
-        errorMessage("xio directory not set. Cannot proceed to read from directory.");
+        statusMessage("xio directory not set. Use interface to specify directory.");
     }
 
     statusMessage(std::string("Accepted startup options. Target FPS: ") + std::to_string(options.targetFPS));
