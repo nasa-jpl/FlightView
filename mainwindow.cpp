@@ -147,7 +147,7 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     connect(controlbox, SIGNAL(haveReadPreferences(settingsT)), this, SLOT(handlePreferenceRead(settingsT)));
     connect(controlbox, SIGNAL(haveReadPreferences(settingsT)), flight_screen, SLOT(handlePrefs(settingsT)));
     connect(fw, SIGNAL(savingFrameNumChanged(unsigned int)), controlbox, SLOT(updateSaveFrameNum_slot(unsigned int)));
-
+    connect(fw, SIGNAL(updateFrameCountDisplay(int)), controlbox, SLOT(setFrameNumber(int)));
     controlbox->fps_label.setStyleSheet("QLabel {color: green;}");
     if(save_server->isListening()) {
         controlbox->server_ip_label.setText(tr("Server IP: %1").arg(save_server->ipAddress.toString()));

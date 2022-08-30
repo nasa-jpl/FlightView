@@ -119,6 +119,8 @@ signals:
     /*! \brief Calls to update the value of the backend FPS label */
     void updateFPS();
 
+    void updateFrameCountDisplay(int number);
+
     /*! \brief Calls to render a new frame at the frontend.
      * \deprecated This signal may be deprecated in future versions. It is connected to the rendering slot in frameview_widget, but not emitted. */
     void newFrameAvailable();

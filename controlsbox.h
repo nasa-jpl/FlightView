@@ -79,6 +79,7 @@ public:
     QLabel fps_label;
     QLabel server_ip_label;
     QLabel server_port_label;
+    QLabel frameNumberLabel;
 
     /* MIDDLE BUTTONS (Sliders) */
     QGridLayout *sliders_layout;
@@ -216,6 +217,7 @@ public slots:
     void tab_changed_slot(int index);
     void setRGBWaterfall(int value);
     void getPrefsExternalTrig();
+    void setFrameNumber(int number);
 
 private slots:
     void increment_slot(bool t);

@@ -102,6 +102,8 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     collections_layout->addWidget(&showConsoleLogBtn, 4, 2, 1, 1);
     if((!options.flightMode) && options.xioCam)
     {
+        frameNumberLabel.setText("0");
+        collections_layout->addWidget(&frameNumberLabel, 3, 3, 1, 1);
         collections_layout->addWidget(&showXioSetupBtn, 4, 3, 1, 1);
     }
 
@@ -1443,6 +1445,11 @@ void ControlsBox::update_backend_delta()
     fps_float = fw->delta;
     fps = QString::number(fps_float, 'f', 1).rightJustified(6, ' ');
     fps_label.setText(QString("FPS @ backend:%1").arg(fps));
+}
+void ControlsBox::setFrameNumber(int number)
+{
+    QString frameNumberStr = QString::number(number).rightJustified(6, ' ');
+    frameNumberLabel.setText(QString("Frame:%1").arg(frameNumberStr));
 }
 void ControlsBox::show_save_dialog()
 {

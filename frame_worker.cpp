@@ -221,16 +221,17 @@ void frameWorker::captureFrames()
             // count++;
 
             // Every 25 frames, or, every 200ms, whichever comes first.
-            if( (count%25 == 0) || (clock.elapsed() - lastTime > 200) )
+            if( (count%25 == 0) || ((clock.elapsed() - lastTime) > 50) )
             {
+                emit updateFrameCountDisplay(to.count);
                 microSecondsPerFrame = to.getMicroSecondsPerFrame();
                 if(microSecondsPerFrame != 0)
                 {
                     delta = 1000000.0f / microSecondsPerFrame;
                     emit updateFPS();
                 }
+                lastTime = clock.elapsed();
             }
-            lastTime = clock.elapsed();
         } else {
             // This happens when the program is drawing the screen faster than the
             // frames arrive. It is generally not a problem.
