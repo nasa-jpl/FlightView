@@ -84,6 +84,7 @@ private:
     uint16_t *dummyPtr = NULL;
     uint16_t *guaranteedBufferFrames[guaranteedBufferFramesCount] = {NULL};
     int gbPos = 0;
+    uint16_t *doneFramePtr = NULL;
     std::vector<uint16_t> temp_frame;
 
     // atomic bool vectorLocked = false;

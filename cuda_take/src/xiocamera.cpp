@@ -385,9 +385,7 @@ void XIOCamera::readLoop()
 uint16_t* XIOCamera::getFrame()
 {
     // This seems to run constantly.
-
     uint16_t *frameVecPtr = NULL;
-    uint16_t *doneFramePtr = NULL;
 
     bool showOutput = ((getFrameCounter % 100) == 0);
 
