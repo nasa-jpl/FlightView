@@ -112,7 +112,9 @@ public:
     dark_subtraction_filter* dsf;
     camera_t cam_type;
     frame_c * frame_ring_buffer;
-    unsigned long count = 0; // frame count
+    unsigned long count = 0; // running frame counter
+    int xioCount = 0; // counter for each set of xio files.
+    uint16_t* prior_temp_frame = NULL;
     int getMicroSecondsPerFrame();
 
     //Frame filters that affect everything at the raw data level

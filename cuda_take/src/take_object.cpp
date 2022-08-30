@@ -652,6 +652,9 @@ void take_object::fileImageCopyLoop()
         std::chrono::steady_clock::time_point endtp;
         std::chrono::steady_clock::time_point finaltp;
 
+        xioCount = 0;
+        int dupCount = 0;
+
         while(fileReadingLoopRun && (!closing))
         {
             begintp = std::chrono::steady_clock::now();
@@ -670,7 +673,19 @@ void take_object::fileImageCopyLoop()
             }
             cam_thread_start_complete=true;
 
-            uint16_t* temp_frame = Camera->getFrame(); // this is where the FPS should be set
+            uint16_t* temp_frame = Camera->getFrame();
+            if(temp_frame != prior_temp_frame)
+            {
+                xioCount++;
+                if(dupCount)
+                {
+                    dupCount = 0;
+                    xioCount = 0;
+                }
+            } else {
+                dupCount++;
+            }
+            prior_temp_frame = temp_frame; // store the old address for comparison
 
             if(temp_frame)
             {
