@@ -391,14 +391,15 @@ uint16_t* XIOCamera::getFrame()
 
     bool showOutput = ((getFrameCounter % 100) == 0);
 
-    if(showOutput)
-    {
-        LOG << ": Getting frame: " << getFrameCounter << ", empty status: " << frame_buf.empty() << ", is_reading: " << is_reading << ", locked: " << frameVecLocked;
-    }
-    getFrameCounter++;
 
     {
         std::lock_guard<std::mutex> lock(frame_buf_lock); // gone once out of scope.
+        if(showOutput)
+        {
+            LOG << ": Getting frame: " << getFrameCounter << ", empty status: " << frame_buf.empty() << ", is_reading: " << is_reading << ", locked: " << frameVecLocked;
+        }
+        getFrameCounter++;
+
         if ( (!frame_buf.empty()) ) {
             LL(4) << "Returning good data.";
             frameVecLocked = true;
