@@ -54,7 +54,7 @@ public:
 
     virtual void setDir(const char *dirname);
 
-    virtual uint16_t* getFrame();
+    virtual uint16_t* getFrame(bool *good);
     void readLoop();
 
 private:

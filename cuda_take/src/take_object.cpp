@@ -605,6 +605,7 @@ void take_object::fileImageCopyLoop()
     // and into curFrane of take_object. It is the "consumer"
     // thread in a way.
 
+    bool good = false;
     uint16_t *zeroFrame = NULL;
     zeroFrame = (uint16_t*)calloc(frWidth*dataHeight , sizeof(uint16_t));
     if(zeroFrame == NULL)
@@ -653,7 +654,7 @@ void take_object::fileImageCopyLoop()
         std::chrono::steady_clock::time_point finaltp;
 
         xioCount = 0;
-        int dupCount = 0;
+        int ngFrameCount = 0;
 
         while(fileReadingLoopRun && (!closing))
         {
@@ -673,18 +674,21 @@ void take_object::fileImageCopyLoop()
             }
             cam_thread_start_complete=true;
 
-            uint16_t* temp_frame = Camera->getFrame();
-            if(temp_frame != prior_temp_frame)
+            uint16_t* temp_frame = Camera->getFrame(&good);
+
+            if(good)
             {
-                xioCount++;
-                if(dupCount)
-                {
-                    dupCount = 0;
-                    xioCount = 0;
-                }
+               xioCount++;
+               if(ngFrameCount)
+               {
+                   ngFrameCount = 0;
+                   xioCount = 0;
+               }
             } else {
-                dupCount++;
+                // Generally this happens when we are out of frames to read.
+                ngFrameCount++;
             }
+
             prior_temp_frame = temp_frame; // store the old address for comparison
 
             if(temp_frame)

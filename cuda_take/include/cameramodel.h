@@ -24,7 +24,7 @@ public:
 
 
     virtual bool start() { return true; }
-    virtual uint16_t *getFrame() = 0;
+    virtual uint16_t *getFrame(bool *good) = 0;
     virtual void readLoop() {
         std::cout << "WARNING: using default readLoop." << std::endl;
     }

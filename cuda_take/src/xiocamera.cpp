@@ -382,14 +382,11 @@ void XIOCamera::readLoop()
     LOG << ": finished readLoop(). is_reading must be false now: " << is_reading;
 }
 
-uint16_t* XIOCamera::getFrame()
+uint16_t* XIOCamera::getFrame(bool *good)
 {
     // This seems to run constantly.
     uint16_t *frameVecPtr = NULL;
-
     bool showOutput = ((getFrameCounter % 100) == 0);
-
-
     {
         std::lock_guard<std::mutex> lock(frame_buf_lock); // gone once out of scope.
         if(showOutput)
@@ -415,10 +412,12 @@ uint16_t* XIOCamera::getFrame()
             frameVecLocked = false;
             doneFramePtr = guaranteedBufferFrames[gbPos%guaranteedBufferFramesCount];
             gbPos++;
+            *good = true;
             return doneFramePtr;
         } else {
             //if(showOutput) cout << __PRETTY_FUNCTION__ << ": Returning dummy data. locked: " << frameVecLocked << ", is_reading: " << is_reading << "empty status: " << frame_buf.empty() << endl;
             usleep(1000 * 1000); // 1 FPS, "timeout" style framerate, like the PDV driver.
+            *good = false;
             return dummyPtr;
         }
     }
