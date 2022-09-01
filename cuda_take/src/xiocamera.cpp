@@ -165,6 +165,16 @@ void XIOCamera::setDir(const char *dirname)
     LOG << "Finished XIO setDir.";
 }
 
+void XIOCamera::setCamControlPtr(camControlType *p)
+{
+    this->camcontrol = p;
+}
+
+camControlType* XIOCamera::getCamControlPtr()
+{
+    return camcontrol;
+}
+
 std::string XIOCamera::getFname()
 {
     LOG << " Starting getFname() in XIO camera";
@@ -382,10 +392,19 @@ void XIOCamera::readLoop()
     LOG << ": finished readLoop(). is_reading must be false now: " << is_reading;
 }
 
-uint16_t* XIOCamera::getFrame(bool *good)
+uint16_t* XIOCamera::getFrame(CameraModel::camStatusEnum *stat)
 {
     // This seems to run constantly.
     uint16_t *frameVecPtr = NULL;
+
+    if(camcontrol->pause && *stat != camDone)
+    {
+        // TODO: replace good with an enumeration for status
+        *stat = CameraModel::camPaused;
+        LL(4) << "Camera paused.";
+        return doneFramePtr;
+    }
+
     bool showOutput = ((getFrameCounter % 100) == 0);
     {
         std::lock_guard<std::mutex> lock(frame_buf_lock); // gone once out of scope.
@@ -412,12 +431,12 @@ uint16_t* XIOCamera::getFrame(bool *good)
             frameVecLocked = false;
             doneFramePtr = guaranteedBufferFrames[gbPos%guaranteedBufferFramesCount];
             gbPos++;
-            *good = true;
+            *stat = camPlaying;
             return doneFramePtr;
         } else {
             //if(showOutput) cout << __PRETTY_FUNCTION__ << ": Returning dummy data. locked: " << frameVecLocked << ", is_reading: " << is_reading << "empty status: " << frame_buf.empty() << endl;
             usleep(1000 * 1000); // 1 FPS, "timeout" style framerate, like the PDV driver.
-            *good = false;
+            *stat = camDone;
             return dummyPtr;
         }
     }

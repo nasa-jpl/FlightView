@@ -78,7 +78,11 @@ int main(int argc, char *argv[])
     startupOptions.gpsIP = QString("10.0.0.6");
     startupOptions.gpsPort = 8111;
     startupOptions.gpsPortSet = true;
-    startupOptions.xioDirectory = new QString("");
+    //startupOptions.xioDirectory = new QString("");
+    startupOptions.xioDirectoryArray = (char*)calloc(4096, sizeof(char));
+    if(startupOptions.xioDirectoryArray == NULL)
+        abort();
+
     startupOptions.targetFPS = 50.0;
 
     bool heightSet = false;
@@ -330,5 +334,7 @@ int main(int argc, char *argv[])
 #endif
     delete workerThread;
 
+    if(startupOptions.xioDirectoryArray != NULL)
+        free(startupOptions.xioDirectoryArray);
     return retval;
 }

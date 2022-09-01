@@ -41,6 +41,7 @@ private slots:
 private:
     Ui::initialSetup *ui;
     startupOptionsType *options;
+    char* xioDirectoryBuffer = NULL;
 };
 
 #endif // INITIALSETUP_H

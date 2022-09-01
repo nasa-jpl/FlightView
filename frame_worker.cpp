@@ -18,19 +18,9 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     sMessage("Starting frameWorker class and CUDA back-end");
     lastTime = 0;
     this->setObjectName("lv:frameWorker");
-    // FORCE XIO MODE FOR TESTING:
-    //options.xioCam = true;
-    //options.xioHeight = 480;
-    //options.xioWidth = 640;
-    //options.heightWidthSet = true;
 
     this->options = optionsIn;
     this->takeOptions.xioDirectory = new std::string();
-
-    if(options.xioDirectory == NULL)
-    {
-        options.xioDirectory = new QString("");
-    }
 
     if(options.xioCam)
     {
@@ -41,23 +31,20 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
         setupUI.setWindowFlag(Qt::WindowStaysOnTopHint, true);
         setupUI.exec();
 
-        if(options.xioDirectory == NULL)
-        {
-            abort();
-        } else {
-            std::cout << "Variable is not null. Contents: ";
-            std::cout << options.xioDirectory->toLocal8Bit().data() << std::endl;
-        }
-
         convertOptions();
 
         to.changeOptions(takeOptions);
     }
+
+    this->camcontrol = to.getCamControl();
+    if(camcontrol==NULL)
+        abort();
+
     to.start(); // begin cuda_take
     //to.setReadDirectory("/mnt/DATA/xio/20170828_DCSEFM_TVAC_AMBIENTFUNCTIONAL_COMPRESS_Test1_ROICIMAGE/");
-    if( (!options.xioDirectory->isEmpty()) && options.xioCam)
+    if( (options.xioDirectoryArray != NULL) && options.xioCam)
     {
-        to.setReadDirectory(options.xioDirectory->toLocal8Bit().data());
+        to.setReadDirectory(options.xioDirectoryArray);
     }
 
 
@@ -84,19 +71,20 @@ void frameWorker::useNewOptions(startupOptionsType newOpts)
     this->options = newOpts;
     convertOptions();
     to.changeOptions(takeOptions);
-    if( (!options.xioDirectory->isEmpty()) && options.xioCam)
+
+    if( (options.xioDirectoryArray != NULL) && options.xioCam)
     {
         // This not only sets the directory,
         // it also kicks off reading files from the directory.
-        to.setReadDirectory(options.xioDirectory->toLocal8Bit().data());
+        to.setReadDirectory(options.xioDirectoryArray);
     }
 }
 
 void frameWorker::convertOptions()
 {
-    if(!options.xioDirectory->isEmpty())
+    if(options.xioDirectoryArray != NULL)
     {
-        safeStringSet(takeOptions.xioDirectory, options.xioDirectory->toStdString());
+        safeStringSet(takeOptions.xioDirectory, options.xioDirectoryArray);
         takeOptions.xioDirSet = true;
         if(takeOptions.xioDirectory == NULL)
         {
@@ -105,8 +93,7 @@ void frameWorker::convertOptions()
             std::cout << "takeOptions xio directory: " << takeOptions.xioDirectory->c_str() << std::endl;
         }
     } else {
-        std::cerr << "Error, xio directory blank." << std::endl;
-        exit(-1);
+        abort();
     }
 
     takeOptions.height = takeOptions.xioHeight;
@@ -131,6 +118,15 @@ void frameWorker::convertOptions()
 }
 
 // public functions
+void frameWorker::setCameraPaused(bool isPaused)
+{
+    if(this->camcontrol == NULL)
+    {
+        abort();
+    }
+    this->camcontrol->pause = isPaused;
+}
+
 camera_t frameWorker::camera_type()
 {
     /*! \brief Returns the value of the camera_type enum for the current hardware. */

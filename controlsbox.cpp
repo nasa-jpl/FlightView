@@ -102,6 +102,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     collections_layout->addWidget(&showConsoleLogBtn, 4, 2, 1, 1);
     if((!options.flightMode) && options.xioCam)
     {
+        pausePlaybackChk.setText("Pause");
+        pausePlaybackChk.setChecked(false);
+        collections_layout->addWidget(&pausePlaybackChk, 2, 3, 1, 1);
         frameNumberLabel.setText("0");
         collections_layout->addWidget(&frameNumberLabel, 3, 3, 1, 1);
         collections_layout->addWidget(&showXioSetupBtn, 4, 3, 1, 1);
@@ -449,6 +452,13 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
             showSetup();
     });
 
+    connect(&pausePlaybackChk, &QCheckBox::stateChanged, [this](int state) {
+        if (static_cast<Qt::CheckState>(state) == Qt::CheckState::Checked) {
+            emit setCameraPause(true);
+        } else {
+            emit setCameraPause(false);
+        }
+    });
 
     connect(fw, SIGNAL(updateFPS()), this, SLOT(update_backend_delta()));
 
@@ -1235,10 +1245,17 @@ void ControlsBox::showSetup()
 {
     // Pause this thread while open
     setupUI.acceptOptions(&options);
-    setupUI.exec();
-    // At this point, options have changed.
-    // so we need to communicate this to fw.
-    fw->useNewOptions(options);
+    int result = setupUI.exec();
+
+    if(result)
+    {
+        // At this point, options have changed.
+        // so we need to communicate this to fw.
+        if(options.xioDirectoryArray != NULL)
+            fw->useNewOptions(options);
+        else
+            abort();
+    }
 }
 
 void ControlsBox::setLevelToPrefs(bool isCeiling, int val)

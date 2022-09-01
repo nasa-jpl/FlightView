@@ -6,6 +6,7 @@ initialSetup::initialSetup(QWidget *parent) :
     ui(new Ui::initialSetup)
 {
     ui->setupUi(this);
+    this->options = NULL;
 }
 
 initialSetup::~initialSetup()
@@ -16,10 +17,10 @@ initialSetup::~initialSetup()
 void initialSetup::acceptOptions(startupOptionsType *opts)
 {
     this->options = opts;
-    if(options->xioDirectory == NULL)
-    {
-        abort();
-    }
+//    if(options->xioDirectory == NULL)
+//    {
+//        options->xioDirectory = new QString();
+//    }
     if(options->heightWidthSet)
     {
         ui->heightSpin->blockSignals(true);
@@ -30,14 +31,24 @@ void initialSetup::acceptOptions(startupOptionsType *opts)
         ui->widthSpin->blockSignals(false);
     }
 
-    if(options->xioDirectory == NULL)
-    {
-        abort(); // let's know if this happens.
-    }
+//    if(options->xioDirectory == NULL)
+//    {
+//        abort(); // let's know if this happens.
+//    }
 
-    if(!options->xioDirectory->isEmpty())
+//    if(!options->xioDirectory->isEmpty())
+//    {
+//      //  ui->xioPathText->setText(*options->xioDirectory);
+//    }
+
+    if(options->xioDirectoryArray == NULL)
     {
-        ui->xioPathText->setText(*options->xioDirectory);
+        abort();
+    } else {
+        ui->xioPathText->setText(options->xioDirectoryArray);
+
+//        int c = 0;
+//        while((c<4096) && options->xioDirectoryArray[c])
     }
 
     ui->fpsSpin->setValue((double)options->targetFPS);
@@ -59,13 +70,17 @@ void initialSetup::on_selectButton_clicked()
         return;
     } else {
         ui->xioPathText->setText(dir);
-        if(options->xioDirectory == NULL)
+        if(options->xioDirectoryArray == NULL)
         {
-            // Warning, we should not be allocating this deep in things...
-            options->xioDirectory = new QString(dir);
+            abort();
         } else {
-            options->xioDirectory->clear();
-            options->xioDirectory->append(dir);
+            if (dir.length() > 4096)
+                abort();
+            int n=0;
+            for(; n < dir.length(); n++)
+            {
+                options->xioDirectoryArray[n] = dir.toLocal8Bit().at(n);
+            }
         }
     }
 }
@@ -82,36 +97,36 @@ void initialSetup::on_widthSpin_valueChanged(int arg1)
 
 void initialSetup::on_xioPathText_editingFinished()
 {
-    if(ui->xioPathText->text().isEmpty())
-    {
-        if(!options->xioDirectory->isEmpty())
-        {
-            ui->xioPathText->setText(*options->xioDirectory);
-        } else {
-            // not sure, we do not have a good default here...
-        }
-        return;
-    } else {
-        options->xioDirectory->clear();
-        options->xioDirectory->append(ui->xioPathText->text());
-    }
+//    if(ui->xioPathText->text().isEmpty())
+//    {
+//        if(!options->xioDirectory->isEmpty())
+//        {
+//            ui->xioPathText->setText(*options->xioDirectory);
+//        } else {
+//            // not sure, we do not have a good default here...
+//        }
+//        return;
+//    } else {
+//        options->xioDirectory->clear();
+//        options->xioDirectory->append(ui->xioPathText->text());
+//    }
 }
 
 void initialSetup::on_xioPathText_returnPressed()
 {
-    if(options->xioDirectory == NULL)
-    {
-        abort();
-    }
+//    if(options->xioDirectory == NULL)
+//    {
+//        abort();
+//    }
 
-    if(ui->xioPathText->text().isEmpty())
-    {
-        return;
-    } else {
+//    if(ui->xioPathText->text().isEmpty())
+//    {
+//        return;
+//    } else {
 
-        options->xioDirectory->clear();
-        options->xioDirectory->append(ui->xioPathText->text());
-    }
+//        options->xioDirectory->clear();
+//        options->xioDirectory->append(ui->xioPathText->text());
+//    }
 }
 
 void initialSetup::on_buttonBox_rejected()
@@ -126,14 +141,22 @@ void initialSetup::on_buttonBox_accepted()
     if((options->xioHeight !=0) && (options->xioWidth != 0))
         options->heightWidthSet = true;
 
-    if(options->xioDirectory == NULL)
+//    if(options->xioDirectory == NULL)
+//    {
+//        abort();
+//    }
+//    if(options->xioDirectory->isEmpty())
+//    {
+//        abort();
+//    }
+    char c;
+    int n=0;
+    for(n=0; (n < ui->xioPathText->text().length()) and (n < 4094); n++)
     {
-        abort();
+        c = ui->xioPathText->text().at(n).toLatin1();
+        options->xioDirectoryArray[n] = c;
     }
-    if(options->xioDirectory->isEmpty())
-    {
-        abort();
-    }
+    options->xioDirectoryArray[n] = '\x00';
 }
 
 void initialSetup::on_fpsSpin_valueChanged(double arg1)

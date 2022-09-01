@@ -13,24 +13,43 @@
 #include "image_type.h"
 #include "camera_types.h"
 
+struct camControlType {
+    bool pause = false;
+};
+
+
 class CameraModel
 {
 
 public:
-    CameraModel() { 
-	running.store(false); }
+    CameraModel(){
+        running.store(false);
+    }
 
-    virtual ~CameraModel() { running.store(false); }
+    virtual ~CameraModel(){
+        running.store(false);
+    }
+
+    enum camStatusEnum {
+        camNull,
+        camPlaying,
+        camPaused,
+        camDone,
+        camTestPattern,
+        camUnknown
+    };
 
 
     virtual bool start() { return true; }
-    virtual uint16_t *getFrame(bool *good) = 0;
+    virtual uint16_t *getFrame(CameraModel::camStatusEnum *stat) = 0;
     virtual void readLoop() {
         std::cout << "WARNING: using default readLoop." << std::endl;
     }
     virtual void setDir(const char *filename) {
         std::cout << "WARNING: using default setDir." << std::endl;
     }
+    virtual camControlType* getCamControlPtr() =0;
+    virtual void setCamControlPtr(camControlType* p) =0;
 
     virtual bool isRunning() { return running.load(); }
 

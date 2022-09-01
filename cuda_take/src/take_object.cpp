@@ -54,6 +54,8 @@ void take_object::initialSetup(int channel_num, int number_of_buffers,
     save_count=0;
     save_num_avgs=1;
     saving_list.clear();
+
+    camStatus = CameraModel::camUnknown;
 }
 
 take_object::~take_object()
@@ -449,6 +451,7 @@ void take_object::prepareFileReading()
         Camera = new XIOCamera(frWidth,
                                frHeight,
                                frHeight);
+        this->Camera->setCamControlPtr(&this->cameraController);
         if(Camera == NULL)
         {
             errorMessage("XIO Camera could not be created, was NULL.");
@@ -655,6 +658,9 @@ void take_object::fileImageCopyLoop()
 
         xioCount = 0;
         int ngFrameCount = 0;
+        bool wasPaused = false;
+        bool wasTestPattern = false;
+        bool wasDone = false;
 
         while(fileReadingLoopRun && (!closing))
         {
@@ -674,20 +680,42 @@ void take_object::fileImageCopyLoop()
             }
             cam_thread_start_complete=true;
 
-            uint16_t* temp_frame = Camera->getFrame(&good);
+            uint16_t* temp_frame = Camera->getFrame(&this->camStatus);
 
-            if(good)
+            if(camStatus==CameraModel::camPlaying)
             {
-               xioCount++;
-               if(ngFrameCount)
-               {
-                   ngFrameCount = 0;
-                   xioCount = 0;
-               }
-            } else {
+                xioCount++;
+                if(wasPaused)
+                {
+                    ngFrameCount = 0;
+                    wasPaused = false;
+                }
+                if(wasDone)
+                {
+                    wasDone = false;
+                    xioCount = 0;
+                    ngFrameCount = 0;
+                }
+                if(wasTestPattern)
+                {
+                    wasTestPattern = false;
+                    xioCount = 0;
+                    ngFrameCount = 0;
+                }
+            } else if (camStatus==CameraModel::camPaused) {
                 // Generally this happens when we are out of frames to read.
+                wasPaused = true;
                 ngFrameCount++;
+            } else if (camStatus==CameraModel::camDone) {
+                wasDone = true;
+                ngFrameCount++;
+            } else if (camStatus==CameraModel::camTestPattern)
+            {
+                ngFrameCount++;
+                wasTestPattern = true;
             }
+
+
 
             prior_temp_frame = temp_frame; // store the old address for comparison
 
@@ -824,6 +852,11 @@ void take_object::setReadDirectory(const char *directory)
     } else {
         errorMessage("Cannot set directory to zero-length string.");
     }
+}
+
+camControlType* take_object::getCamControl()
+{
+    return &cameraController;
 }
 
 void take_object::pdv_loop() //Producer Thread (pdv_thread)

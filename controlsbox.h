@@ -80,6 +80,7 @@ public:
     QLabel server_ip_label;
     QLabel server_port_label;
     QLabel frameNumberLabel;
+    QCheckBox pausePlaybackChk;
 
     /* MIDDLE BUTTONS (Sliders) */
     QGridLayout *sliders_layout;
@@ -207,6 +208,9 @@ signals:
     void updateRGB(int r, int g, int b);
     void updateWFLength(int length);
     void haveReadPreferences(settingsT prefs);
+
+    void setCameraPause(bool isPaused);
+
     void statusMessage(QString message);
     void warningMessage(QString message);
     void errorMessage(QString message);

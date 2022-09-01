@@ -66,12 +66,15 @@ class frameWorker : public QObject
     startupOptionsType options;
     takeOptionsType takeOptions;
     void convertOptions(); // startup options to take options
+    char xioDirectoryBuffer[4096] = {'\x0'};
 
 public:
     explicit frameWorker(startupOptionsType options, QObject *parent = 0);
     virtual ~frameWorker();
 
     take_object to;
+    camControlType *camcontrol;
+    void setCameraPaused(bool isPaused);
 
     frame_c *curFrame  = NULL;
     frame_c *std_dev_frame = NULL;

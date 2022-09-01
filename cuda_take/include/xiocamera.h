@@ -54,8 +54,10 @@ public:
 
     virtual void setDir(const char *dirname);
 
-    virtual uint16_t* getFrame(bool *good);
+    virtual uint16_t* getFrame(CameraModel::camStatusEnum *stat);
     void readLoop();
+    virtual camControlType* getCamControlPtr();
+    virtual void setCamControlPtr(camControlType* p);
 
 private:
     std::string getFname();
@@ -86,6 +88,8 @@ private:
     int gbPos = 0;
     uint16_t *doneFramePtr = NULL;
     std::vector<uint16_t> temp_frame;
+
+    camControlType *camcontrol = NULL;
 
     // atomic bool vectorLocked = false;
     std::atomic_bool frameVecLocked;

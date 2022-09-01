@@ -189,6 +189,18 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
         handleStatusMessage("Flight Mode DISABLED.");
     }
 
+    connect(this->controlbox, &ControlsBox::setCameraPause,
+            [=](bool paused) {
+        fw->setCameraPaused(paused);
+        if(paused)
+        {
+            handleStatusMessage("Pausing Camera");
+        }
+        else {
+            handleStatusMessage("Unpausing Camera");
+        }
+    });
+
     handleStatusMessage("Started");
 }
 

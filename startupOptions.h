@@ -19,7 +19,8 @@ struct startupOptionsType
     bool deviceIHESet = false;
     bool xioCam = false;
     bool heightWidthSet = false;
-    QString *xioDirectory = NULL;
+    //QString *xioDirectory = NULL;
+    char* xioDirectoryArray = NULL;
     uint16_t xioHeight;
     uint16_t xioWidth;
     uint16_t height;

@@ -109,6 +109,7 @@ public:
     void start();
     void changeOptions(takeOptionsType options);
     void setReadDirectory(const char* directory);
+    camControlType* getCamControl();
     dark_subtraction_filter* dsf;
     camera_t cam_type;
     frame_c * frame_ring_buffer;
@@ -164,6 +165,8 @@ private:
     void prepareFileReading();
     CameraModel *Camera = NULL;
     bool fileReadingLoopRun = false;
+    camControlType cameraController;
+    CameraModel::camStatusEnum camStatus;
 
     void savingLoop(std::string, unsigned int num_avgs, unsigned int num_frames);
     std::mutex savingMutex;
