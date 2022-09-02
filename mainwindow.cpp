@@ -28,14 +28,14 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     }
 
     if(options->flightMode)
-        handleStatusMessage(QString("This version of FlightView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
+        handleMainWindowStatusMessage(QString("This version of FlightView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
     else
-        handleStatusMessage(QString("This version of LiveView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
+        handleMainWindowStatusMessage(QString("This version of LiveView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
 
-    handleStatusMessage(QString("The compilation was performed by %1@%2.").arg(QString(UNAME)).arg(QString(HOST)));
+    handleMainWindowStatusMessage(QString("The compilation was performed by %1@%2.").arg(QString(UNAME)).arg(QString(HOST)));
 
 
-    connect(fw, SIGNAL(sendStatusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
+    connect(fw, SIGNAL(sendStatusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
 
 
     /*! start the workerThread from main */
@@ -62,7 +62,7 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     waterfall_widget = new frameview_widget(fw, WATERFALL);
 
     flight_screen = new flight_widget(fw, *options);
-    connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
+    connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleGeneralStatusMessage(QString)));
 
     std_dev_widget = new frameview_widget(fw, STD_DEV);
     hist_widget = new histogram_widget(fw);
@@ -73,10 +73,10 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     vert_overlay_widget = new profile_widget(fw, VERT_OVERLAY);
     fft_mean_widget = new fft_widget(fw);
 
-    connect(unfiltered_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
-    connect(waterfall_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
-    connect(std_dev_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
-
+    connect(unfiltered_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
+    connect(waterfall_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
+    connect(std_dev_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
+    connect(save_server, SIGNAL(sigMessage(QString)), this, SLOT(handleGeneralStatusMessage(QString)));
 
     if(!options->flightMode)
     {
@@ -110,7 +110,7 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
 
     /* Create controls box */
     controlbox = new ControlsBox(fw, tabWidget, *options);
-    connect(controlbox, SIGNAL(statusMessage(QString)), this, SLOT(handleStatusMessage(QString)));
+    connect(controlbox, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
     layout->addWidget(controlbox, 1);
 
     mainwidget->setLayout(layout);
@@ -133,7 +133,7 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
         {
             tabWidget->setCurrentIndex(flightIndex);
         } else {
-            handleStatusMessage("ERROR: Could not set current screen to Flight Screen.");
+            handleMainWindowStatusMessage("ERROR: Could not set current screen to Flight Screen.");
         }
     }
 
@@ -152,8 +152,8 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     if(save_server->isListening()) {
         controlbox->server_ip_label.setText(tr("Server IP: %1").arg(save_server->ipAddress.toString()));
         controlbox->server_port_label.setText(tr("Server Port: %1").arg(save_server->port));
-        handleStatusMessage(QString("Server IP: %1").arg(save_server->ipAddress.toString()));
-        handleStatusMessage(QString("Server Port: %1").arg(save_server->port));
+        handleMainWindowStatusMessage(QString("Server IP: %1").arg(save_server->ipAddress.toString()));
+        handleMainWindowStatusMessage(QString("Server Port: %1").arg(save_server->port));
     }
 
     connect(controlbox, SIGNAL(debugSignal()), this, SLOT(debugThis()));
@@ -171,22 +171,22 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     });
     if(options->dataLocationSet)
     {
-        handleStatusMessage(QString("Data storage location: [%1]").arg(options->dataLocation));
+        handleMainWindowStatusMessage(QString("Data storage location: [%1]").arg(options->dataLocation));
     }
     if(options->runStdDevCalculation)
     {
         emit toggleStdDevCalc(true);
-        handleStatusMessage(QString("Standard Deviation calculation enabled"));
+        handleMainWindowStatusMessage(QString("Standard Deviation calculation enabled"));
     } else {
         emit toggleStdDevCalc(false);
-        handleStatusMessage(QString("Standard Deviation calculation disabled"));
+        handleMainWindowStatusMessage(QString("Standard Deviation calculation disabled"));
     }
 
     if(options->flightMode)
     {
-        handleStatusMessage("Flight Mode ENABLED.");
+        handleMainWindowStatusMessage("Flight Mode ENABLED.");
     } else {
-        handleStatusMessage("Flight Mode DISABLED.");
+        handleMainWindowStatusMessage("Flight Mode DISABLED.");
     }
 
     connect(this->controlbox, &ControlsBox::setCameraPause,
@@ -194,21 +194,28 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
         fw->setCameraPaused(paused);
         if(paused)
         {
-            handleStatusMessage("Pausing Camera");
+            handleMainWindowStatusMessage("Pausing Camera");
         }
         else {
-            handleStatusMessage("Unpausing Camera");
+            handleMainWindowStatusMessage("Unpausing Camera");
         }
     });
 
-    handleStatusMessage("Started");
+    handleMainWindowStatusMessage("Started");
 }
 
-void MainWindow::handleStatusMessage(QString message)
+void MainWindow::handleMainWindowStatusMessage(QString message)
 {
     //std::cout << "STDOUT: Status Message: " << message.toLocal8Bit().toStdString() << std::endl;
     //qDebug() << __PRETTY_FUNCTION__ << "Status message: " << message;
     cLog->insertText(QString("[MainWindow]: ") + message);
+}
+
+void MainWindow::handleGeneralStatusMessage(QString message)
+{
+    //std::cout << "STDOUT: Status Message: " << message.toLocal8Bit().toStdString() << std::endl;
+    //qDebug() << __PRETTY_FUNCTION__ << "Status message: " << message;
+    cLog->insertText(message);
 }
 
 void MainWindow::enableStdDevTabs()
@@ -397,12 +404,12 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
         removeTab("Histogram View");
     }
 
-    handleStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
+    handleMainWindowStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
     if( (prefs.preferredWindowWidth < 4096 ) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
     {
         this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
     } else {
-        handleStatusMessage(QString("Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
+        handleMainWindowStatusMessage(QString("Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
     }
 }
 
@@ -424,7 +431,7 @@ void MainWindow::removeTab(QString tabTitle)
 
 void MainWindow::debugThis()
 {
-    handleStatusMessage("Debug function reached.");
+    handleMainWindowStatusMessage("Debug function reached.");
     qDebug() << __PRETTY_FUNCTION__ << ": Debug reached inside MainWindow class.";
     flight_screen->debugThis();
 }

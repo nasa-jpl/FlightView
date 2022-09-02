@@ -139,11 +139,12 @@ class saveClient(QtCore.QObject):
 if __name__ == '__main__':
     #app = QtGui.QApplication(sys.argv) # not needed unless you want a GUI
     client = saveClient("127.0.0.1", 65000)
-    # Save 1024 frames:
+    # Save 1000 frames:
     client.requestFrames("testfile.raw", 1000, 1); # returns immediately
     status_extended = client.requestStatus_extended();
     print("Status extended: " + str(status_extended[0]) + ", " + str(status_extended[1]) + ", " + str(status_extended[2]) + ", " + str(status_extended[3]));
         
+    # test, requesting new recordings with extra null before recording done. 
     client.requestFrames("/tmp/10_2_socketABCDEFG.raw\00\00", 1000, 1); 
     status_extended = client.requestStatus_extended();
     print("Status extended: " + str(status_extended[0]) + ", " + str(status_extended[1]) + ", " + str(status_extended[2]) + ", " + str(status_extended[3]));
@@ -166,4 +167,3 @@ if __name__ == '__main__':
             estimateRemainingTimeSec = 0
         # Update status about ten times per collection
         sleep(estimateRemainingTimeInitialSec / 10)
-    # see save_helpers.py for an example on how to wait carefully

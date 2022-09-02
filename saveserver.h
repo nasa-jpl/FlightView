@@ -4,11 +4,15 @@
 #include <QtNetwork/QTcpServer>
 #include <QtNetwork/QTcpSocket>
 #include <QDataStream>
+#include <QString>
+#include <sstream>
+#include <QMutex>
 
 #include "frame_worker.h"
 
 const quint16 START_SAVING = 2;
 const quint16 STATUS = 3;
+const quint16 STATUS_EXTENDED = 4;
 
 /*! \file
  *  \brief Establishes a server which can accept remote frame saving commands.
@@ -35,6 +39,18 @@ class saveServer : public QTcpServer
     QString fname;
     uint16_t navgs;
 
+    QMutex readMutex;
+    bool signalConnected = false;
+    void reconnectSignal();
+    void disconnectSignal();
+
+    bool checkValues(uint16_t framesToSaveCount,
+                     QString filename,
+                     uint16_t naverages);
+    void genErrorMessage(QString errorMessage);
+    void genStatusMessage(QString statusMessage);
+    void printHex(QByteArray *b);
+
 public:
     saveServer(frameWorker *fw, QObject *parent = 0);
 
@@ -46,6 +62,7 @@ protected:
 
 signals:
     void startSavingRemote(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs);
+    void sigMessage(QString message);
 
 private slots:
     void readCommand();
