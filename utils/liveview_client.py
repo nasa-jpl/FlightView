@@ -1,6 +1,7 @@
 import sys
+from time import sleep
 #from time import sleep
-from PyQt4 import QtCore, QtNetwork
+from PyQt5 import QtCore, QtNetwork
 #from PyQt4 import QtGui; # only if a GUI is desired
 
 class saveClient(QtCore.QObject):
@@ -16,6 +17,10 @@ class saveClient(QtCore.QObject):
         self.fps = 0
         self.framesLeft = 0
         self.numAvgs_stat = 1;
+        
+        #STATUS_EXTENDED COMMAND VARIABLES
+        self.STATUS_CMD_EXTENDED = 4
+        self.remoteFilename = str("")
 
         #FRAME SAVE COMMAND VARIABLES
         self.FRSAVE_CMD = 2
@@ -82,6 +87,35 @@ class saveClient(QtCore.QObject):
 
         return (self.framesLeft, self.fps, self.numAvgs_stat);
 
+    def requestStatus_extended(self):
+        self.blockSize = 0
+        self.socket.abort()
+
+        block = QtCore.QByteArray()
+        commStream = QtCore.QDataStream(block, QtCore.QIODevice.WriteOnly)
+        commStream.setVersion(QtCore.QDataStream.Qt_4_0)
+        commStream.writeUInt16(0)
+        commStream.writeUInt16(self.STATUS_CMD_EXTENDED)
+        commStream.device().seek(0)
+        commStream.writeUInt16(block.count() - 2)
+        self.socket.connectToHost(self.ipAddress, self.portNumber)
+        self.socket.waitForConnected(10)
+        self.socket.write(block)
+        self.socket.waitForReadyRead()
+        inStream = QtCore.QDataStream(self.socket)
+        inStream.setVersion(QtCore.QDataStream.Qt_4_0)
+
+        if self.blockSize == 0:
+            if self.socket.bytesAvailable() < 2:
+                print("LVC: No Data Received...")
+                return
+            self.blockSize = inStream.readUInt16()
+        self.framesLeft = inStream.readUInt16()
+        self.fps = inStream.readUInt16()
+        self.numAvgs_stat = inStream.readUInt16();
+        self.remoteFilename = inStream.readQString();
+        return (self.framesLeft, self.fps, self.numAvgs_stat, self.remoteFilename);
+
     def printError(self,socket_error):
         errors = {
             QtNetwork.QTcpSocket.HostNotFoundError:
@@ -100,14 +134,36 @@ class saveClient(QtCore.QObject):
         message = errors.get(socket_error,
             "The following error occurred: %s." % self.socket.errorString())
         if message is not None:
-            print message
+            print(message)
 
 if __name__ == '__main__':
     #app = QtGui.QApplication(sys.argv) # not needed unless you want a GUI
     client = saveClient("127.0.0.1", 65000)
     # Save 1024 frames:
-    client.requestFrames("/tmp/10_2_socket.raw", 10, 2); # returns immediately
+    client.requestFrames("testfile.raw", 1000, 1); # returns immediately
+    status_extended = client.requestStatus_extended();
+    print("Status extended: " + str(status_extended[0]) + ", " + str(status_extended[1]) + ", " + str(status_extended[2]) + ", " + str(status_extended[3]));
+        
+    client.requestFrames("/tmp/10_2_socketABCDEFG.raw\00\00", 1000, 1); 
+    status_extended = client.requestStatus_extended();
+    print("Status extended: " + str(status_extended[0]) + ", " + str(status_extended[1]) + ", " + str(status_extended[2]) + ", " + str(status_extended[3]));
+    
     status = client.requestStatus(True)
-    print('(Frames remaining, FPS, averages_per_frame)')
-    print(status)
+    estimateRemainingTimeSec = 1.00
+    estimateRemainingTimeInitialSec = 1.00
+    if(status[2] != 0):
+        estimateRemainingTimeInitialSec = status[0] / status[1]
+    else:
+        estimateRemainingTimeInitialSec = 0
+        
+    while(status[0] != 0):
+        print('(Frames remaining, FPS, averages_per_frame)')
+        print(status)
+        status = client.requestStatus(True)
+        if(status[1] != 0):
+            estimateRemainingTimeSec = status[0] / status[1]
+        else:
+            estimateRemainingTimeSec = 0
+        # Update status about ten times per collection
+        sleep(estimateRemainingTimeInitialSec / 10)
     # see save_helpers.py for an example on how to wait carefully
