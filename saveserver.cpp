@@ -26,12 +26,31 @@ saveServer::saveServer(frameWorker *fw, QObject *parent ) :
 
     connect(clientConnection, SIGNAL(readyRead()), this, SLOT(readCommand()));
     connect(this, SIGNAL(newConnection()), this, SLOT(new_conn_slot())  );
+    signalConnected = true;
     listen(QHostAddress::Any, port); // This will automatically connect on the IP Address of the machine
+}
+
+void saveServer::reconnectSignal()
+{
+    if(!signalConnected)
+    {
+        connect(clientConnection, SIGNAL(readyRead()), this, SLOT(readCommand()));
+        signalConnected = true;
+    }
+
+}
+
+void saveServer::disconnectSignal()
+{
+    if(signalConnected)
+    {
+        disconnect(clientConnection, SIGNAL(readyRead()), this, SLOT(readCommand()));
+        signalConnected = false;
+    }
 }
 
 void saveServer::incomingConnection(qintptr socketDescriptor)
 {
-    std::cout << "incomingConnection() called!\n";
     if(!clientConnection->setSocketDescriptor(socketDescriptor)) {
         genErrorMessage("Client connection refused by host.");
         return;
@@ -65,6 +84,7 @@ bool saveServer::checkValues(uint16_t framesToSaveCount,
 
 void saveServer::readCommand()
 {
+    readMutex.lock();
     QDataStream in(clientConnection);
     in.setVersion(QDataStream::Qt_4_0);
     blockSize = 0;
@@ -72,6 +92,7 @@ void saveServer::readCommand()
         if (clientConnection->bytesAvailable() < (qint64) sizeof(quint16)) {
             clientConnection->disconnectFromHost();
             genErrorMessage("No data received.");
+            readMutex.unlock();
             return;
         }
         in >> blockSize;
@@ -82,6 +103,7 @@ void saveServer::readCommand()
         msg << "Only " << clientConnection->bytesAvailable() << " bytes to read compared with block of " << blockSize << " bytes." << std::endl;
         genErrorMessage(QString::fromStdString(msg.str()));
         clientConnection->disconnectFromHost();
+        readMutex.unlock();
         return;
     }
 
@@ -147,6 +169,7 @@ void saveServer::readCommand()
     }
     blockSize = 0;
     clientConnection->disconnectFromHost();
+    readMutex.unlock();
 }
 
 void saveServer::genErrorMessage(QString errorMessage)

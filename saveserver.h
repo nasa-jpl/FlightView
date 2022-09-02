@@ -6,6 +6,7 @@
 #include <QDataStream>
 #include <QString>
 #include <sstream>
+#include <QMutex>
 
 #include "frame_worker.h"
 
@@ -37,6 +38,11 @@ class saveServer : public QTcpServer
     uint16_t framesToSave;
     QString fname;
     uint16_t navgs;
+
+    QMutex readMutex;
+    bool signalConnected = false;
+    void reconnectSignal();
+    void disconnectSignal();
 
     bool checkValues(uint16_t framesToSaveCount,
                      QString filename,
