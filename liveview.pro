@@ -34,6 +34,7 @@ SOURCES += main.cpp\
     profile_widget.cpp \
     pref_window.cpp \
     cuda_take/src/safestringset.cpp \
+    rgbadjustments.cpp \
     saveserver.cpp \
     playback_widget.cpp \
     gpsGUI/qledlabel.cpp \
@@ -57,6 +58,7 @@ HEADERS  += mainwindow.h \
     histogram_widget.h \
     fft_widget.h \
     frame_c_meta.h \
+    rgbadjustments.h \
     rgbline.h \
     cuda_take/include/safestringset.h \
     settings.h \
@@ -152,4 +154,5 @@ DEPENDPATH += $$PWD/cuda_take
 unix:!macx:!symbian: PRE_TARGETDEPS += $$PWD/cuda_take/libcuda_take.a
 
 FORMS += \
-    initialsetup.ui
+    initialsetup.ui \
+    rgbadjustments.ui

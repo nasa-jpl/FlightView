@@ -33,7 +33,6 @@ class flight_widget : public QWidget
     frameWorker *fw;
 
     waterfall *waterfall_widget;
-    //frameview_widget *waterfall_widget;
     frameview_widget *dsf_widget;
 
     gpsManager *gps;
@@ -135,6 +134,7 @@ public slots:
     void updateCeiling(int c);
     void updateFloor(int f);
     void changeRGB(int r, int g, int b);
+    void setRGBLevels(double red, double green, double blue);
     void setShowRGBLines(bool showLines);
     void changeWFLength(int length);
     void rescaleRange();

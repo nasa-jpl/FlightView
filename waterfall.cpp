@@ -78,8 +78,8 @@ void waterfall::redraw()
         {
             c.setAlpha(opacity);
             c.setRed(wf.at(y)->getRed()[x]);
-            c.setGreen(wf.at(y)->getBlue()[x]);
-            c.setBlue(wf.at(y)->getGreen()[x]);
+            c.setGreen(wf.at(y)->getGreen()[x]);
+            c.setBlue(wf.at(y)->getBlue()[x]);
 
             specImage.setPixel(x, y, c.rgba());
         }
@@ -171,9 +171,9 @@ void waterfall::processLineToRGB(rgbLine* line)
 
     for(int p=0; p < frWidth; p++)
     {
-        line->getRed()[p] = scaleDataPoint(line->getr_raw()[p]);
-        line->getGreen()[p] = scaleDataPoint(line->getg_raw()[p]);
-        line->getBlue()[p] = scaleDataPoint(line->getb_raw()[p]);
+        line->getRed()[p] = redLevel * scaleDataPoint(line->getr_raw()[p]);
+        line->getGreen()[p] = greenLevel * scaleDataPoint(line->getg_raw()[p]);
+        line->getBlue()[p] = blueLevel * scaleDataPoint(line->getb_raw()[p]);
     }
 }
 
@@ -222,6 +222,14 @@ void waterfall::changeRGB(int r, int g, int b)
     this->g_row = g;
     this->b_row = b;
 }
+
+void waterfall::setRGBLevels(double r, double g, double b)
+{
+    this->redLevel = r;
+    this->greenLevel = g;
+    this->blueLevel = b;
+}
+
 
 void waterfall::setSpecOpacity(unsigned char opacity)
 {

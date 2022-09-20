@@ -31,6 +31,7 @@
 #include "fft_widget.h"
 #include "frameview_widget.h"
 #include "flight_widget.h"
+#include "rgbadjustments.h"
 #include "histogram_widget.h"
 #include "playback_widget.h"
 #include "profile_widget.h"
@@ -58,6 +59,7 @@ class ControlsBox : public QGroupBox
 
     startupOptionsType options;
     fileNameGenerator fnamegen;
+    rgbAdjustments* rgbLevels;
 
 public:
     explicit ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType options, QWidget *parent = 0);
@@ -72,6 +74,7 @@ public:
     QWidget CollectionButtonsBox;
     QPushButton collect_dark_frames_button;
     QPushButton stop_dark_collection_button;
+    QPushButton showRGBLevelsButton;
     QPushButton load_mask_from_file;
     QPushButton pref_button;
     QString fps;
@@ -206,6 +209,7 @@ signals:
     /*! \brief Passes the information needed to generate the dark mask and load it into the DSF in the playback_widget. */
     void mask_selected(QString file_name, unsigned int bytes_to_read, long offset);
     void updateRGB(int r, int g, int b);
+    void sendRGBLevels(double r, double g, double b);
     void updateWFLength(int length);
     void haveReadPreferences(settingsT prefs);
 

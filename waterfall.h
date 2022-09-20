@@ -44,6 +44,11 @@ class waterfall : public QWidget
     int g_row;
     int b_row;
 
+    // Strength multipliers:
+    double redLevel = 1.0;
+    double greenLevel = 1.0;
+    double blueLevel = 1.0;
+
     std::deque<std::shared_ptr<rgbLine>> wf;
     std::atomic_bool wfInUse;
 
@@ -71,6 +76,7 @@ public slots:
     void paintEvent(QPaintEvent *event);
     void handleNewFrame();
     void changeRGB(int r, int g, int b);
+    void setRGBLevels(double r, double g, double b);
     void changeWFLength(int length);
     void setSpecOpacity(unsigned char opacity);
     void updateCeiling(int c);

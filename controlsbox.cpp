@@ -54,11 +54,22 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     setupUI.acceptOptions(&options);
     setupUI.setModal(true);
 
+    rgbLevels = new rgbAdjustments(this);
+    connect(rgbLevels, &rgbAdjustments::haveRGBLevels,
+            [=](const double &r, const double &g, const double &b) {
+        emit sendRGBLevels(r, g, b);
+    });
+
+
 /* ====================================================================== */
     // LEFT SIDE BUTTONS (Collections)
     collect_dark_frames_button.setText("Record Dark Frames");
     stop_dark_collection_button.setText("Stop Dark Frames");
     stop_dark_collection_button.setEnabled(false);
+    showRGBLevelsButton.setText("RGB Levels");
+    showRGBLevelsButton.setEnabled(false);
+    showRGBLevelsButton.setVisible(false);
+
     load_mask_from_file.setText("Load Dark Mask");
     load_mask_from_file.setEnabled(false);
     pref_button.setText("Preferences");
@@ -88,6 +99,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //First Row
     collections_layout->addWidget(&collect_dark_frames_button, 1, 1, 1, 1);
     collections_layout->addWidget(&stop_dark_collection_button, 1, 2, 1, 1);
+    collections_layout->addWidget(&showRGBLevelsButton, 1, 3, 1, 1);
 
     //Second Row
     collections_layout->addWidget(&fps_label, 2, 1, 1, 1);
@@ -450,6 +462,11 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     connect(&showXioSetupBtn, &QPushButton::pressed,
             [&]() {
             showSetup();
+    });
+    connect(&showRGBLevelsButton, &QPushButton::pressed,
+            [&]() {
+            rgbLevels->show();
+            rgbLevels->raise();
     });
 
     connect(&pausePlaybackChk, &QCheckBox::stateChanged, [this](int state) {
@@ -955,6 +972,10 @@ void ControlsBox::tab_changed_slot(int index)
     attempt_pointers(current_tab);
     show_rgb_lines_cbox.setEnabled(false);
     show_rgb_lines_cbox.setVisible(false);
+    showRGBLevelsButton.setEnabled(false);
+    showRGBLevelsButton.setVisible(false);
+
+
     if (p_profile) {
         int frameMax, startVal;
         bool enable;
@@ -1147,7 +1168,8 @@ void ControlsBox::tab_changed_slot(int index)
             std_dev_N_slider->hide();
             std_dev_N_edit->hide();
 
-
+            showRGBLevelsButton.setEnabled(true);
+            showRGBLevelsButton.setVisible(true);
 
             use_DSF_cbox.setEnabled(true);
             use_DSF_cbox.setChecked(false);

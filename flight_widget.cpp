@@ -203,7 +203,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     connect(waterfall_widget, SIGNAL(statusMessageOut(QString)), this, SLOT(showDebugMessage(QString)));
 
-
     // Connections to GPS:
     connect(gps, SIGNAL(gpsStatusMessage(QString)), this, SLOT(showDebugMessage(QString)));
     connect(gps, SIGNAL(gpsConnectionError(int)), this, SLOT(handleGPSConnectionError(int)));
@@ -441,6 +440,12 @@ void flight_widget::changeRGB(int r, int g, int b)
     //emit statusMessage(QString("Updated RGB lines: r:%1, g:%2, b:%3").arg(r).arg(g).arg(b));
 }
 
+void flight_widget::setRGBLevels(double r, double g, double b)
+{
+    waterfall_widget->setRGBLevels(r, g, b);
+    emit statusMessage(QString("Updated RGB levels: r:%1, g:%2, b:%3").arg(r).arg(g).arg(b));
+}
+
 void flight_widget::setShowRGBLines(bool showLines)
 {
     //emit statusMessage(QString("Showline status: %1").arg(showLines));
@@ -522,5 +527,4 @@ void flight_widget::debugThis()
     emit statusMessage("Debug function inside flight widget pressed.");
     //gps->initiateGPSConnection("10.0.0.6", 8111, "");
     //waterfall_widget->debugThis();
-    waterfall_widget->handleNewFrame();
 }

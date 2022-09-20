@@ -296,6 +296,7 @@ void XIOCamera::readFile()
             dev_p.seekg(0, std::ios::end);
             filesize = dev_p.tellg();
             dev_p.seekg(headsize, std::ios::beg);
+            //filesize = filesize - headsize; // will this help?
             LL(3) << ": decomp read, filesize read from actual file stream is: " << filesize;
         } else if (isRawFile){
             dev_p.seekg(0, std::ios::end);
