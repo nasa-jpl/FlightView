@@ -169,11 +169,21 @@ void waterfall::processLineToRGB(rgbLine* line)
 {
     // go from float to RGB, with floor and ceiling scaling
 
-    for(int p=0; p < frWidth; p++)
+    if(gammaLevel == 1.0)
     {
-        line->getRed()[p] = redLevel * scaleDataPoint(line->getr_raw()[p]);
-        line->getGreen()[p] = greenLevel * scaleDataPoint(line->getg_raw()[p]);
-        line->getBlue()[p] = blueLevel * scaleDataPoint(line->getb_raw()[p]);
+        for(int p=0; p < frWidth; p++)
+        {
+            line->getRed()[p] =   (unsigned char)MAX8(redLevel *   scaleDataPoint(line->getr_raw()[p]));
+            line->getGreen()[p] = (unsigned char)MAX8(greenLevel * scaleDataPoint(line->getg_raw()[p]));
+            line->getBlue()[p] =  (unsigned char)MAX8(blueLevel *  scaleDataPoint(line->getb_raw()[p]));
+        }
+    } else {
+        for(int p=0; p < frWidth; p++)
+        {
+            line->getRed()[p] = (unsigned char)MAX8(redLevel * pow(scaleDataPoint(line->getr_raw()[p]), gammaLevel));
+            line->getGreen()[p] = (unsigned char)MAX8(greenLevel * pow(scaleDataPoint(line->getg_raw()[p]), gammaLevel));
+            line->getBlue()[p] = (unsigned char)MAX8(blueLevel * pow(scaleDataPoint(line->getb_raw()[p]), gammaLevel));
+        }
     }
 }
 
@@ -196,6 +206,9 @@ unsigned char waterfall::scaleDataPoint(float dataPt)
 
     // Now that the data are between ceiling and floor:
     float span = ceiling - floor;
+    if(floor==0)
+        return 0;
+
     float factor = 255.0f / span;
 
     if (  (dataPt) * factor >= 0 )
@@ -223,11 +236,12 @@ void waterfall::changeRGB(int r, int g, int b)
     this->b_row = b;
 }
 
-void waterfall::setRGBLevels(double r, double g, double b)
+void waterfall::setRGBLevels(double r, double g, double b, double gamma)
 {
     this->redLevel = r;
     this->greenLevel = g;
     this->blueLevel = b;
+    this->gammaLevel = gamma;
 }
 
 

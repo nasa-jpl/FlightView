@@ -29,6 +29,7 @@ static unsigned int num_taps;
 static unsigned int MAX_VAL;
 
 void setup_filter(camera_t camera_type);
+void setup_filter(unsigned int frHeight, unsigned int frWidth);
 uint16_t * apply_chroma_translate_filter(uint16_t * picture);
 
 #endif /* CHROMA_TRANSLATE_FILTER_H_ */

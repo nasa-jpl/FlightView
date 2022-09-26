@@ -56,8 +56,8 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     rgbLevels = new rgbAdjustments(this);
     connect(rgbLevels, &rgbAdjustments::haveRGBLevels,
-            [=](const double &r, const double &g, const double &b) {
-        emit sendRGBLevels(r, g, b);
+            [=](const double &r, const double &g, const double &b, const double &gamma) {
+        emit sendRGBLevels(r, g, b, gamma);
     });
 
 
@@ -72,6 +72,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     load_mask_from_file.setText("Load Dark Mask");
     load_mask_from_file.setEnabled(false);
+    load_mask_from_file.setToolTip("Load a dark mask from a file, each pixel is a 32-bit float");
     pref_button.setText("Preferences");
     fps_label.setText("Warning: No Data Recieved");
     server_ip_label.setText("Server IP: Not Connected!");
@@ -679,6 +680,8 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     ceiling_slider.blockSignals(false);
     floor_edit.blockSignals(false);
     floor_slider.blockSignals(false);
+
+    setRGBWaterfall(0); // send the initial RGB values
 }
 void ControlsBox::closeEvent(QCloseEvent *e)
 {
@@ -761,6 +764,7 @@ void ControlsBox::loadSettings()
 
     prefs.readFile = true;
     updateUIToPrefs();
+    setRGBWaterfall(0); // send the initial RGB values
     emit statusMessage(QString("[Controls Box]: 2s compliment setting from preferences: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
     emit haveReadPreferences(prefs);
 }
@@ -1183,6 +1187,7 @@ void ControlsBox::tab_changed_slot(int index)
 
             p_flight->changeWFLength(wflength_slider.value());
             this->setMaximumHeight(230);
+            setRGBWaterfall(0);
         } else if (p_histogram) {
             ceiling_maximum = p_histogram->slider_max;
             low_increment_cbox.setChecked(p_histogram->slider_low_inc);
@@ -1957,7 +1962,6 @@ void ControlsBox::setRGBWaterfall(int value)
     (void)value;
     emit updateRGB(red_slider.value(), green_slider.value(),
                    blue_slider.value());
-
 }
 
 void ControlsBox::debugThis()

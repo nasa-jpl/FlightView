@@ -644,6 +644,7 @@ void take_object::fileImageCopyLoop()
                                            whichFFT, lh_start, lh_end,\
                                            cent_start, cent_end,\
                                            rh_start, rh_end);
+        setup_filter(frHeight, frWidth);
 
         if(options.targetFPS == 0.0)
             options.targetFPS = 100.0;
@@ -731,22 +732,23 @@ void take_object::fileImageCopyLoop()
             // From here on out, the code should be
             // very similar to the EDT frame grabber code.
 
-            if(true)
+
+            if(pixRemap)
             {
-                if(pixRemap)
-                    apply_chroma_translate_filter(curFrame->raw_data_ptr);
-                if(cam_type == CL_6604A)
-                    curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
-                else
-                    curFrame->image_data_ptr = curFrame->raw_data_ptr;
-                if(inverted)
-                { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
-                    for(uint i = 0; i < frHeight*frWidth; i++ )
-                        curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
-                }
-            } else {
+                apply_chroma_translate_filter(curFrame->raw_data_ptr);
                 curFrame->image_data_ptr = curFrame->raw_data_ptr;
             }
+
+            if(cam_type == CL_6604A)
+                curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
+            else
+                curFrame->image_data_ptr = curFrame->raw_data_ptr;
+            if(inverted)
+            { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
+                for(uint i = 0; i < frHeight*frWidth; i++ )
+                    curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
+            }
+
 
             // Calculating the filters for this frame
             if(runStdDev)

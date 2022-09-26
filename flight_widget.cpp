@@ -440,10 +440,10 @@ void flight_widget::changeRGB(int r, int g, int b)
     //emit statusMessage(QString("Updated RGB lines: r:%1, g:%2, b:%3").arg(r).arg(g).arg(b));
 }
 
-void flight_widget::setRGBLevels(double r, double g, double b)
+void flight_widget::setRGBLevels(double r, double g, double b, double gamma)
 {
-    waterfall_widget->setRGBLevels(r, g, b);
-    emit statusMessage(QString("Updated RGB levels: r:%1, g:%2, b:%3").arg(r).arg(g).arg(b));
+    waterfall_widget->setRGBLevels(r, g, b, gamma);
+    //emit statusMessage(QString("Updated RGB levels: r:%1, g:%2, b:%3").arg(r).arg(g).arg(b));
 }
 
 void flight_widget::setShowRGBLines(bool showLines)

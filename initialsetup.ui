@@ -184,10 +184,17 @@
     <double>1.000000000000000</double>
    </property>
    <property name="maximum">
-    <double>150.000000000000000</double>
+    <double>230.000000000000000</double>
    </property>
   </widget>
  </widget>
+ <tabstops>
+  <tabstop>heightSpin</tabstop>
+  <tabstop>widthSpin</tabstop>
+  <tabstop>fpsSpin</tabstop>
+  <tabstop>xioPathText</tabstop>
+  <tabstop>selectButton</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

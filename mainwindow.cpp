@@ -201,7 +201,7 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
         }
     });
 
-    connect(controlbox, SIGNAL(sendRGBLevels(double,double,double)), flight_screen, SLOT(setRGBLevels(double,double,double)));
+    connect(controlbox, SIGNAL(sendRGBLevels(double,double,double,double)), flight_screen, SLOT(setRGBLevels(double,double,double,double)));
 
     handleMainWindowStatusMessage("Started");
 }

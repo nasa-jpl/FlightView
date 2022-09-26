@@ -134,7 +134,7 @@ public slots:
     void updateCeiling(int c);
     void updateFloor(int f);
     void changeRGB(int r, int g, int b);
-    void setRGBLevels(double red, double green, double blue);
+    void setRGBLevels(double red, double green, double blue, double gamma);
     void setShowRGBLines(bool showLines);
     void changeWFLength(int length);
     void rescaleRange();

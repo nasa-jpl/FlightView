@@ -8,6 +8,7 @@
 #include <atomic>
 #include <mutex>
 #include <stdio.h>
+#include <math.h>
 
 #include <QObject>
 #include <QWidget>
@@ -17,6 +18,12 @@
 #include "settings.h"
 #include "frame_worker.h"
 #include "rgbline.h"
+
+#define MAX8(x) ((x>255)?255:x)
+#define MAX(x,y) ((x>y)?x:y)
+#define MIN(x,y) ((x<y)?x:y)
+#define TOP(x,top) ((x>top)?top:x)
+#define BOT(x,bot) ((x<bot)?bot:x)
 
 class waterfall : public QWidget
 {
@@ -49,6 +56,8 @@ class waterfall : public QWidget
     double greenLevel = 1.0;
     double blueLevel = 1.0;
 
+    double gammaLevel = 1.0;
+
     std::deque<std::shared_ptr<rgbLine>> wf;
     std::atomic_bool wfInUse;
 
@@ -76,7 +85,7 @@ public slots:
     void paintEvent(QPaintEvent *event);
     void handleNewFrame();
     void changeRGB(int r, int g, int b);
-    void setRGBLevels(double r, double g, double b);
+    void setRGBLevels(double r, double g, double b, double gamma);
     void changeWFLength(int length);
     void setSpecOpacity(unsigned char opacity);
     void updateCeiling(int c);
