@@ -25,6 +25,11 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     current_tab = qobject_cast<frameview_widget*>(qtw->widget(qtw->currentIndex()));
     old_tab = NULL;
     this->options = options;
+    this->options.height = frHeight;
+    this->options.width = frWidth;
+    this->options.heightWidthSet = true;
+    setupUI.setHeightWidthLock(true);
+
     if(options.dataLocationSet && !options.dataLocation.isEmpty())
     {
         fnamegen.setMainDirectory(options.dataLocation);

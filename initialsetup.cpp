@@ -54,6 +54,13 @@ void initialSetup::acceptOptions(startupOptionsType *opts)
     ui->fpsSpin->setValue((double)options->targetFPS);
 }
 
+void initialSetup::setHeightWidthLock(bool locked)
+{
+    this->lockHeightWidthControls = locked;
+    ui->heightSpin->setEnabled(!locked);
+    ui->widthSpin->setEnabled(!locked);
+}
+
 startupOptionsType *initialSetup::getOptions()
 {
     return options;

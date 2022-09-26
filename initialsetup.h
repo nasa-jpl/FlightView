@@ -19,6 +19,7 @@ public:
     ~initialSetup();
 
     void acceptOptions(startupOptionsType *opts);
+    void setHeightWidthLock(bool locked);
     startupOptionsType *getOptions();
 
 private slots:
@@ -42,6 +43,7 @@ private:
     Ui::initialSetup *ui;
     startupOptionsType *options;
     char* xioDirectoryBuffer = NULL;
+    bool lockHeightWidthControls = false;
 };
 
 #endif // INITIALSETUP_H
