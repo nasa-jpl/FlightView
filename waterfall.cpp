@@ -206,8 +206,8 @@ unsigned char waterfall::scaleDataPoint(float dataPt)
 
     // Now that the data are between ceiling and floor:
     float span = ceiling - floor;
-    if(floor==0)
-        return 0;
+    //if(floor==0)
+    //    return 0;
 
     float factor = 255.0f / span;
 
