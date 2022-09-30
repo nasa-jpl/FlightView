@@ -12,6 +12,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     useAvionicsWidgets = true;
 
     waterfall_widget = new waterfall(fw, 1, 1024, this);
+    wfThread = new QThread(this);
+    wfThread->setObjectName("lv:wfThread");
     dsf_widget = new frameview_widget(fw, DSF, this);
 
     startedPrimaryGPSLog = false;
@@ -271,9 +273,33 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     hideRGBTimer.stop();
     connect(&hideRGBTimer, SIGNAL(timeout()), this, SLOT(hideRGB()));
 
+    waterfall_widget->moveToThread(wfThread);
+    connect(wfThread, SIGNAL(started()), waterfall_widget, SLOT(process()));
+    connect(wfThread, SIGNAL(finished()), waterfall_widget, SLOT(deleteLater()));
+    wfThread->start();
+
+    setupWFConnections();
+
     emit statusMessage(QString("Finished flight constructor."));
 }
 
+flight_widget::~flight_widget()
+{
+    if(wfThread != NULL)
+    {
+        wfThread->quit();
+        wfThread->wait();
+    }
+}
+
+void flight_widget::setupWFConnections()
+{
+    connect(this, SIGNAL(changeWFLengthSignal(int)), waterfall_widget, SLOT(changeWFLength(int)));
+    connect(this, SIGNAL(updateCeilingSignal(int)), waterfall_widget, SLOT(updateCeiling(int)));
+    connect(this, SIGNAL(updateFloorSignal(int)), waterfall_widget, SLOT(updateFloor(int)));
+    connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double)), waterfall_widget, SLOT(setRGBLevels(double,double,double,double)));
+    connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), waterfall_widget, SLOT(changeRGB(int,int,int)));
+}
 
 double flight_widget::getCeiling()
 {
@@ -416,13 +442,15 @@ void flight_widget::setScrollY(bool Xenabled)
 
 void flight_widget::updateCeiling(int c)
 {
-    waterfall_widget->updateCeiling(c);
+    //waterfall_widget->updateCeiling(c);
+    emit updateCeilingSignal(c);
     dsf_widget->updateCeiling(c);
 }
 
 void flight_widget::updateFloor(int f)
 {
-    waterfall_widget->updateFloor(f);
+    //waterfall_widget->updateFloor(f);
+    emit updateFloorSignal(f);
     dsf_widget->updateFloor(f);
 }
 
@@ -434,7 +462,8 @@ void flight_widget::rescaleRange()
 
 void flight_widget::changeRGB(int r, int g, int b)
 {
-    waterfall_widget->changeRGB(r,g,b);
+    //waterfall_widget->changeRGB(r,g,b);
+    emit updateRGBbandSignal(r,g,b);
     dsf_widget->showRGB(r,g,b);
     hideRGBTimer.start();
     //emit statusMessage(QString("Updated RGB lines: r:%1, g:%2, b:%3").arg(r).arg(g).arg(b));
@@ -442,7 +471,8 @@ void flight_widget::changeRGB(int r, int g, int b)
 
 void flight_widget::setRGBLevels(double r, double g, double b, double gamma)
 {
-    waterfall_widget->setRGBLevels(r, g, b, gamma);
+    //waterfall_widget->setRGBLevels(r, g, b, gamma);
+    emit setRGBLevelsSignal(r,g,b,gamma);
     //emit statusMessage(QString("Updated RGB levels: r:%1, g:%2, b:%3").arg(r).arg(g).arg(b));
 }
 
@@ -456,7 +486,8 @@ void flight_widget::setShowRGBLines(bool showLines)
 
 void flight_widget::changeWFLength(int length)
 {
-    waterfall_widget->changeWFLength(length);
+    emit changeWFLengthSignal(length);
+    //waterfall_widget->changeWFLength(length);
 }
 
 void flight_widget::setCrosshairs(QMouseEvent *event)

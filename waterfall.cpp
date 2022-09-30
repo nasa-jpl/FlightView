@@ -5,7 +5,6 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent) : Q
     this->fw = fw;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
-    wfInUse = false;
 
     //rgbLineStruct blank = allocateLine();
     maxWFlength = 1024;
@@ -44,6 +43,11 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent) : Q
     QSizePolicy policy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     this->setSizePolicy(policy);
     statusMessage("Finished waterfall constructor.");
+}
+
+void waterfall::process()
+{
+    statusMessage("Thread started");
 }
 
 void waterfall::paintEvent(QPaintEvent *event)
@@ -150,18 +154,19 @@ void waterfall::addNewFrame()
     processLineToRGB(line);
 
     // ATOMIC spin-lock on the wf deque
-    while(wfInUse)
-    {
-        usleep(500);
-    }
-    wfInUse = true;
+//    while(wfInUse)
+//    {
+//        usleep(500);
+//    }
+    QMutexLocker lockwf(&wfInUse);
+//    wfInUse = true;
     // push front
     wf.push_front(std::shared_ptr<rgbLine>(line));
 
     // pop back to remove oldest line
     //wf.pop_back();
     wf.resize(maxWFlength);
-    wfInUse = false;
+//    wfInUse = false;
     addingFrame.unlock();
 }
 
@@ -206,8 +211,6 @@ unsigned char waterfall::scaleDataPoint(float dataPt)
 
     // Now that the data are between ceiling and floor:
     float span = ceiling - floor;
-    //if(floor==0)
-    //    return 0;
 
     float factor = 255.0f / span;
 
@@ -287,16 +290,12 @@ void waterfall::rescaleWF()
     // mutex lock
     // atomic bool spin-lock on deque data
     scalingValues.lock();
-    while(wfInUse)
-    {
-        usleep(500);
-    }
-    wfInUse = true;
+    QMutexLocker lock(&wfInUse);
+#pragma omp parallel for
     for(int wfrow=0; wfrow < maxWFlength; wfrow++)
     {
         processLineToRGB( wf[wfrow].get() );
     }
-    wfInUse = false;
     scalingValues.unlock();
 
 }

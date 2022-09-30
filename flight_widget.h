@@ -12,6 +12,7 @@ namespace fs = boost::filesystem;
 #include <QWidget>
 #include <QSplitter>
 #include <QTimer>
+#include <QThread>
 
 #include <qcustomplot.h>
 
@@ -33,7 +34,9 @@ class flight_widget : public QWidget
     frameWorker *fw;
 
     waterfall *waterfall_widget;
+    QThread *wfThread = NULL;
     frameview_widget *dsf_widget;
+    void setupWFConnections();
 
     gpsManager *gps;
     QString primaryGPSLogLocation; // directory, filename is automatic for primary log
@@ -107,6 +110,7 @@ class flight_widget : public QWidget
 
 public:
     explicit flight_widget(frameWorker *fw, startupOptionsType options, QWidget *parent = nullptr);
+    ~flight_widget();
     const unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
     double getCeiling();
@@ -153,6 +157,13 @@ signals:
     void beginSecondaryLog(QString filename);
     void stopSecondaryLog();
     void sendDiskSpaceAvailable(quint64 sizeTotal, quint64 available);
+
+    // For the WF:
+    void updateCeilingSignal(int c);
+    void updateFloorSignal(int f);
+    void updateRGBbandSignal(int r, int g, int b);
+    void setRGBLevelsSignal(double r, double g, double b, double gamma);
+    void changeWFLengthSignal(int length);
 };
 
 #endif // FLIGHT_WIDGET_H

@@ -138,6 +138,7 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     }
 
     connect(fw, SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
+    connect(fw, SIGNAL(newFrameAvailable()), flight_screen, SLOT(handleNewFrame()));
     connect(controlbox, SIGNAL(startDSFMaskCollection()), fw,SLOT(startCapturingDSFMask()));
     connect(controlbox, SIGNAL(stopDSFMaskCollection()), fw, SLOT(finishCapturingDSFMask()));
     connect(controlbox, SIGNAL(startSavingFinite(unsigned int, QString, unsigned int)), fw, SLOT(startSavingRawData(unsigned int, QString, unsigned int)));

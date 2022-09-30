@@ -12,6 +12,8 @@
 
 #include <QObject>
 #include <QWidget>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QPainter>
 #include <QTimer>
 
@@ -59,7 +61,8 @@ class waterfall : public QWidget
     double gammaLevel = 1.0;
 
     std::deque<std::shared_ptr<rgbLine>> wf;
-    std::atomic_bool wfInUse;
+    QMutex wfInUse;
+    //std::atomic_bool wfInUse;
 
     unsigned char scaleDataPoint(float dataPt); // to ceiling and floor
 
@@ -80,6 +83,7 @@ class waterfall : public QWidget
 
 public:
     explicit waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent = nullptr);
+    void process();
 
 public slots:
     void paintEvent(QPaintEvent *event);
