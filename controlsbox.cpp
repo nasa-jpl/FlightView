@@ -983,6 +983,7 @@ void ControlsBox::tab_changed_slot(int index)
     show_rgb_lines_cbox.setVisible(false);
     showRGBLevelsButton.setEnabled(false);
     showRGBLevelsButton.setVisible(false);
+    overlayControls(false);
 
 
     if (p_profile) {
