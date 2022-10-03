@@ -388,10 +388,15 @@ void flight_widget::checkDiskSpace()
 
 void flight_widget::processFPSError()
 {
+    if(FPSErrorCounter % 20 == 0)
+    {
+        emit statusMessage(QString("FPS Error, FPS: %1, Error Count: %2").\
+                           arg(fw->delta).\
+                           arg(FPSErrorCounter));
+    }
     FPSErrorCounter++;
-    emit statusMessage(QString("FPS Error, FPS: %1, Error Count: %2").\
-                       arg(fw->delta).\
-                       arg(FPSErrorCounter));
+
+
     if((FPSErrorCounter > 0) && !stickyFPSError)
     {
         this->cameraLinkLED.setState(QLedLabel::StateError);
