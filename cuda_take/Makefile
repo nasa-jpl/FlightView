@@ -96,7 +96,10 @@ CPPFLAGS += -fPIC
 #(-G -lineinfo) are both to enable cuda-gdb debugging, -Xcompiler specifies arguments to get passed directly to g++ (which NVCC is built on), the internet said to do -rdynamic
 
 # NVIDIA GeForce RTX 3080: 
-NVCCFLAGS  = -gencode arch=compute_86,code=sm_86 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'
+#NVCCFLAGS  = -gencode arch=compute_86,code=sm_86 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'
+
+# NVIDIA "native" code generator, for cuda versions 11.6+
+NVCCFLAGS  = -arch=native -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'
 
 
 # Truly legacy GPUs which aren't supported anymore: 
