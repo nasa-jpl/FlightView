@@ -1,4 +1,4 @@
-# LIVEVIEW 2.8
+# FlightView
 2014-2022 Jet Propulsion Laboratory, AVIRIS lab
 
 Author/Maintainer: Elliott Liggett
