@@ -1,6 +1,8 @@
 # LIVEVIEW 2.8
 2014-2022 Jet Propulsion Laboratory, AVIRIS lab
+
 Author/Maintainer: Elliott Liggett
+
 Prior Authors: Jackie Ryan and Noah Levy
 
 This version of LiveView uses NVIDIA's CUDA toolkit for real-time processing, which is covered in the following IEEE publication: 
