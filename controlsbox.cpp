@@ -895,19 +895,75 @@ void ControlsBox::saveSettings()
 
 void ControlsBox::saveSingleRGBPreset(int index, int r, int g, int b)
 {
-    // [RGB]:
-    settings->beginGroup("RGB");
-    settings->beginWriteArray("bandsRGB", 10);
 
-    settings->setArrayIndex(index);
-    settings->setValue("bandRed", prefs.bandRed[index]);
-    settings->setValue("bandGreen", prefs.bandGreen[index]);
-    settings->setValue("bandBlue", prefs.bandBlue[index]);
-    settings->setValue("bandName", rgbPresetCombo.itemText(index));
+    bool dialogOk = false;
 
-    settings->endArray();
-    settings->endGroup();
-    emit statusMessage(QString("[Controls Box]: Saved RGB setting to index %1 named %2.").arg(index).arg(rgbPresetCombo.itemText(index)));
+    QStringList presets;
+
+    // NB: We are not adding "Rename..." to the list
+    for(int i=0; i < rgbPresetCombo.count()-1; i++)
+    {
+        presets << rgbPresetCombo.itemText(i);
+    }
+
+
+    QString itemStr = QInputDialog::getItem(this, "Select preset", "Preset to write:",
+                                            presets, index, false, &dialogOk);
+
+    if(dialogOk)
+    {
+        int selIndex = presets.indexOf(itemStr);
+        if(selIndex != -1)
+        {
+
+            // Save the new preset into position selIndex:
+            settings->beginGroup("RGB");
+            settings->beginWriteArray("bandsRGB", 10);
+
+            settings->setArrayIndex(selIndex);
+            settings->setValue("bandRed", r);
+            settings->setValue("bandGreen", g);
+            settings->setValue("bandBlue", b);
+            //settings->setValue("bandName", rgbPresetCombo.itemText(selIndex));
+
+            settings->endArray();
+            settings->endGroup();
+
+            prefs.bandRed[selIndex] = r;
+            prefs.bandGreen[selIndex] = g;
+            prefs.bandBlue[selIndex] = b;
+
+
+            emit statusMessage(QString("[Controls Box]: Saved RGB setting to index %1 named %2.").arg(selIndex).arg(rgbPresetCombo.itemText(selIndex)));
+
+            if(index != selIndex)
+            {
+                // Enter here if the save preset number isn't the same as the current preset number.
+                // We need to put back the old
+
+                // Now load 'at [index]' the preset from the settings into the prefs. This way,
+                // when the user goes back to the prior preset, it's there.
+                settings->beginGroup("RGB");
+                settings->beginReadArray("bandsRGB");
+
+                settings->setArrayIndex(index);
+                prefs.bandRed[index] = settings->value("bandRed", prefs.bandRed[index]).toInt();
+                prefs.bandGreen[index] = settings->value("bandGreen", prefs.bandGreen[index]).toInt();
+                prefs.bandBlue[index] = settings->value("bandBlue", prefs.bandBlue[index]).toInt();
+                //prefs.presetName[index] = settings->value("bandName", QString("%1").arg(i+1)).toString();
+
+                settings->endArray();
+                settings->endGroup();
+
+                rgbPresetCombo.blockSignals(true);
+                rgbPresetCombo.setCurrentIndex(selIndex);
+                rgbPresetCombo.blockSignals(false);
+            }
+
+
+            // put the new preset sliders to the new ones
+        }
+    }
 }
 
 void ControlsBox::setDefaultSettings()
