@@ -23,7 +23,7 @@ fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
     tapPrfButton->setChecked(false);
 
     tapToProfile.setMinimum(0);
-    tapToProfile.setMaximum(number_of_taps[fw->camera_type()]);
+    tapToProfile.setMaximum(number_of_taps[fw->camera_type()]-1);
     tapToProfile.setSingleStep(1);
     tapToProfile.setEnabled(false);
     connect(tapPrfButton, SIGNAL(toggled(bool)), &tapToProfile, SLOT(setEnabled(bool)));
@@ -32,7 +32,7 @@ fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
     connect(vCrossButton, SIGNAL(clicked()), this, SLOT(updateFFT()));
     connect(tapPrfButton, SIGNAL(clicked()), this, SLOT(updateFFT()));
 
-    ceiling = 100;
+    ceiling = 101;
     floor = 0;
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);

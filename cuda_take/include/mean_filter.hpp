@@ -2,6 +2,7 @@
 #define MEAN_FILTER_HPP
 #include <cstdint>
 #include <ccomplex>
+#include <mutex>
 #include <boost/thread.hpp>
 #include <atomic>
 #include "frame_c.hpp"
@@ -40,6 +41,32 @@ public:
                 int lh_start, int lh_end,
                 int cent_start, int cent_end,
                 int rh_start, int rh_end);
+    ~mean_filter();
+
+    void update(frame_c * frame,
+           unsigned long frame_count,
+           int startCol,
+           int endCol,
+           int startRow,
+           int endRow,
+           int actualWidth,
+           bool useDSF,
+           FFT_t FFTtype,
+           int lh_start, int lh_end,
+           int cent_start, int cent_end,
+           int rh_start, int rh_end);
+
+    void updateParameters(unsigned long frame_count,
+                     int startCol,
+                     int endCol,
+                     int startRow,
+                     int endRow,
+                     int actualWidth,
+                     bool useDSF,
+                     FFT_t FFTtype,
+                     int lh_start, int lh_end,
+                     int cent_start, int cent_end,
+                     int rh_start, int rh_end);
 
 
     // Ridiculous parameter list lol :P
@@ -52,6 +79,10 @@ public:
 
 private:
         boost::thread mean_thread;
+        std::atomic<bool> doThreadWork;
+        std::atomic<bool> runningMF;
+        std::mutex locking_mutex;
+        void threadEntry();
         int beginCol;
         int width;
         int beginRow;

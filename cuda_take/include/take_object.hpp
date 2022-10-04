@@ -4,16 +4,20 @@
 //standard includes
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <ostream>
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 //multithreading includes
 #include <atomic>
 #include <boost/shared_array.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
+#include <pthread.h>
+#include <mutex>
 //#include <boost/atomic.hpp>
 
 //custom includes
@@ -23,20 +27,15 @@
 #include "dark_subtraction_filter.hpp"
 #include "mean_filter.hpp"
 #include "camera_types.h"
+#include "cameramodel.h"
+#include "xiocamera.h"
 #include "constants.h"
+#include "safestringset.h"
+#include "takeoptions.h"
 
 //** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
 #define EDT
-//#define OPALKELLY
 
-#ifdef OPALKELLY
-//OpalKelly Device Support
-#include "okFrontPanelDLL.h"
-#include "ok_addresses.h"
-
-// the location of the OpalKelly bit file which configures the  FPGA
-#define FPGA_CONFIG_FILE "/home/jryan/NGIS_DATA/jryan/top4ch.bit"
-#endif
 
 //** Debug Macros **
 //#define RESET_GPUS // will reset the GPU hardware on closing the program
@@ -51,26 +50,30 @@
 #define UNAME "unknown person"
 #endif
 
+using std::string;
+
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence or absence of the "WARNING: MISSED FRAME X" line
 
+#define meanDeltaSize (20)
+
 class take_object {
-#ifdef EDT
-    PdvDev * pdv_p;
+    PdvDev * pdv_p = NULL;
     unsigned int channel;
     unsigned int numbufs;
     unsigned int filter_refresh_rate;
-#endif
-#ifdef OPALKELLY
-    okCFrontPanel* xem;
-    unsigned long clock_div = CLOCK_DIV;
-    unsigned long clock_delay = CLOCK_DLY;
-    int blocklen;
-    long framelen;
-#endif
 
-    boost::thread pdv_thread; // this thread controls the data collection
+
+    bool closing = false;
+    bool grabbing = true;
+    bool runStdDev = true;
+
+    boost::thread cam_thread; // this thread controls the data collection
+    boost::thread reading_thread; // this is used for file reading in the XIO camera.
+    boost::thread::native_handle_type cam_thread_handler;
+    boost::thread::native_handle_type reading_thread_handler;
+
     int pdv_thread_run = 0;
-	bool pdv_thread_start_complete=false; // added by Michael Bernas 2016
+    bool cam_thread_start_complete=false; // added by Michael Bernas 2016
 
 	unsigned int size;
     int lastfc;
@@ -96,14 +99,24 @@ class take_object {
 	uint16_t * raw_save_ptr;
 
 public:
-    take_object(int channel_num = 0, int number_of_buffers = 64, int filter_refresh_rate = 10);
+    take_object(int channel_num = 0, int number_of_buffers = 64,
+                int filter_refresh_rate = 10, bool runStdDev = true);
+    take_object(takeOptionsType options, int channel_num = 0, int number_of_buffers = 64,
+                int filter_refresh_rate = 10, bool runStdDev = true);
     virtual ~take_object();
-	void start();
-
+    void initialSetup(int channel_num = 0, int number_of_buffers = 64,
+                      int filter_refresh_rate = 10, bool runStdDev = true);
+    void start();
+    void changeOptions(takeOptionsType options);
+    void setReadDirectory(const char* directory);
+    camControlType* getCamControl();
     dark_subtraction_filter* dsf;
     camera_t cam_type;
     frame_c * frame_ring_buffer;
-    unsigned long count = 0; // frame count
+    unsigned long count = 0; // running frame counter
+    int xioCount = 0; // counter for each set of xio files.
+    uint16_t* prior_temp_frame = NULL;
+    int getMicroSecondsPerFrame();
 
     //Frame filters that affect everything at the raw data level
     void setInversion(bool checked, unsigned int factor);
@@ -118,6 +131,7 @@ public:
 
     // Std Dev Filter functions
     void setStdDev_N(int s);
+    void toggleStdDevCalculation(bool enabled);
 
     // Mean filter functions
     void updateVertRange(int br, int er);
@@ -145,24 +159,43 @@ public:
     FFT_t getFFTtype();
 
 private:
-	void pdv_loop();
-    void savingLoop(std::string, unsigned int num_avgs, unsigned int num_frames);
-    //void saveFramesInBuffer();
-    /* This function will save all the frames currently in the frame_ring_buffer
-     * to a pre-specified raw file. For the moment, it stops the take_object loop
-     * until it has finished saving. Not fully implemented. */
+    void pdv_loop();
+    void fileImageCopyLoop();
+    void fileImageReadingLoop();
+    void prepareFileReading();
+    CameraModel *Camera = NULL;
+    bool fileReadingLoopRun = false;
+    camControlType cameraController;
+    CameraModel::camStatusEnum camStatus;
 
-#ifdef OPALKELLY
-    okCFrontPanel* initializeFPGA();
-    void ok_init_pipe();
-    long ok_read_frame(unsigned char *wait_ptr, long prev_result);
-#endif
+    void savingLoop(std::string, unsigned int num_avgs, unsigned int num_frames);
+    std::mutex savingMutex;
+    bool savingData = false;
+
+    takeOptionsType options;
+
+    float deltaT_micros = 100.0;
+    int measuredDelta_micros_final = 0;
+    int meanDeltaArrayPos = 0;
+    int meanDeltaArray[meanDeltaSize] = {10}; // = {10,10,10,10,10,10,10,10,10,10};
+
+    void markFrameForChecking(uint16_t * frame);
+    bool checkFrame(uint16_t *Frame);
+    void clearAllRingBuffer();
+
+    void errorMessage(const char* message);
+    void warningMessage(const char* message);
+    void statusMessage(const char* message);
+    void errorMessage(const string message);
+    void warningMessage(const string message);
+    void statusMessage(const string message);
+    void statusMessage(std::ostringstream &message);
 
     // variables needed by the Raw Filters
     unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
     bool inverted = false;
     bool pixRemap = false; // Enable Parallel Pixel Mapping (Chroma Translate filter)
-
+    bool continuousRecording = false; // flag to enable continuous recording
     FFT_t whichFFT;
 };
 

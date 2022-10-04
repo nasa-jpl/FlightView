@@ -17,6 +17,9 @@
 #include "take_object.hpp"
 #include "frame_c_meta.h"
 #include "image_type.h"
+#include "startupOptions.h"
+#include "cuda_take/include/takeoptions.h"
+#include "initialsetup.h"
 
 /*! \file
  * \brief Communicates with the backend and connects public information between widgets.
@@ -40,8 +43,8 @@ const static int BIG_MIN = -1 * BIG_MAX / 4;
 const static int BIG_TICK = 400;
 
 /* slider low increment range */
-const static int LIL_MAX = 2000;
-const static int LIL_MIN = -2000;
+const static int LIL_MAX = 20000;
+const static int LIL_MIN = -20000;
 const static int LIL_TICK = 1;
 
 class frameWorker : public QObject
@@ -54,14 +57,24 @@ class frameWorker : public QObject
     unsigned int frHeight;
     unsigned int frWidth;
 
+    int lastTime;
+
     float *histogram_bins;
     bool doRun = true;
 
+    initialSetup setupUI;
+    startupOptionsType options;
+    takeOptionsType takeOptions;
+    void convertOptions(); // startup options to take options
+    char xioDirectoryBuffer[4096] = {'\x0'};
+
 public:
-    explicit frameWorker(QObject *parent = 0);
+    explicit frameWorker(startupOptionsType options, QObject *parent = 0);
     virtual ~frameWorker();
 
     take_object to;
+    camControlType *camcontrol;
+    void setCameraPaused(bool isPaused);
 
     frame_c *curFrame  = NULL;
     frame_c *std_dev_frame = NULL;
@@ -103,10 +116,13 @@ public:
     unsigned int getFrameWidth();
     bool dsfMaskCollected();
     bool usingDSF();
+    void useNewOptions(startupOptionsType newOpts);
 
 signals:
     /*! \brief Calls to update the value of the backend FPS label */
     void updateFPS();
+
+    void updateFrameCountDisplay(int number);
 
     /*! \brief Calls to render a new frame at the frontend.
      * \deprecated This signal may be deprecated in future versions. It is connected to the rendering slot in frameview_widget, but not emitted. */
@@ -125,7 +141,9 @@ signals:
     /*! \brief Closes the class event loop and calls to deallocate the workerThread. */
     void finished();
 
-    void setColorScheme_signal(int scheme);
+    void setColorScheme_signal(int scheme, bool useDarkTheme);
+
+    void sendStatusMessage(QString statusMessage);
 
 public slots:
     /*! \addtogroup renderfunc
@@ -155,9 +173,10 @@ public slots:
     void setCrosshairBackend(int pos_x, int pos_y);
     void updateCrossDiplay(bool checked);
     void setStdDev_N(int newN);
+    void enableStdDevCalculation(bool enabled);
     void stop();
-    void setColorScheme(int scheme);
-
+    void setColorScheme(int scheme, bool useDarkTheme);
+    void sMessage(QString message);
 };
 
 

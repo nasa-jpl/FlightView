@@ -4,10 +4,10 @@
 Version=1.0
 Type=Application
 Terminal=false
-Icon=/opt/EDTpdv/liveview_icon.png
-Icon[en_US]=/opt/EDTpdv/liveview_icon.png
+Icon=/usr/share/pixmaps/liveview_icon.png
+Icon[en_US]=/usr/share/pixmaps/liveview_icon.png
 Name[en_US]=liveview
 Comment[en_US]=Live CameraLink Data Visualization and Analytics using CUDA GPUs
-Exec=/opt/EDTpdv/liveview
+Exec=/usr/local/bin/liveview
 Name=liveview
 Comment=Live CameraLink Data Visualization and Analytics using CUDA GPUs

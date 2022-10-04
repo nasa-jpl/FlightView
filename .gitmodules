@@ -1,0 +1,3 @@
+[submodule "gpsGUI"]
+	path = gpsGUI
+	url = https://github.com/nasa-jpl/gpsGUI.git

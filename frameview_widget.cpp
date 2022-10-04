@@ -21,24 +21,45 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
 {
     this->fw = fw;
     this->image_type = image_type;
+    this->setObjectName("lv:frameview");
+    floor = 0;
+    useDSF = false;
+    havePrefs = false;
+    prefs = NULL;
+    frHeight = fw->getFrameHeight();
+    frWidth = fw->getFrameWidth();
+    bool ok = false;
 
     switch(image_type) {
     case BASE:
-        ceiling = fw->base_ceiling;
+        //ceiling = fw->base_ceiling;
         break;
     case DSF:
-        ceiling = 100;
+        //ceiling = 100;
         break;
     case STD_DEV:
-        ceiling = 100;
+        ceiling = 102;
         break;
+    case WATERFALL:
+    {
+        wflength = 1024;
+        std::vector <float> blank;
+        for(unsigned int c=0; c < (unsigned int)frWidth; c++)
+        {
+            blank.push_back(0.00);
+        }
+        for(unsigned int l=0; l < (unsigned int)wflength; l++)
+        {
+            wfimage.push_back(blank);
+        }
+
+        break;
+    }
     default:
         break;
     }
     // Note, this code is only run once, at the initial execution of liveview.
-    floor = 0;
-    frHeight = fw->getFrameHeight();
-    frWidth = fw->getFrameWidth();
+
 
     qcp = new QCustomPlot(this);
     qcp->setNotAntialiasedElement(QCP::aeAll);
@@ -62,13 +83,21 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qcp->addPlottable(colorMap);
 
     colorScale = new QCPColorScale(qcp);
-    qcp->plotLayout()->addElement(0, 1, colorScale); // add it to the right of the main axis rect
-
+    ok = qcp->plotLayout()->addElement(0, 1, colorScale); // add it to the right of the main axis rect
+    if(!ok) {
+        sMessage("Error, could not add element to frameview plot.");
+        qDebug() << "Error, could not add element to frameview plot.";
+    }
     colorScale->setType(QCPAxis::atRight);
 
     colorMap->setColorScale(colorScale);
 
-    colorMap->data()->setValueRange(QCPRange(0, frHeight-1));
+    if(image_type == WATERFALL)
+    {
+        colorMap->data()->setValueRange(QCPRange(0, wflength-1));
+    } else {
+        colorMap->data()->setValueRange(QCPRange(0, frHeight-1));
+    }
 
     colorMap->data()->setKeyRange(QCPRange(0, frWidth-1));
 
@@ -85,12 +114,16 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qcp->rescaleAxes();
     qcp->axisRect()->setBackgroundScaled(false);
 
+
     layout.addWidget(qcp, 0, 0, 8, 8);
+
+
+
     fpsLabel.setText("FPS");
     layout.addWidget(&fpsLabel, 8, 0, 1, 2);
     layout.addWidget(&displayCrosshairCheck, 8, 2, 1, 2);
     layout.addWidget(&zoomXCheck, 8, 4, 1, 2);
-    layout.addWidget(&zoomYCheck, 8, 6, 1, 2);    
+    layout.addWidget(&zoomYCheck, 8, 6, 1, 2);
     this->setLayout(&layout);
 
     displayCrosshairCheck.setText(tr("Display Crosshairs on Frame"));
@@ -114,15 +147,22 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     connect(&displayCrosshairCheck, SIGNAL(toggled(bool)), fw, SLOT(updateCrossDiplay(bool)));
     connect(&zoomXCheck, SIGNAL(toggled(bool)), this, SLOT(setScrollX(bool)));
     connect(&zoomYCheck, SIGNAL(toggled(bool)), this, SLOT(setScrollY(bool)));
-    connect(fw, SIGNAL(setColorScheme_signal(int)), this, SLOT(handleNewColorScheme(int)));
+    connect(fw, SIGNAL(setColorScheme_signal(int, bool)), this, SLOT(handleNewColorScheme(int, bool)));
 
     if (image_type==BASE || image_type==DSF) {
         this->setFocusPolicy(Qt::ClickFocus); //Focus accepted via clicking
         connect(qcp, SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(setCrosshairs(QMouseEvent*)));
     }
-    colorMapData = new QCPColorMapData(frWidth, frHeight, QCPRange(0, frWidth-1), QCPRange(0, frHeight-1));
+    if(image_type == WATERFALL)
+    {
+        colorMapData = new QCPColorMapData(frWidth, wflength, QCPRange(0, frWidth-1), QCPRange(0, wflength-1));
+    } else {
+        colorMapData = new QCPColorMapData(frWidth, frHeight, QCPRange(0, frWidth-1), QCPRange(0, frHeight-1));
+    }
     colorMap->setData(colorMapData);
     rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    sMessage(QString("%1: Finished constructor.").arg(QString(__PRETTY_FUNCTION__)));
+    //qDebug() << __PRETTY_FUNCTION__ << ": Finished constructor";
 }
 frameview_widget::~frameview_widget()
 {
@@ -131,6 +171,18 @@ frameview_widget::~frameview_widget()
 }
 
 // public functions
+
+void frameview_widget::setPrefsPtr(settingsT *prefsPtr)
+{
+    if(prefsPtr)
+    {
+        this->prefs = prefsPtr;
+        this->havePrefs = true;
+    } else {
+        this->havePrefs = false;
+    }
+}
+
 double frameview_widget::getCeiling()
 {
     /*! \brief Return the value of the ceiling for this widget as a double */
@@ -145,13 +197,70 @@ void frameview_widget::toggleDisplayCrosshair()
 {
     /*! \brief Turn on or off the rendering of the crosshair */
     displayCrosshairCheck.setChecked(!displayCrosshairCheck.isChecked());
-
-
 }
 
 // public slots
 
-void frameview_widget::handleNewColorScheme(int scheme)
+void frameview_widget::useDarkTheme(bool useDark)
+{
+    QCustomPlot *p = this->qcp;
+
+    if(useDark)
+    {
+        p->setBackground(QBrush(Qt::black));
+        p->xAxis->setBasePen(QPen(Qt::green)); // lower line of axis
+        p->yAxis->setBasePen(QPen(Qt::green)); // left line of axis
+        p->xAxis->setTickPen(QPen(Qt::green));
+        p->yAxis->setTickPen(QPen(Qt::green));
+        p->xAxis->setLabelColor(QColor(Qt::white));
+        p->yAxis->setLabelColor(QColor(Qt::white));
+        p->yAxis->setTickLabelColor(Qt::white);
+        p->xAxis->setTickLabelColor(Qt::white);
+        p->legend->setBrush(QBrush(Qt::black));
+        p->legend->setTextColor(Qt::white);
+        colorMap->setBrush(QBrush(Qt::black));
+        colorMap->setPen(QPen(Qt::white));
+        colorMap->valueAxis()->setLabelColor(Qt::white);
+        colorMap->valueAxis()->setBasePen(QPen(Qt::white));
+        colorMap->valueAxis()->setTickLabelColor(Qt::white);
+        colorMap->keyAxis()->setLabelColor(Qt::white);
+        colorMap->keyAxis()->setBasePen(QPen(Qt::white));
+        colorMap->keyAxis()->setTickLabelColor(Qt::white);
+        colorMap->keyAxis()->setTickPen(QPen(Qt::white));
+
+        colorMap->colorScale()->axis()->setLabelColor(Qt::white);
+        colorMap->colorScale()->axis()->setBasePen(QPen(Qt::black)); // line on RH side of scale
+        colorMap->colorScale()->axis()->setTickLabelColor(Qt::white); // TEXT!!
+    } else {
+        p->setBackground(QBrush(Qt::white));
+        p->xAxis->setBasePen(QPen(Qt::black)); // lower line of axis
+        p->yAxis->setBasePen(QPen(Qt::black)); // left line of axis
+        p->xAxis->setTickPen(QPen(Qt::black));
+        p->yAxis->setTickPen(QPen(Qt::black));
+        p->xAxis->setLabelColor(QColor(Qt::black));
+        p->yAxis->setLabelColor(QColor(Qt::black));
+        p->legend->setBrush(QBrush(Qt::white));
+        p->legend->setTextColor(Qt::black);
+        p->yAxis->setTickLabelColor(Qt::black);
+        p->xAxis->setTickLabelColor(Qt::black);
+        colorMap->setBrush(QBrush(Qt::white));
+        colorMap->setPen(QPen(Qt::black));
+        colorMap->valueAxis()->setLabelColor(Qt::black);
+        colorMap->valueAxis()->setBasePen(QPen(Qt::black));
+        colorMap->valueAxis()->setTickLabelColor(Qt::black);
+        colorMap->keyAxis()->setLabelColor(Qt::black);
+        colorMap->keyAxis()->setBasePen(QPen(Qt::black));
+        colorMap->keyAxis()->setTickLabelColor(Qt::black);
+        colorMap->keyAxis()->setTickPen(QPen(Qt::black));
+
+        colorMap->colorScale()->axis()->setLabelColor(Qt::black);
+        colorMap->colorScale()->axis()->setBasePen(QPen(Qt::black)); // line on RH side of scale
+        colorMap->colorScale()->axis()->setTickLabelColor(Qt::black); // TEXT!!
+    }
+}
+
+
+void frameview_widget::handleNewColorScheme(int scheme, bool useDarkThemeVal)
 {
     switch(scheme)
     {
@@ -189,12 +298,12 @@ void frameview_widget::handleNewColorScheme(int scheme)
         colorMap->setGradient(QCPColorGradient::gpGeography);
         break;
     default:
-        std::cerr << "color scheme not recognized, number: " << fw->color_scheme << std::endl;
+        sMessage(QString("color scheme [%1] not recognized.").arg(fw->color_scheme));
         colorMap->setGradient(QCPColorGradient::gpJet);
         break;
     }
 
-
+    useDarkTheme(useDarkThemeVal);
 }
 
 
@@ -223,36 +332,127 @@ void frameview_widget::handleNewFrame()
      * \author Noah Levy
      */
 
-    if(!this->isHidden() && (fw->curFrame->image_data_ptr != NULL)) {
-        if(image_type == BASE) {
-            uint16_t *local_image_ptr = fw->curFrame->image_data_ptr;
-            for(int col = 0; col < frWidth; col++)
-                for(int row = 0; row < frHeight; row++ )
-                    // this will blank out the part of the frame where the crosshair is pointing so that it is
-                    // visible in the display
-                    if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
-                         || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
+    if(fw->curFrame == NULL)
+        return;
 
-                        colorMap->data()->setCell(col, row, NAN);
-                    else
-                        // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
-                        colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
-            qcp->replot();
+    if((fw->curFrame->image_data_ptr != NULL) && image_type == WATERFALL)
+    {
+        // Copy waterfall data in, even if hidden:
+        int row = fw->crosshair_y;
+        if(row < 0)
+            return;
+
+        float *local_image_ptr = fw->curFrame->dark_subtracted_data;
+        std::vector <float> line;
+        for(int col = 0; col < frWidth; col++)
+        {
+            line.push_back(local_image_ptr[row * frWidth + col]);
         }
-        if(image_type == DSF) {
-            float *local_image_ptr = fw->curFrame->dark_subtracted_data;
-            for(int col = 0; col < frWidth; col++)
-                for(int row = 0; row < frHeight; row++)
-                    // this will blank out the part of the frame where the crosshair is pointing so that it is
-                    // visible in the display
-                    if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
-                         || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
-                        colorMap->data()->setCell(col, row, NAN);
-                    else
-                        // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
-                        colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
-            qcp->replot();
+        // There's a better way, but for now this will be ok:
+        wfimage.push_front(line); // Append to top
+        // I have seen a crash here even when wflength was defined as 1024:
+        // crash was when only items 0-420 existed
+        // Other items were "not accessable"
+        wfimage.resize(wflength); // Cut off anything too small.
+
+        // Display time:
+        std::vector <float> rowdata;
+
+        for(unsigned int row=0; row < wfimage.size(); row++)
+        {
+            rowdata = wfimage.at(row);
+            for(unsigned int col=0; col < (unsigned int)frWidth; col++)
+            {
+                colorMap->data()->setCell(col, row, rowdata.at(col)); // y-axis NOT reversed
+            }
         }
+        qcp->replot();
+        goto done_here;
+
+    }
+
+    if(!this->isHidden() && (fw->curFrame->image_data_ptr != NULL)) {
+
+
+        if((image_type == DSF) || (image_type==BASE)) {
+            uint16_t* local_image_ptr_uint = fw->curFrame->image_data_ptr;
+            float* local_image_ptr_float = fw->curFrame->dark_subtracted_data;
+
+            if(useDSF)
+            {
+                // DSF
+                for(int col = 0; col < frWidth; col++)
+                {
+                    for(int row = 0; row < frHeight; row++)
+                        // this will blank out the part of the frame where the crosshair is pointing so that it is
+                        // visible in the display
+                        if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
+                             || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
+                        {
+                            colorMap->data()->setCell(col, row, NAN);
+                        } else {
+                            // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                            colorMap->data()->setCell(col, row, local_image_ptr_float[row * frWidth + col]); // y-axis NOT reversed
+                        }
+                }
+            } else {
+                // Not DSF
+                for(int col = 0; col < frWidth; col++)
+                {
+                    for(int row = 0; row < frHeight; row++)
+                        // this will blank out the part of the frame where the crosshair is pointing so that it is
+                        // visible in the display
+                        if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
+                             || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
+                        {
+                            colorMap->data()->setCell(col, row, NAN);
+                        } else {
+                            // colorMap->data()->setCell(col, row, local_image_ptr_uint[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                            colorMap->data()->setCell(col, row, local_image_ptr_uint[row * frWidth + col]); // y-axis NOT reversed
+                        }
+                }
+            }
+
+            if(drawrgbRow)
+            {
+                int ifloor = (int)this->floor;
+                int iceiling = (int)this->ceiling;
+                int imid = (iceiling - ifloor)/2;
+
+                if( (redRow < frHeight) && (greenRow < frHeight) && (blueRow < frHeight) )
+                {
+                    for(int col=0; col < frWidth; col++)
+                    {
+                        colorMap->data()->setCell(col, redRow, iceiling);
+                        colorMap->data()->setCell(col, ((redRow+1)<frHeight)?redRow+1:redRow-1, iceiling);
+
+                        colorMap->data()->setCell(col, greenRow, imid);
+                        colorMap->data()->setCell(col, ((greenRow+1)<frHeight)?greenRow+1:greenRow-1, imid);
+
+                        colorMap->data()->setCell(col, blueRow, ifloor);
+                        colorMap->data()->setCell(col, ((blueRow+1)<frHeight)?blueRow+1:blueRow-1, ifloor);
+                    }
+
+                    for(int col=0; col < frWidth/10; col++)
+                    {
+                        colorMap->data()->setCell(col, redRow, ((col%2)==0)?iceiling:ifloor);
+                        colorMap->data()->setCell(col, ((redRow+1)<frHeight)?redRow+1:redRow-1, ((col%2)==0)?iceiling:ifloor);
+
+                        colorMap->data()->setCell(col, greenRow, ((col%2)==0)?iceiling:ifloor);
+                        colorMap->data()->setCell(col, ((greenRow+1)<frHeight)?greenRow+1:greenRow-1, ((col%2)==0)?iceiling:ifloor);
+
+                        colorMap->data()->setCell(col, blueRow, ((col%2)==0)?iceiling:ifloor);
+                        colorMap->data()->setCell(col, ((blueRow+1)<frHeight)?blueRow+1:blueRow-1, ((col%2)==0)?iceiling:ifloor);
+                    }
+
+
+                }
+            }
+
+            qcp->replot();
+            goto done_here;
+        }
+
         if(image_type == STD_DEV && fw->std_dev_frame != NULL) {
             float * local_image_ptr = fw->std_dev_frame->std_dev_data;
             for (int col = 0; col < frWidth; col++)
@@ -260,8 +460,12 @@ void frameview_widget::handleNewFrame()
                     // colorMap->data()->setCell(col, row, (double_t)local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
                     colorMap->data()->setCell(col, row, local_image_ptr[row * frWidth + col]); // y-axis NOT reversed
             qcp->replot();
+            goto done_here;
         }
     }
+
+
+done_here:
     count++;
     if (count % 20 == 0 && count != 0) {
         fps = 20.0 / clock.restart() * 1000.0;
@@ -269,6 +473,7 @@ void frameview_widget::handleNewFrame()
         fpsLabel.setText(QString("fps of display: %1").arg(fps_string));
     }
 }
+
 void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
 {
     /*! \brief Controls the behavior of zooming the plot.
@@ -277,7 +482,13 @@ void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
      */
     QCPRange boundedRange = newRange;
     double lowerRangeBound = 0;
-    double upperRangeBound = frHeight-1;
+    double upperRangeBound = 0;
+    if(image_type == WATERFALL)
+    {
+        upperRangeBound = wflength-1;
+    } else {
+        upperRangeBound = frHeight-1;
+    }
     if (boundedRange.size() > upperRangeBound - lowerRangeBound) {
         boundedRange = QCPRange(lowerRangeBound, upperRangeBound);
     } else {
@@ -357,27 +568,108 @@ void frameview_widget::setScrollY(bool Xenabled)
 
     }
 }
+
 void frameview_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
+    if(prefs)
+    {
+        switch(image_type)
+        {
+        case(DSF):
+            prefs->dsfCeiling = c;
+            break;
+        case(BASE):
+            if(useDSF)
+            {
+                prefs->dsfCeiling = c;
+            } else {
+                prefs->frameViewCeiling = c;
+            }
+            break;
+
+        case(STD_DEV):
+            prefs->stddevCeiling = c;
+            break;
+
+        default:
+            break;
+        }
+    }
+
     ceiling = (double)c;
     rescaleRange();
 }
+
 void frameview_widget::updateFloor(int f)
 {
-    /*! \brief Change the value  of the floor for this widget to the input parameter and replot the color scale. */
+    /*! \brief Change the value  of the floor for this widget to the input parameter and replot the color scale. */   
+    if(prefs)
+    {
+        switch(image_type)
+        {
+        case(DSF):
+            prefs->dsfFloor = f;
+            break;
+
+        case(BASE):
+            if(useDSF)
+            {
+                prefs->dsfFloor = f;
+            } else {
+                prefs->frameViewFloor = f;
+            }
+            break;
+
+        case(STD_DEV):
+            prefs->stddevFloor = f;
+            break;
+
+        default:
+            break;
+        }
+    }
     floor = (double)f;
     rescaleRange();
 }
+
+void frameview_widget::setUseDSF(bool useDSF)
+{
+    this->useDSF = useDSF;
+}
+
 void frameview_widget::rescaleRange()
 {
     /*! \brief Set the color scale of the display to the last used values for this widget */
     colorScale->setDataRange(QCPRange(floor,ceiling));
 }
+
 void frameview_widget::setCrosshairs(QMouseEvent *event)
 {
     /*! \brief Sets the value of the crosshair and lines to average selection for rendering
      * \author Jackie Ryan */
     fw->displayCross = displayCrosshairCheck.isChecked();
     fw->setCrosshairBackend(qcp->xAxis->pixelToCoord(event->pos().x()), qcp->yAxis->pixelToCoord(event->pos().y()));
+}
+
+void frameview_widget::toggleDrawRGBRow(bool draw)
+{
+    this->drawrgbRow = draw;
+    colorMap->setInterpolate(draw);
+    colorMap->setAntialiased(draw);
+}
+
+void frameview_widget::showRGB(int r, int g, int b)
+{
+    this->redRow = r;
+    this->greenRow = g;
+    this->blueRow = b;
+    this->toggleDrawRGBRow(true);
+    //sMessage(QString("Showing RGB for r: %1, g: %2, b: %3").arg(r).arg(g).arg(b));
+}
+
+void frameview_widget::sMessage(QString statusMessageText)
+{
+    statusMessageText.prepend("[frameview_widget]: ");
+    emit statusMessage(statusMessageText);
 }

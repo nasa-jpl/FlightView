@@ -14,7 +14,7 @@ buffer_handler::buffer_handler(int height, int width, QObject *parent) :
     this->fr_width = width;
     this->fr_size = fr_height * fr_width;
     this->fp = NULL;
-    this->running = true;
+    this->running = true; // should we start not-running?
     this->current_frame = 1;
 }
 buffer_handler::~buffer_handler()
@@ -278,6 +278,7 @@ playback_widget::playback_widget(frameWorker *fw, QWidget *parent) :
     qgl.addWidget(statusLabel, 8, 5, 1, 3);
     this->setLayout(&qgl);
 
+    buffer_thread->setObjectName(name + "pbBuffer");
     buffer_thread->start();
 }
 playback_widget::~playback_widget()

@@ -18,6 +18,8 @@
 #include <QSpinBox>
 #include <QTabWidget>
 #include <QVBoxLayout>
+#include <QSettings>
+#include <QProgressBar>
 
 /* standard includes */
 #include <stdint.h>
@@ -28,10 +30,16 @@
 /* LiveView includes */
 #include "fft_widget.h"
 #include "frameview_widget.h"
+#include "flight_widget.h"
+#include "rgbadjustments.h"
 #include "histogram_widget.h"
 #include "playback_widget.h"
 #include "profile_widget.h"
 #include "pref_window.h"
+#include "preferences.h"
+#include "startupOptions.h"
+#include "filenamegenerator.h"
+#include "initialsetup.h"
 
 /*! \file
  *  \brief Widget which contains the GUI elements common to several or all plotting widgets.
@@ -49,24 +57,33 @@ class ControlsBox : public QGroupBox
 {
     Q_OBJECT
 
+    startupOptionsType options;
+    fileNameGenerator fnamegen;
+    rgbAdjustments* rgbLevels;
+
 public:
-    explicit ControlsBox(frameWorker *fw, QTabWidget *tw, QWidget *parent = 0);
+    explicit ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType options, QWidget *parent = 0);
 
     frameWorker *fw;
     preferenceWindow *prefWindow;
     QHBoxLayout controls_layout;
+    initialSetup setupUI;
 
     /* LEFT SIDE BUTTONS (Collections) */
     QGridLayout *collections_layout;
     QWidget CollectionButtonsBox;
     QPushButton collect_dark_frames_button;
     QPushButton stop_dark_collection_button;
+    QPushButton showRGBLevelsButton;
     QPushButton load_mask_from_file;
     QPushButton pref_button;
     QString fps;
+    float fps_float = 0.0;
     QLabel fps_label;
     QLabel server_ip_label;
     QLabel server_port_label;
+    QLabel frameNumberLabel;
+    QCheckBox pausePlaybackChk;
 
     /* MIDDLE BUTTONS (Sliders) */
     QGridLayout *sliders_layout;
@@ -79,13 +96,28 @@ public:
     QSpinBox *line_average_edit;
     QSpinBox ceiling_edit;
     QSpinBox floor_edit;
+    QSlider red_slider;
+    QSlider green_slider;
+    QSlider blue_slider;
+    QSpinBox redSpin;
+    QSpinBox greenSpin;
+    QSpinBox blueSpin;
+    QComboBox rgbPresetCombo;
+    QSlider wflength_slider;
+    QLabel red_label;
+    QLabel green_label;
+    QLabel blue_label;
+    QLabel wflength_label;
     QLabel *std_dev_n_label;
     QLabel *lines_label;
     QCheckBox low_increment_cbox;
     QCheckBox use_DSF_cbox;
+    QCheckBox show_rgb_lines_cbox;
 
     /* RIGHT SIDE BUTTONS (save) */
     QGridLayout *save_layout;
+    QPushButton showConsoleLogBtn;
+    QPushButton showXioSetupBtn;
     QWidget SaveButtonsBox;
     QPushButton save_finite_button;
     QPushButton start_saving_frames_button;
@@ -95,6 +127,10 @@ public:
     QSpinBox frames_save_num_avgs_edit;
     QLineEdit filename_edit;
     QPushButton set_filename_button;
+    QPushButton debugButton;
+    QPushButton saveRGBPresetButton;
+    QProgressBar diskSpaceBar;
+    QLabel diskSpaceLabel;
 
     // Overlay profile only:
     QSlider * overlay_lh_width;
@@ -108,6 +144,7 @@ public:
     QSpinBox * overlay_rh_width_spin;
 
     frameview_widget *p_frameview;
+    flight_widget *p_flight;
     histogram_widget *p_histogram;
     profile_widget *p_profile;
     fft_widget *p_fft;
@@ -120,9 +157,32 @@ private:
     QTabWidget *qtw;
     QWidget *old_tab;
     QWidget *current_tab;
+    int diskWarningCounter = 0;
+    int diskErrorCounter = 0;
     int ceiling_maximum;
     int previousNumSaved;
     bool checkForOverwrites = true;
+    void waterfallControls(bool enabled);
+    void overlayControls(bool enabled);
+
+    QSettings *settings;
+    void setDefaultSettings();
+    void loadSettings();
+    void saveSettings();
+    void saveSingleRGBPreset(int index, int r, int g, int b);
+
+    void setLevelToPrefs(bool isCeiling, int val);
+    void updateUIToPrefs();
+
+    QString prefsFilename;
+    settingsT prefs;
+    settingsT defaultPrefs;
+
+    int bandRed = 0;
+    int bandGreen = 0;
+    int bandBlue = 0;
+
+    int previousRGBPresetIndex = 0;
 
 signals:
     /*! \brief Passes the message to save raw frames at the backend.
@@ -132,9 +192,11 @@ signals:
      * will experience a segmentation violation. Very little checking of location validity and permissions is done
      * at the backend. */
     void startSavingFinite(unsigned int length, QString fname, unsigned int navgs);
+    void startDataCollection(QString baseFilename);
 
     /*! \brief Ends the saving loop at the backend. */
     void stopSaving();
+    void stopDataCollection();
 
     /*! \brief Passes the DSF the message to begin averaging dark frames for all live widgets. */
     void startDSFMaskCollection();
@@ -142,11 +204,28 @@ signals:
     /*! \brief Averages the collected frames and loads in the mask. */
     void stopDSFMaskCollection();
 
+    void toggleStdDevCalculation(bool enabled);
+
     /*! \brief Passes the information needed to generate the dark mask and load it into the DSF in the playback_widget. */
     void mask_selected(QString file_name, unsigned int bytes_to_read, long offset);
+    void updateRGB(int r, int g, int b);
+    void sendRGBLevels(double r, double g, double b, double gamma);
+    void updateWFLength(int length);
+    void haveReadPreferences(settingsT prefs);
+
+    void setCameraPause(bool isPaused);
+
+    void statusMessage(QString message);
+    void warningMessage(QString message);
+    void errorMessage(QString message);
+    void showConsoleLog();
+    void debugSignal();
 
 public slots:
     void tab_changed_slot(int index);
+    void setRGBWaterfall(int value);
+    void getPrefsExternalTrig();
+    void setFrameNumber(int number);
 
 private slots:
     void increment_slot(bool t);
@@ -155,6 +234,11 @@ private slots:
     void display_std_dev_slider();
     void display_lines_slider();
     void update_backend_delta();
+    void updateFloor(int f);
+    void updateCeiling(int c);
+    void updateDiskSpace(quint64 total, quint64 available);
+    void showSetup();
+
 
     /*! \addtogroup savingfunc Frame saving functions
      * Contains functions which control the processes needed to save frames.
@@ -183,6 +267,10 @@ private slots:
     void validateOverlayParams(int &lh_start, int &lh_end, int &cent_start, int &cent_end, int &rh_start, int &rh_end);
 
     void fft_slider_enable(bool toggled);
+
+    void triggerSaveSettings();
+
+    void debugThis();
 
 };
 

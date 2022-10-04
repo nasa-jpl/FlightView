@@ -11,6 +11,9 @@
 #include <QTimer>
 #include <QPushButton>
 #include <QMutex>
+#include <vector>
+#include <deque>
+
 
 /* standard includes */
 #include <atomic>
@@ -20,6 +23,8 @@
 #include "frame_worker.h"
 #include "image_type.h"
 #include "qcustomplot.h"
+#include "preferences.h"
+
 
 /*! \file
  * \brief Widget which plots live color maps of image data.
@@ -48,6 +53,8 @@ class frameview_widget : public QWidget
     QCPColorMapData *colorMapData;
     QCPColorScale *colorScale;
 
+    std::deque <std::vector <float>> wfimage;
+
     /* GUI elements
      * Contains elements of the GUI specific to a widget */
     QGridLayout layout;
@@ -60,8 +67,17 @@ class frameview_widget : public QWidget
      * Contains local copies of the frame geometry and color map range. */
     int frHeight, frWidth;
 
+    int wflength;
+
     volatile double ceiling;
     volatile double floor;
+
+
+    int redRow = 0;
+    int greenRow = 0;
+    int blueRow = 0;
+
+    bool drawrgbRow = false;
 
     bool scrollXenabled = true;
     bool scrollYenabled = true;
@@ -73,7 +89,10 @@ class frameview_widget : public QWidget
     unsigned int count;
     double fps;
     QString fps_string;
-
+    bool useDSF;
+    bool havePrefs = false;
+    settingsT *prefs;
+    void sMessage(QString statusMessageText);
 
 public:
     explicit frameview_widget(frameWorker *fw, image_t image_type , QWidget *parent = 0);
@@ -87,16 +106,19 @@ public:
     /*! @} */
 
     void toggleDisplayCrosshair();
+    void toggleDrawRGBRow(bool draw);
+    void showRGB(int r, int g, int b);
 
     image_t image_type;
     const unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
+    void setPrefsPtr(settingsT *prefsPtr);
 
 public slots:
     /*! \addtogroup renderfunc Rendering Functions
      * Functions which are responsible for the rendering of plots in a widget.
      * @{ */
-    void handleNewColorScheme(int scheme);
+    void handleNewColorScheme(int scheme, bool useDarkTheme);
     void handleNewFrame();
     /*! @} */
 
@@ -109,9 +131,13 @@ public slots:
     void setScrollY(bool Xenabled);
     void updateCeiling(int c);
     void updateFloor(int f);
+    void setUseDSF(bool useDSF);
+    void useDarkTheme(bool useDark);
     void rescaleRange();
     void setCrosshairs(QMouseEvent *event);
     /*! @} */
+signals:
+    void statusMessage(QString message);
 };
 
 #endif // FRAMEVIEW_WIDGET_H

@@ -5,7 +5,7 @@
 #include <QSharedPointer>
 #include <QDebug>
 
-frameWorker::frameWorker(QObject *parent) :
+frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     QObject(parent)
 {
     /*! \brief Launches cuda_take using the take_object.
@@ -15,8 +15,38 @@ frameWorker::frameWorker(QObject *parent) :
      * \author Jackie Ryan
      * \author Noah Levy
      */
+    sMessage("Starting frameWorker class and CUDA back-end");
+    lastTime = 0;
+    this->setObjectName("lv:frameWorker");
+
+    this->options = optionsIn;
+    this->takeOptions.xioDirectory = new std::string();
+
+    if(options.xioCam)
+    {
+        // Initial Setup. Program is paused while this dialog is open.
+        // options are modified in-place, and then copied over to the takeOptionsType for take_object.
+        setupUI.acceptOptions(&options);
+        setupUI.setModal(true);
+        setupUI.setWindowFlag(Qt::WindowStaysOnTopHint, true);
+        setupUI.exec();
+
+        convertOptions();
+
+        to.changeOptions(takeOptions);
+    }
+
+    this->camcontrol = to.getCamControl();
+    if(camcontrol==NULL)
+        abort();
 
     to.start(); // begin cuda_take
+    //to.setReadDirectory("/mnt/DATA/xio/20170828_DCSEFM_TVAC_AMBIENTFUNCTIONAL_COMPRESS_Test1_ROICIMAGE/");
+    if( (options.xioDirectoryArray != NULL) && options.xioCam)
+    {
+        to.setReadDirectory(options.xioDirectoryArray);
+    }
+
 
 #ifdef VERBOSE
     qDebug("starting capture");
@@ -36,7 +66,67 @@ frameWorker::~frameWorker()
     doRun = false;
 }
 
+void frameWorker::useNewOptions(startupOptionsType newOpts)
+{
+    this->options = newOpts;
+    convertOptions();
+    to.changeOptions(takeOptions);
+
+    if( (options.xioDirectoryArray != NULL) && options.xioCam)
+    {
+        // This not only sets the directory,
+        // it also kicks off reading files from the directory.
+        to.setReadDirectory(options.xioDirectoryArray);
+    }
+}
+
+void frameWorker::convertOptions()
+{
+    if(options.xioDirectoryArray != NULL)
+    {
+        safeStringSet(takeOptions.xioDirectory, options.xioDirectoryArray);
+        takeOptions.xioDirSet = true;
+        if(takeOptions.xioDirectory == NULL)
+        {
+            abort();
+        } else {
+            std::cout << "takeOptions xio directory: " << takeOptions.xioDirectory->c_str() << std::endl;
+        }
+    } else {
+        abort();
+    }
+
+    takeOptions.height = takeOptions.xioHeight;
+    takeOptions.width = takeOptions.xioWidth;
+
+    takeOptions.debug = options.debug;
+    takeOptions.flightMode = options.flightMode;
+    takeOptions.disableGPS = options.disableGPS;
+    takeOptions.disableCamera = options.disableCamera;
+    takeOptions.runStdDevCalculation = options.runStdDevCalculation;
+    takeOptions.dataLocationSet = options.dataLocationSet;
+    takeOptions.gpsIPSet = options.gpsIPSet;
+    takeOptions.gpsPortSet = options.gpsPortSet;
+    takeOptions.gpsPort = options.gpsPort;
+    takeOptions.xioCam = options.xioCam;
+    takeOptions.height = options.height;
+    takeOptions.width = options.width;
+    takeOptions.xioHeight = options.xioHeight;
+    takeOptions.xioWidth = options.xioWidth;
+    takeOptions.heightWidthSet = options.heightWidthSet;
+    takeOptions.targetFPS = options.targetFPS;
+}
+
 // public functions
+void frameWorker::setCameraPaused(bool isPaused)
+{
+    if(this->camcontrol == NULL)
+    {
+        abort();
+    }
+    this->camcontrol->pause = isPaused;
+}
+
 camera_t frameWorker::camera_type()
 {
     /*! \brief Returns the value of the camera_type enum for the current hardware. */
@@ -88,17 +178,23 @@ void frameWorker::captureFrames()
     unsigned long count = 0;
     QTime clock;
     clock.start();
+    int restart = 0;
+    lastTime = clock.elapsed();
     unsigned int last_savenum = 0; // unused, really?
     unsigned int last_savect = 0;
     unsigned int save_num;
     unsigned int save_ct;
     frame_c *workingFrame;
+    int microSecondsPerFrame = 0;
     // int flags=1;
 
     while(doRun) {
-        QCoreApplication::processEvents();
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 1); // 1ms maximum delay permitted
         usleep(50); //So that CPU utilization is not 100%
-        workingFrame = &to.frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+        count = (to.count - 1) % CPU_FRAME_BUFFER_SIZE;
+        workingFrame = &to.frame_ring_buffer[count];
+        //workingFrame = &to.frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+
         if(std_dev_processing_frame != NULL) {
             if(std_dev_processing_frame->has_valid_std_dev == 2) {
                 std_dev_frame = std_dev_processing_frame;
@@ -118,11 +214,27 @@ void frameWorker::captureFrames()
 			}
             last_savect = save_ct;
             last_savenum = save_num;
-            count++;
-            if (count % 50 == 0 && count != 0) {
-                delta = 50.0 / clock.restart() * 1000.0;
-                emit updateFPS();
+            // count++;
+
+            // Every 25 frames, or, every 200ms, whichever comes first.
+            if( (count%25 == 0) || ((clock.elapsed() - lastTime) > 50) )
+            {
+                if(options.xioCam)
+                    emit updateFrameCountDisplay(to.xioCount);
+                else
+                    emit updateFrameCountDisplay(to.count);
+                microSecondsPerFrame = to.getMicroSecondsPerFrame();
+                if(microSecondsPerFrame != 0)
+                {
+                    delta = 1000000.0f / microSecondsPerFrame;
+                    emit updateFPS();
+                }
+                lastTime = clock.elapsed();
             }
+        } else {
+            // This happens when the program is drawing the screen faster than the
+            // frames arrive. It is generally not a problem.
+            // sMessage("NOTE: Frame not updated.");
         }
 
     }
@@ -134,13 +246,13 @@ void frameWorker::captureFrames()
 void frameWorker::startCapturingDSFMask()
 {
     /*! \brief Calls to start collecting dark frames in cuda_take. */
-    qDebug() << "Starting to record Dark Frames";
+    sMessage("Starting to record Dark Frames");
     to.startCapturingDSFMask();
 }
 void frameWorker::finishCapturingDSFMask()
 {
     /*! \brief Communicates to cuda_take to stop collecting dark frames. */
-    qDebug() << "Stop recording Dark Frames";
+    sMessage("Stop recording Dark Frames");
     to.finishCapturingDSFMask();
 }
 void frameWorker::toggleUseDSF(bool t)
@@ -279,7 +391,8 @@ void frameWorker::setCrosshairBackend(int pos_x, int pos_y)
         crosshair_x = crosshair_x >= int(frWidth) ? frWidth : crosshair_x;
         crosshair_y = crosshair_y < -1 ? 0 : crosshair_y;
         crosshair_y = crosshair_y >= int(frHeight) ? frHeight : crosshair_y;
-        qDebug()<<"x="<<crosshair_x<<"y="<<crosshair_y;
+        sMessage(QString("Crosshair position: x=%1, y=%2").arg(crosshair_x).arg(crosshair_y));
+        //qDebug()<<"x="<<crosshair_x<<"y="<<crosshair_y;
     }
 
     crossStartCol = -1;
@@ -350,11 +463,16 @@ void frameWorker::setStdDev_N(int newN)
     to.setStdDev_N(newN);
 }
 
-void frameWorker::setColorScheme(int scheme)
+void frameWorker::enableStdDevCalculation(bool enabled)
+{
+    to.toggleStdDevCalculation(enabled);
+}
+
+void frameWorker::setColorScheme(int scheme, bool useDarkTheme)
 {
     /*! \brief Passes the color scheme integer through to the frameview_widget slot.
      *  \param scheme sets the scheme */
-    emit setColorScheme_signal(scheme);
+    emit setColorScheme_signal(scheme, useDarkTheme);
 }
 
 void frameWorker::stop()
@@ -364,4 +482,11 @@ void frameWorker::stop()
     qDebug() << "stop frameWorker";
 #endif
     doRun = false;
+}
+
+void frameWorker::sMessage(QString message)
+{
+    message.prepend("[frameWorker]: ");
+    std::cout << message.toLocal8Bit().toStdString() << std::endl;
+    emit sendStatusMessage(message);
 }

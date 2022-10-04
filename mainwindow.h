@@ -9,10 +9,18 @@
 #include "fft_widget.h"
 #include "frame_c_meta.h"
 #include "frameview_widget.h"
+#include "flight_widget.h"
 #include "histogram_widget.h"
 #include "profile_widget.h"
 #include "playback_widget.h"
 #include "saveserver.h"
+#include "startupOptions.h"
+#include "preferences.h"
+#include "consolelog.h"
+
+// GPS includes:
+
+#include "gpsGUI/gpsbinaryreader.h"
 
 /*! \file
  * \brief The main viewing window for Live View.
@@ -25,7 +33,7 @@ class MainWindow : public QMainWindow
 public:
     /*! The main window must be passed a QThread to ensure that GUI commands are handled
      * separately from backend commands. This improves the overall responsiveness of the software. */
-    MainWindow(QThread *qth, frameWorker *fw, QWidget *parent = 0);
+    MainWindow(startupOptionsType *options, QThread *qth, frameWorker *fw, QWidget *parent = 0);
 
 private:
     frameWorker *fw;
@@ -34,10 +42,18 @@ private:
     ControlsBox *controlbox;
     saveServer *save_server; // Save Server is a non-GUI component that should be open regardless of the current view widget
 
+    startupOptionsType *options;
+    QString settingsFilename;
+
+    void prepareGPS();
+    void processGPSMessage();
+
     /*! All widgets currently used in Live View
      * @{ */
     frameview_widget *unfiltered_widget;
     frameview_widget *dsf_widget;
+    frameview_widget *waterfall_widget;
+    flight_widget *flight_screen;
     frameview_widget *std_dev_widget;
     histogram_widget *hist_widget;
     profile_widget *vert_mean_widget;
@@ -47,10 +63,22 @@ private:
     profile_widget *vert_overlay_widget;
     fft_widget *fft_mean_widget;
     playback_widget *raw_play_widget;
+    consoleLog *cLog;
+
     /*! @} */
 
+    void removeTab(QString tabTitle);
+
 public slots:
+    void handleMainWindowStatusMessage(QString message);
+    void handleGeneralStatusMessage(QString message);
+
+    void handlePreferenceRead(settingsT prefs);
     void enableStdDevTabs();
+    void debugThis();
+
+signals:
+    void toggleStdDevCalc(bool enabled);
 
 protected:
     /*! \brief Defines keyboard controls for all components of Live View */

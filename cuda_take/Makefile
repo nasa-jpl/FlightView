@@ -28,7 +28,7 @@ LIBOUT = libcuda_take.a
 
 ######################################
 #Here we specify what source files are needed for the program/library, and we create virtual paths so that we don't have to refer to the source directory all the time
-SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter_device_code.cu std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp
+SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu take_object.cpp std_dev_filter_device_code.cu std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp osutils.cpp safestringset.cpp
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 
 
@@ -67,7 +67,8 @@ OBJDIR = obj
 
 ######################################
 #Here we set the directories containing necessary header files (.h,.cuh,.hpp); ones specific to this program are kept in include/, ones needed for cameralink stuff in EDT_include/
-IDIR      = -Iinclude -I/opt/EDTpdv -I/usr/local/cuda/include
+IDIR      = -Iinclude -I/opt/EDTpdv -I/usr/local/cuda/include 
+#IDIR      = -Iinclude -I/opt/EDTpdv -I/usr/local/cuda/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCore
 
 #SECOND NOTE: ONLY BUILD WITH O1! Somehow, someway, O2 optimizes out things that nvcc needs and O0 has linker redefinition errors. #JankCity <- This has been fixed, but still a good idea
 CFLAGS     = -g -O3 -D HOST=\"`hostname`\" -D UNAME=\"`whoami`\" #This is added to the compilation of every file, enables gdb debugging symbols (-g) and limited optimization (-O1) 
@@ -80,8 +81,12 @@ CONLYFLAGS += $(CFLAGS)
 
 CPPFLAGS = $(CFLAGS)
 CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-result#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
+CPPFLAGS += -fPIC
+#CPPFLAGS += -isystem /usr/include/x86_64-linux-gnu/qt5 -isystem /usr/include/x86_64-linux-gnu/qt5/QtCore -DQT_NO_VERSION_TAGGING
+#CPPFLAGS += -DQT_CORE_LIB -lQt5Core -lQt5Widgets
 
-
+# See this URL to determine the architecture flags for your GPU: 
+# https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/  
 
 #This version of NVCCFLAGS will build the fatest binary possible if the version of NVCC >= 6
 #NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30, -gencode arch=compute_35,code=sm_35, -gencode arch=compute_50,code=sm_50 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
@@ -90,8 +95,15 @@ CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-unused-function -Wno-u
 #NVCCFLAGS  = -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=sm_35 -G -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
 #(-G -lineinfo) are both to enable cuda-gdb debugging, -Xcompiler specifies arguments to get passed directly to g++ (which NVCC is built on), the internet said to do -rdynamic
 
+# NVIDIA GeForce RTX 3080: 
+#NVCCFLAGS  = -gencode arch=compute_86,code=sm_86 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'
 
-NVCCFLAGS  = -gencode arch=compute_75,code=sm_75, -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
+# NVIDIA "native" code generator, for cuda versions 11.6+
+NVCCFLAGS  = -arch=native -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'
+
+
+# Truly legacy GPUs which aren't supported anymore: 
+#NVCCFLAGS  = -gencode arch=compute_30,code=sm_30, -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'#This program is targeted at GT590's which support Nvidia's 2.0 CUDA arch. Therefore that's what we build for
 
 NVCCFLAGS += $(CFLAGS)
 

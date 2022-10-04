@@ -1,5 +1,6 @@
 /* Qt includes */
 #include <QDebug>
+#include <cstdio>
 #include <QVBoxLayout>
 
 /* Standard includes */
@@ -9,22 +10,42 @@
 #include "mainwindow.h"
 #include "image_type.h"
 
-MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
+MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *fw, QWidget *parent)
     : QMainWindow(parent)
 {
     qRegisterMetaType<frame_c*>("frame_c*");
     //qRegisterMetaType<QVector<double>>("QVector<double>");
     //qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");
-
+    const QString name = "lv:";
     this->fw = fw;
+    this->options = options;
+
+    if(options->dataLocationSet)
+    {
+        cLog = new consoleLog(options->dataLocation);
+    } else {
+        cLog = new consoleLog();
+    }
+
+    if(options->flightMode)
+        handleMainWindowStatusMessage(QString("This version of FlightView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
+    else
+        handleMainWindowStatusMessage(QString("This version of LiveView was compiled on %1 at %2 using gcc version %3").arg(QString(__DATE__)).arg(QString(__TIME__)).arg(__GNUC__));
+
+    handleMainWindowStatusMessage(QString("The compilation was performed by %1@%2.").arg(QString(UNAME)).arg(QString(HOST)));
+
+
+    connect(fw, SIGNAL(sendStatusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
+
 
     /*! start the workerThread from main */
+    qth->setObjectName(name + "worker");
     qth->start();
 
 #ifdef VERBOSE
     qDebug() << "fw passed to MainWindow";
 #endif
-    this->resize(1440, 900);
+    //this->resize(1280, 1024);
     mainwidget = new QWidget();
     QVBoxLayout *layout = new QVBoxLayout;
 
@@ -36,7 +57,13 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     /*! \note Care should be taken to ensure that tabbed widgets are ordered by the value of their image_type enum
      * signals/slots (currentChanged) make use of this relation */
     unfiltered_widget = new frameview_widget(fw, BASE);
-    dsf_widget = new frameview_widget(fw, DSF);
+    //dsf_widget = new frameview_widget(fw, DSF);
+    dsf_widget = NULL;
+    waterfall_widget = new frameview_widget(fw, WATERFALL);
+
+    flight_screen = new flight_widget(fw, *options);
+    connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleGeneralStatusMessage(QString)));
+
     std_dev_widget = new frameview_widget(fw, STD_DEV);
     hist_widget = new histogram_widget(fw);
     vert_mean_widget = new profile_widget(fw, VERTICAL_MEAN);
@@ -45,11 +72,25 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     horiz_cross_widget = new profile_widget(fw, HORIZONTAL_CROSS);
     vert_overlay_widget = new profile_widget(fw, VERT_OVERLAY);
     fft_mean_widget = new fft_widget(fw);
-    raw_play_widget = new playback_widget(fw);
+
+    connect(unfiltered_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
+    connect(waterfall_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
+    connect(std_dev_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
+    connect(save_server, SIGNAL(sigMessage(QString)), this, SLOT(handleGeneralStatusMessage(QString)));
+
+    if(!options->flightMode)
+    {
+        raw_play_widget = new playback_widget(fw);
+        setWindowTitle("Ground Mode");
+    } else {
+        setWindowTitle("Flight Mode");
+    }
 
     /* Add tabs in order */
     tabWidget->addTab(unfiltered_widget, QString("Live View"));
-    tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
+    //tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
+    tabWidget->addTab(waterfall_widget, QString("Waterfall"));
+    tabWidget->addTab(flight_screen, QString("Flight"));
     tabWidget->addTab(std_dev_widget, QString("Std. Deviation"));
     tabWidget->addTab(hist_widget, QString("Histogram View"));
     tabWidget->addTab(vert_mean_widget, QString("Vertical Mean Profile"));
@@ -58,12 +99,18 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     tabWidget->addTab(horiz_cross_widget, QString("Horizontal Crosshair Profile"));
     tabWidget->addTab(vert_overlay_widget, QString("Vertical Overlay"));
     tabWidget->addTab(fft_mean_widget, QString("FFT Profile"));
-    tabWidget->addTab(raw_play_widget, QString("Playback View"));
+    if(!options->flightMode)
+    {
+        tabWidget->addTab(raw_play_widget, QString("Playback View"));
+    } else {
+        raw_play_widget = NULL;
+    }
 
     layout->addWidget(tabWidget, 3);
 
     /* Create controls box */
-    controlbox = new ControlsBox(fw, tabWidget);
+    controlbox = new ControlsBox(fw, tabWidget, *options);
+    connect(controlbox, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
     layout->addWidget(controlbox, 1);
 
     mainwidget->setLayout(layout);
@@ -76,23 +123,107 @@ MainWindow::MainWindow(QThread *qth, frameWorker *fw, QWidget *parent)
     connect(tabWidget,SIGNAL(currentChanged(int)),controlbox,SLOT(tab_changed_slot(int)));
     controlbox->tab_changed_slot(0);
 
+    connect(flight_screen, SIGNAL(sendDiskSpaceAvailable(quint64,quint64)), controlbox, SLOT(updateDiskSpace(quint64,quint64)));
+
+    if(options->flightMode)
+    {
+        // Flight Tab
+        int flightIndex = tabWidget->indexOf(flight_screen);
+        if(flightIndex >-1)
+        {
+            tabWidget->setCurrentIndex(flightIndex);
+        } else {
+            handleMainWindowStatusMessage("ERROR: Could not set current screen to Flight Screen.");
+        }
+    }
+
     connect(fw, SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
+    connect(fw, SIGNAL(newFrameAvailable()), flight_screen, SLOT(handleNewFrame()));
     connect(controlbox, SIGNAL(startDSFMaskCollection()), fw,SLOT(startCapturingDSFMask()));
     connect(controlbox, SIGNAL(stopDSFMaskCollection()), fw, SLOT(finishCapturingDSFMask()));
     connect(controlbox, SIGNAL(startSavingFinite(unsigned int, QString, unsigned int)), fw, SLOT(startSavingRawData(unsigned int, QString, unsigned int)));
     connect(controlbox, SIGNAL(stopSaving()),fw,SLOT(stopSavingRawData()));
     connect(controlbox->std_dev_N_slider, SIGNAL(valueChanged(int)), fw, SLOT(setStdDev_N(int)));
+    connect(controlbox, SIGNAL(toggleStdDevCalculation(bool)), fw, SLOT(enableStdDevCalculation(bool)));
+    connect(controlbox, SIGNAL(haveReadPreferences(settingsT)), this, SLOT(handlePreferenceRead(settingsT)));
+    connect(controlbox, SIGNAL(haveReadPreferences(settingsT)), flight_screen, SLOT(handlePrefs(settingsT)));
     connect(fw, SIGNAL(savingFrameNumChanged(unsigned int)), controlbox, SLOT(updateSaveFrameNum_slot(unsigned int)));
-
+    connect(fw, SIGNAL(updateFrameCountDisplay(int)), controlbox, SLOT(setFrameNumber(int)));
     controlbox->fps_label.setStyleSheet("QLabel {color: green;}");
     if(save_server->isListening()) {
         controlbox->server_ip_label.setText(tr("Server IP: %1").arg(save_server->ipAddress.toString()));
         controlbox->server_port_label.setText(tr("Server Port: %1").arg(save_server->port));
+        handleMainWindowStatusMessage(QString("Server IP: %1").arg(save_server->ipAddress.toString()));
+        handleMainWindowStatusMessage(QString("Server Port: %1").arg(save_server->port));
     }
+
+    connect(controlbox, SIGNAL(debugSignal()), this, SLOT(debugThis()));
+
+    connect(controlbox, SIGNAL(startDataCollection(QString)), flight_screen, SLOT(startDataCollection(QString)));
+    connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
+    connect(fw, SIGNAL(setColorScheme_signal(int,bool)), flight_screen, SLOT(handleNewColorScheme(int,bool)));
+    connect(this, SIGNAL(toggleStdDevCalc(bool)), fw, SLOT(enableStdDevCalculation(bool)));
+    controlbox->getPrefsExternalTrig();
+    connect(controlbox, &ControlsBox::showConsoleLog,
+            [=]() {
+            cLog->show();
+            cLog->setWindowState(Qt::WindowActive);
+            cLog->raise();
+    });
+    if(options->dataLocationSet)
+    {
+        handleMainWindowStatusMessage(QString("Data storage location: [%1]").arg(options->dataLocation));
+    }
+    if(options->runStdDevCalculation)
+    {
+        emit toggleStdDevCalc(true);
+        handleMainWindowStatusMessage(QString("Standard Deviation calculation enabled"));
+    } else {
+        emit toggleStdDevCalc(false);
+        handleMainWindowStatusMessage(QString("Standard Deviation calculation disabled"));
+    }
+
+    if(options->flightMode)
+    {
+        handleMainWindowStatusMessage("Flight Mode ENABLED.");
+    } else {
+        handleMainWindowStatusMessage("Flight Mode DISABLED.");
+    }
+
+    connect(this->controlbox, &ControlsBox::setCameraPause,
+            [=](bool paused) {
+        fw->setCameraPaused(paused);
+        if(paused)
+        {
+            handleMainWindowStatusMessage("Pausing Camera");
+        }
+        else {
+            handleMainWindowStatusMessage("Unpausing Camera");
+        }
+    });
+
+    connect(controlbox, SIGNAL(sendRGBLevels(double,double,double,double)), flight_screen, SLOT(setRGBLevels(double,double,double,double)));
+
+    handleMainWindowStatusMessage("Started");
 }
+
+void MainWindow::handleMainWindowStatusMessage(QString message)
+{
+    //std::cout << "STDOUT: Status Message: " << message.toLocal8Bit().toStdString() << std::endl;
+    //qDebug() << __PRETTY_FUNCTION__ << "Status message: " << message;
+    cLog->insertText(QString("[MainWindow]: ") + message);
+}
+
+void MainWindow::handleGeneralStatusMessage(QString message)
+{
+    //std::cout << "STDOUT: Status Message: " << message.toLocal8Bit().toStdString() << std::endl;
+    //qDebug() << __PRETTY_FUNCTION__ << "Status message: " << message;
+    cLog->insertText(message);
+}
+
 void MainWindow::enableStdDevTabs()
 {
-    qDebug() << "enabling std. dev. tabs";
+    //qDebug() << "enabling std. dev. tabs";
     tabWidget->setTabEnabled(2, true);
     tabWidget->setTabEnabled(3, true);
     disconnect(fw, SIGNAL(std_dev_ready()), this, SLOT(enableStdDevTabs()));
@@ -229,11 +360,81 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
         }
     }
 }
+
 void MainWindow::closeEvent(QCloseEvent *e)
 {
     Q_UNUSED(e);
 
+    cLog->close();
+
     QList<QWidget*> allWidgets = findChildren<QWidget*>();
     for(int i = 0; i < allWidgets.size(); ++i)
         allWidgets.at(i)->close();
+}
+
+void MainWindow::handlePreferenceRead(settingsT prefs)
+{
+    QString title;
+    if(options->flightMode)
+    {
+        if(prefs.hideFFT)
+            removeTab("FFT Profile");
+        if(prefs.hidePlayback)
+            removeTab("Playback");
+        if(prefs.hideVerticalOverlay)
+            removeTab("Vertical Overlay");
+        if(prefs.hideVertMeanProfile)
+            removeTab("Vertical Mean Profile");
+        if(prefs.hideVertCrosshairProfile)
+            removeTab("Vertical Crosshair Profile");
+        if(prefs.hideHorizontalMeanProfile)
+            removeTab("Horizontal Mean Profile");
+        if(prefs.hideHorizontalCrosshairProfile)
+            removeTab("Horizontal Crosshair Profile");
+        if(prefs.hideHistogramView)
+            removeTab("Histogram View");
+        if(prefs.hideStddeviation)
+            removeTab("Std. Deviation");
+        if(prefs.hideWaterfallTab)
+            removeTab("Waterfall");
+    }
+
+    if(!options->runStdDevCalculation)
+    {
+        prefs.hideStddeviation = true;
+        removeTab("Std. Deviation");
+        prefs.hideHistogramView = true;
+        removeTab("Histogram View");
+    }
+
+    handleMainWindowStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
+    if( (prefs.preferredWindowWidth < 4096 ) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
+    {
+        this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
+    } else {
+        handleMainWindowStatusMessage(QString("Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
+    }
+}
+
+void MainWindow::removeTab(QString tabTitle)
+{
+    // Note: This isn't optimal, and the tab cannot be added again without
+    // some interesting consequences.
+    QString title;
+    for(int t=0; t < tabWidget->count(); t++)
+    {
+        title = tabWidget->tabText(t);
+        if(title == tabTitle)
+        {
+            tabWidget->removeTab(t);
+            break;
+        }
+    }
+}
+
+void MainWindow::debugThis()
+{
+    handleMainWindowStatusMessage("Debug function reached.");
+    qDebug() << __PRETTY_FUNCTION__ << ": Debug reached inside MainWindow class.";
+    flight_screen->debugThis();
 }
