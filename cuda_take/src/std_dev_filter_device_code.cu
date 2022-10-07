@@ -50,7 +50,7 @@ __global__ void std_dev_filter_kernel(uint16_t * pic_d, float * picture_out_devi
 	}
 	if(offset == 100*width && STD_DEV_DEBUG)
 	{
-		printf("value @ line 100: %i sum: %f sq_sum: %d\n",value,sum,sq_sum);
+        printf("value @ line 100: %d sum: %f sq_sum: %f\n",value,sum,sq_sum);
 	}
 	picture_out_device[offset] = std_dev;
 	__syncthreads(); //unnecessary?

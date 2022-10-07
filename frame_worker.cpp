@@ -243,6 +243,17 @@ void frameWorker::captureFrames()
 #endif
     emit finished();
 }
+
+void frameWorker::loadDarkFile(QString filename, fileFormat_t format)
+{
+    if(format == fmt_float32)
+    {
+        to.loadDSFMask(filename.toStdString());
+    } else {
+        to.loadDSFMaskFromFramesU16(filename.toStdString(), format);
+    }
+}
+
 void frameWorker::startCapturingDSFMask()
 {
     /*! \brief Calls to start collecting dark frames in cuda_take. */

@@ -18,6 +18,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
      * \author Jackie Ryan
      * \author Noah Levy
      */
+
+    qRegisterMetaType<fileFormat_t>();
+
     this->fw = fw;
     frWidth = fw->getFrameWidth();
     frHeight = fw->getFrameHeight();
@@ -76,7 +79,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     showRGBLevelsButton.setVisible(false);
 
     load_mask_from_file.setText("Load Dark Mask");
-    load_mask_from_file.setEnabled(false);
+    load_mask_from_file.setEnabled(true);
     load_mask_from_file.setToolTip("Load a dark mask from a file, each pixel is a 32-bit float");
     pref_button.setText("Preferences");
     fps_label.setText("Warning: No Data Recieved");
@@ -1504,7 +1507,7 @@ void ControlsBox::disconnect_old_tab()
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_playback, SLOT(updateFloor(int)));
         disconnect(this, SIGNAL(mask_selected(QString, unsigned int, long)), p_playback, \
                    SLOT(loadDSF(QString, unsigned int, long)));
-        load_mask_from_file.setEnabled(false); // The playback widget is the only widget which currently uses the load mask button
+        //load_mask_from_file.setEnabled(false); // The playback widget is the only widget which currently uses the load mask button
         p_playback->stop();
     }
     old_tab = current_tab;
@@ -1740,91 +1743,142 @@ void ControlsBox::stop_dark_collection_slot()
     stop_dark_collection_button.setEnabled(false);
     emit statusMessage(QString("[Controls Box]: Stopped collecting dark frames."));
 }
-void ControlsBox::getMaskFile()
+
+void ControlsBox::loadDarkFromFile()
 {
-    /*! \brief Load a file containing Dark Frames, and create a mask from the specified region of the file.
-     * First opens a file dialog, verifies the file, then opens a QDialog which allows the user to select a range
-     * of frames which contain dark that will then be averaged into a mask. A widget which uses this signal must be
-     * able to receive the signal maskSelected(QString filename, unsigned int elem_to_read, long offset)
-     * \author Jackie Ryan
-     */
-    /* Step 1: Open a dialog to select the mask file location */
+    // This function sends a filename to the back end.
+    QStringList formats;
+    fileFormat_t formatSelected = fmt_unknown;
+    int formatIndex=0;
+    bool dialogOk = false;
+    QString fileName;
     QFileDialog location_dialog(0);
     location_dialog.setFilter(QDir::Writable | QDir::Files);
-    QString fileName = location_dialog.getOpenFileName(this, tr("Select mask file"),"",tr("Files (*.raw)"));
-    if (fileName.isEmpty())
-        return;
 
-    /* Step 2: Calculate the number of frames */
-    FILE *mask_file;
-    unsigned long mask_size = 0;
-    unsigned long frame_size = fw->getDataHeight() * fw->getFrameWidth();
-    unsigned long num_frames = 0;
-    mask_file = fopen(fileName.toStdString().c_str(), "rb");
-    if (!mask_file) {
-        std::cerr << "Error: Mask file could not be loaded." << std::endl;
-        return;
-    }
-    fseek (mask_file, 0, SEEK_END); // non-portable
-    mask_size = ftell(mask_file);
-    num_frames = mask_size / (frame_size*sizeof(uint16_t));
-    fclose(mask_file);
-    if (!mask_size) {
-        std::cerr << "Error: Mask file contains no data." << std::endl;
-        return;
-    }
+    if(prefs.use2sComp)
+        formatIndex = 1;
 
-    /* Step 3: Open a new dialog to select which frames to read */
-    QDialog bytes_dialog;
-    bytes_dialog.setWindowTitle("Select Read Area");
-    QLabel status_label;
-    status_label.setText(tr("The selected file contains %1 frames.\nPlease select which frames to use for the Dark Subtraction Mask.") \
-                         .arg(num_frames));
-    QSpinBox left_bound;
-    QSpinBox right_bound;
-    left_bound.setMinimum(1);
-    left_bound.setMaximum(num_frames);
-    left_bound.setValue(1);
-    right_bound.setMinimum(1);
-    right_bound.setMaximum(num_frames);
-    right_bound.setValue(num_frames);
-    QPushButton *select_range = new QPushButton(tr("&Select Range"));
-    select_range->setDefault(true);
-    QPushButton *cancel = new QPushButton(tr("&Cancel"));
-    QDialogButtonBox *buttons = new QDialogButtonBox(Qt::Horizontal);
-    buttons->addButton(select_range, QDialogButtonBox::AcceptRole);
-    buttons->addButton(cancel, QDialogButtonBox::RejectRole);
-    connect(buttons, SIGNAL(rejected()), &bytes_dialog, SLOT(reject()));
-    connect(buttons, SIGNAL(accepted()), &bytes_dialog, SLOT(accept()));
-    QGridLayout bd_layout;
-    bd_layout.addWidget(&status_label, 0, 0, 1, 4);
-    bd_layout.addWidget(new QLabel("Read from frame:"), 1, 0, 1, 1);
-    bd_layout.addWidget(&left_bound, 1, 1, 1, 1);
-    bd_layout.addWidget(new QLabel(" to "), 1, 2, 1, 1);
-    bd_layout.addWidget(&right_bound, 1, 3, 1, 1);
-    bd_layout.addWidget(buttons, 2, 1, 1, 4);
-    bytes_dialog.setLayout(&bd_layout);
-    bytes_dialog.show();
-    int result = bytes_dialog.exec();
+    formats << "uint16 (all frames)" << "uint16 2s compliment (all frames)" << "float32 (single frame)";
 
-    /* Step 4: Check that the given range is acceptable */
-    if(result == QDialog::Accepted) {
-        int lo_val = left_bound.value();
-        int hi_val = right_bound.value();
-        int elem_to_read = hi_val - lo_val + 1;
-        long offset = (lo_val-1)*frame_size;
-        if (elem_to_read > 0) {
-            elem_to_read *= frame_size;
-            emit mask_selected(fileName, (unsigned int)elem_to_read, offset);
-        } else if (elem_to_read == 0) {
-            elem_to_read = frame_size;
-            emit mask_selected(fileName, (unsigned int)elem_to_read, offset);
+    QString formatChoiceStr = QInputDialog::getItem(this, "Select dark file format", "Format: ",
+                                                    formats, formatIndex, false, &dialogOk);
+    if(dialogOk)
+    {
+
+        formatIndex = formats.indexOf(formatChoiceStr);
+        if(formatIndex == -1)
+            return;
+
+        formatSelected = static_cast<fileFormat_t>(formatIndex);
+
+        if(options.dataLocationSet && (options.dataLocation != NULL) && (!options.dataLocation.isEmpty()))
+        {
+            fileName = location_dialog.getOpenFileName(this, tr("Select mask file"), options.dataLocation ,tr("Files (*.*)"));
         } else {
-            std::cerr << "Error: The selected range of dark frames is invalid." << std::endl;
+            fileName = location_dialog.getOpenFileName(this, tr("Select mask file"), "/mnt" ,tr("Files (*.*)"));
+        }
+        if(fileName.isEmpty())
+            return;
+
+        emit statusMessage(QString("Loading dark file from %1 in format %2.").arg(fileName).arg(formatChoiceStr));
+        emit loadDarkFile(fileName, formatSelected);
+    }
+}
+
+void ControlsBox::getMaskFile()
+{
+    if(!p_playback)
+    {
+        loadDarkFromFile();
+    } else {
+
+        // Warning: This function has multiple memory leaks and has not been tested carefully.
+
+        /*! \brief Load a file containing Dark Frames, and create a mask from the specified region of the file.
+         * First opens a file dialog, verifies the file, then opens a QDialog which allows the user to select a range
+         * of frames which contain dark that will then be averaged into a mask. A widget which uses this signal must be
+         * able to receive the signal maskSelected(QString filename, unsigned int elem_to_read, long offset)
+         * \author Jackie Ryan
+         */
+
+        /* Step 1: Open a dialog to select the mask file location */
+        QFileDialog location_dialog(0);
+        location_dialog.setFilter(QDir::Writable | QDir::Files);
+        QString fileName = location_dialog.getOpenFileName(this, tr("Select mask file"),"",tr("Files (*.raw)"));
+        if (fileName.isEmpty())
+            return;
+
+        /* Step 2: Calculate the number of frames */
+        FILE *mask_file;
+        unsigned long mask_size = 0;
+        unsigned long frame_size = fw->getDataHeight() * fw->getFrameWidth();
+        unsigned long num_frames = 0;
+        mask_file = fopen(fileName.toStdString().c_str(), "rb");
+        if (!mask_file) {
+            std::cerr << "Error: Mask file could not be loaded." << std::endl;
             return;
         }
-    } else {
-        return;
+        fseek (mask_file, 0, SEEK_END); // non-portable
+        mask_size = ftell(mask_file);
+        num_frames = mask_size / (frame_size*sizeof(uint16_t));
+        fclose(mask_file);
+        if (!mask_size) {
+            std::cerr << "Error: Mask file contains no data." << std::endl;
+            return;
+        }
+
+        /* Step 3: Open a new dialog to select which frames to read */
+        QDialog bytes_dialog;
+        bytes_dialog.setWindowTitle("Select Read Area");
+        QLabel status_label;
+        status_label.setText(tr("The selected file contains %1 frames.\nPlease select which frames to use for the Dark Subtraction Mask.") \
+                             .arg(num_frames));
+        QSpinBox left_bound;
+        QSpinBox right_bound;
+        left_bound.setMinimum(1);
+        left_bound.setMaximum(num_frames);
+        left_bound.setValue(1);
+        right_bound.setMinimum(1);
+        right_bound.setMaximum(num_frames);
+        right_bound.setValue(num_frames);
+        QPushButton *select_range = new QPushButton(tr("&Select Range"));
+        select_range->setDefault(true);
+        QPushButton *cancel = new QPushButton(tr("&Cancel"));
+        QDialogButtonBox *buttons = new QDialogButtonBox(Qt::Horizontal);
+        buttons->addButton(select_range, QDialogButtonBox::AcceptRole);
+        buttons->addButton(cancel, QDialogButtonBox::RejectRole);
+        connect(buttons, SIGNAL(rejected()), &bytes_dialog, SLOT(reject()));
+        connect(buttons, SIGNAL(accepted()), &bytes_dialog, SLOT(accept()));
+        QGridLayout bd_layout;
+        bd_layout.addWidget(&status_label, 0, 0, 1, 4);
+        bd_layout.addWidget(new QLabel("Read from frame:"), 1, 0, 1, 1);
+        bd_layout.addWidget(&left_bound, 1, 1, 1, 1);
+        bd_layout.addWidget(new QLabel(" to "), 1, 2, 1, 1);
+        bd_layout.addWidget(&right_bound, 1, 3, 1, 1);
+        bd_layout.addWidget(buttons, 2, 1, 1, 4);
+        bytes_dialog.setLayout(&bd_layout);
+        bytes_dialog.show();
+        int result = bytes_dialog.exec();
+
+        /* Step 4: Check that the given range is acceptable */
+        if(result == QDialog::Accepted) {
+            int lo_val = left_bound.value();
+            int hi_val = right_bound.value();
+            int elem_to_read = hi_val - lo_val + 1;
+            long offset = (lo_val-1)*frame_size;
+            if (elem_to_read > 0) {
+                elem_to_read *= frame_size;
+                emit mask_selected(fileName, (unsigned int)elem_to_read, offset);
+            } else if (elem_to_read == 0) {
+                elem_to_read = frame_size;
+                emit mask_selected(fileName, (unsigned int)elem_to_read, offset);
+            } else {
+                std::cerr << "Error: The selected range of dark frames is invalid." << std::endl;
+                return;
+            }
+        } else {
+            return;
+        }
     }
 }
 void ControlsBox::use_DSF_general(bool checked)
@@ -2043,6 +2097,8 @@ void ControlsBox::debugThis()
     qDebug() << "stddevCeiling: " << prefs.stddevCeiling;
     qDebug() << "stddevFloor: " << prefs.stddevFloor;
     qDebug() << "--- END PREFS debug output ---";
+
+    this->loadDarkFromFile();
 
     emit debugSignal();
 }

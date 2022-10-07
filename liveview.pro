@@ -45,6 +45,7 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     consolelog.h \
+    cuda_take/include/fileformats.h \
     filenamegenerator.h \
     flight_widget.h \
     frameview_widget.h \
@@ -120,6 +121,7 @@ RESOURCES += \
 
 QMAKE_CXXFLAGS += -O2 -std=c++11 -march=native -fopenmp -Wno-class-memaccess -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result
 QMAKE_LFLAGS += -fopenmp
+LIBS += -lgsl -lgslcblas
 
 # Used for build tracking:
 DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"

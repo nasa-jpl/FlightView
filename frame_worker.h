@@ -20,6 +20,7 @@
 #include "startupOptions.h"
 #include "cuda_take/include/takeoptions.h"
 #include "initialsetup.h"
+#include "cuda_take/include/fileformats.h"
 
 /*! \file
  * \brief Communicates with the backend and connects public information between widgets.
@@ -156,6 +157,7 @@ public slots:
     void startCapturingDSFMask();
     void finishCapturingDSFMask();
     void toggleUseDSF(bool t);
+    void loadDarkFile(QString filename, fileFormat_t format);
     /*! @} */
 
     /*! \addtogroup savingfunc

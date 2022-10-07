@@ -204,6 +204,11 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
 
     connect(controlbox, SIGNAL(sendRGBLevels(double,double,double,double)), flight_screen, SLOT(setRGBLevels(double,double,double,double)));
 
+    connect(this->controlbox, &ControlsBox::loadDarkFile,
+            [=](QString filename, fileFormat_t fileformat) {
+            fw->loadDarkFile(filename, fileformat);
+    });
+
     handleMainWindowStatusMessage("Started");
 }
 

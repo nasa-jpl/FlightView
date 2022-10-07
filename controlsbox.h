@@ -40,6 +40,7 @@
 #include "startupOptions.h"
 #include "filenamegenerator.h"
 #include "initialsetup.h"
+#include "fileformats.h"
 
 /*! \file
  *  \brief Widget which contains the GUI elements common to several or all plotting widgets.
@@ -201,6 +202,8 @@ signals:
     /*! \brief Passes the DSF the message to begin averaging dark frames for all live widgets. */
     void startDSFMaskCollection();
 
+    void loadDarkFile(QString filename, fileFormat_t formatSelected);
+
     /*! \brief Averages the collected frames and loads in the mask. */
     void stopDSFMaskCollection();
 
@@ -255,7 +258,8 @@ private slots:
      * Contains the functions which control the processes needed to record and use Dark
      * Subtraction Filters
      * @{ */
-    void getMaskFile();
+    void loadDarkFromFile();
+    void getMaskFile(); // depreciated
     void start_dark_collection_slot();
     void stop_dark_collection_slot();
     void use_DSF_general(bool checked);
@@ -273,5 +277,7 @@ private slots:
     void debugThis();
 
 };
+
+Q_DECLARE_METATYPE(enum fileFormat_t)
 
 #endif // CONTROLSBOX_H

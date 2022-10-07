@@ -18,6 +18,8 @@
 #include <boost/thread/mutex.hpp>
 #include <pthread.h>
 #include <mutex>
+#include <gsl/gsl_statistics_uint.h>
+#include <gsl/gsl_statistics.h>
 //#include <boost/atomic.hpp>
 
 //custom includes
@@ -32,6 +34,7 @@
 #include "constants.h"
 #include "safestringset.h"
 #include "takeoptions.h"
+#include "fileformats.h"
 
 //** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
 #define EDT
@@ -126,6 +129,7 @@ public:
 	void startCapturingDSFMask();
 	void finishCapturingDSFMask();
 	void loadDSFMask(std::string file_name);
+    void loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format);
     bool dsfMaskCollected;
     bool useDSF = false;
 
