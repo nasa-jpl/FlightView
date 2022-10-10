@@ -7,7 +7,7 @@
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
 //Kernel code, this runs on the GPU (device)
 
-/* #define VERBOSE */
+#define VERBOSE
 
 void dark_subtraction_filter::start_mask_collection()
 {
@@ -57,8 +57,10 @@ void dark_subtraction_filter::load_mask(float* mask_arr)
     /*! \brief Copy the memory for a mask into the internal mask array.
      * \param mask_arr The mask to load into the filter as float array
      */
+    mask_mutex.lock();
 	memcpy(mask,mask_arr,width*height*sizeof(float));
 	mask_collected = true;
+    mask_mutex.unlock();
 #ifdef VERBOSE
 	std::cout << "mask loaded" << std::endl;
 #endif

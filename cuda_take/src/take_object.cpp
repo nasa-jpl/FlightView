@@ -167,7 +167,7 @@ void take_object::start()
         // actual grabbing of the dimensions
         frWidth = pdv_get_width(pdv_p);
         dataHeight = pdv_get_height(pdv_p);
-
+        frHeight = dataHeight;
     }
 
     switch(size) {
@@ -177,6 +177,7 @@ void take_object::start()
     default: cam_type = CL_6604B; pixRemap = true; break;
     }
 	setup_filter(cam_type);
+    setup_filter(frHeight, frWidth);
 	if(pixRemap) {
 		std::cout << "2s compliment filter ENABLED" << std::endl;
 	} else {
@@ -184,7 +185,8 @@ void take_object::start()
 	}
 
 
-    frHeight = cam_type == CL_6604A ? dataHeight - 1 : dataHeight;
+    //frHeight = cam_type == CL_6604A ? dataHeight - 1 : dataHeight;
+    frHeight = dataHeight;
 
 #ifdef VERBOSE
     std::cout << "Camera Type: " << cam_type << ". Frame Width: " << frWidth << \
@@ -253,6 +255,7 @@ void take_object::start()
         {
             std::cerr << "Error, could not initialize camera link multibuffer." << std::endl;
             std::cerr << "Make sure the camera link driver is loaded and that the camera link port has been initialized using initcam." << std::endl;
+            system("xmessage \"Error, please initialize the camera link frame grabber first.\"");
             abort();
         }
 
@@ -292,8 +295,106 @@ void take_object::finishCapturingDSFMask()
     dsf->mask_mutex.unlock();
     dsfMaskCollected = true;
 }
+void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format)
+{
+    // Creates a mask from a file containing multiple frames
+    // The frames are expected to be the same geometry as the
+    // frame source, and the pixels are expected to be 16-bit int.
+
+    // This function was largly copied from the main.cpp file of
+    // the included "statscli" program found under "utils".
+
+    std::ostringstream message;
+
+    float * mean_frame = NULL;
+    uint16_t * frames = NULL;
+    unsigned int * input_array = NULL;
+
+    unsigned int frame_size_numel = frHeight*frWidth;
+    unsigned int nframes = 0;
+    unsigned int pixel_size = sizeof(uint16_t);
+    size_t items_read = 0;
+    (void)format;
+
+    FILE * file = fopen(file_name.c_str(), "r");
+    if(file == NULL)
+    {
+        message << "Error, could not load DSF file " << file_name;
+        statusMessage(message);
+        return;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long int filesize = ftell(file);
+    nframes = filesize / pixel_size / (frHeight * frWidth);
+    fseek(file, 0, SEEK_SET);
+    frames = (uint16_t *) malloc(filesize * pixel_size);
+    if(frames == NULL)
+    {
+        errorMessage("Did not successfully allocate frames for dark subtraction file");
+        abort();
+    }
+
+    items_read = fread(frames, sizeof(uint16_t), filesize/pixel_size, file);
+
+    message << "DSF Load: Read      " << items_read << " pixels from " << file_name;
+    statusMessage(message); message.str("");
+
+    fclose(file);
+
+    mean_frame = (float *) malloc(sizeof(float) * frame_size_numel);
+
+    // The input_array is where the data are initially loaded.
+    // These data can be type-converted after loading.
+    input_array = (unsigned int *) malloc(sizeof(unsigned int) * nframes * frame_size_numel); // native size
+    if(input_array == NULL)
+    {
+        errorMessage("Did not successfully allocate input_array for dark subtraction file");
+        abort();
+    }
+
+    if(format == fmt_uint16_2s)
+    {
+        // Convert the data first:
+        for(unsigned int nth_element = 0; nth_element < frame_size_numel * nframes; nth_element++)
+        {
+            input_array[nth_element] = (unsigned int)( frames[nth_element] ^ (1<<15) );
+        }
+        // Process:
+        #pragma omp parallel for
+        for(unsigned int nth_frame_el = 0; nth_frame_el < frame_size_numel; nth_frame_el++)
+        {
+            // iterate over each pixel in a frame
+            mean_frame[nth_frame_el] = (float)gsl_stats_uint_mean(input_array+nth_frame_el, frame_size_numel, nframes);
+        }
+    } else {
+        // Convert uint16_t to unsigned int for GSL:
+        // TODO: consider loading it in this way
+        for(unsigned int nth_element = 0; nth_element < frame_size_numel * nframes; nth_element++)
+        {
+            input_array[nth_element] = (unsigned int)frames[nth_element];
+        }
+        // Process:
+        #pragma omp parallel for
+        for(unsigned int nth_frame_el = 0; nth_frame_el < frame_size_numel; nth_frame_el++)
+        {
+            // iterate over each pixel in a frame
+            mean_frame[nth_frame_el] = (float)gsl_stats_uint_mean(input_array+nth_frame_el, frame_size_numel, nframes);
+        }
+    }
+
+    dsf->load_mask(mean_frame); // memcopy to stack variable
+    dsfMaskCollected = true;
+
+    if(frames)
+        free(frames);
+    if(mean_frame)
+        free(mean_frame);
+}
+
 void take_object::loadDSFMask(std::string file_name)
 {
+    // Loads a file containing a single 32-bit float frame.
     float *mask_in = new float[frWidth*frHeight];
     FILE *pFile;
     unsigned long size = 0;
@@ -316,7 +417,8 @@ void take_object::loadDSFMask(std::string file_name)
         std::cout << file_name << " read in "<< size << " bytes successfully " <<  std::endl;
 #endif
     }
-    dsf->load_mask(mask_in);
+    dsf->load_mask(mask_in); // memcopy to stack variable
+    delete mask_in;
 }
 void take_object::setStdDev_N(int s)
 {

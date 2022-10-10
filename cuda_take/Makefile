@@ -82,6 +82,8 @@ CONLYFLAGS += $(CFLAGS)
 CPPFLAGS = $(CFLAGS)
 CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-result#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 CPPFLAGS += -fPIC
+CPPFLAGS += -lgsl -lgslcblas
+
 #CPPFLAGS += -isystem /usr/include/x86_64-linux-gnu/qt5 -isystem /usr/include/x86_64-linux-gnu/qt5/QtCore -DQT_NO_VERSION_TAGGING
 #CPPFLAGS += -DQT_CORE_LIB -lQt5Core -lQt5Widgets
 
@@ -108,7 +110,7 @@ NVCCFLAGS  = -arch=native -lineinfo -Xcompiler -rdynamic --compiler-options '-Wa
 NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= /opt/EDTpdv #where do the libraries we need to link in go?
-LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lboost_system -lz -lcuda -lcudart -lgomp -lpthread -ldl #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
+LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lboost_system -lz -lcuda -lcudart -lgsl -lgslcblas -lgomp -lpthread -ldl #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
 ifeq ($(HARDWARE),OPALKELLY)
 LDFLAGS	   := -L$(okFP_SDK)
 okFP_LIBS  := -lokFrontPanel

@@ -9,7 +9,7 @@
  */
 
 const static unsigned int MAX_WIDTH = 1280;
-const static unsigned int MAX_HEIGHT = 480;
+const static unsigned int MAX_HEIGHT = 481;
 const static unsigned int TAP_WIDTH = 160;
 const static unsigned int MAX_SIZE = MAX_WIDTH*MAX_HEIGHT;
 const static unsigned int FFT_MEAN_BUFFER_LENGTH = 500;
