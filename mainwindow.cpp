@@ -212,6 +212,27 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     handleMainWindowStatusMessage("Started");
 }
 
+void MainWindow::closeEvent(QCloseEvent *e)
+{
+
+    int reply = QMessageBox::question(this, "Are you sure?", "Are you sure you want to quit?", QMessageBox::Ok, QMessageBox::Cancel, QMessageBox::NoButton);
+    handleMainWindowStatusMessage("User requested to close main window.");
+    if(reply==QMessageBox::Ok)
+    {
+        handleMainWindowStatusMessage("User confirmed quit.");
+
+        cLog->close();
+        QList<QWidget*> allWidgets = findChildren<QWidget*>();
+        for(int i = 0; i < allWidgets.size(); ++i)
+            allWidgets.at(i)->close();
+
+        QApplication::exit();
+    } else {
+        handleMainWindowStatusMessage("User canceled close request.");
+        e->ignore();
+    }
+}
+
 void MainWindow::handleMainWindowStatusMessage(QString message)
 {
     //std::cout << "STDOUT: Status Message: " << message.toLocal8Bit().toStdString() << std::endl;
@@ -366,16 +387,12 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
     }
 }
 
-void MainWindow::closeEvent(QCloseEvent *e)
-{
-    Q_UNUSED(e);
+//void MainWindow::closeEvent(QCloseEvent *e)
+//{
+//    Q_UNUSED(e);
 
-    cLog->close();
 
-    QList<QWidget*> allWidgets = findChildren<QWidget*>();
-    for(int i = 0; i < allWidgets.size(); ++i)
-        allWidgets.at(i)->close();
-}
+//}
 
 void MainWindow::handlePreferenceRead(settingsT prefs)
 {
