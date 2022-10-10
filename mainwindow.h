@@ -68,6 +68,7 @@ private:
     /*! @} */
 
     void removeTab(QString tabTitle);
+    void closeEvent(QCloseEvent *e);
 
 public slots:
     void handleMainWindowStatusMessage(QString message);
@@ -83,7 +84,7 @@ signals:
 protected:
     /*! \brief Defines keyboard controls for all components of Live View */
     void keyPressEvent(QKeyEvent *c);
-    void closeEvent(QCloseEvent *e);
+    //void closeEvent(QCloseEvent *e);
 
 };
 
