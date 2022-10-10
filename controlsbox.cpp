@@ -2098,7 +2098,7 @@ void ControlsBox::debugThis()
     qDebug() << "stddevFloor: " << prefs.stddevFloor;
     qDebug() << "--- END PREFS debug output ---";
 
-    this->loadDarkFromFile();
+    //this->loadDarkFromFile();
 
     emit debugSignal();
 }
