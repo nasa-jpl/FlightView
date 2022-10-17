@@ -155,7 +155,8 @@ void saveServer::readCommand()
         QByteArray block;
         QDataStream out( &block, QIODevice::WriteOnly );
         out.setVersion(QDataStream::Qt_4_0);
-        out << (uint16_t)0;
+        out << (uint16_t)0; // will be changed to the size of the message later.
+        out << (uint16_t)CMD_STATUS_EXTENDED; // new addition
         out << (uint16_t)reference->to.save_framenum; // send the number of frames left to save, and
         out << (uint16_t)reference->delta;            // send the frames per second
         out << (uint16_t)reference->navgs;                       // number of averages, new code, bogus
