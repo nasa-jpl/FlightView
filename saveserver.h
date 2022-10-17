@@ -10,9 +10,11 @@
 
 #include "frame_worker.h"
 
-const quint16 START_SAVING = 2;
-const quint16 STATUS = 3;
-const quint16 STATUS_EXTENDED = 4;
+const quint16 CMD_START_SAVING = 2;
+const quint16 CMD_STATUS = 3;
+const quint16 CMD_STATUS_EXTENDED = 4;
+const quint16 CMD_START_DARKSUB = 5;
+const quint16 CMD_STOP_DARKSUB = 6;
 
 /*! \file
  *  \brief Establishes a server which can accept remote frame saving commands.
@@ -68,6 +70,8 @@ private slots:
     void readCommand();
     void connected_to_client();
     void new_conn_slot();
+    void handleDisconnect();
+
 
 };
 

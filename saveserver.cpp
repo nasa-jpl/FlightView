@@ -26,6 +26,7 @@ saveServer::saveServer(frameWorker *fw, QObject *parent ) :
 
     connect(clientConnection, SIGNAL(readyRead()), this, SLOT(readCommand()));
     connect(this, SIGNAL(newConnection()), this, SLOT(new_conn_slot())  );
+    connect(clientConnection, SIGNAL(disconnected()), this, SLOT(handleDisconnect()));
     signalConnected = true;
     listen(QHostAddress::Any, port); // This will automatically connect on the IP Address of the machine
 }
@@ -49,6 +50,11 @@ void saveServer::disconnectSignal()
     }
 }
 
+void saveServer::handleDisconnect()
+{
+    genStatusMessage("Remote host disconnected.");
+}
+
 void saveServer::incomingConnection(qintptr socketDescriptor)
 {
     if(!clientConnection->setSocketDescriptor(socketDescriptor)) {
@@ -65,7 +71,7 @@ void saveServer::connected_to_client()
 void saveServer::new_conn_slot()
 {
     // This indicates a client has connected.
-    // genStatusMessage("New TCP connection exists.");
+    genStatusMessage("New remote connection is active.");
 }
 
 bool saveServer::checkValues(uint16_t framesToSaveCount,
@@ -111,7 +117,7 @@ void saveServer::readCommand()
     // genStatusMessage("Command received.");
 
     switch (commandType) {
-    case START_SAVING:
+    case CMD_START_SAVING:
         genStatusMessage("SAVE command received.");
         if(reference->to.save_framenum == 0)
         {
@@ -127,7 +133,7 @@ void saveServer::readCommand()
             genErrorMessage("Received SAVE command while already saving.");
         }
         break;
-    case STATUS:
+    case CMD_STATUS:
     {
         genStatusMessage("Sending STATUS information back.");
         QByteArray block;
@@ -143,7 +149,7 @@ void saveServer::readCommand()
         clientConnection->write(block);
         break;
     }
-    case STATUS_EXTENDED:
+    case CMD_STATUS_EXTENDED:
     {
         genStatusMessage("Sending STATUS_EXTENDED information back.");
         QByteArray block;
@@ -163,12 +169,25 @@ void saveServer::readCommand()
         clientConnection->write(block);
         break;
     }
+    case CMD_START_DARKSUB:
+    {
+        genStatusMessage("Client requested CMD_START_DARKSUB, starting dark collection.");
+        reference->startCapturingDSFMask();
+        break;
+    }
+    case CMD_STOP_DARKSUB:
+    {
+        genStatusMessage("Client requested CMD_STOP_DARKSUB, stopping dark collection.");
+        reference->finishCapturingDSFMask();
+        break;
+    }
     default:
         genErrorMessage("Unknown command received: " + QString("0x%1").arg(commandType, 2, 16, QChar('0')));
+        genErrorMessage("Disconnecting remote host now.");
+        clientConnection->disconnectFromHost();
         break;
     }
     blockSize = 0;
-    clientConnection->disconnectFromHost();
     readMutex.unlock();
 }
 
