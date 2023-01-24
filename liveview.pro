@@ -11,6 +11,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
 DEFINES += GIT_CURRENT_SHA1="\\\"$(shell git -C $$PWD rev-parse HEAD)\\\""
 DEFINES += GIT_CURRENT_SHA1_SHORT="\\\"$(shell git -C $$PWD rev-parse --short HEAD)\\\""
 
+CONFIG+=link_pkgconfig
+PKGCONFIG+=gstreamer-1.0 gstreamer-app-1.0 glib-2.0 gobject-2.0
+
 TARGET = liveview
 TEMPLATE = app
 
