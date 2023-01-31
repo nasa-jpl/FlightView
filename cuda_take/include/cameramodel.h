@@ -35,6 +35,8 @@ public:
         camPlaying,
         camPaused,
         camDone,
+        camTimeout,
+        camWaiting,
         camTestPattern,
         camUnknown
     };

@@ -29,6 +29,9 @@ extern "C" {
 
 #undef GST_HAS_GRAY
 
+#define FRAME_WAIT_MIN_DELAY_US (10)
+#define MAX_FRAME_WAIT_TAPS (10000)
+
 using namespace std::chrono;
 struct timeval tval_before, tval_after, tval_result;
 
@@ -41,7 +44,9 @@ typedef struct
     GMainLoop *loop;
     GstElement *sourcePipe;
     GstElement *sinkPipe;
-    int *currentFrame = 0;
+    int currentFrameNumber = 0; // being written to
+    int doneFrameNumber = 0; // good frame to copy out
+    uint64_t frameCounter = 0;
     uint16_t **buffer;
 } ProgramData;
 
@@ -61,8 +66,9 @@ public:
 
     ~RTPCamera();
 
+    uint16_t* getFrameWait(int lastFrameNumber, CameraModel::camStatusEnum *stat);
     virtual uint16_t* getFrame(CameraModel::camStatusEnum *stat);
-    void streamLoop();
+    void streamLoop(); // This should be its own thread and is effectivly the producer of image data.
     virtual camControlType* getCamControlPtr();
     virtual void setCamControlPtr(camControlType* p);
 
@@ -75,11 +81,14 @@ private:
     int port;
     int frWidth;
     int frHeight;
-    int currentFrame;
+    int *currentFrameNumber = 0;
+    int *doneFrameNumber = 0;
+    uint64_t *frameCounter = 0;
     bool haveInitialized = false;
 
     camControlType *camcontrol = NULL;
     uint16_t *guaranteedBufferFrames[guaranteedBufferFramesCount] = {NULL};
+    uint16_t *timeoutFrame = NULL;
 
     // GST:
     // move to static void modify_in_data (GstMapInfo * map);

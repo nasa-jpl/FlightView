@@ -50,16 +50,13 @@ bool RTPCamera::initialize()
     char** argv = NULL;
     gst_init (&argc, &argv);
 
-
     // Arguments are first the module's special name, and second, a user-defined label
     source = gst_element_factory_make("udpsrc", "source");
-
     rtp = gst_element_factory_make("rtpvrawdepay", "rtp");
-
     appSink = gst_element_factory_make("appsink", "appsink");
 
     // Create pipe:
-    sourcePipe = gst_pipeline_new ("test-pipeline");
+    sourcePipe = gst_pipeline_new ("sourcepipe");
 
     if (!sourcePipe || !source || !rtp || !appSink || !appSink) {
         g_printerr ("Not all gstreamer elements could be created.\n");
@@ -84,11 +81,16 @@ bool RTPCamera::initialize()
                                                "payload", G_TYPE_INT, 96, NULL);
     g_object_set (source, "caps", sourceCaps, NULL);
 
+    // "data" is our i/o to the land of static functions and c functions.
     data->sourcePipe = sourcePipe;
-    data->currentFrame = &this->currentFrame;
+    currentFrameNumber = &data->currentFrameNumber;
+    doneFrameNumber = &data->doneFrameNumber;
+    frameCounter = &data->frameCounter;
 
     g_object_set(appSink, "emit-signals", TRUE, "sync", FALSE, NULL);
     g_signal_connect(appSink, "new-sample", G_CALLBACK (on_new_sample_from_sink), data);
+
+    timeoutFrame = (uint16_t*)calloc(frame_width*data_height, sizeof(uint16_t));
 
     for(int f = 0; f < guaranteedBufferFramesCount; f++)
     {
@@ -102,8 +104,7 @@ bool RTPCamera::initialize()
 
     gst_bus_add_watch(busSourcePipe, (GstBusFunc) on_source_message, data);
 
-
-
+    haveInitialized = true;
     return true;
 }
 
@@ -120,10 +121,9 @@ void RTPCamera::streamLoop()
         abort();
     }
 
-
     //g_print ("Starting main gstreamer RTP loop.\n");
     LOG << "Starting main gstreamer RTP loop.";
-    g_main_loop_run (data->loop);
+    g_main_loop_run (data->loop); // this will run until told to stop
     //g_print ("Main gstreamer RTP loop ended.\n");
     LOG << "Main gstreamer RTP loop ended.";
     msg = gst_bus_timed_pop_filtered (busSourcePipe, GST_CLOCK_TIME_NONE,
@@ -201,8 +201,10 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
     // We need just the lower two
 
     //uint16_t* singleFrame = data->buffer[data->currentFrame];
-    int currentFrameNumber = *data->currentFrame;
-    uint16_t* singleFrame = data->buffer[currentFrameNumber];
+
+    data->doneFrameNumber = ( data->currentFrameNumber - 1)% (guaranteedBufferFramesCount);
+
+    uint16_t* singleFrame = data->buffer[data->currentFrameNumber];
 
     size_t pixelNum = 0;
     uint16_t pixel;
@@ -215,8 +217,8 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
     }
 
 #endif
-    // TODO: Mod size of buffer
-    data->currentFrame++;
+    data->currentFrameNumber = (data->currentFrameNumber+1) % (guaranteedBufferFramesCount);
+    data->frameCounter++;
 
     //size_t bytesWritten = 0;
     // Write one frame to the fole, appending:
@@ -249,13 +251,41 @@ static gboolean on_source_message (GstBus * bus, GstMessage * message, ProgramDa
     return true;
 }
 
+uint16_t* RTPCamera::getFrameWait(int lastFrameNumber, CameraModel::camStatusEnum *stat)
+{
+    // This function pauses until a new frame is received,
+    // and then returns a pointer to the start of the new frame.
+    int tap = 0;
+    int pos = 0;
+    if(camcontrol->pause)
+    {
+        *stat = CameraModel::camPaused;
+        LL(4) << "Camera paused";
+        return timeoutFrame;
+    }
+    while(*currentFrameNumber == lastFrameNumber)
+    {
+        *stat = camWaiting;
+        usleep(FRAME_WAIT_MIN_DELAY_US);
+        if(tap++ > MAX_FRAME_WAIT_TAPS)
+        {
+            LOG << "RTP Camera timeout waiting for frames. Total frame count: " << *frameCounter;
+            *stat = camTimeout;
+            return timeoutFrame;
+        }
+    }
+    // TODO, check on this idea...
+    *stat = camPlaying;
+    pos = *doneFrameNumber; // doneFrameNumber is a number that is the most recent frame finished.
+    return guaranteedBufferFrames[pos];
+}
 
 uint16_t* RTPCamera::getFrame(CameraModel::camStatusEnum *stat)
 {
     uint16_t *ptr = NULL;
 
     // return latest-1 frame
-
+    (void)stat;
     return ptr;
 }
 
