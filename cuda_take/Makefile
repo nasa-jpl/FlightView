@@ -79,8 +79,12 @@ endif
 CONLYFLAGS = -std=c99
 CONLYFLAGS += $(CFLAGS)
 
+# CFLAGS    += `pkg-config --cflags --libs gstreamer-1.0`
+# -pthread -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0
+CFLAGS += -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0
+#CFLAGS += -Xcompiler="-pthread"
 CPPFLAGS = $(CFLAGS)
-CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-unused-result#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
+CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-error=cpp -Wno-unused-function -Wno-unused-variable -Wno-unused-result#NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 CPPFLAGS += -fPIC
 CPPFLAGS += -lgsl -lgslcblas
 
@@ -101,7 +105,7 @@ CPPFLAGS += -lgsl -lgslcblas
 #NVCCFLAGS  = -gencode arch=compute_86,code=sm_86 -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'
 
 # NVIDIA "native" code generator, for cuda versions 11.6+
-NVCCFLAGS  = -arch=native -lineinfo -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'
+NVCCFLAGS  = -arch=native -lineinfo -Xcompiler -pthread -Xcompiler -rdynamic --compiler-options '-Wall -Werror -Wno-unused-function'
 
 
 # Truly legacy GPUs which aren't supported anymore: 
@@ -110,7 +114,7 @@ NVCCFLAGS  = -arch=native -lineinfo -Xcompiler -rdynamic --compiler-options '-Wa
 NVCCFLAGS += $(CFLAGS)
 
 LINKDIR 	= /opt/EDTpdv #where do the libraries we need to link in go?
-LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lboost_system -lz -lcuda -lcudart -lgsl -lgslcblas -lgomp -lpthread -ldl #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
+LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lboost_system -lz -lcuda -lcudart -lgsl -lgslcblas -lgomp -lpthread -ldl -lgstapp-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
 ifeq ($(HARDWARE),OPALKELLY)
 LDFLAGS	   := -L$(okFP_SDK)
 okFP_LIBS  := -lokFrontPanel
