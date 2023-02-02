@@ -107,20 +107,26 @@ bool RTPCamera::initialize()
     source = gst_element_factory_make("udpsrc", "source");
     rtp = gst_element_factory_make("rtpvrawdepay", "rtp");
     appSink = gst_element_factory_make("appsink", "appsink");
+    queue = gst_element_factory_make("queue", "queue");
 
     // Create pipe:
     sourcePipe = gst_pipeline_new ("sourcepipe");
 
-    if (!sourcePipe || !source || !rtp || !appSink || !appSink) {
+    if (!sourcePipe || !source || !rtp || !appSink || !appSink || !queue) {
         g_printerr ("Not all gstreamer elements could be created.\n");
         LOG << "ERROR, gstreamer RTP camera source failed to be created.";
         return false;
     }
 
-    gst_bin_add_many (GST_BIN (sourcePipe), source,  rtp,  appSink, NULL);
-    gst_element_link_many(source, rtp, appSink, NULL);
+    gst_bin_add_many (GST_BIN (sourcePipe), source,  rtp,  queue, appSink, NULL);
+    gst_element_link_many(source, rtp, queue, appSink, NULL);
 
     // TODO: Use parameters, int types, etc.
+
+    g_object_set(queue, "min-threshold-bytes",  1E6, NULL);
+    //g_object_set(queue, "min-threshold-time",  1E6, NULL); // ns
+    g_object_set(queue, "min-threshold-buffers", 4, NULL);
+
     g_object_set (source, "multicast-group", "::1", NULL);
     g_object_set (source, "port", 5004, NULL);
     GstCaps *sourceCaps = gst_caps_new_simple( "application/x-rtp",

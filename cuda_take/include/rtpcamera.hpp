@@ -108,6 +108,7 @@ private:
 
     // GST Variables:
     GstElement *sourcePipe, *source, *rtp, *appSink;
+    GstElement *queue;
     GstBus *busSourcePipe;
     GstMessage *msg;
     GstStateChangeReturn ret;

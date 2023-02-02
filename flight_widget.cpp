@@ -12,6 +12,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     useAvionicsWidgets = true;
 
     waterfall_widget = new waterfall(fw, 1, 1024, this);
+//    waterfall_widget = new waterfall(fw, 1, 1024, NULL);
+
     wfThread = new QThread(this);
     wfThread->setObjectName("lv:wfThread");
     dsf_widget = new frameview_widget(fw, DSF, this);

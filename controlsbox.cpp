@@ -121,7 +121,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //Fourth Row
     collections_layout->addWidget(&server_port_label, 4, 1, 1, 1);
     collections_layout->addWidget(&showConsoleLogBtn, 4, 2, 1, 1);
-    if((!options.flightMode) && options.xioCam)
+    if((!options.flightMode) && (options.xioCam || options.rtpCam))
     {
         pausePlaybackChk.setText("Pause");
         pausePlaybackChk.setChecked(false);
