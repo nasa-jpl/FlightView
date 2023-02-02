@@ -22,6 +22,10 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     this->options = optionsIn;
     this->takeOptions.xioDirectory = new std::string();
 
+    convertOptions();
+
+    to.changeOptions(takeOptions);
+
     if(options.xioCam)
     {
         // Initial Setup. Program is paused while this dialog is open.
@@ -31,9 +35,9 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
         setupUI.setWindowFlag(Qt::WindowStaysOnTopHint, true);
         setupUI.exec();
 
-        convertOptions();
+//        convertOptions();
 
-        to.changeOptions(takeOptions);
+//        to.changeOptions(takeOptions);
     }
 
     this->camcontrol = to.getCamControl();
@@ -109,6 +113,8 @@ void frameWorker::convertOptions()
     takeOptions.gpsPortSet = options.gpsPortSet;
     takeOptions.gpsPort = options.gpsPort;
     takeOptions.xioCam = options.xioCam;
+    takeOptions.rtpCam = options.rtpCam;
+    qDebug() << "RTP camera: " << options.rtpCam;
     takeOptions.height = options.height;
     takeOptions.width = options.width;
     takeOptions.xioHeight = options.xioHeight;

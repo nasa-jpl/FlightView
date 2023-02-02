@@ -30,10 +30,9 @@ extern "C" {
 #undef GST_HAS_GRAY
 
 #define FRAME_WAIT_MIN_DELAY_US (10)
-#define MAX_FRAME_WAIT_TAPS (10000)
+#define MAX_FRAME_WAIT_TAPS (100000)
 
 using namespace std::chrono;
-struct timeval tval_before, tval_after, tval_result;
 
 using std::cout;
 using std::endl;
@@ -44,8 +43,8 @@ typedef struct
     GMainLoop *loop;
     GstElement *sourcePipe;
     GstElement *sinkPipe;
-    int currentFrameNumber = 0; // being written to
-    int doneFrameNumber = 0; // good frame to copy out
+    unsigned int currentFrameNumber = 0; // being written to
+    unsigned int doneFrameNumber = 0; // good frame to copy out
     uint64_t frameCounter = 0;
     uint16_t **buffer;
 } ProgramData;
@@ -62,12 +61,12 @@ public:
     RTPCamera(int frWidth,
               int frHeight,
               int port,
-              char* interface);
+              const char* interface);
 
     ~RTPCamera();
 
-    uint16_t* getFrameWait(int lastFrameNumber, CameraModel::camStatusEnum *stat);
-    virtual uint16_t* getFrame(CameraModel::camStatusEnum *stat);
+    uint16_t* getFrameWait(unsigned int lastFrameNumber, CameraModel::camStatusEnum *stat);
+    uint16_t* getFrame(CameraModel::camStatusEnum *stat);
     void streamLoop(); // This should be its own thread and is effectivly the producer of image data.
     virtual camControlType* getCamControlPtr();
     virtual void setCamControlPtr(camControlType* p);
@@ -75,14 +74,14 @@ public:
 private:
     bool initialize(); // all setup functions
 
-    char* interface;
+    const char* interface;
     int payload = 90;
     int clockRate = 90000;
     int port;
     int frWidth;
     int frHeight;
-    int *currentFrameNumber = 0;
-    int *doneFrameNumber = 0;
+    unsigned int *currentFrameNumber = 0;
+    unsigned int *doneFrameNumber = 0;
     uint64_t *frameCounter = 0;
     bool haveInitialized = false;
 

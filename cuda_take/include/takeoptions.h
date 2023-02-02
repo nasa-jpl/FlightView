@@ -27,6 +27,7 @@ struct takeOptionsType
     bool deviceFPIEDSet = false;
     bool deviceIHESet = false;
     bool xioCam = false;
+    bool rtpCam = false;
     bool heightWidthSet = false;
     uint16_t xioHeight;
     uint16_t xioWidth;

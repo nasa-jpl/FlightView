@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps "
                                "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 "
                                "--gpsport 5661 "
-                               "--no-stddev --xiocam")\
+                               "--no-stddev --xiocam --rtpcam")\
             .arg(cmdName);
     QString currentArg;
     startupOptionsType startupOptions;
@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
     startupOptions.flightMode = false;
     startupOptions.disableCamera = false;
     startupOptions.xioCam = false;
+    startupOptions.rtpCam = false;
     startupOptions.disableGPS = false;
     startupOptions.dataLocation = QString("/data");
     startupOptions.gpsIP = QString("10.0.0.6");
@@ -127,6 +128,10 @@ int main(int argc, char *argv[])
             startupOptions.xioCam = true;
         }
 
+        if(currentArg == "--rtpcam")
+        {
+            startupOptions.rtpCam = true;
+        }
 
         if(currentArg == "--xioheight")
         {

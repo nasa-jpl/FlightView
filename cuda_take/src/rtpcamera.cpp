@@ -4,7 +4,9 @@
 // but keep in while diagnosing the build system:
 #warning "Compiling rtpcamera.cpp"
 
-RTPCamera::RTPCamera(int frWidth, int frHeight, int port, char *interface)
+static struct timeval tval_before, tval_after, tval_result;
+
+RTPCamera::RTPCamera(int frWidth, int frHeight, int port, const char *interface)
 {
     LOG << "Starting RTP camera with width: " << frWidth << ", height: " << frHeight
         << ", port: " << port <<", network interface: " << interface;
@@ -68,7 +70,7 @@ bool RTPCamera::initialize()
     gst_element_link_many(source, rtp, appSink, NULL);
 
     // TODO: Use parameters, int types, etc.
-    g_object_set (source, "multicast-group", "ff02::1", NULL);
+    g_object_set (source, "multicast-group", "::1", NULL);
     g_object_set (source, "port", 5004, NULL);
     GstCaps *sourceCaps = gst_caps_new_simple( "application/x-rtp",
                                                "media", G_TYPE_STRING, "video",
@@ -112,6 +114,7 @@ void RTPCamera::streamLoop()
 {
     // This should be a thread which can run without expectation of returning
     // Here, the stream is started and ran from.
+    LOG << "Starting rtp streamLoop(), setting status to PLAYING";
 
     ret = gst_element_set_state (sourcePipe, GST_STATE_PLAYING);
     if (ret == GST_STATE_CHANGE_FAILURE) {
@@ -138,8 +141,8 @@ static GstFlowReturn on_new_sample_from_sink(GstElement * elt, ProgramData * dat
 {
     // This is the entry point from which we obtain the stream's data.
     // This function is called whenever there is a new frame in the source pipe appSink.
-
-    g_print("new sample from sink\n");
+    //LOG << "New RTP Sample";
+    //g_print("new sample from sink\n");
     GstSample *sample;
     GstBuffer *app_buffer, *buffer;
     //GstElement *source;
@@ -176,7 +179,7 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
 
     dataLengthBytes = map->size;
     rdata = map->data;
-    g_print ("%s dataLen = %zu\n", __func__, dataLengthBytes);
+    //g_print ("%s dataLen = %zu\n", __func__, dataLengthBytes);
 
     // The dataLength indicates the entire length of the frame
     // in bytes. RGB format is 3 bytes per pixel,
@@ -192,29 +195,33 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
 
     // TODO unpack into guarenteedBufferFrames[];
 
+    //LOG << "setting done frame number.";
+    data->doneFrameNumber = ( data->currentFrameNumber - 1)% (guaranteedBufferFramesCount);
+    //LOG << "Done frame number: " << data->doneFrameNumber;
+
+    //LOG << "Grabbing pointer to single frame at position DNF " << data->currentFrameNumber;
+    uint16_t* singleFrame = data->buffer[data->currentFrameNumber];
+    //LOG << "Have singleFrame pointer.";
+
 #ifdef GST_HAS_GRAY
     // if this is defined, then the data are already 16-bit
-
-    memcpy(guaranteedBufferFrames[data->currentFrame], rdata, dataLengthBytes);
+    // Check size!!
+    memcpy((char*)singleFrame, rdata, dataLengthBytes);
 
 #else
-    // We need just the lower two
-
-    //uint16_t* singleFrame = data->buffer[data->currentFrame];
-
-    data->doneFrameNumber = ( data->currentFrameNumber - 1)% (guaranteedBufferFramesCount);
-
-    uint16_t* singleFrame = data->buffer[data->currentFrameNumber];
 
     size_t pixelNum = 0;
     uint16_t pixel;
+    //LOG << "Entering byte for byte copy loop:";
     for(size_t pbyte=0; pbyte < dataLengthBytes; pbyte+=3)
     {
         pixel = (rdata[pbyte]&0x00ff) | ((rdata[pbyte+1] << 8)&0xff00);
         // not used: rdata[pbyte+3];
         pixelNum = pbyte/3;
         singleFrame[pixelNum] = pixel;
+        //LOG << "byte: " << pbyte;
     }
+    //(void)rdata;
 
 #endif
     data->currentFrameNumber = (data->currentFrameNumber+1) % (guaranteedBufferFramesCount);
@@ -248,10 +255,84 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
 static gboolean on_source_message (GstBus * bus, GstMessage * message, ProgramData * data)
 {
     // Called whenever there is a message from the source pipe.
+    LOG << "RTP Message: ";
+    GstElement *source;
+
+    GError *err;
+    gchar *name, *debug, *full_message, *msgText;
+
+    //g_print ("%s\n", __func__);
+
+    g_print("SOURCE pipe (generator and appsink) message: ");
+
+    switch (GST_MESSAGE_TYPE (message)) {
+    case GST_MESSAGE_EOS:
+        g_print ("The source got dry (EOS = end of stream)\n");
+        source = gst_bin_get_by_name (GST_BIN (data->sinkPipe), "appsrc");
+        gst_app_src_end_of_stream (GST_APP_SRC (source));
+        gst_object_unref (source);
+        break;
+    case GST_MESSAGE_ERROR:
+        g_print ("Received error\n");
+        goto showerror;
+        g_main_loop_quit (data->loop);
+        break;
+    case GST_MESSAGE_STATE_CHANGED:
+    {
+        g_print("State changed.\n");
+
+        GstState old_state, new_state, pending_state;
+        gst_message_parse_state_changed (message, &old_state, &new_state, &pending_state);
+        g_print ("Pipeline state changed from %s to %s:\n",
+                 gst_element_state_get_name (old_state), gst_element_state_get_name (new_state));
+
+        break;
+    }
+    case GST_MESSAGE_NEW_CLOCK:
+        g_print("New clock\n");
+        break;
+    case GST_MESSAGE_STREAM_STATUS:
+        g_print("Stream status.\n");
+        break;
+    case GST_MESSAGE_ASYNC_DONE:
+        g_print("ASYNC done.\n");
+        break;
+    case GST_MESSAGE_STREAM_START:
+        g_print("STREAM START\n");
+        break;
+    default:
+        g_print("Other type: %d\n", message->type);
+        break;
+    }
+    (void)bus;
+
+    return true;
+
+
+showerror:
+    //g_print("Error breakdown: \n");
+    gst_message_parse_error (message, &err, &debug);
+    name = gst_object_get_path_string (message->src);
+    msgText = gst_error_get_message (err->domain, err->code);
+
+    if (debug)
+        full_message =
+                g_strdup_printf ("Error from element %s: %s\n%s\n%s", name, msgText,
+                                 err->message, debug);
+    else
+        full_message =
+                g_strdup_printf ("Error from element %s: %s\n%s", name, msgText,
+                                 err->message);
+    g_printf("Error message: %s\n", full_message);
+    //    GST_ERROR_OBJECT (self, "ERROR: from element %s: %s\n", name, err->message);
+    //    if (debug != NULL)
+    //        GST_ERROR_OBJECT (self, "Additional debug info:\n%s\n", debug);
+    g_main_loop_quit (data->loop);
+
     return true;
 }
 
-uint16_t* RTPCamera::getFrameWait(int lastFrameNumber, CameraModel::camStatusEnum *stat)
+uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::camStatusEnum *stat)
 {
     // This function pauses until a new frame is received,
     // and then returns a pointer to the start of the new frame.
@@ -282,11 +363,9 @@ uint16_t* RTPCamera::getFrameWait(int lastFrameNumber, CameraModel::camStatusEnu
 
 uint16_t* RTPCamera::getFrame(CameraModel::camStatusEnum *stat)
 {
-    uint16_t *ptr = NULL;
-
-    // return latest-1 frame
+    // DO NOT USE
     (void)stat;
-    return ptr;
+    return timeoutFrame;
 }
 
 camControlType* RTPCamera::getCamControlPtr()

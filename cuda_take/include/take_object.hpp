@@ -35,6 +35,7 @@
 #include "safestringset.h"
 #include "takeoptions.h"
 #include "fileformats.h"
+#include "rtpcamera.hpp"
 
 //** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
 #define EDT
@@ -74,6 +75,11 @@ class take_object {
     boost::thread reading_thread; // this is used for file reading in the XIO camera.
     boost::thread::native_handle_type cam_thread_handler;
     boost::thread::native_handle_type reading_thread_handler;
+
+    boost::thread rtpAcquireThread; // copy from RTP stream into buffer
+    boost::thread rtpCopyThread; // copy from buffer into currFrame
+    boost::thread::native_handle_type rtpAcquireThreadHandler;
+    boost::thread::native_handle_type rtpCopyThreadHandler;
 
     int pdv_thread_run = 0;
     bool cam_thread_start_complete=false; // added by Michael Bernas 2016
@@ -167,8 +173,12 @@ private:
     void fileImageCopyLoop();
     void fileImageReadingLoop();
     void prepareFileReading();
+    void prepareRTPCamera();
+    void rtpStreamLoop(); // acquire from RTP network source
+    void rtpConsumeFrames(); // copy into take object.
     CameraModel *Camera = NULL;
     bool fileReadingLoopRun = false;
+    bool rtpConsumerRun = false;
     camControlType cameraController;
     CameraModel::camStatusEnum camStatus;
 

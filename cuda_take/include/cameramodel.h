@@ -44,8 +44,18 @@ public:
 
     virtual bool start() { return true; }
     virtual uint16_t *getFrame(CameraModel::camStatusEnum *stat) = 0;
+    virtual uint16_t *getFrameWait(unsigned int lastFrameNumber, CameraModel::camStatusEnum *stat) =0;
+
+//        {
+//        std::cout << "WARNING: using default getFrameWait. WARNING WARNING WARNING WARNING" << std::endl;
+//        return NULL;}
+
+
     virtual void readLoop() {
         std::cout << "WARNING: using default readLoop." << std::endl;
+    }
+    virtual void streamLoop() {
+        std::cout << "WARNING: using default streamLoop." << std::endl;
     }
     virtual void setDir(const char *filename) {
         std::cout << "WARNING: using default setDir." << std::endl;

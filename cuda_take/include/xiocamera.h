@@ -55,6 +55,10 @@ public:
     virtual void setDir(const char *dirname);
 
     virtual uint16_t* getFrame(CameraModel::camStatusEnum *stat);
+    virtual uint16_t *getFrameWait(unsigned int lastFrameNumber, CameraModel::camStatusEnum *stat) {
+        return NULL;
+    }
+
     void readLoop();
     virtual camControlType* getCamControlPtr();
     virtual void setCamControlPtr(camControlType* p);
