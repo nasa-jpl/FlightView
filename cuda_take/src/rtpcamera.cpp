@@ -5,6 +5,7 @@
 #warning "Compiling rtpcamera.cpp"
 
 static struct timeval tval_before, tval_after, tval_result;
+pthread_mutex_t rtpStreamLock;
 
 RTPCamera::RTPCamera(int frWidth, int frHeight, int port, const char *interface)
 {
@@ -31,10 +32,57 @@ RTPCamera::RTPCamera(int frWidth, int frHeight, int port, const char *interface)
 
 RTPCamera::~RTPCamera()
 {
+    destructorRunning = true;
     LOG << "Running RTP camera destructor.";
-    // TODO
-    // set status to stop if elements are not null
-    // free memory used if not null
+    g_main_loop_quit (data->loop);
+//    GstMessage *lmsg = gst_bus_timed_pop_filtered (busSourcePipe, GST_CLOCK_TIME_NONE,
+//                                        (GstMessageType)(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
+
+//    if (lmsg != NULL)
+//    {
+//        on_source_message(busSourcePipe, lmsg, data);
+//        gst_message_unref (lmsg);
+//    }
+
+    while(loopRunning)
+    {
+        usleep(10000);
+    }
+    LOG << "Ran main_loop_quit.";
+
+    //LOG << "unreferencing bus source pipe";
+    //gst_object_unref (busSourcePipe);
+    //LOG << "unreferenced.";
+
+    LOG << "setting state to GST_STATE_NULL";
+    gst_element_set_state (sourcePipe, GST_STATE_NULL);
+    LOG << "State set.";
+
+    if(busSourcePipe != NULL)
+    {
+        LOG << "unreferencing bus source pipe";
+        gst_object_unref (busSourcePipe);
+        LOG << "unreferenced.";
+    }
+
+    if(sourcePipe != NULL)
+    {
+        LOG << "Unreferencing sourcePipe";
+        gst_object_unref (sourcePipe);
+        LOG << "Unreferenced.";
+    }
+
+
+    LOG << "Freeing buffer:";
+    for(int b =0; b < guaranteedBufferFramesCount_rtp; b++)
+    {
+        if(guaranteedBufferFrames[b] != NULL)
+        {
+            free(guaranteedBufferFrames[b]);
+        }
+    }
+    LOG << "Done freeing buffer";
+
 }
 
 bool RTPCamera::initialize()
@@ -97,7 +145,7 @@ bool RTPCamera::initialize()
 
     timeoutFrame = (uint16_t*)calloc(frame_width*data_height, sizeof(uint16_t));
 
-    for(int f = 0; f < guaranteedBufferFramesCount; f++)
+    for(int f = 0; f < guaranteedBufferFramesCount_rtp; f++)
     {
         guaranteedBufferFrames[f] = (uint16_t*)calloc(frame_width*data_height, sizeof(uint16_t));
         if(guaranteedBufferFrames[f] == NULL)
@@ -117,6 +165,7 @@ void RTPCamera::streamLoop()
 {
     // This should be a thread which can run without expectation of returning
     // Here, the stream is started and ran from.
+    loopRunning = true;
     LOG << "Starting rtp streamLoop(), setting status to PLAYING";
 
     ret = gst_element_set_state (sourcePipe, GST_STATE_PLAYING);
@@ -132,11 +181,11 @@ void RTPCamera::streamLoop()
     g_main_loop_run (data->loop); // this will run until told to stop
     //g_print ("Main gstreamer RTP loop ended.\n");
     LOG << "Main gstreamer RTP loop ended.";
-    msg = gst_bus_timed_pop_filtered (busSourcePipe, GST_CLOCK_TIME_NONE,
-                                      (GstMessageType)(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
+//    msg = gst_bus_timed_pop_filtered (busSourcePipe, GST_CLOCK_TIME_NONE,
+//                                      (GstMessageType)(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
 
-    on_source_message(busSourcePipe, msg, data);
-
+//    on_source_message(busSourcePipe, msg, data);
+    loopRunning = false;
     return;
 }
 
@@ -177,6 +226,8 @@ static GstFlowReturn on_new_sample_from_sink(GstElement * elt, ProgramData * dat
 
 static void siphonData (GstMapInfo* map, ProgramData *data)
 {
+    pthread_mutex_lock(&rtpStreamLock);
+
     size_t dataLengthBytes;
     guint8 *rdata;
 
@@ -197,11 +248,17 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
     // But... R G is sufficient for 16-bit.
 
     // TODO unpack into guarenteedBufferFrames[];
-    int ftab[3] = {2, 0, 1};
+    // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+    // 4, 5, 6, 7, 8, 9, 0, 1, 2, 3
+    // 9 0 1 2 3 4 5 6 7 8
+    //int ftab[3] = {2, 0, 1};
+    //int ftab[10] = {9, 0, 1, 2, 3, 4, 5, 6, 7, 8};
+    int ftab[10] = {4, 5, 6, 7, 8, 9, 0, 1, 2, 3};
+
     //LOG << "setting done frame number.";
     // data->doneFrameNumber = ( data->currentFrameNumber - 1)% (guaranteedBufferFramesCount);
     data->doneFrameNumber = ftab[data->currentFrameNumber];
-    //LOG << "Done frame number: " << data->doneFrameNumber << ", currentFrameNumber: " << data->currentFrameNumber << ", frame counter: " <<  data->frameCounter;
+    //LOG << "Siphon: Done frame number: " << data->doneFrameNumber << ", currentFrameNumber: " << data->currentFrameNumber << ", frame counter: " <<  data->frameCounter;
 
     //LOG << "Grabbing pointer to single frame at position DNF " << data->currentFrameNumber;
     uint16_t* singleFrame = data->buffer[data->currentFrameNumber];
@@ -228,7 +285,7 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
     //(void)rdata;
 
 #endif
-    data->currentFrameNumber = (data->currentFrameNumber+1) % (guaranteedBufferFramesCount);
+    data->currentFrameNumber = (data->currentFrameNumber+1) % (guaranteedBufferFramesCount_rtp);
     data->frameCounter++;
 
     //size_t bytesWritten = 0;
@@ -252,6 +309,7 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
         printf("FPS: %f\n", 1.0/deltaTsec);
     tval_after = tval_before;
 #endif
+    pthread_mutex_unlock(&rtpStreamLock);
 
     return;
 }

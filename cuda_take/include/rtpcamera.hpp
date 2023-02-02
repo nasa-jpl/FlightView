@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cstring>
 #include <chrono>
+#include <pthread.h>
 
 // GST:
 extern "C" {
@@ -31,7 +32,7 @@ extern "C" {
 #endif
 
 #define TIMEOUT_DURATION 100
-#define guaranteedBufferFramesCount (3)
+#define guaranteedBufferFramesCount_rtp (10)
 
 #undef GST_HAS_GRAY
 
@@ -91,9 +92,11 @@ private:
     unsigned int lastFrameDelivered = 0;
     uint64_t *frameCounter = 0;
     bool haveInitialized = false;
+    bool loopRunning = false;
+    bool destructorRunning = false;
 
     camControlType *camcontrol = NULL;
-    uint16_t *guaranteedBufferFrames[guaranteedBufferFramesCount] = {NULL};
+    uint16_t *guaranteedBufferFrames[guaranteedBufferFramesCount_rtp] = {NULL};
     uint16_t *timeoutFrame = NULL;
 
     // GST:
