@@ -336,7 +336,8 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
 {
     // This function pauses until a new frame is received,
     // and then returns a pointer to the start of the new frame.
-    int tap = 0;
+    volatile uint64_t tap = 0;
+    volatile int lastFrameNumber_local_debug = lastFrameNumber;
     int pos = 0;
     if(camcontrol->pause)
     {
@@ -344,6 +345,8 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
         LL(4) << "Camera paused";
         return timeoutFrame;
     }
+    // TODO: There are states where these numbers do not update
+    // and that too should be a timeout.
     while(*currentFrameNumber == lastFrameNumber)
     {
         *stat = camWaiting;
@@ -352,6 +355,7 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
         {
             LOG << "RTP Camera timeout waiting for frames. Total frame count: " << *frameCounter;
             *stat = camTimeout;
+            LOG << "Timeout frame pixel zero: " << timeoutFrame[0];
             return timeoutFrame;
         }
     }
@@ -359,6 +363,7 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
     *stat = camPlaying;
     pos = *doneFrameNumber; // doneFrameNumber is a number that is the most recent frame finished.
     return guaranteedBufferFrames[pos];
+    (void)lastFrameNumber_local_debug;
 }
 
 uint16_t* RTPCamera::getFrame(CameraModel::camStatusEnum *stat)
