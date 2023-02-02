@@ -68,6 +68,11 @@ frameWorker::~frameWorker()
     qDebug() << "end frameWorker";
 #endif
     doRun = false;
+    if(this->camcontrol == NULL)
+    {
+        abort();
+    }
+    this->camcontrol->exit = true;
 }
 
 void frameWorker::useNewOptions(startupOptionsType newOpts)

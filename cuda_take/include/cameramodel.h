@@ -15,6 +15,7 @@
 
 struct camControlType {
     bool pause = false;
+    bool exit = false;
 };
 
 

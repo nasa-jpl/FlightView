@@ -24,12 +24,18 @@ extern "C" {
 #include "constants.h"
 #include "cudalog.h"
 
+// define FPS_MEAS_ACQ
+
+#ifdef FPS_MEAS_ACQ
+#include <sys/time.h>
+#endif
+
 #define TIMEOUT_DURATION 100
 #define guaranteedBufferFramesCount (3)
 
 #undef GST_HAS_GRAY
 
-#define FRAME_WAIT_MIN_DELAY_US (10)
+#define FRAME_WAIT_MIN_DELAY_US (1)
 #define MAX_FRAME_WAIT_TAPS (100000)
 
 using namespace std::chrono;
@@ -82,6 +88,7 @@ private:
     int frHeight;
     unsigned int *currentFrameNumber = 0;
     unsigned int *doneFrameNumber = 0;
+    unsigned int lastFrameDelivered = 0;
     uint64_t *frameCounter = 0;
     bool haveInitialized = false;
 

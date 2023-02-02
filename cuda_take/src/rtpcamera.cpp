@@ -32,6 +32,9 @@ RTPCamera::RTPCamera(int frWidth, int frHeight, int port, const char *interface)
 RTPCamera::~RTPCamera()
 {
     LOG << "Running RTP camera destructor.";
+    // TODO
+    // set status to stop if elements are not null
+    // free memory used if not null
 }
 
 bool RTPCamera::initialize()
@@ -239,7 +242,7 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
     //g_print("---end frame---\n");
 
     // Frame timing metric
-#if 0
+#ifdef FPS_MEAS_ACQ
     gettimeofday(&tval_before, NULL);
     timersub(&tval_before, &tval_after, &tval_result);
 
@@ -339,29 +342,39 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
     volatile uint64_t tap = 0;
     volatile int lastFrameNumber_local_debug = lastFrameNumber;
     int pos = 0;
+    pos = *doneFrameNumber; // doneFrameNumber is a number that is the most recent frame finished.
+
     if(camcontrol->pause)
     {
         *stat = CameraModel::camPaused;
         LL(4) << "Camera paused";
         return timeoutFrame;
     }
+    if(camcontrol->exit)
+    {
+        *stat = CameraModel::camDone;
+        LOG << "Closing down RTP stream";
+        g_main_loop_quit (data->loop);
+        return timeoutFrame;
+    }
     // TODO: There are states where these numbers do not update
     // and that too should be a timeout.
-    while(*currentFrameNumber == lastFrameNumber)
+    while(lastFrameDelivered==(unsigned int)pos)
     {
         *stat = camWaiting;
         usleep(FRAME_WAIT_MIN_DELAY_US);
         if(tap++ > MAX_FRAME_WAIT_TAPS)
         {
-            LOG << "RTP Camera timeout waiting for frames. Total frame count: " << *frameCounter;
             *stat = camTimeout;
-            LOG << "Timeout frame pixel zero: " << timeoutFrame[0];
+            LOG << "RTP Camera timeout waiting for frames. Total frame count: " << *frameCounter << ", lastFrameDelivered: " << lastFrameDelivered << ", pos: " << pos;
+            LOG << "Timeout frame pixel zero: " << timeoutFrame[0]; // debug info
             return timeoutFrame;
         }
+        pos = *doneFrameNumber;
     }
     // TODO, check on this idea...
     *stat = camPlaying;
-    pos = *doneFrameNumber; // doneFrameNumber is a number that is the most recent frame finished.
+    lastFrameDelivered = pos; // keep a copy around
     return guaranteedBufferFrames[pos];
     (void)lastFrameNumber_local_debug;
 }

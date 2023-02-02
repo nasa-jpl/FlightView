@@ -61,15 +61,15 @@ void take_object::initialSetup(int channel_num, int number_of_buffers,
 take_object::~take_object()
 {
     closing = true;
+    rtpConsumerRun = false;
+
     while(grabbing)
     {
-        // wait here.
+        // wait here for last frame to complete
         usleep(1000);
     }
     if(pdv_thread_run != 0) {
         pdv_thread_run = 0;
-
-
 
         int dummy;
         if(pdv_p)
@@ -605,7 +605,7 @@ void take_object::prepareFileReading()
 
 void take_object::prepareRTPCamera()
 {
-    // Makes an XIO file reading camera
+    // Makes an RTP gstreamer pipeline and related objects
 
     if(Camera == NULL)
     {
@@ -1034,9 +1034,7 @@ void take_object::rtpConsumeFrames()
                                        cent_start, cent_end,\
                                        rh_start, rh_end);
 
-    //int measuredDelta_micros = 0;
     std::chrono::steady_clock::time_point begintp;
-    //std::chrono::steady_clock::time_point endtp;
     std::chrono::steady_clock::time_point finaltp;
 
     int framecount = 0;
@@ -1103,9 +1101,6 @@ void take_object::rtpConsumeFrames()
             }
         }
         */
-
-        //endtp = std::chrono::steady_clock::now();
-        //measuredDelta_micros = std::chrono::duration_cast<std::chrono::microseconds>(endtp-begintp).count();
 
         finaltp = std::chrono::steady_clock::now();
         measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
@@ -1225,8 +1220,9 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
     }
 }
 void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
-//Frame Save Thread (saving_thread)
 {
+    //Frame Save Thread (saving_thread)
+
     if(savingData)
     {
         warningMessage("Saving loop hit but already saving data!");
