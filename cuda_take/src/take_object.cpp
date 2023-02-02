@@ -541,12 +541,6 @@ void take_object::stopSavingRaws()
     printf("Stop Saving Raws!");
 #endif
 }
-/*void take_object::panicSave( std::string raw_file_name )
-{
-    while(!saving_list.empty());
-    boost::thread(&take_object::saveFramesInBuffer,this);
-    boost::thread(&take_object::savingLoop,this,raw_file_name);
-}*/
 unsigned int take_object::getDataHeight()
 {
     return dataHeight;

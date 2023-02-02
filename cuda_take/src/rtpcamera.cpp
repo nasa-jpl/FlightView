@@ -197,10 +197,11 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
     // But... R G is sufficient for 16-bit.
 
     // TODO unpack into guarenteedBufferFrames[];
-
+    int ftab[3] = {2, 0, 1};
     //LOG << "setting done frame number.";
-    data->doneFrameNumber = ( data->currentFrameNumber - 1)% (guaranteedBufferFramesCount);
-    //LOG << "Done frame number: " << data->doneFrameNumber;
+    // data->doneFrameNumber = ( data->currentFrameNumber - 1)% (guaranteedBufferFramesCount);
+    data->doneFrameNumber = ftab[data->currentFrameNumber];
+    //LOG << "Done frame number: " << data->doneFrameNumber << ", currentFrameNumber: " << data->currentFrameNumber << ", frame counter: " <<  data->frameCounter;
 
     //LOG << "Grabbing pointer to single frame at position DNF " << data->currentFrameNumber;
     uint16_t* singleFrame = data->buffer[data->currentFrameNumber];
@@ -375,6 +376,7 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
     // TODO, check on this idea...
     *stat = camPlaying;
     lastFrameDelivered = pos; // keep a copy around
+    //LOG << "waitFrame: " << pos;
     return guaranteedBufferFrames[pos];
     (void)lastFrameNumber_local_debug;
 }
@@ -383,6 +385,7 @@ uint16_t* RTPCamera::getFrame(CameraModel::camStatusEnum *stat)
 {
     // DO NOT USE
     (void)stat;
+    LOG << "ERROR, incorrect getFrame function called for RTP stream.";
     return timeoutFrame;
 }
 
