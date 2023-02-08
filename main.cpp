@@ -88,6 +88,8 @@ int main(int argc, char *argv[])
 
     bool heightSet = false;
     bool widthSet = false;
+    bool rtpInterfaceSet = false;
+    bool rtpAddressSet = false;
 
     // Basic CLI argument parser:
     for(int c=1; c < argc; c++)
@@ -123,14 +125,107 @@ int main(int argc, char *argv[])
             }
         }
 
-        if(currentArg == "--xiocam")
-        {
-            startupOptions.xioCam = true;
-        }
-
         if(currentArg == "--rtpcam")
         {
             startupOptions.rtpCam = true;
+        }
+
+        if(currentArg == "--rtpheight")
+        {
+            if(argc > c)
+            {
+                int rtpheighttemp = 0;
+                bool ok = false;
+                rtpheighttemp = QString(argv[c+1]).toUInt(&ok);
+                if(ok)
+                {
+                    heightSet = true;
+                    startupOptions.rtpHeight = rtpheighttemp;
+                    c++;
+                } else {
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        if(currentArg == "--rtpwidth")
+        {
+            if(argc > c)
+            {
+                int rtpwidthtemp = 0;
+                bool ok = false;
+                rtpwidthtemp = QString(argv[c+1]).toUInt(&ok);
+                if(ok)
+                {
+                    widthSet = true;
+                    startupOptions.rtpWidth = rtpwidthtemp;
+                    c++;
+                } else {
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        if(currentArg == "--rtpinterface")
+        {
+            if(argc > c)
+            {
+                startupOptions.rtpInterface = argv[c+1];
+                rtpInterfaceSet = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        if(currentArg == "--rtpaddress")
+        {
+            if(argc > c)
+            {
+                startupOptions.rtpAddress = argv[c+1];
+                rtpAddressSet = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        if(currentArg == "--rtpport")
+        {
+            if(argc > c)
+            {
+                int rtpPortTemp = 0;
+                bool ok=false;
+                rtpPortTemp = QString(argv[c+1]).toUInt(&ok);
+                if(ok)
+                {
+                    startupOptions.rtpPort = rtpPortTemp;
+                    c++;
+                } else {
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        //
+
+        if(currentArg == "--xiocam")
+        {
+            startupOptions.xioCam = true;
         }
 
         if(currentArg == "--xioheight")
@@ -238,6 +333,30 @@ int main(int argc, char *argv[])
         {
             std::cout << helptext.toStdString() << std::endl;
             exit(-1);
+        }
+    }
+
+    if(startupOptions.rtpCam)
+    {
+        if(!rtpAddressSet)
+            startupOptions.rtpAddress = NULL;
+        if(!rtpInterfaceSet)
+            startupOptions.rtpInterface = NULL;
+
+        std::cout << "Debug output for RTP camera: \n";
+        std::cout << "rtpHeight:    " << startupOptions.rtpHeight << std::endl;
+        std::cout << "rtpWidth:     " << startupOptions.rtpWidth << std::endl;
+        std::cout << "rtpPort:      " << startupOptions.rtpPort << std::endl;
+        if(startupOptions.rtpInterface != NULL)
+            std::cout << "rtpInterface: " << startupOptions.rtpInterface << std::endl;
+
+        if(startupOptions.rtpAddress != NULL)
+            std::cout << "rtpAddress:    " << startupOptions.rtpAddress << std::endl;
+        if(widthSet && heightSet)
+        {
+            startupOptions.heightWidthSet = true;
+        } else {
+            startupOptions.heightWidthSet = false;
         }
     }
 

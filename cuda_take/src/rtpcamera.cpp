@@ -7,18 +7,22 @@
 static struct timeval tval_before, tval_after, tval_result;
 pthread_mutex_t rtpStreamLock;
 
-RTPCamera::RTPCamera(int frWidth, int frHeight, int port, const char *interface)
+//RTPCamera::RTPCamera(int frWidth, int frHeight, int port, const char *interface)
+
+
+RTPCamera::RTPCamera(takeOptionsType opts)
 {
-    LOG << "Starting RTP camera with width: " << frWidth << ", height: " << frHeight
-        << ", port: " << port <<", network interface: " << interface;
+    this->options = opts;
+    LOG << "Starting RTP camera with width: " << options.rtpWidth << ", height: " << options.rtpHeight
+        << ", port: " << options.rtpPort <<", network interface: " << options.rtpInterface;
     haveInitialized = false;
 
-    this->port = port;
-    this->frHeight = frHeight;
+    this->port = options.rtpPort;
+    this->frHeight = options.rtpHeight;
     this->frame_height = frHeight;
     this->data_height = frHeight;
-    this->frWidth = frWidth;
-    this->frame_width = frWidth;
+    this->frWidth = options.rtpWidth;
+    this->frame_width = options.rtpWidth;
 
     this->interface = interface;
 

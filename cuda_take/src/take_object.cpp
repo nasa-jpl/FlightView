@@ -136,6 +136,8 @@ void take_object::changeOptions(takeOptionsType optionsIn)
     if(options.rtpCam)
     {
         statusMessage("RTP Camera enabled.");
+        statusMessage(std::string("RTP Height: ") + std::to_string(options.rtpHeight));
+        statusMessage(std::string("RTP Width:  ") + std::to_string(options.rtpWidth));
     } else {
         statusMessage("RTP Camera disabled.");
     }
@@ -155,19 +157,41 @@ void take_object::start()
 
     this->pdv_p = NULL;
 
-    if(options.xioCam || options.rtpCam)
+    if(options.xioCam)
     {
         if(!options.heightWidthSet)
         {
             options.xioHeight = 481;
             options.xioWidth = 640;
-            warningMessage("Warning: XIO Height and Width not specified. Assuming 640x480 geometry.");
+            warningMessage("Warning: XIO Height and Width not specified. Assuming 640x481 geometry.");
         }
         frWidth = options.xioWidth;
         frHeight = options.xioHeight;
         dataHeight = options.xioHeight;
         size = frWidth * frHeight * sizeof(uint16_t);
-        statusMessage("start() running with with XIO/RTP camera settings.");
+        statusMessage("start() running with with XIO camera settings.");
+    } else if (options.rtpCam)
+    {
+        if(!options.heightWidthSet)
+        {
+            options.rtpHeight = 481;
+            options.rtpWidth= 640;
+            warningMessage("Warning: RTP Height and Width not specified. Assuming 640x481 geometry.");
+        }
+        frWidth = options.rtpWidth;
+        frHeight = options.rtpHeight;
+        dataHeight = options.rtpHeight;
+        size = frWidth * frHeight * sizeof(uint16_t);
+        statusMessage("start() running with with RTP camera settings.");
+        std::cout << "Height: " << frHeight << ", width: " << frWidth << std::endl;
+        if(options.rtpAddress != NULL)
+        {
+            std::cout << "rtpAddress: " << options.rtpAddress << std::endl;
+        }
+        if(options.rtpInterface != NULL)
+        {
+            std::cout << "rtpInterface: " << options.rtpInterface << std::endl;
+        }
     } else {
         this->pdv_p = pdv_open_channel(EDT_INTERFACE,0,this->channel);
         if(pdv_p == NULL) {
@@ -608,9 +632,10 @@ void take_object::prepareRTPCamera()
     if(Camera == NULL)
     {
         // TODO: add parameters to startup options
-        Camera = new RTPCamera(frWidth,
-                               frHeight,
-                               5004, "lo");
+//        Camera = new RTPCamera(frWidth,
+//                               frHeight,
+//                               5004, "lo");
+        Camera = new RTPCamera(options);
         this->Camera->setCamControlPtr(&this->cameraController);
         if(Camera == NULL)
         {

@@ -24,6 +24,7 @@ extern "C" {
 #include "cameramodel.h"
 #include "constants.h"
 #include "cudalog.h"
+#include "takeoptions.h"
 
 // define FPS_MEAS_ACQ
 
@@ -65,10 +66,12 @@ static void siphonData (GstMapInfo* map, ProgramData *data);
 class RTPCamera : public CameraModel
 {
 public:
-    RTPCamera(int frWidth,
-              int frHeight,
-              int port,
-              const char* interface);
+//    RTPCamera(int frWidth,
+//              int frHeight,
+//              int port,
+//              const char* interface);
+
+    RTPCamera(takeOptionsType opts);
 
     ~RTPCamera();
 
@@ -80,7 +83,7 @@ public:
 
 private:
     bool initialize(); // all setup functions
-
+    takeOptionsType options;
     const char* interface;
     int payload = 90;
     int clockRate = 90000;

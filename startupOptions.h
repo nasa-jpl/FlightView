@@ -18,7 +18,6 @@ struct startupOptionsType
     bool deviceFPIEDSet = false;
     bool deviceIHESet = false;
     bool xioCam = false;
-    bool rtpCam = false;
     bool heightWidthSet = false;
     //QString *xioDirectory = NULL;
     char* xioDirectoryArray = NULL;
@@ -28,6 +27,12 @@ struct startupOptionsType
     uint16_t width;
     float targetFPS;
 
+    const char* rtpInterface;
+    const char* rtpAddress;
+    uint16_t rtpHeight;
+    uint16_t rtpWidth;
+    int rtpPort = 5004;
+    bool rtpCam = false;
 };
 
 
