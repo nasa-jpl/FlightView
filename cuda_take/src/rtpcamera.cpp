@@ -131,17 +131,42 @@ bool RTPCamera::initialize()
     //g_object_set(queue, "min-threshold-time",  1E6, NULL); // ns
     g_object_set(queue, "min-threshold-buffers", 4, NULL);
 
-    g_object_set (source, "multicast-group", "::1", NULL);
-    g_object_set (source, "port", 5004, NULL);
+
+    //g_object_set (source, "multicast-group", "::1", NULL);
+    //g_object_set (source, "port", 5004, NULL);
+    g_object_set (source, "multicast-group", options.rtpAddress, NULL);
+    g_object_set (source, "port", options.rtpPort, NULL);
+
+    // TODO: height and width
+//    GstCaps *sourceCaps = gst_caps_new_simple( "application/x-rtp",
+//                                               "media", G_TYPE_STRING, "video",
+//                                               "clock-rate", G_TYPE_INT, 90000,
+//                                               "encoding-name", G_TYPE_STRING, "RAW",
+//                                               "sampling", G_TYPE_STRING, "RGB",
+//                                               "depth", G_TYPE_STRING, "8",
+//                                               "width", G_TYPE_STRING, "640",
+//                                               "height", G_TYPE_STRING, "481",
+//                                               "payload", G_TYPE_INT, 96, NULL);
+    LOG << "RTP Caps: Height: " << options.rtpHeight;
+    LOG << "RTP Caps: Width: " << options.rtpWidth;
+
+    // For reasons that I do not understand, height and width do not work as G_TYPE_INT
+    // Therefore, I have converted them to strings:
+    char widthStr[6] = {'\0'};
+    char heightStr[6] = {'\0'};
+    sprintf(widthStr, "%d", options.rtpWidth);
+    sprintf(heightStr, "%d", options.rtpHeight);
+
     GstCaps *sourceCaps = gst_caps_new_simple( "application/x-rtp",
                                                "media", G_TYPE_STRING, "video",
                                                "clock-rate", G_TYPE_INT, 90000,
                                                "encoding-name", G_TYPE_STRING, "RAW",
                                                "sampling", G_TYPE_STRING, "RGB",
                                                "depth", G_TYPE_STRING, "8",
-                                               "width", G_TYPE_STRING, "640",
-                                               "height", G_TYPE_STRING, "481",
+                                               "width", G_TYPE_STRING, widthStr,
+                                               "height", G_TYPE_STRING, heightStr,
                                                "payload", G_TYPE_INT, 96, NULL);
+
     g_object_set (source, "caps", sourceCaps, NULL);
 
     // "data" is our i/o to the land of static functions and c functions.
