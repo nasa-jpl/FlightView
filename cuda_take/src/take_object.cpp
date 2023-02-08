@@ -79,7 +79,11 @@ take_object::~take_object()
         }
         if(Camera)
         {
+            LOG << "Deleting camera.";
+            usleep(100000);
             delete Camera;
+            usleep(100000);
+            LOG << "Done deleting camera.";
         }
 
 #ifdef VERBOSE
