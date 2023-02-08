@@ -123,7 +123,7 @@ bool RTPCamera::initialize()
 
     // TODO: Use parameters, int types, etc.
 
-    g_object_set(queue, "min-threshold-bytes",  1E6, NULL);
+    g_object_set(queue, "min-threshold-bytes",  10E6, NULL);
     //g_object_set(queue, "min-threshold-time",  1E6, NULL); // ns
     g_object_set(queue, "min-threshold-buffers", 4, NULL);
 
@@ -225,6 +225,7 @@ static GstFlowReturn on_new_sample_from_sink(GstElement * elt, ProgramData * dat
 
     gst_sample_unref (sample);
     gst_buffer_unmap (app_buffer, &map);
+    gst_buffer_unref(app_buffer);
 
     (void)data;
     return ret;
