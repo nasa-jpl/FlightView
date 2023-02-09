@@ -137,7 +137,12 @@ bool RTPCamera::initialize()
 
     //g_object_set (source, "multicast-group", "::1", NULL);
     //g_object_set (source, "port", 5004, NULL);
-    g_object_set (source, "multicast-group", options.rtpAddress, NULL);
+    if(options.rtpInterface != NULL)
+        g_object_set (source, "multicast-iface", options.rtpInterface, NULL);
+
+    if(options.rtpAddress != NULL)
+        g_object_set (source, "multicast-group", options.rtpAddress, NULL);
+
     g_object_set (source, "port", options.rtpPort, NULL);
 
     LOG << "RTP Caps: Height: " << options.rtpHeight;
