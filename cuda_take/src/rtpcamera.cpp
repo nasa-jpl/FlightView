@@ -105,6 +105,9 @@ bool RTPCamera::initialize()
     // Init for gstreamer:
     int argc = 0;
     char** argv = NULL;
+//    int argc = 2;
+//    const char* argv[4] = {"liveview\0", "-v\0", NULL, NULL};
+
     gst_init (&argc, &argv);
 
     // Arguments are first the module's special name, and second, a user-defined label
@@ -137,16 +140,6 @@ bool RTPCamera::initialize()
     g_object_set (source, "multicast-group", options.rtpAddress, NULL);
     g_object_set (source, "port", options.rtpPort, NULL);
 
-    // TODO: height and width
-//    GstCaps *sourceCaps = gst_caps_new_simple( "application/x-rtp",
-//                                               "media", G_TYPE_STRING, "video",
-//                                               "clock-rate", G_TYPE_INT, 90000,
-//                                               "encoding-name", G_TYPE_STRING, "RAW",
-//                                               "sampling", G_TYPE_STRING, "RGB",
-//                                               "depth", G_TYPE_STRING, "8",
-//                                               "width", G_TYPE_STRING, "640",
-//                                               "height", G_TYPE_STRING, "481",
-//                                               "payload", G_TYPE_INT, 96, NULL);
     LOG << "RTP Caps: Height: " << options.rtpHeight;
     LOG << "RTP Caps: Width: " << options.rtpWidth;
 
@@ -207,6 +200,8 @@ void RTPCamera::streamLoop()
     if (ret == GST_STATE_CHANGE_FAILURE) {
         //g_printerr ("Unable to set the sourcePipe to the playing state.\n");
         LOG << "Unable to set the sourcePipe to the playing state.";
+        LOG << "State is: GST_STATE_CHANGE_FAILURE";
+        //on_source_message(busSourcePipe, ret, data);
         gst_object_unref (sourcePipe);
         abort();
     }
