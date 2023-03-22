@@ -30,6 +30,14 @@ struct takeOptionsType
     bool heightWidthSet = false;
     uint16_t xioHeight;
     uint16_t xioWidth;
+
+    const char* rtpInterface;
+    const char* rtpAddress;
+    uint16_t rtpHeight;
+    uint16_t rtpWidth;
+    int rtpPort = 5004;
+    bool rtpCam = false;
+
     uint16_t height;
     uint16_t width;
     float targetFPS = 100.00;

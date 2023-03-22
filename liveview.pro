@@ -11,6 +11,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
 DEFINES += GIT_CURRENT_SHA1="\\\"$(shell git -C $$PWD rev-parse HEAD)\\\""
 DEFINES += GIT_CURRENT_SHA1_SHORT="\\\"$(shell git -C $$PWD rev-parse --short HEAD)\\\""
 
+CONFIG+=link_pkgconfig
+PKGCONFIG+=gstreamer-1.0 gstreamer-app-1.0 glib-2.0 gobject-2.0
+
 TARGET = liveview
 TEMPLATE = app
 
@@ -91,7 +94,8 @@ DISTFILES +=    cuda_take/include/take_object.hpp \
                 cuda_take/include/camera_types.h \
                 cuda_take/include/cameramodel.h \
                 cuda_take/include/cudalog.h \
-                cuda_take/include/takeoptions.h
+                cuda_take/include/takeoptions.h \
+                cuda_take/include/rtpcamera.hpp
 
 DISTFILES +=    cuda_take/src/take_object.cpp \
                 cuda_take/src/std_dev_filter_device_code.cu \
@@ -101,7 +105,8 @@ DISTFILES +=    cuda_take/src/take_object.cpp \
                 cuda_take/src/fft.cpp \
                 cuda_take/src/dark_subtraction_filter.cpp \
                 cuda_take/src/chroma_translate_filter.cpp \
-                cuda_take/src/xiocamera.cpp
+                cuda_take/src/xiocamera.cpp \
+                cuda_take/src/rtpcamera.cpp
 
 
 

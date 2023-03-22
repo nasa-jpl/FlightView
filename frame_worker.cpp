@@ -22,6 +22,10 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     this->options = optionsIn;
     this->takeOptions.xioDirectory = new std::string();
 
+    convertOptions();
+
+    to.changeOptions(takeOptions);
+
     if(options.xioCam)
     {
         // Initial Setup. Program is paused while this dialog is open.
@@ -31,9 +35,9 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
         setupUI.setWindowFlag(Qt::WindowStaysOnTopHint, true);
         setupUI.exec();
 
-        convertOptions();
+//        convertOptions();
 
-        to.changeOptions(takeOptions);
+//        to.changeOptions(takeOptions);
     }
 
     this->camcontrol = to.getCamControl();
@@ -64,6 +68,11 @@ frameWorker::~frameWorker()
     qDebug() << "end frameWorker";
 #endif
     doRun = false;
+    if(this->camcontrol == NULL)
+    {
+        abort();
+    }
+    this->camcontrol->exit = true;
 }
 
 void frameWorker::useNewOptions(startupOptionsType newOpts)
@@ -109,12 +118,23 @@ void frameWorker::convertOptions()
     takeOptions.gpsPortSet = options.gpsPortSet;
     takeOptions.gpsPort = options.gpsPort;
     takeOptions.xioCam = options.xioCam;
+    takeOptions.rtpCam = options.rtpCam;
     takeOptions.height = options.height;
     takeOptions.width = options.width;
     takeOptions.xioHeight = options.xioHeight;
     takeOptions.xioWidth = options.xioWidth;
     takeOptions.heightWidthSet = options.heightWidthSet;
     takeOptions.targetFPS = options.targetFPS;
+    takeOptions.rtpHeight = options.rtpHeight;
+    takeOptions.rtpWidth = options.rtpWidth;
+    takeOptions.rtpInterface = options.rtpInterface;
+    takeOptions.rtpAddress = options.rtpAddress;
+
+    qDebug() << "RTP camera: " << options.rtpCam << ", rtpHeight:" << takeOptions.rtpHeight << ", rtpWidth: " << takeOptions.rtpWidth;
+    if(takeOptions.rtpInterface != NULL)
+    qDebug() << "RTP Interface: " << takeOptions.rtpInterface;
+    if(takeOptions.rtpAddress != NULL)
+    qDebug() << "RTP Address: " << takeOptions.rtpAddress;
 }
 
 // public functions

@@ -16,6 +16,7 @@ void setup_filter(unsigned int h, unsigned int w)
 {
     frHeight = h;
     frWidth = w;
+    std::cout << "Overriding camera geometry:\n";
     std::cout << "------------------ Completed setup_filter(h,w) with height: " << frHeight << ", width: " << frWidth << std::endl;
     std::cout << "------------------ h: " << h << ", w: " << w << std::endl;
 }
