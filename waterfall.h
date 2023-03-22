@@ -22,8 +22,8 @@
 #include "rgbline.h"
 
 #define MAX8(x) ((x>255)?255:x)
-#define MAX(x,y) ((x>y)?x:y)
-#define MIN(x,y) ((x<y)?x:y)
+#define MAXWF(x,y) ((x>y)?x:y)
+#define MINWF(x,y) ((x<y)?x:y)
 #define TOP(x,top) ((x>top)?top:x)
 #define BOT(x,bot) ((x<bot)?bot:x)
 

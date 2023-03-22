@@ -230,6 +230,11 @@ public slots:
     void getPrefsExternalTrig();
     void setFrameNumber(int number);
 
+    // These are intended to be run from ARTIC
+    // in concert with shutter operation.
+    void startSavingDarks();
+    void stopSavingDarks();
+
 private slots:
     void increment_slot(bool t);
     void attempt_pointers(QWidget *tab);

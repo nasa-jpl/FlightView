@@ -209,6 +209,9 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
             fw->loadDarkFile(filename, fileformat);
     });
 
+    connect(save_server, SIGNAL(startSavingDarks()), controlbox, SLOT(startSavingDarks()));
+    connect(save_server, SIGNAL(stopSavingDarks()), controlbox, SLOT(stopSavingDarks()));
+
     handleMainWindowStatusMessage("Started");
 }
 

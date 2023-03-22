@@ -174,12 +174,14 @@ void saveServer::readCommand()
     {
         genStatusMessage("Client requested CMD_START_DARKSUB, starting dark collection.");
         reference->startCapturingDSFMask();
+        emit startSavingDarks();
         break;
     }
     case CMD_STOP_DARKSUB:
     {
         genStatusMessage("Client requested CMD_STOP_DARKSUB, stopping dark collection.");
         reference->finishCapturingDSFMask();
+        emit stopSavingDarks();
         break;
     }
     default:

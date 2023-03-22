@@ -1577,6 +1577,19 @@ void ControlsBox::save_remote_slot(const QString &unverifiedName, unsigned int n
     frames_save_num_avgs_edit.setValue(numAvgs);
     save_finite_button.click();
 }
+
+void ControlsBox::startSavingDarks()
+{
+    emit statusMessage("Saving dark data.");
+    save_finite_button_slot();
+}
+
+void ControlsBox::stopSavingDarks()
+{
+    emit statusMessage("Stopping dark data saving.");
+    stop_continous_button_slot();
+}
+
 void ControlsBox::save_finite_button_slot()
 {
     /*! \brief Emit the signal to save frames at the backend.

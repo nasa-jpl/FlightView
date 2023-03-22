@@ -1,9 +1,5 @@
 #include "rtpcamera.hpp"
 
-// Remove this from the final
-// but keep in while diagnosing the build system:
-#warning "Compiling rtpcamera.cpp"
-
 static struct timeval tval_before, tval_after, tval_result;
 pthread_mutex_t rtpStreamLock;
 
@@ -470,7 +466,9 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
     // TODO, check on this idea...
     *stat = camPlaying;
     lastFrameDelivered = pos; // keep a copy around
-    //LOG << "waitFrame: " << pos;
+    //LOG << "waitFrame: "// Remove this from the final
+    // but keep in while diagnosing the build system:
+    #warning "Compiling rtpcamera.cpp" << pos;
     return guaranteedBufferFrames[pos];
     (void)lastFrameNumber_local_debug;
 }

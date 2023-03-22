@@ -63,7 +63,9 @@ protected:
     void incomingConnection(qintptr socketDescriptor);
 
 signals:
-    void startSavingRemote(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs);
+    void startSavingRemote(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs); // not used
+    void startSavingDarks();
+    void stopSavingDarks();
     void sigMessage(QString message);
 
 private slots:
