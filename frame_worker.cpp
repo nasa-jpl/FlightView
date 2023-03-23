@@ -119,22 +119,36 @@ void frameWorker::convertOptions()
     takeOptions.gpsPort = options.gpsPort;
     takeOptions.xioCam = options.xioCam;
     takeOptions.rtpCam = options.rtpCam;
+    if(options.rtpCam)
+    {
+        takeOptions.rtpHeight = options.rtpHeight;
+        takeOptions.rtpWidth = options.rtpWidth;
+        takeOptions.rtpInterface = options.rtpInterface;
+        takeOptions.rtpAddress = options.rtpAddress;
+    } else {
+        takeOptions.rtpHeight = 0;
+        takeOptions.rtpWidth = 0;
+        takeOptions.rtpInterface = NULL;
+        takeOptions.rtpAddress = NULL;
+    }
+
+
     takeOptions.height = options.height;
     takeOptions.width = options.width;
     takeOptions.xioHeight = options.xioHeight;
     takeOptions.xioWidth = options.xioWidth;
     takeOptions.heightWidthSet = options.heightWidthSet;
     takeOptions.targetFPS = options.targetFPS;
-    takeOptions.rtpHeight = options.rtpHeight;
-    takeOptions.rtpWidth = options.rtpWidth;
-    takeOptions.rtpInterface = options.rtpInterface;
-    takeOptions.rtpAddress = options.rtpAddress;
+
 
     qDebug() << "RTP camera: " << options.rtpCam << ", rtpHeight:" << takeOptions.rtpHeight << ", rtpWidth: " << takeOptions.rtpWidth;
-    if(takeOptions.rtpInterface != NULL)
-    qDebug() << "RTP Interface: " << takeOptions.rtpInterface;
-    if(takeOptions.rtpAddress != NULL)
-    qDebug() << "RTP Address: " << takeOptions.rtpAddress;
+    if(takeOptions.rtpCam)
+    {
+        if(takeOptions.rtpInterface != NULL)
+            qDebug() << "RTP Interface: " << takeOptions.rtpInterface;
+        if(takeOptions.rtpAddress != NULL)
+            qDebug() << "RTP Address: " << takeOptions.rtpAddress;
+    }
 }
 
 // public functions
