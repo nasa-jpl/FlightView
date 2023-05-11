@@ -159,7 +159,11 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 }
 profile_widget::~profile_widget()
 {
-    delete overlay_img;
+    if(overlay_img)
+    {
+        usleep(1000);
+        delete overlay_img;
+    }
 }
 
 // public functions
