@@ -1081,9 +1081,9 @@ void take_object::rtpConsumeFrames()
             curFrame->image_data_ptr = curFrame->raw_data_ptr;
         }
 
-        if(cam_type == CL_6604A)
-            curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
-        else
+//        if(cam_type == CL_6604A)
+//            curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
+//        else
             curFrame->image_data_ptr = curFrame->raw_data_ptr;
         if(inverted)
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
