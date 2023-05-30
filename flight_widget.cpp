@@ -107,7 +107,13 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
 
     gpsLED.setState(QLedLabel::StateOkBlue);
-    cameraLinkLEDLabel.setText("CameraLink Status:");
+
+    if(options.rtpCam)
+    {
+        cameraLinkLEDLabel.setText("RTP Link Status:");
+    } else {
+        cameraLinkLEDLabel.setText("CameraLink Status:");
+    }
     cameraLinkLED.setState(QLedLabel::StateOk);
     diskLEDLabel.setText("Disk:");
     diskLED.setState(QLedLabel::StateOkBlue);

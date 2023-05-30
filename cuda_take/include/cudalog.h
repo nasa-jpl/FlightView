@@ -1,5 +1,6 @@
 #ifndef CUDALOG_H
 #define CUDALOG_H
+#include <iostream>
 
 // from https://stackoverflow.com/questions/674060/customize-cout
 
