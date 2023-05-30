@@ -88,7 +88,7 @@ public:
     bool slider_low_inc = false;
 
     image_t itype;
-    frameview_widget *overlay_img; // public to aid connection through the profile to the controls box
+    frameview_widget *overlay_img = NULL; // public to aid connection through the profile to the controls box
 
 
 public slots:

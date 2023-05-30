@@ -128,8 +128,8 @@ bool RTPCamera::initialize()
 
     //g_object_set(queue, "min-threshold-bytes",  10E6, NULL); // had to remove this for newer gst
     //g_object_set(queue, "min-threshold-time",  1E6, NULL); // ns
-    g_object_set(queue, "min-threshold-buffers", 4, NULL);
 
+    g_object_set(queue, "min-threshold-buffers", 4, NULL);
 
     //g_object_set (source, "multicast-group", "::1", NULL);
     //g_object_set (source, "port", 5004, NULL);
@@ -151,6 +151,20 @@ bool RTPCamera::initialize()
     sprintf(widthStr, "%d", options.rtpWidth);
     sprintf(heightStr, "%d", options.rtpHeight);
 
+
+#ifdef GST_HAS_GRAY
+    // GRAY 16
+    GstCaps *sourceCaps = gst_caps_new_simple( "application/x-rtp",
+                                               "media", G_TYPE_STRING, "video",
+                                               "clock-rate", G_TYPE_INT, 90000,
+                                               "encoding-name", G_TYPE_STRING, "RAW",
+                                               "sampling", G_TYPE_STRING, "GRAY",
+                                               "depth", G_TYPE_STRING, "16",
+                                               "width", G_TYPE_STRING, widthStr,
+                                               "height", G_TYPE_STRING, heightStr,
+                                               "payload", G_TYPE_INT, 96, NULL);
+#else
+    // RGB
     GstCaps *sourceCaps = gst_caps_new_simple( "application/x-rtp",
                                                "media", G_TYPE_STRING, "video",
                                                "clock-rate", G_TYPE_INT, 90000,
@@ -160,7 +174,7 @@ bool RTPCamera::initialize()
                                                "width", G_TYPE_STRING, widthStr,
                                                "height", G_TYPE_STRING, heightStr,
                                                "payload", G_TYPE_INT, 96, NULL);
-
+#endif
     g_object_set (source, "caps", sourceCaps, NULL);
 
     // "data" is our i/o to the land of static functions and c functions.
