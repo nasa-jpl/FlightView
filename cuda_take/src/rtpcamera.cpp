@@ -10,7 +10,7 @@ RTPCamera::RTPCamera(takeOptionsType opts)
 {
     this->options = opts;
     LOG << "Starting RTP camera with width: " << options.rtpWidth << ", height: " << options.rtpHeight
-        << ", port: " << options.rtpPort <<", network interface: " << options.rtpInterface;
+        << ", port: " << options.rtpPort <<", network interface: " << options.rtpInterface << ", multicast-group: " << options.rtpAddress;
     haveInitialized = false;
 
     this->port = options.rtpPort;
@@ -20,7 +20,7 @@ RTPCamera::RTPCamera(takeOptionsType opts)
     this->frWidth = options.rtpWidth;
     this->frame_width = options.rtpWidth;
 
-    this->interface = interface;
+    this->interface = options.rtpInterface;
 
     if (initialize())
     {
@@ -126,7 +126,7 @@ bool RTPCamera::initialize()
 
     // TODO: Use parameters, int types, etc.
 
-    g_object_set(queue, "min-threshold-bytes",  10E6, NULL);
+    //g_object_set(queue, "min-threshold-bytes",  10E6, NULL); // had to remove this for newer gst
     //g_object_set(queue, "min-threshold-time",  1E6, NULL); // ns
     g_object_set(queue, "min-threshold-buffers", 4, NULL);
 
@@ -199,10 +199,10 @@ void RTPCamera::streamLoop()
 
     ret = gst_element_set_state (sourcePipe, GST_STATE_PLAYING);
     if (ret == GST_STATE_CHANGE_FAILURE) {
-        //g_printerr ("Unable to set the sourcePipe to the playing state.\n");
+        g_printerr ("Unable to set the sourcePipe to the playing state.\n");
         LOG << "Unable to set the sourcePipe to the playing state.";
         LOG << "State is: GST_STATE_CHANGE_FAILURE";
-        //on_source_message(busSourcePipe, ret, data);
+        std::cerr << "Calling abort()\n" << std::flush;
         gst_object_unref (sourcePipe);
         abort();
     }
