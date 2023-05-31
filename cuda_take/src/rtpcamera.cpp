@@ -482,7 +482,6 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
     lastFrameDelivered = pos; // keep a copy around
     //LOG << "waitFrame: "// Remove this from the final
     // but keep in while diagnosing the build system:
-    #warning "Compiling rtpcamera.cpp" << pos;
     return guaranteedBufferFrames[pos];
     (void)lastFrameNumber_local_debug;
 }
