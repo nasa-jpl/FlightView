@@ -1363,7 +1363,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     std::string hdr_text;
     if( (num_avgs !=0) && (num_avgs !=1) )
     {
-        hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frame mean per grab}\n";
+        hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frames mean per line}\n";
     } else {
         hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file}\n";
     }
