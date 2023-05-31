@@ -209,9 +209,11 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
             fw->loadDarkFile(filename, fileformat);
     });
 
-    connect(save_server, SIGNAL(startSavingDarks()), controlbox, SLOT(startSavingDarks()));
-    connect(save_server, SIGNAL(stopSavingDarks()), controlbox, SLOT(stopSavingDarks()));
-
+    // Control functions needed for ARTIC:
+    connect(save_server, SIGNAL(startTakingDarks()), controlbox, SLOT(startTakingDarks()));
+    connect(save_server, SIGNAL(stopTakingDarks()), controlbox, SLOT(stopTakingDarks()));
+    connect(save_server, SIGNAL(startSavingFlightData()), controlbox, SLOT(save_finite_button_slot()));
+    connect(save_server, SIGNAL(stopSavingData()), controlbox, SLOT(stopSavingData()));
     handleMainWindowStatusMessage("Started");
 }
 

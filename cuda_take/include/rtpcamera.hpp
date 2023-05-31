@@ -35,7 +35,7 @@ extern "C" {
 #define TIMEOUT_DURATION 100
 #define guaranteedBufferFramesCount_rtp (10)
 
-#define GST_HAS_GRAY
+// define GST_HAS_GRAY
 
 #define FRAME_WAIT_MIN_DELAY_US (1)
 #define MAX_FRAME_WAIT_TAPS (100000)
