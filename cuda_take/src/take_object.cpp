@@ -1256,15 +1256,27 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
     savingMutex.lock();
 
+    // if there is ".raw" already, then the hdr_fname shall be the same thing just without the .raw.
+    // if there is not ".raw" then we just add ".hdr"
+    std::string hdr_fname;
     if(fname.find(".")!=std::string::npos)
     {
-        fname.replace(fname.find("."),std::string::npos,".raw");
+        // The filename has ".", likely ".raw"
+        //fname.replace(fname.find("."),std::string::npos,".raw");
+        hdr_fname = fname.substr(0,fname.size()-3) + "hdr";
     }
     else
     {
-        fname+=".raw";
+        // The filename does not have "."
+        hdr_fname=fname+".hdr";
     }
-    std::string hdr_fname = fname.substr(0,fname.size()-3) + "hdr";
+
+    //hdr_fname = fname.substr(0,fname.size()-3) + "hdr";
+
+//    statusMessage("Saving frames, modified filenames as follows:");
+//    std::cerr << "Saving to filename: " << fname << std::endl;
+//    std::cerr << "Header filename: " << hdr_fname << std::endl;
+
     FILE * file_target = fopen(fname.c_str(), "wb");
     int sv_count = 0;
 
@@ -1348,13 +1360,20 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     }
     //We're done!
     fclose(file_target);
-    std::string hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frame mean per grab}\n";
+    std::string hdr_text;
+    if( (num_avgs !=0) && (num_avgs !=1) )
+    {
+        hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frame mean per grab}\n";
+    } else {
+        hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file}\n";
+    }
+
     hdr_text= hdr_text + "samples = " + std::to_string(frWidth) +"\n";
-    hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n";
+    hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n"; // save count, ie, number of frames in the file
     hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
     hdr_text+= "header offset = 0\n";
     hdr_text+= "file type = ENVI Standard\n";
-    if(num_avgs != 1)
+    if((num_avgs != 1) && (num_avgs != 0))
     {
         hdr_text+= "data type = 4\n";
     }

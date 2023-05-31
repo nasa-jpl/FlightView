@@ -9,6 +9,8 @@
 #include <QTimer>
 
 #include <cstdio>
+#include <stdlib.h>
+
 #include <QDebug>
 
 /* LiveView includes */
@@ -362,6 +364,7 @@ int main(int argc, char *argv[])
 
     if(startupOptions.flightMode && !startupOptions.dataLocationSet)
     {
+        system("xmessage \"Error, flight mode requires --datastoragelocation\"");
         std::cerr << "Error, flight mode specified without data storage location." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
@@ -369,6 +372,7 @@ int main(int argc, char *argv[])
 
     if(startupOptions.flightMode && startupOptions.dataLocation.isEmpty())
     {
+        system("xmessage \"Error, flight mode requires --datastoragelocation with valid path set\"");
         std::cerr << "Error, flight mode specified without complete data storage location." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
@@ -377,6 +381,7 @@ int main(int argc, char *argv[])
 
     if(startupOptions.flightMode && !startupOptions.gpsIPSet && !startupOptions.disableGPS)
     {
+        system("xmessage \"Error, flight mode requires --gpsip with GPS ip address specified.\"");
         std::cerr << "Error, flight mode specified without GPS IP address." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
@@ -390,6 +395,7 @@ int main(int argc, char *argv[])
     if(heightSet ^ widthSet)
     {
         // XOR, only one was set
+        system("xmessage \"Error, both height and width must be specified.\"");
         std::cerr << "Error, height and width must both be specified." << std::endl;
         exit(-1);
     }
