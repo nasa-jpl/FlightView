@@ -232,8 +232,9 @@ public slots:
 
     // These are intended to be run from ARTIC
     // in concert with shutter operation.
-    void startSavingDarks();
-    void stopSavingDarks();
+    void startTakingDarks();
+    void stopTakingDarks();
+    void stopSavingData();
 
 private slots:
     void increment_slot(bool t);

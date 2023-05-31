@@ -74,7 +74,7 @@ public:
     virtual ~frameWorker();
 
     take_object to;
-    camControlType *camcontrol;
+    camControlType *camcontrol= NULL;
     void setCameraPaused(bool isPaused);
 
     frame_c *curFrame  = NULL;
@@ -132,12 +132,6 @@ signals:
     /*! \brief Calls to update the value of the Frames to Save label
      * \param n New number of frames left to save */
     void savingFrameNumChanged(unsigned int n);
-
-    /*! \brief Calls to skip the first row of profile data.
-     * \param skip Whether or not to skip the row. */
-
-    /*! \brief Calls to skip the last row of profile data.
-     * \param skip Whether or not to skip the last row. */
 
     /*! \brief Closes the class event loop and calls to deallocate the workerThread. */
     void finished();

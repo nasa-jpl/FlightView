@@ -15,6 +15,8 @@ const quint16 CMD_STATUS = 3;
 const quint16 CMD_STATUS_EXTENDED = 4;
 const quint16 CMD_START_DARKSUB = 5;
 const quint16 CMD_STOP_DARKSUB = 6;
+const quint16 CMD_START_FLIGHT_SAVING = 7;
+const quint16 CMD_STOP_SAVING = 8;
 
 /*! \file
  *  \brief Establishes a server which can accept remote frame saving commands.
@@ -64,8 +66,10 @@ protected:
 
 signals:
     void startSavingRemote(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs); // not used
-    void startSavingDarks();
-    void stopSavingDarks();
+    void startSavingFlightData();
+    void stopSavingData();
+    void startTakingDarks();
+    void stopTakingDarks();
     void sigMessage(QString message);
 
 private slots:
