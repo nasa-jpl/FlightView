@@ -1578,16 +1578,24 @@ void ControlsBox::save_remote_slot(const QString &unverifiedName, unsigned int n
     save_finite_button.click();
 }
 
-void ControlsBox::startSavingDarks()
+void ControlsBox::stopSavingData()
 {
-    emit statusMessage("Saving dark data.");
-    save_finite_button_slot();
+    emit statusMessage("Received STOP saving data command.");
+    stop_continous_button_slot();
 }
 
-void ControlsBox::stopSavingDarks()
+void ControlsBox::startTakingDarks()
 {
-    emit statusMessage("Stopping dark data saving.");
-    stop_continous_button_slot();
+    // TODO change to do darks
+    emit statusMessage("Taking dark reference data.");
+    start_dark_collection_slot();
+}
+
+void ControlsBox::stopTakingDarks()
+{
+    // TODO change to stop darks
+    emit statusMessage("Stopping dark reference data.");
+    stop_dark_collection_slot();
 }
 
 void ControlsBox::save_finite_button_slot()
@@ -1621,7 +1629,7 @@ void ControlsBox::save_finite_button_slot()
         // We might want to hard-code a zero for the number of frames to save,
         // which is a flag to continuously save. Or, we can keep it as-is
         // and allow the operator to specify a number of frames.
-        emit startSavingFinite(frames_save_num_edit.value(), rawDataFilename, 1);
+        emit startSavingFinite(frames_save_num_edit.value(), rawDataFilename, 1); // to frameWorker (fw) to takeObject
         emit statusMessage(QString("[Controls Box]: Saving data to file [%1]").arg(rawDataFilename));
         previousNumSaved = frames_save_num_edit.value();
         stop_saving_frames_button.setEnabled(true);
@@ -1631,7 +1639,7 @@ void ControlsBox::save_finite_button_slot()
         frames_save_num_avgs_edit.setEnabled(false);
 
         // This is a signal to start saving the secondary GPS log.
-        emit startDataCollection(gpsLogFilename);
+        emit startDataCollection(gpsLogFilename); // to flight_screen
     } else {
 
 
@@ -1651,7 +1659,7 @@ void ControlsBox::save_finite_button_slot()
             frames_save_num_edit.setEnabled(false);
             frames_save_num_avgs_edit.setEnabled(false);
             // TODO: Filename generation for flight mode
-            emit startDataCollection(filename_edit.text().append("-GPS-TEMP-SECONDARY.log"));
+            emit startDataCollection(filename_edit.text().append("-GPS-SCENE-SECONDARY.log"));
         }
     }
 }
@@ -1660,15 +1668,15 @@ void ControlsBox::stop_continous_button_slot()
     /*! \brief Emit the signal to stop saving frames at the backend. Handled automatically.
      * \author: Noah Levy
      */
-    emit stopSaving();
+    emit statusMessage(QString("[Controls Box]: Stopping save data."));
+    emit stopSaving(); // goes to frameWorker (fw) which goes to takeObject.
     stop_saving_frames_button.setEnabled(false);
     start_saving_frames_button.setEnabled(true);
     save_finite_button.setEnabled(true);
     frames_save_num_edit.setEnabled(true);
     frames_save_num_avgs_edit.setEnabled(true);
     frames_save_num_edit.setValue(previousNumSaved);
-    emit statusMessage(QString("[Controls Box]: Stopping save data."));
-    emit stopDataCollection();
+    emit stopDataCollection(); // goes to flight_screen
 }
 void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
 {

@@ -1,0 +1,16 @@
+52c52
+<         "\"YCbCr-4:1:1\" },"
+---
+>         "\"YCbCr-4:1:1\", \"GRAY\" },"
+225a226,231
+>   } else if  (!strcmp (str, "GRAY") && depth == 8) {
+>     format = GST_VIDEO_FORMAT_GRAY8;
+>     pgroup = 1;
+>   } else if (!strcmp (str, "GRAY") && depth == 16) {
+>     format = GST_VIDEO_FORMAT_GRAY16_LE;
+>     pgroup = 2;
+471a478,479
+>       case GST_VIDEO_FORMAT_GRAY16_LE:
+>       case GST_VIDEO_FORMAT_GRAY8:
+481d488
+< 
