@@ -732,6 +732,8 @@ void ControlsBox::loadSettings()
     prefs.stddevFloor = settings->value("stddevFloor", defaultPrefs.stddevFloor).toInt();
     prefs.preferredWindowWidth = settings->value("preferredWindowWidth", defaultPrefs.preferredWindowWidth).toInt();
     prefs.preferredWindowHeight = settings->value("preferredWindowHeight", defaultPrefs.preferredWindowHeight).toInt();
+    //restoreGeometry(settings->value("windowGeometry").toByteArray());
+
     settings->endGroup();
 
     // [RGB]:
@@ -860,6 +862,8 @@ void ControlsBox::saveSettings()
     settings->setValue("preferredWindowWidth", prefs.preferredWindowWidth);
     settings->setValue("preferredWindowHeight", prefs.preferredWindowHeight);
 
+    settings->setValue("windowGeometry", prefs.windowGeometry);
+    settings->setValue("windowState", prefs.windowState);
     settings->endGroup();
 
     // [RGB]:
@@ -927,10 +931,12 @@ void ControlsBox::saveSingleRGBPreset(int index, int r, int g, int b)
             settings->setValue("bandRed", r);
             settings->setValue("bandGreen", g);
             settings->setValue("bandBlue", b);
-            //settings->setValue("bandName", rgbPresetCombo.itemText(selIndex));
+            settings->setValue("bandName", rgbPresetCombo.itemText(selIndex));
 
             settings->endArray();
             settings->endGroup();
+
+            settings->sync();
 
             prefs.bandRed[selIndex] = r;
             prefs.bandGreen[selIndex] = g;
@@ -953,10 +959,11 @@ void ControlsBox::saveSingleRGBPreset(int index, int r, int g, int b)
                 prefs.bandRed[index] = settings->value("bandRed", prefs.bandRed[index]).toInt();
                 prefs.bandGreen[index] = settings->value("bandGreen", prefs.bandGreen[index]).toInt();
                 prefs.bandBlue[index] = settings->value("bandBlue", prefs.bandBlue[index]).toInt();
-                //prefs.presetName[index] = settings->value("bandName", QString("%1").arg(i+1)).toString();
+                prefs.presetName[index] = settings->value("bandName", QString("%1").arg(index)).toString();
 
                 settings->endArray();
                 settings->endGroup();
+                settings->sync();
 
                 rgbPresetCombo.blockSignals(true);
                 rgbPresetCombo.setCurrentIndex(selIndex);

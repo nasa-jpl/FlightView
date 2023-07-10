@@ -124,3 +124,9 @@ void rgbAdjustments::on_gammaEnableChk_clicked()
         ui->gammaSlider->setEnabled(false);
     }
 }
+
+void rgbAdjustments::on_closeBtn_clicked()
+{
+    this->close();
+}
+

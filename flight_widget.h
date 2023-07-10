@@ -50,6 +50,8 @@ class flight_widget : public QWidget
 
     QSplitter lrSplitter;
     QSplitter rhSplitter;
+    QSplitter gpsPlotSplitter;
+
     QGridLayout layout;
     QVBoxLayout rhLayout;
     QGroupBox flightControls; // All plots and controls are inside this

@@ -18,13 +18,16 @@ gpsManager::gpsManager()
 
 gpsManager::~gpsManager()
 {
-    gpsThread->quit();
-    gpsThread->wait();
-    //delete gpsThread;
+    if(gpsThread != NULL)
+    {
+        gpsThread->quit();
+        gpsThread->wait();
+        //delete gpsThread;
+    }
     //delete gps;
 }
 
-void gpsManager::initiateGPSConnection(QString host = "10.0.0.6", int port=(int)8111, QString gpsBinaryLogFilename = "")
+void gpsManager::initiateGPSConnection(QString host = "192.168.2.101", int port=(int)8112, QString gpsBinaryLogFilename = "")
 {
     if (gpsBinaryLogFilename.isEmpty())
     {
@@ -83,7 +86,8 @@ void gpsManager::prepareVectors()
     // Resize
     vecSize = 450;
 
-    headings.resize(vecSize);
+    headingsMagnetic.resize(vecSize);
+    headingsCourse.resize(vecSize);
     rolls.resize(vecSize);
     pitches.resize(vecSize);
     lats.resize(vecSize);
@@ -153,9 +157,9 @@ void gpsManager::preparePlots()
     if(plotRollPitch != NULL)
     {
         plotRollPitch->addGraph();
-        plotRollPitch->yAxis->setRange(-10, 10); // Lat
-        plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis ); // Lat
-        plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis ); // Long
+        plotRollPitch->yAxis->setRange(-10, 10);
+        plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis );
+        plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis );
         setTimeAxis(plotRollPitch->xAxis);
         plotRollPitch->yAxis->setLabel("Degrees");
         if(titleRollPitch==NULL)
@@ -179,6 +183,32 @@ void gpsManager::preparePlots()
         plotRollPitch->legend->setVisible(true);
         setPlotColors(plotRollPitch, true);
     }
+
+    if(plotHeading != NULL)
+    {
+
+
+        plotHeading->addGraph(); // magnetic
+        plotHeading->addGraph(0,0); // course
+        plotHeading->graph(0)->setName("Magnetic");
+        plotHeading->graph(1)->setName("Course");
+        plotHeading->yAxis->setRange(0, 360*1.1); // raw data is 0-360 but we will show it like this.
+        setTimeAxis(plotHeading->xAxis);
+        if(titleHeading == NULL)
+        {
+            titleHeading = new QCPPlotTitle(plotHeading);
+        }
+        setPlotTitle(plotHeading, titleHeading, "Pitch and Roll");
+
+        plotHeading->graph(0)->setPen(QPen(Qt::yellow));
+        plotHeading->graph(1)->setPen(QPen(Qt::red));
+        plotHeading->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignLeft|Qt::AlignTop);
+        setPlotColors(plotHeading, true);
+
+        //plotHeading->legend->setBrush(QColor("#85ffffff")); // 85% opaque white
+        plotHeading->legend->setVisible(true);
+    }
+    updatePlots(); // initial draw
 }
 
 void gpsManager::updateUIelements()
@@ -192,8 +222,15 @@ void gpsManager::updatePlots()
     if(plotRollPitch != NULL)
     {
         this->plotRollPitch->graph(0)->setData(timeAxis, rolls);
-        this->plotRollPitch->graph(1)->setData(timeAxis, pitches); // should be longs
+        this->plotRollPitch->graph(1)->setData(timeAxis, pitches);
         this->plotRollPitch->replot();
+    }
+
+    if(plotHeading != NULL)
+    {
+        this->plotHeading->graph(0)->setData(timeAxis, headingsMagnetic);
+        this->plotHeading->graph(1)->setData(timeAxis, headingsCourse);
+        this->plotHeading->replot();
     }
 }
 
@@ -277,9 +314,10 @@ void gpsManager::insertLEDs(QLedLabel *gpsOk)
     this->gpsOkLED = gpsOk;
 }
 
-void gpsManager::insertPlots(QCustomPlot *gpsRollPitchplot)
+void gpsManager::insertPlots(QCustomPlot *gpsRollPitchPlot, QCustomPlot *gpsHeadingPlot)
 {
-    this->plotRollPitch = gpsRollPitchplot;
+    this->plotRollPitch = gpsRollPitchPlot;
+    this->plotHeading = gpsHeadingPlot;
 }
 
 void gpsManager::insertLabels(QLabel *gpsLat, QLabel *gpsLong, QLabel *gpsAltitude,
@@ -437,8 +475,11 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     {
         if(m.haveHeadingRollPitchRate)
         {
-            headings.push_front(m.heading);
-            headings.pop_back();
+            headingsMagnetic.push_front(m.heading);
+            headingsMagnetic.pop_back();
+
+            headingsCourse.push_front(m.courseOverGround);
+            headingsCourse.pop_back();
 
             rolls.push_front(m.roll);
             rolls.pop_back();

@@ -80,22 +80,25 @@ class gpsManager : public QObject
 
     uint16_t msgsReceivedCount = 0;
 
-    // alt and heading
-    QVector<double> headings;
+    // Heading
+    QVector<double> headingsMagnetic;
+    QVector<double> headingsCourse;
+
+    // Roll and Pitch:
     QVector<double> rolls;
     QVector<double> pitches;
 
-    // position
+    // Position
     QVector<double> lats;
     QVector<double> longs;
     QVector<double> alts;
 
-    // speed
+    // Speed
     QVector<double> nVelos;
     QVector<double> eVelos;
     QVector<double> upVelos;
 
-    // time axis:
+    // Time axis:
     QVector<double> timeAxis;
 
     void updateUIelements();
@@ -124,6 +127,9 @@ class gpsManager : public QObject
     // UI elements (set to NULL if unused):
     QLedLabel *gpsOkLED = NULL;
     QCustomPlot *plotRollPitch = NULL;
+    QCustomPlot *plotHeading = NULL;
+    QCPPlotTitle *titleHeading = NULL;
+
     bool usePlotTitle = false;
     QCPPlotTitle *titleRollPitch = NULL;
     QLabel *gpsLat = NULL;
@@ -150,7 +156,7 @@ public:
     ~gpsManager();
 
     void insertLEDs(QLedLabel *gpsOkLED);
-    void insertPlots(QCustomPlot *gpsRollPitchPlot);
+    void insertPlots(QCustomPlot *gpsRollPitchPlot, QCustomPlot *gpsHeadingPlot);
     void insertLabels(QLabel *gpsLat, QLabel *gpsLong, QLabel *gpsAltitude,
                       QLabel *gpsUTCtime, QLabel *gpsUTCdate, QLabel *gpsUTCValidity,
                       QLabel *gpsGroundSpeed,

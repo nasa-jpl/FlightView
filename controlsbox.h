@@ -283,7 +283,6 @@ private slots:
     void debugThis();
 
 };
-
 Q_DECLARE_METATYPE(enum fileFormat_t)
 
 #endif // CONTROLSBOX_H

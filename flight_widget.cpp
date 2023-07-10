@@ -4,12 +4,13 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 {
     //connect(this, SIGNAL(statusMessage(QString)), this, SLOT(showDebugMessage(QString)));
 
+    qDebug() << "Running flight widget constructor";
     emit statusMessage(QString("Starting flight screen widget"));
     stickyFPSError = false;
     FPSErrorCounter = 0;
     this->fw = fw;
     this->options = options;
-    useAvionicsWidgets = true;
+    useAvionicsWidgets = false;
 
     waterfall_widget = new waterfall(fw, 1, 1024, this);
 //    waterfall_widget = new waterfall(fw, 1, 1024, NULL);
@@ -119,9 +120,17 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     diskLED.setState(QLedLabel::StateOkBlue);
 
     // Format is &item, row, col, rowSpan, colSpan. -1 = to "edge"
-    int row=0;
-    //flightPlotsLayout.addWidget(&gpsPitchRollPlot, 0,0,4,8);
-    flightControlLayout.addWidget(&gpsPitchRollPlot, row,0,4,8);
+    int row=0; //                                    ROW, COL, ROWSPAN, COLSPAN
+
+    gpsPlotSplitter.setOrientation(Qt::Horizontal);
+    gpsPlotSplitter.addWidget(&gpsHeadingPlot);
+    gpsPlotSplitter.addWidget(&gpsPitchRollPlot);
+    gpsPlotSplitter.setHandleWidth(10);
+
+    //flightControlLayout.addWidget(&gpsHeadingPlot,   row,   0,       4,       3);
+    //flightControlLayout.addWidget(&gpsPitchRollPlot, row,   3,       4,       3);
+
+    flightControlLayout.addWidget(&gpsPlotSplitter, row, 0, 4, 4);
 
     row += 4;
 
@@ -201,11 +210,12 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     rhSplitter.setOrientation(Qt::Vertical);
     rhSplitter.addWidget(dsf_widget);
     rhSplitter.addWidget(&flightControls);
+    rhSplitter.setHandleWidth(10);
 
     lrSplitter.addWidget(waterfall_widget);
     lrSplitter.addWidget(&rhSplitter);
 
-    lrSplitter.setHandleWidth(5);
+    lrSplitter.setHandleWidth(10);
 
     layout.addWidget(&lrSplitter);
 
@@ -223,7 +233,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
                       &gpsHeadingData, NULL, NULL,
                       &gpsQualityData,
                       NULL);
-    gps->insertPlots(&gpsPitchRollPlot);
+
+    gps->insertPlots(&gpsPitchRollPlot, &gpsHeadingPlot);
     if(useAvionicsWidgets)
     {
         gps->insertAvionicsWidgets(ASI, VSI, EADI, EHSI);
@@ -293,10 +304,25 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
 flight_widget::~flight_widget()
 {
+    // We are seeing a crash here on exit.
+    // Strategy: breakpoint here,
+    // compare with flight version.
+
+    qDebug() << "Running flight_widget destructor.";
     if(wfThread != NULL)
     {
         wfThread->quit();
         wfThread->wait();
+        usleep(10000);
+    }
+
+    if(gps != NULL)
+    {
+        gps->initiateGPSDisconnect();
+        usleep(1000);
+        gps->deleteLater();
+        usleep(1000);
+        //delete gps;
     }
 }
 

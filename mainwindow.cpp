@@ -435,12 +435,17 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
     }
 
     handleMainWindowStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
+
     if( (prefs.preferredWindowWidth < 4096 ) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
     {
         this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
     } else {
         handleMainWindowStatusMessage(QString("Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
     }
+
+    // Note: These prefs are not saved correctly currently, so do not restore.
+    // restoreGeometry(prefs.windowGeometry);
+    // restoreState(prefs.windowState);
 }
 
 void MainWindow::removeTab(QString tabTitle)

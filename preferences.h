@@ -33,6 +33,9 @@ struct settingsT {
     int preferredWindowWidth = 1280;
     int preferredWindowHeight = 1024;
 
+    QByteArray windowGeometry;
+    QByteArray windowState;
+
     // [RGB]:
     unsigned int bandRed[10];
     unsigned int bandBlue[10];
