@@ -63,9 +63,24 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     setupUI.setModal(true);
 
     rgbLevels = new rgbAdjustments(this);
+
+    // Set RGB Level UI to index 0 values.
+    rgbLevels->setRGBLevels(prefs.gainRed[0], \
+                                prefs.gainGreen[0], \
+                                prefs.gainBlue[0], \
+                                prefs.gamma[0]);
+
     connect(rgbLevels, &rgbAdjustments::haveRGBLevels,
             [=](const double &r, const double &g, const double &b, const double &gamma) {
         emit sendRGBLevels(r, g, b, gamma);
+        int cIndex = rgbPresetCombo.currentIndex();
+        if( (cIndex < 10) && (cIndex > -1))
+        {
+            prefs.gainRed[cIndex] = r;
+            prefs.gainGreen[cIndex] = g;
+            prefs.gainBlue[cIndex] = b;
+            prefs.gamma[cIndex] = gamma;
+        }
     });
 
 
@@ -637,6 +652,17 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         redSpin.setValue(bandRed);
         greenSpin.setValue(bandGreen);
         blueSpin.setValue(bandBlue);
+        // Set the widget quietly:
+        rgbLevels->setRGBLevels(prefs.gainRed[index], \
+                                    prefs.gainGreen[index], \
+                                    prefs.gainBlue[index], \
+                                    prefs.gamma[index]);
+        // Export the new values:
+        emit sendRGBLevels(prefs.gainRed[index], \
+                           prefs.gainGreen[index], \
+                           prefs.gainBlue[index], \
+                           prefs.gamma[index]);
+
         previousRGBPresetIndex = index;
     });
 
@@ -750,6 +776,10 @@ void ControlsBox::loadSettings()
         prefs.bandGreen[i] = settings->value("bandGreen", defaultPrefs.bandGreen[i]).toInt();
         prefs.bandBlue[i] = settings->value("bandBlue", defaultPrefs.bandBlue[i]).toInt();
         prefs.presetName[i] = settings->value("bandName", QString("%1").arg(i+1)).toString();
+        prefs.gainRed[i] = settings->value("gainRed", defaultPrefs.gainRed[i]).toDouble();
+        prefs.gainGreen[i] = settings->value("gainGreen", defaultPrefs.gainGreen[i]).toDouble();
+        prefs.gainBlue[i] = settings->value("gainBlue", defaultPrefs.gainBlue[i]).toDouble();
+        prefs.gamma[i] = settings->value("gamma", defaultPrefs.gamma[i]).toDouble();
     }
 
     settings->endArray();
@@ -774,7 +804,14 @@ void ControlsBox::loadSettings()
 
     prefs.readFile = true;
     updateUIToPrefs();
-    setRGBWaterfall(0); // send the initial RGB values
+    setRGBWaterfall(0); // send the initial RGB band values
+
+    // Export the new values:
+    emit sendRGBLevels(prefs.gainRed[0], \
+                       prefs.gainGreen[0], \
+                       prefs.gainBlue[0], \
+                       prefs.gamma[0]);
+
     emit statusMessage(QString("[Controls Box]: 2s compliment setting from preferences: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
     emit haveReadPreferences(prefs);
 }
@@ -876,6 +913,10 @@ void ControlsBox::saveSettings()
         settings->setValue("bandGreen", prefs.bandGreen[i]);
         settings->setValue("bandBlue", prefs.bandBlue[i]);
         settings->setValue("bandName", rgbPresetCombo.itemText(i));
+        settings->setValue("gainRed", prefs.gainRed[i]);
+        settings->setValue("gainGreen", prefs.gainGreen[i]);
+        settings->setValue("gainBlue", prefs.gainBlue[i]);
+        settings->setValue("gamma", prefs.gamma[i]);
     }
     settings->endArray();
     settings->endGroup();
@@ -932,6 +973,11 @@ void ControlsBox::saveSingleRGBPreset(int index, int r, int g, int b)
             settings->setValue("bandGreen", g);
             settings->setValue("bandBlue", b);
             settings->setValue("bandName", rgbPresetCombo.itemText(selIndex));
+            settings->setValue("gainRed", prefs.gainRed[selIndex]);
+            settings->setValue("gainGreen", prefs.gainGreen[selIndex]);
+            settings->setValue("gainBlue", prefs.gainBlue[selIndex]);
+            settings->setValue("gamma", prefs.gamma[selIndex]);
+            settings->setValue("gammaEnabled", prefs.gammaEnabled[selIndex]);
 
             settings->endArray();
             settings->endGroup();
@@ -960,6 +1006,11 @@ void ControlsBox::saveSingleRGBPreset(int index, int r, int g, int b)
                 prefs.bandGreen[index] = settings->value("bandGreen", prefs.bandGreen[index]).toInt();
                 prefs.bandBlue[index] = settings->value("bandBlue", prefs.bandBlue[index]).toInt();
                 prefs.presetName[index] = settings->value("bandName", QString("%1").arg(index)).toString();
+                prefs.gainRed[index] = settings->value("gainRed", prefs.gainRed[index]).toDouble();
+                prefs.gainGreen[index] = settings->value("gainGreen", prefs.gainGreen[index]).toDouble();
+                prefs.gainBlue[index] = settings->value("gainBlue", prefs.gainBlue[index]).toDouble();
+                prefs.gamma[index] = settings->value("gamma", prefs.gamma[index]).toDouble();
+                prefs.gammaEnabled[index] = settings->value("gammaEnabled", prefs.gammaEnabled[index]).toBool();
 
                 settings->endArray();
                 settings->endGroup();
@@ -1009,6 +1060,11 @@ void ControlsBox::setDefaultSettings()
         defaultPrefs.bandGreen[i] = 200;
         defaultPrefs.bandBlue[i] = 300;
         defaultPrefs.presetName[i] = QString("%1").arg(i+1);
+        defaultPrefs.gainRed[i] = 1.0;
+        defaultPrefs.gainGreen[i] = 1.0;
+        defaultPrefs.gainBlue[i] = 1.0;
+        defaultPrefs.gamma[i] = 1.0;
+        defaultPrefs.gammaEnabled[i] = false;
     }
 
     // [Flight]:
