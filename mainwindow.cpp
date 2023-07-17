@@ -61,7 +61,9 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     dsf_widget = NULL;
     waterfall_widget = new frameview_widget(fw, WATERFALL);
 
+    //flight_screen = new flight_widget(fw, *options, this);
     flight_screen = new flight_widget(fw, *options);
+
     connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleGeneralStatusMessage(QString)));
 
     std_dev_widget = new frameview_widget(fw, STD_DEV);
@@ -230,7 +232,7 @@ void MainWindow::closeEvent(QCloseEvent *e)
         QList<QWidget*> allWidgets = findChildren<QWidget*>();
         for(int i = 0; i < allWidgets.size(); ++i)
             allWidgets.at(i)->close();
-
+        //e->accept();
         QApplication::exit();
     } else {
         handleMainWindowStatusMessage("User canceled close request.");

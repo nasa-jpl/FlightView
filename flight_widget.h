@@ -21,6 +21,7 @@ namespace fs = boost::filesystem;
 #include "frame_worker.h"
 #include "frameview_widget.h"
 #include "qledlabel.h"
+#include "flightindicators.h"
 #include "startupOptions.h"
 #include "waterfall.h"
 #include "preferences.h"
@@ -50,7 +51,7 @@ class flight_widget : public QWidget
 
     QSplitter lrSplitter;
     QSplitter rhSplitter;
-    QSplitter gpsPlotSplitter;
+    QSplitter *gpsPlotSplitter = NULL;
 
     QGridLayout layout;
     QVBoxLayout rhLayout;
@@ -58,6 +59,8 @@ class flight_widget : public QWidget
     QGridLayout flightControlLayout; // Labels and buttons
     QGridLayout flightPlotsLayout;
     QGridLayout flightAvionicsLayout;
+
+    flightIndicators *fi = NULL;
 
     // stand-in items for flight controls:
     QPushButton resetStickyErrorsBtn;
@@ -82,7 +85,8 @@ class flight_widget : public QWidget
     QLabel gpsUTCtimeText, gpsUTCdateText, gpsUTCValidityText;
     QLabel gpsGroundSpeedData, gpsGroundSpeedText;
     QLabel gpsQualityData, gpsQualityText;
-
+    QLabel gpsReadyText;
+    QLedLabel gpsReadyLED;
 
     // GPS Plots:
     QCustomPlot gpsPitchRollPlot;

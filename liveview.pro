@@ -25,6 +25,7 @@ SOURCES += main.cpp\
     cuda_take/src/take_object.cpp \
     filenamegenerator.cpp \
     flight_widget.cpp \
+    flightindicators.cpp \
     gpsmanager.cpp \
     initialsetup.cpp \
     mainwindow.cpp \
@@ -51,6 +52,7 @@ HEADERS  += mainwindow.h \
     cuda_take/include/fileformats.h \
     filenamegenerator.h \
     flight_widget.h \
+    flightindicators.h \
     frameview_widget.h \
     controlsbox.h\
     frame_worker.h \
@@ -161,5 +163,6 @@ DEPENDPATH += $$PWD/cuda_take
 unix:!macx:!symbian: PRE_TARGETDEPS += $$PWD/cuda_take/libcuda_take.a
 
 FORMS += \
+    flightindicators.ui \
     initialsetup.ui \
     rgbadjustments.ui

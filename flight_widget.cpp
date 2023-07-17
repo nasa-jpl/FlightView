@@ -6,11 +6,13 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     qDebug() << "Running flight widget constructor";
     emit statusMessage(QString("Starting flight screen widget"));
+    fi = new flightIndicators();
     stickyFPSError = false;
     FPSErrorCounter = 0;
     this->fw = fw;
     this->options = options;
     useAvionicsWidgets = false;
+    gpsPlotSplitter = new QSplitter();
 
     waterfall_widget = new waterfall(fw, 1, 1024, this);
 //    waterfall_widget = new waterfall(fw, 1, 1024, NULL);
@@ -106,6 +108,9 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     gpsQualityText.setText("GPS Quality:");
     gpsQualityData.setText("########");
 
+    gpsReadyText.setText("GPS Ready:");
+    gpsReadyLED.setState(QLedLabel::StateOkBlue);
+
 
     gpsLED.setState(QLedLabel::StateOkBlue);
 
@@ -122,58 +127,72 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     // Format is &item, row, col, rowSpan, colSpan. -1 = to "edge"
     int row=0; //                                    ROW, COL, ROWSPAN, COLSPAN
 
-    gpsPlotSplitter.setOrientation(Qt::Horizontal);
-    gpsPlotSplitter.addWidget(&gpsHeadingPlot);
-    gpsPlotSplitter.addWidget(&gpsPitchRollPlot);
-    gpsPlotSplitter.setHandleWidth(10);
+    gpsPlotSplitter->setOrientation(Qt::Horizontal);
+    gpsPlotSplitter->addWidget(&gpsHeadingPlot);
+    gpsPlotSplitter->addWidget(&gpsPitchRollPlot);
+    gpsPlotSplitter->setHandleWidth(10);
 
     //flightControlLayout.addWidget(&gpsHeadingPlot,   row,   0,       4,       3);
     //flightControlLayout.addWidget(&gpsPitchRollPlot, row,   3,       4,       3);
 
-    flightControlLayout.addWidget(&gpsPlotSplitter, row, 0, 4, 4);
+    flightControlLayout.addWidget(gpsPlotSplitter, row, 0, 4, -1);
 
     row += 4;
 
-    // First row of widgets:
-    ++row;
-    flightControlLayout.addWidget(&gpsLEDLabel,   row,0,1,1);
-    flightControlLayout.addWidget(&gpsLED,        row,1,1,1);
-    flightControlLayout.addWidget(&diskLEDLabel,  row,2,1,1);
-    flightControlLayout.addWidget(&diskLED,       row,3,1,1, Qt::AlignLeft);
-
-    // Second row:
     row++;
-    flightControlLayout.addWidget(&cameraLinkLEDLabel,  row,0,1,1);
-    flightControlLayout.addWidget(&cameraLinkLED,       row,1,1,1);
-    flightControlLayout.addWidget(&resetStickyErrorsBtn,row,2,1,1);
+    flightControlLayout.addWidget(fi, row, 0, 2,-1);
 
-    // Third row:
-    row++;
-    flightControlLayout.addWidget(&gpsLatText,  row,0,1,1);
-    flightControlLayout.addWidget(&gpsLatData,  row,1,1,1);
-    flightControlLayout.addWidget(&gpsLongText, row,2,1,1);
-    flightControlLayout.addWidget(&gpsLongData, row,3,1,1);
+//    // First row of widgets:
+//    ++row;
+//    flightControlLayout.addWidget(&gpsLEDLabel,   row,0,1,1);
+//    flightControlLayout.addWidget(&gpsLED,        row,1,1,1);
+//    flightControlLayout.addWidget(&diskLEDLabel,  row,2,1,1);
+//    flightControlLayout.addWidget(&diskLED,       row,3,1,1);
+//    flightControlLayout.addWidget(&gpsQualityText, row, 4, 1, 1);
+//    flightControlLayout.addWidget(&gpsQualityData, row, 5, 1, 1, Qt::AlignLeft);
 
-    // Fourth row:
-    row++;
-    flightControlLayout.addWidget(&gpsAltitudeText,    row,0,1,1);
-    flightControlLayout.addWidget(&gpsAltitudeData,    row,1,1,1);
-    flightControlLayout.addWidget(&gpsGroundSpeedText, row,2,1,1);
-    flightControlLayout.addWidget(&gpsGroundSpeedData, row,3,1,1);
+//    // Second row:
+//    row++;
+//    flightControlLayout.addWidget(&cameraLinkLEDLabel,  row,0,1,1);
+//    flightControlLayout.addWidget(&cameraLinkLED,       row,1,1,1);
+//    //flightControlLayout.addWidget(&resetStickyErrorsBtn,row,2,1,1);
+//    flightControlLayout.addWidget(&gpsReadyText,row,2,1,1);
 
-    // Fifth row:
-    row++;
-    flightControlLayout.addWidget(&gpsHeadingText,     row,0,1,1);
-    flightControlLayout.addWidget(&gpsHeadingData,     row,1,1,1);
-    flightControlLayout.addWidget(&gpsUTCValidityText, row,2,1,1);
-    flightControlLayout.addWidget(&gpsUTCValidityData, row,3,1,1);
+//    //flightControlLayout.addWidget(&gpsReadyText, row, 3,1,1);
+//    flightControlLayout.addWidget(&gpsReadyLED, row, 3,1,1);
 
-    // Sixth row:
-    row++;
-    flightControlLayout.addWidget(&gpsUTCdateText, row,0,1,1);
-    flightControlLayout.addWidget(&gpsUTCdateData, row,1,1,1);
-    flightControlLayout.addWidget(&gpsUTCtimeText, row,2,1,1);
-    flightControlLayout.addWidget(&gpsUTCtimeData, row,3,1,1);
+
+
+//    // Third row:
+//    row++;
+//    flightControlLayout.addWidget(&gpsLatText,  row,0,1,1);
+//    flightControlLayout.addWidget(&gpsLatData,  row,1,1,1);
+//    flightControlLayout.addWidget(&gpsLongText, row,2,1,1);
+//    flightControlLayout.addWidget(&gpsLongData, row,3,1,1);
+
+//    // Fourth row:
+//    row++;
+//    flightControlLayout.addWidget(&gpsAltitudeText,    row,0,1,1);
+//    flightControlLayout.addWidget(&gpsAltitudeData,    row,1,1,1);
+//    flightControlLayout.addWidget(&gpsGroundSpeedText, row,2,1,1);
+//    flightControlLayout.addWidget(&gpsGroundSpeedData, row,3,1,1);
+
+//    // Fifth row:
+//    row++;
+//    flightControlLayout.addWidget(&gpsHeadingText,     row,0,1,1);
+//    flightControlLayout.addWidget(&gpsHeadingData,     row,1,1,1);
+//    flightControlLayout.addWidget(&gpsUTCValidityText, row,2,1,1);
+//    flightControlLayout.addWidget(&gpsUTCValidityData, row,3,1,1);
+
+//    // Sixth row:
+//    row++;
+//    flightControlLayout.addWidget(&gpsUTCdateText, row,0,1,1);
+//    flightControlLayout.addWidget(&gpsUTCdateData, row,1,1,1);
+//    flightControlLayout.addWidget(&gpsUTCtimeText, row,2,1,1);
+//    flightControlLayout.addWidget(&gpsUTCtimeData, row,3,1,1);
+//    flightControlLayout.addWidget(&resetStickyErrorsBtn,row,4,1,1);
+
+
 
     // Avionics Widget Layout Placement
     if(useAvionicsWidgets)
@@ -227,6 +246,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(gps, SIGNAL(gpsStatusMessage(QString)), this, SLOT(showDebugMessage(QString)));
     connect(gps, SIGNAL(gpsConnectionError(int)), this, SLOT(handleGPSConnectionError(int)));
     gps->insertLEDs(&gpsLED);
+
+    // Unused labels are Roll, Pitch, and Rate of Climb
     gps->insertLabels(&gpsLatData, &gpsLongData, &gpsAltitudeData,
                       &gpsUTCtimeData, &gpsUTCdateData, &gpsUTCValidityData,
                       &gpsGroundSpeedData,
@@ -313,17 +334,17 @@ flight_widget::~flight_widget()
     {
         wfThread->quit();
         wfThread->wait();
-        usleep(10000);
+        //usleep(10000);
     }
 
-    if(gps != NULL)
-    {
-        gps->initiateGPSDisconnect();
-        usleep(1000);
-        gps->deleteLater();
-        usleep(1000);
-        //delete gps;
-    }
+//    if(gps != NULL)
+//    {
+//        gps->initiateGPSDisconnect();
+//        usleep(1000);
+//        gps->deleteLater();
+//        usleep(1000);
+//        //delete gps;
+//    }
 }
 
 void flight_widget::setupWFConnections()
