@@ -127,20 +127,20 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     // Format is &item, row, col, rowSpan, colSpan. -1 = to "edge"
     int row=0; //                                    ROW, COL, ROWSPAN, COLSPAN
 
-    gpsPlotSplitter->setOrientation(Qt::Horizontal);
-    gpsPlotSplitter->addWidget(&gpsHeadingPlot);
-    gpsPlotSplitter->addWidget(&gpsPitchRollPlot);
-    gpsPlotSplitter->setHandleWidth(10);
+    //gpsPlotSplitter->setOrientation(Qt::Horizontal);
+    //gpsPlotSplitter->addWidget(&gpsHeadingPlot);
+    //gpsPlotSplitter->addWidget(&gpsPitchRollPlot);
+    //gpsPlotSplitter->setHandleWidth(10);
 
     //flightControlLayout.addWidget(&gpsHeadingPlot,   row,   0,       4,       3);
     //flightControlLayout.addWidget(&gpsPitchRollPlot, row,   3,       4,       3);
 
-    flightControlLayout.addWidget(gpsPlotSplitter, row, 0, 4, -1);
+    //flightControlLayout.addWidget(gpsPlotSplitter, row, 0, 4, -1);
 
     row += 4;
 
     row++;
-    flightControlLayout.addWidget(fi, row, 0, 2,-1);
+    flightControlLayout.addWidget(fi, row, 0, 1,-1);
 
 //    // First row of widgets:
 //    ++row;
@@ -210,17 +210,17 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
         if(VSI!=NULL)  flightControlLayout.addWidget(VSI,  4, avColumn--, -1, 1); // col 4
     }
 
-    flightControlLayout.setColumnStretch(0,0);
-    flightControlLayout.setColumnStretch(1,0);
-    flightControlLayout.setColumnStretch(2,0);
-    flightControlLayout.setColumnStretch(3,1); // this is between the text and the avionics widgets
+//    flightControlLayout.setColumnStretch(0,0);
+//    flightControlLayout.setColumnStretch(1,0);
+//    flightControlLayout.setColumnStretch(2,0);
+//    flightControlLayout.setColumnStretch(3,1); // this is between the text and the avionics widgets
 
-    flightControlLayout.setColumnStretch(4,0);
-    flightControlLayout.setColumnStretch(5,0);
-    flightControlLayout.setColumnStretch(6,0);
-    flightControlLayout.setColumnStretch(7,0);
+//    flightControlLayout.setColumnStretch(4,0);
+//    flightControlLayout.setColumnStretch(5,0);
+//    flightControlLayout.setColumnStretch(6,0);
+//    flightControlLayout.setColumnStretch(7,0);
 
-    flightControlLayout.setRowStretch(3,2); // stretch the plot area
+//    flightControlLayout.setRowStretch(3,2); // stretch the plot area
 
     // Group Box "Flight Instrument Controls"
     flightControls.setTitle("Flight Instrument Controls");
@@ -255,7 +255,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
                       &gpsQualityData,
                       NULL);
 
-    gps->insertPlots(&gpsPitchRollPlot, &gpsHeadingPlot);
+    //gps->insertPlots(&gpsPitchRollPlot, &gpsHeadingPlot);
     if(useAvionicsWidgets)
     {
         gps->insertAvionicsWidgets(ASI, VSI, EADI, EHSI);
