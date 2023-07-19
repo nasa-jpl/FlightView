@@ -15,7 +15,7 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
 {
     qRegisterMetaType<frame_c*>("frame_c*");
     //qRegisterMetaType<QVector<double>>("QVector<double>");
-    //qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");
+    //qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");    
     const QString name = "lv:";
     this->fw = fw;
     this->options = options;
@@ -216,6 +216,9 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     connect(save_server, SIGNAL(stopTakingDarks()), controlbox, SLOT(stopTakingDarks()));
     connect(save_server, SIGNAL(startSavingFlightData()), controlbox, SLOT(save_finite_button_slot()));
     connect(save_server, SIGNAL(stopSavingData()), controlbox, SLOT(stopSavingData()));
+    this->setWindowState( (windowState() & ~Qt::WindowMinimized ) | Qt::WindowActive);
+    this->raise();
+    this->activateWindow();
     handleMainWindowStatusMessage("Started");
 }
 

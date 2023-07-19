@@ -66,6 +66,18 @@ class gpsManager : public QObject
     bool statusStickyError = false; // stays true until cleared
     bool statusJustCleared = false; // True if we just cleared errors.
 
+    // Status Bits from the device:
+    // INS Algorithm Status
+    dword priorAlgorithmStatus1=0;
+    dword priorAlgorithmStatus2=0;
+    dword priorAlgorithmStatus3=0;
+    dword priorAlgorithmStatus4=0;
+
+    // INS System Status
+    dword priorSystemStatus1=0;
+    dword priorSystemStatus2=0;
+    dword priorSystemStatus3=0;
+
     // Record 1 out of every 40 points for 5 Hz updates to plots
     // therefore, for 90 seconds of data, we need 90*5 = 450 point vectors
     uint16_t vecSize = 450;
@@ -77,6 +89,7 @@ class gpsManager : public QObject
     void prepareLEDs(); // initial state
     void prepareLabels(); // initial state
     void prepareGPS(); // thread connections
+    unsigned char getBit(dword d, unsigned char bit);
 
     uint16_t msgsReceivedCount = 0;
 
@@ -144,6 +157,7 @@ class gpsManager : public QObject
     QLabel *gpsRoll = NULL;
     QLabel *gpsPitch = NULL;
     QLabel *gpsQuality = NULL;
+    QLabel *gpsAlignment = NULL;
 
     // Avionics Widgets:
     qfi_ASI *asi;
@@ -161,7 +175,7 @@ public:
                       QLabel *gpsUTCtime, QLabel *gpsUTCdate, QLabel *gpsUTCValidity,
                       QLabel *gpsGroundSpeed,
                       QLabel *gpsHeading, QLabel *gpsRoll, QLabel *gpsPitch,
-                      QLabel *gpsQuality,
+                      QLabel *gpsQuality, QLabel *gpsAlignment,
                       QLabel *gpsRateClimb);
     void insertAvionicsWidgets(qfi_ASI *asi, qfi_VSI *vsi,
                                qfi_EADI *eadi, qfi_EHSI *ehsi);

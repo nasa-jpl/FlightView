@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>708</width>
-    <height>169</height>
+    <width>658</width>
+    <height>161</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>0</width>
-    <height>0</height>
+    <width>658</width>
+    <height>161</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>16777215</width>
-    <height>250</height>
+    <width>731</width>
+    <height>161</height>
    </size>
   </property>
   <property name="font">
@@ -32,197 +32,21 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="bottomMargin">
-    <number>0</number>
+    <number>9</number>
    </property>
    <item row="2" column="0">
-    <widget class="QLabel" name="label_3">
+    <widget class="QLabel" name="label_15">
      <property name="font">
       <font>
        <pointsize>12</pointsize>
       </font>
      </property>
      <property name="text">
-      <string>C Link</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="2">
-    <widget class="QLedLabel" name="label_62">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="2">
-    <widget class="QLedLabel" name="label_63">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0">
-    <widget class="QLabel" name="label_16">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>GPS RX</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="1">
-    <widget class="QLedLabel" name="label_6">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="6">
-    <widget class="QLabel" name="label_8">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>Last Recording:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="4">
-    <widget class="QLabel" name="label_20">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>Heading</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QLabel" name="label_4">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>Stat</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="7">
-    <widget class="QLabel" name="label_32">
-     <property name="font">
-      <font>
-       <family>IntelOne Mono</family>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>0 ft</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="2">
-    <widget class="QLedLabel" name="label_64">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="6">
-    <widget class="QLabel" name="label_54">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>UTC Time</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="2">
-    <widget class="QLedLabel" name="label_61">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="5">
-    <widget class="QLabel" name="label_31">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>UNKNOWN</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="6">
-    <widget class="QLabel" name="label_56">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>UTC Date:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="label">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>Item</string>
+      <string>GPS Link</string>
      </property>
     </widget>
    </item>
    <item row="0" column="3">
-    <widget class="QLabel" name="label_60">
-     <property name="text">
-      <string>GAP</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="4">
     <widget class="QLabel" name="label_24">
      <property name="font">
       <font>
@@ -234,8 +58,26 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
-    <widget class="QLedLabel" name="label_22">
+   <item row="1" column="3">
+    <widget class="QLabel" name="label_11">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Longitude</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QLedLabel" name="gpsTroubleLED">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
      <property name="font">
       <font>
        <pointsize>12</pointsize>
@@ -246,8 +88,71 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="5">
-    <widget class="QLabel" name="label_37">
+   <item row="2" column="7">
+    <widget class="QLabel" name="utcDateLabel">
+     <property name="font">
+      <font>
+       <family>IntelOne Mono</family>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>####-##-##</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="4">
+    <widget class="QLabel" name="latLabel">
+     <property name="font">
+      <font>
+       <family>IntelOne Mono</family>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>#######</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="6">
+    <widget class="QLabel" name="label_56">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>UTC Date:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="imageLabel">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>C Link</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="4">
+    <widget class="QLabel" name="longLabel">
+     <property name="font">
+      <font>
+       <family>IntelOne Mono</family>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>#######</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="4">
+    <widget class="QLabel" name="headingLabel">
      <property name="font">
       <font>
        <family>IntelOne Mono</family>
@@ -256,6 +161,37 @@
      </property>
      <property name="text">
       <string>###.##</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2">
+    <widget class="QLabel" name="label_60">
+     <property name="minimumSize">
+      <size>
+       <width>35</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>35</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="6">
+    <widget class="QLabel" name="label_26">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Ground Speed</string>
      </property>
     </widget>
    </item>
@@ -273,7 +209,7 @@
     </spacer>
    </item>
    <item row="0" column="7">
-    <widget class="QLabel" name="label_36">
+    <widget class="QLabel" name="groundSpeedLabel">
      <property name="font">
       <font>
        <family>IntelOne Mono</family>
@@ -282,18 +218,6 @@
      </property>
      <property name="text">
       <string>0 knots</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="6">
-    <widget class="QLabel" name="label_26">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>Ground Speed</string>
      </property>
     </widget>
    </item>
@@ -309,58 +233,14 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="7">
-    <widget class="QLabel" name="label_59">
-     <property name="font">
-      <font>
-       <family>IntelOne Mono</family>
-       <pointsize>12</pointsize>
-      </font>
+   <item row="0" column="1">
+    <widget class="QLedLabel" name="diskLED">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
      </property>
-     <property name="text">
-      <string>####-##-##</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="5">
-    <widget class="QLabel" name="label_25">
-     <property name="font">
-      <font>
-       <family>IntelOne Mono</family>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>#######</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="7">
-    <widget class="QLabel" name="label_9">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>HH:MM</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="4">
-    <widget class="QLabel" name="label_11">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>Longitude</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QLedLabel" name="label_5">
      <property name="font">
       <font>
        <pointsize>12</pointsize>
@@ -371,7 +251,50 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0">
+   <item row="2" column="3">
+    <widget class="QLabel" name="label_20">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Heading</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLedLabel" name="imageLED">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="7">
+    <widget class="QLabel" name="altitudeLabel">
+     <property name="font">
+      <font>
+       <family>IntelOne Mono</family>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>0 ft</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
     <widget class="QLabel" name="label_2">
      <property name="font">
       <font>
@@ -383,44 +306,38 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="1">
-    <widget class="QLedLabel" name="label_21">
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-      </font>
+   <item row="0" column="5">
+    <widget class="QLabel" name="label_7">
+     <property name="minimumSize">
+      <size>
+       <width>37</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>37</width>
+       <height>16777215</height>
+      </size>
      </property>
      <property name="text">
       <string/>
      </property>
     </widget>
    </item>
-   <item row="1" column="5">
-    <widget class="QLabel" name="label_42">
-     <property name="font">
-      <font>
-       <family>IntelOne Mono</family>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>#######</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="2">
-    <widget class="QLedLabel" name="label_65">
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_16">
      <property name="font">
       <font>
        <pointsize>12</pointsize>
       </font>
      </property>
      <property name="text">
-      <string/>
+      <string>GPS Trouble</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="4">
+   <item row="3" column="3">
     <widget class="QLabel" name="label_29">
      <property name="font">
       <font>
@@ -432,20 +349,32 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="2">
-    <widget class="QLabel" name="label_49">
+   <item row="3" column="4">
+    <widget class="QLabel" name="alignmentLabel">
      <property name="font">
       <font>
        <pointsize>12</pointsize>
       </font>
      </property>
      <property name="text">
-      <string>Stick</string>
+      <string>UNKNOWN</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="7">
-    <widget class="QLabel" name="label_55">
+   <item row="3" column="6">
+    <widget class="QLabel" name="label_54">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>UTC Time</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="7">
+    <widget class="QLabel" name="utcTimeLabel">
      <property name="font">
       <font>
        <family>IntelOne Mono</family>
@@ -457,15 +386,75 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="label_15">
+   <item row="4" column="6">
+    <widget class="QLabel" name="label_8">
      <property name="font">
       <font>
        <pointsize>12</pointsize>
       </font>
      </property>
      <property name="text">
-      <string>GPS Link</string>
+      <string>Last Rec:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="7">
+    <widget class="QLabel" name="lastRecLabel">
+     <property name="font">
+      <font>
+       <family>IntelOne Mono</family>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>HH:MM</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="4">
+    <widget class="QLabel" name="lastIssueLabel">
+     <property name="minimumSize">
+      <size>
+       <width>160</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>NONE</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="3">
+    <widget class="QLabel" name="label_10">
+     <property name="text">
+      <string>Last Issue:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLedLabel" name="gpsLinkLED">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="QPushButton" name="clearErrorsBtn">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Clear Errors</string>
      </property>
     </widget>
    </item>

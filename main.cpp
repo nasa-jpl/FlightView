@@ -410,13 +410,15 @@ int main(int argc, char *argv[])
 
 
     QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
-    QSplashScreen splash(logo_pixmap);
+    //QSplashScreen splash(logo_pixmap);
+    QSplashScreen *splash = new QSplashScreen(logo_pixmap);
     if(!startupOptions.xioCam)
     {
         // On some displays, the splash screen covers the setup dialog box
-        splash.show();
-        splash.showMessage(QObject::tr("Loading AVIRIS-Next Generation LiveView. Compiled on " __DATE__ ", " __TIME__ " PDT by " UNAME "@" HOST  ),
-                           Qt::AlignCenter | Qt::AlignBottom, Qt::gray);
+        splash->show();
+        splash->showMessage(QObject::tr("Loading AVIRIS LiveView. Compiled on " __DATE__ ", " __TIME__ " PDT by " UNAME "@" HOST  ),
+                           Qt::WindowStaysOnTopHint | Qt::AlignCenter | Qt::AlignBottom, Qt::gray);
+
     }
 
     /* Step 3: Load the parallel worker object which will act as a "backend" for LiveView */
@@ -441,8 +443,9 @@ int main(int argc, char *argv[])
     QPixmap icon_pixmap(":images/icon.png");
     w.setWindowIcon(QIcon(icon_pixmap));
     w.show();
+    w.raise();
 
-    splash.finish(&w);
+    splash->finish(&w);
     /* Step 6: Close out the backend after the frontend is closed */
     int retval = a.exec();
 #ifdef VERBOSE

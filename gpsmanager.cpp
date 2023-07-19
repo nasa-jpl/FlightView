@@ -324,7 +324,7 @@ void gpsManager::insertLabels(QLabel *gpsLat, QLabel *gpsLong, QLabel *gpsAltitu
                               QLabel *gpsUTCtime, QLabel *gpsUTCdate, QLabel *gpsUTCValid,
                               QLabel *gpsGroundSpeed,
                               QLabel *gpsHeading, QLabel *gpsRoll, QLabel *gpsPitch,
-                              QLabel *gpsQuality,
+                              QLabel *gpsQuality, QLabel *gpsAlignment,
                               QLabel *gpsRateClimb)
 {
 
@@ -339,6 +339,7 @@ void gpsManager::insertLabels(QLabel *gpsLat, QLabel *gpsLong, QLabel *gpsAltitu
     this->gpsRoll = gpsRoll;
     this->gpsPitch = gpsPitch;
     this->gpsQuality = gpsQuality;
+    this->gpsAlignment = gpsAlignment;
     this->gpsRateClimb = gpsRateClimb;
 }
 
@@ -357,6 +358,11 @@ void gpsManager::updateLabel(QLabel *label, QString text)
     {
         label->setText(text);
     }
+}
+
+unsigned char gpsManager::getBit(uint32_t d, unsigned char bit)
+{
+    return((d & ( 1 << bit )) >> bit);
 }
 
 void gpsManager::receiveGPSMessage(gpsMessage m)
@@ -379,7 +385,6 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     if(firstMessage)
     {
         gnssStatusTime.start();
-        firstMessage = false;
     }
 
     gpsMessageHeartbeat.start();
@@ -407,8 +412,10 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         statusGPSMessagesDropped = false;
     }
 
-    bool doPlotUpdate = (msgsReceivedCount%updatePlotsInverval)==0;
-    bool doWidgetPaint = (msgsReceivedCount%updateAvionicsWidgetsInterval)==0;
+    //bool doPlotUpdate = (msgsReceivedCount%updatePlotsInverval)==0;
+    //bool doWidgetPaint = (msgsReceivedCount%updateAvionicsWidgetsInterval)==0;
+    bool doPlotUpdate = false; // no more plots
+    bool doWidgetPaint = false; // no more fancy widgets
     bool doLabelUpdate = (msgsReceivedCount%updateLabelsInterval)==0;
 
     if(m.haveUTC)
@@ -433,7 +440,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         if(m.haveAltitudeHeading)
         {
             updateLabel(gpsRoll, QString("%1").arg(m.roll));
-            updateLabel(gpsHeading, QString("%1").arg(m.heading));
+            updateLabel(gpsHeading, QString(" %1").arg(m.heading));
             updateLabel(gpsPitch, QString("%1").arg(m.pitch));
 
         }
@@ -446,19 +453,21 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
                 longitude = m.longitude;
             }
             // Format specifier is number, TOTAL DIGITS (including the dot), float, and the number of decimal places desired (8), and the filler character for any front filling
-            updateLabel(gpsLat, QString("%1").arg(m.latitude, 12, 'f', 8, QChar('0')));
-            updateLabel(gpsLong, QString("%1").arg(longitude, 12, 'f', 8, QChar('0')));
+            // Example: -118.94771 57:
+            updateLabel(gpsLat, QString("%1").arg(m.latitude, 10, 'f', 5, QChar(' ')));
+            updateLabel(gpsLong, QString("%1").arg(longitude, 10, 'f', 5, QChar(' ')));
             // Native altitude is meters
             // Converting to feet by multiplying by 3.28084
-            updateLabel(gpsAltitude, QString("%1 Ft").arg(m.altitude * 3.28084, 6, 'f', 1, QChar('0')));
+            updateLabel(gpsAltitude, QString("%1 ft").arg(m.altitude * 3.28084, 6, 'f', 1, QChar('0')));
         }
         if(m.haveCourseSpeedGroundData)
         {
             // The native units are meters per second.
-            // the old conversion factor used was 1.94384, which converted to knots,
-            // useful for air speed but not so much ground speed.
-            // Now we convert to MPH using 2.23694
-            updateLabel(gpsGroundSpeed, QString("%1 MPH").arg(m.speedOverGround * 2.23694, 6, 'f', 2, QChar('0')));
+            // To convert to knots, multiply by 1.94384
+            // To convert to MPH, multiply by 2.23694
+            // To convert to KPH, multiply by 3.6
+            // The abbreviation for knot or knots is "kt" or "kts", respectively.
+            updateLabel(gpsGroundSpeed, QString("%1 kts").arg(m.speedOverGround * 1.94384, 6, 'f', 2, QChar('0')));
         }
         if(m.haveSpeedData)
         {
@@ -470,6 +479,55 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             updateLabel(gpsUTCdate, date);
         }
     }
+
+    if(m.haveINSAlgorithmStatus) {
+        if( (firstMessage) || (priorAlgorithmStatus1 !=m.algorithmStatus1) ) {
+            bool courseAlignment = false;
+            bool fineAlignment = false;
+            if(getBit(m.algorithmStatus1, 1)) {
+                updateLabel(gpsAlignment, "COURSE");
+                courseAlignment = true;
+            }
+            if(getBit(m.algorithmStatus1, 2)) {
+                updateLabel(gpsAlignment, "FINE");
+                fineAlignment = true;
+            }
+            if( (!courseAlignment) && (!fineAlignment) ) {
+                updateLabel(gpsAlignment, "COMPLETE");
+            }
+        }
+        if( (firstMessage) || (priorAlgorithmStatus2 !=m.algorithmStatus2) ) {
+
+        }
+        if( (firstMessage) || (priorAlgorithmStatus3 !=m.algorithmStatus3) ) {
+
+        }
+        if( (firstMessage) || (priorAlgorithmStatus4 !=m.algorithmStatus4) ) {
+
+        }
+
+        priorAlgorithmStatus1 = m.algorithmStatus1;
+        priorAlgorithmStatus2 = m.algorithmStatus2;
+        priorAlgorithmStatus3 = m.algorithmStatus3;
+        priorAlgorithmStatus4 = m.algorithmStatus4;
+    }
+
+    if(m.haveINSSystemStatus) {
+        if( (firstMessage) || (priorSystemStatus1 != m.systemStatus1) ) {
+
+        }
+        if( (firstMessage) || (priorSystemStatus1 != m.systemStatus1) ) {
+
+        }
+        if( (firstMessage) || (priorSystemStatus1 != m.systemStatus1) ) {
+
+        }
+
+        priorSystemStatus1 = m.systemStatus1;
+        priorSystemStatus2 = m.systemStatus2;
+        priorSystemStatus3 = m.systemStatus3;
+    }
+
 
     if(doPlotUpdate)
     {
@@ -563,6 +621,11 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
 
     // Every time, process the status:
     processStatus();
+
+    if(firstMessage)
+    {
+        firstMessage = false;
+    }
 }
 
 void gpsManager::handleStartsecondaryLog(QString filename)
@@ -600,6 +663,11 @@ void gpsManager::handleGPSConnectionError(int error)
                 emit gpsStatusMessage(QString("Error code from GPS connection: %1 (could not connect). Reconnecting in 1 second.").arg(error));
                 break;
             }
+        case 5:
+        {
+            emit gpsStatusMessage(QString("Error code from GPS connection: %1 (connection timeout). Reconnecting in 1 second.").arg(error));
+            break;
+        }
         default:
             {
                 emit gpsStatusMessage(QString("Error code from GPS connection: %1 (unknown). Reconnecting in 1 second.").arg(error));

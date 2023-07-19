@@ -14,7 +14,7 @@ namespace fs = boost::filesystem;
 #include <QTimer>
 #include <QThread>
 
-#include <qcustomplot.h>
+// include <qcustomplot.h>
 
 #include "gpsmanager.h"
 
@@ -53,6 +53,8 @@ class flight_widget : public QWidget
     QSplitter rhSplitter;
     QSplitter *gpsPlotSplitter = NULL;
 
+    void updateLabel(QLabel *label, QString text);
+
     QGridLayout layout;
     QVBoxLayout rhLayout;
     QGroupBox flightControls; // All plots and controls are inside this
@@ -61,16 +63,17 @@ class flight_widget : public QWidget
     QGridLayout flightAvionicsLayout;
 
     flightIndicators *fi = NULL;
+    fiUI_t flightDisplayElements;
 
     // stand-in items for flight controls:
     QPushButton resetStickyErrorsBtn;
     QLabel gpsLEDLabel;
     QLedLabel gpsLED;
-    QLabel cameraLinkLEDLabel;
-    QLedLabel cameraLinkLED;
+    QLabel *cameraLinkLEDLabel = NULL;
+    QLedLabel *cameraLinkLED = NULL;
     QLabel aircraftLbl;
     QLabel diskLEDLabel;
-    QLedLabel diskLED;
+    QLedLabel *diskLED = NULL;
 
     // GPS Text Labels:
     QLabel gpsLatText;
@@ -89,8 +92,8 @@ class flight_widget : public QWidget
     QLedLabel gpsReadyLED;
 
     // GPS Plots:
-    QCustomPlot gpsPitchRollPlot;
-    QCustomPlot gpsHeadingPlot;
+    //QCustomPlot gpsPitchRollPlot;
+    //QCustomPlot gpsHeadingPlot;
 
     // GPS Widgets:
     bool useAvionicsWidgets = false;

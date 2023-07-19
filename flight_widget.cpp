@@ -7,6 +7,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     qDebug() << "Running flight widget constructor";
     emit statusMessage(QString("Starting flight screen widget"));
     fi = new flightIndicators();
+    fiUI_t flightDisplayElements = fi->getElements();
+
     stickyFPSError = false;
     FPSErrorCounter = 0;
     this->fw = fw;
@@ -29,57 +31,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
         // NOTE: If a widget is set to NULL, it will not
         // be updated and will not be added to the layout.
         // Simply comment out the widgets not desired.
-
-        // See the "Avionics Widget Layout Placement" section
-        // for layout issues.
-
-        // QFlightInstruments Avionics Widgets are by Marek Cel:
-        // http://marekcel.pl/qflightinstruments
-        // https://github.com/marek-cel/QFlightinstruments
-
-        int avBase = 100;
-        int avMax = 150; // Larger values may require a window resize
-
-        // EADI: Electronic Attitude Direction Indicator
-        // shows speed, climb, heading, and ground orientation
-        EADI = new qfi_EADI();
-        EADI->setBaseSize(avBase,avBase);
-        EADI->setMaximumSize(avMax,avMax);
-        //EADI->setMinimumSize(200,200);
-        EADI->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        EADI->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        EADI->setInteractive(false);
-        EADI->setEnabled(false);
-
-        // EHSI: Electronic Horizontal Situation Indicator
-        // shows heading and course
-        EHSI = new qfi_EHSI();
-        EHSI->setBaseSize(avBase,avBase);
-        EHSI->setMaximumSize(avMax,avMax);
-        EHSI->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        EHSI->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        EHSI->setInteractive(false);
-        EHSI->setEnabled(false);
-
-        // ASI: Air Speed Indicator
-        // air speed from GPS unit of course
-        ASI = new qfi_ASI();
-        ASI->setBaseSize(avBase,avBase);
-        ASI->setMaximumSize(avMax,avMax);
-        ASI->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        ASI->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        ASI->setInteractive(false);
-        ASI->setEnabled(false);
-
-        // VSI: Vertical Speed Indicator
-        // Shows rate of climb
-        VSI = new qfi_VSI();
-        VSI->setBaseSize(avBase,avBase);
-        VSI->setMaximumSize(avMax,avMax);
-        VSI->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        VSI->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        VSI->setInteractive(false);
-        VSI->setEnabled(false);
     }
 
     // Group Box "Flight Instrument Controls" items:
@@ -116,81 +67,26 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     if(options.rtpCam)
     {
-        cameraLinkLEDLabel.setText("RTP Link Status:");
+        updateLabel(cameraLinkLEDLabel, "RTP Link");
+    } else if (options.xioCam) {
+        updateLabel(cameraLinkLEDLabel, "XIO Files");
     } else {
-        cameraLinkLEDLabel.setText("CameraLink Status:");
+        updateLabel(cameraLinkLEDLabel, "C Link");
     }
-    cameraLinkLED.setState(QLedLabel::StateOk);
+
+    if(cameraLinkLED != NULL) {
+        cameraLinkLED->setState(QLedLabel::StateOk);
+    }
     diskLEDLabel.setText("Disk:");
-    diskLED.setState(QLedLabel::StateOkBlue);
+    if(diskLED != NULL) {
+        diskLED->setState(QLedLabel::StateOkBlue);
+    }
 
     // Format is &item, row, col, rowSpan, colSpan. -1 = to "edge"
-    int row=0; //                                    ROW, COL, ROWSPAN, COLSPAN
-
-    //gpsPlotSplitter->setOrientation(Qt::Horizontal);
-    //gpsPlotSplitter->addWidget(&gpsHeadingPlot);
-    //gpsPlotSplitter->addWidget(&gpsPitchRollPlot);
-    //gpsPlotSplitter->setHandleWidth(10);
-
-    //flightControlLayout.addWidget(&gpsHeadingPlot,   row,   0,       4,       3);
-    //flightControlLayout.addWidget(&gpsPitchRollPlot, row,   3,       4,       3);
-
-    //flightControlLayout.addWidget(gpsPlotSplitter, row, 0, 4, -1);
-
+    int row=0; // ROW, COL, ROWSPAN, COLSPAN
     row += 4;
-
     row++;
-    flightControlLayout.addWidget(fi, row, 0, 1,-1);
-
-//    // First row of widgets:
-//    ++row;
-//    flightControlLayout.addWidget(&gpsLEDLabel,   row,0,1,1);
-//    flightControlLayout.addWidget(&gpsLED,        row,1,1,1);
-//    flightControlLayout.addWidget(&diskLEDLabel,  row,2,1,1);
-//    flightControlLayout.addWidget(&diskLED,       row,3,1,1);
-//    flightControlLayout.addWidget(&gpsQualityText, row, 4, 1, 1);
-//    flightControlLayout.addWidget(&gpsQualityData, row, 5, 1, 1, Qt::AlignLeft);
-
-//    // Second row:
-//    row++;
-//    flightControlLayout.addWidget(&cameraLinkLEDLabel,  row,0,1,1);
-//    flightControlLayout.addWidget(&cameraLinkLED,       row,1,1,1);
-//    //flightControlLayout.addWidget(&resetStickyErrorsBtn,row,2,1,1);
-//    flightControlLayout.addWidget(&gpsReadyText,row,2,1,1);
-
-//    //flightControlLayout.addWidget(&gpsReadyText, row, 3,1,1);
-//    flightControlLayout.addWidget(&gpsReadyLED, row, 3,1,1);
-
-
-
-//    // Third row:
-//    row++;
-//    flightControlLayout.addWidget(&gpsLatText,  row,0,1,1);
-//    flightControlLayout.addWidget(&gpsLatData,  row,1,1,1);
-//    flightControlLayout.addWidget(&gpsLongText, row,2,1,1);
-//    flightControlLayout.addWidget(&gpsLongData, row,3,1,1);
-
-//    // Fourth row:
-//    row++;
-//    flightControlLayout.addWidget(&gpsAltitudeText,    row,0,1,1);
-//    flightControlLayout.addWidget(&gpsAltitudeData,    row,1,1,1);
-//    flightControlLayout.addWidget(&gpsGroundSpeedText, row,2,1,1);
-//    flightControlLayout.addWidget(&gpsGroundSpeedData, row,3,1,1);
-
-//    // Fifth row:
-//    row++;
-//    flightControlLayout.addWidget(&gpsHeadingText,     row,0,1,1);
-//    flightControlLayout.addWidget(&gpsHeadingData,     row,1,1,1);
-//    flightControlLayout.addWidget(&gpsUTCValidityText, row,2,1,1);
-//    flightControlLayout.addWidget(&gpsUTCValidityData, row,3,1,1);
-
-//    // Sixth row:
-//    row++;
-//    flightControlLayout.addWidget(&gpsUTCdateText, row,0,1,1);
-//    flightControlLayout.addWidget(&gpsUTCdateData, row,1,1,1);
-//    flightControlLayout.addWidget(&gpsUTCtimeText, row,2,1,1);
-//    flightControlLayout.addWidget(&gpsUTCtimeData, row,3,1,1);
-//    flightControlLayout.addWidget(&resetStickyErrorsBtn,row,4,1,1);
+    flightControlLayout.addWidget(fi, 0, 0, 1,-1);
 
 
 
@@ -223,7 +119,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 //    flightControlLayout.setRowStretch(3,2); // stretch the plot area
 
     // Group Box "Flight Instrument Controls"
-    flightControls.setTitle("Flight Instrument Controls");
+    flightControls.setTitle("Instrumentation Status");
     flightControls.setLayout(&flightControlLayout);
 
     rhSplitter.setOrientation(Qt::Vertical);
@@ -247,13 +143,23 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(gps, SIGNAL(gpsConnectionError(int)), this, SLOT(handleGPSConnectionError(int)));
     gps->insertLEDs(&gpsLED);
 
+    diskLED = flightDisplayElements.diskLED;
+    cameraLinkLED = flightDisplayElements.imageLED;
+
     // Unused labels are Roll, Pitch, and Rate of Climb
-    gps->insertLabels(&gpsLatData, &gpsLongData, &gpsAltitudeData,
-                      &gpsUTCtimeData, &gpsUTCdateData, &gpsUTCValidityData,
-                      &gpsGroundSpeedData,
-                      &gpsHeadingData, NULL, NULL,
-                      &gpsQualityData,
+    gps->insertLabels(flightDisplayElements.latLabel , flightDisplayElements.longLabel, flightDisplayElements.altitudeLabel,
+                      NULL, NULL, NULL,
+                      flightDisplayElements.groundSpeedLabel,
+                      flightDisplayElements.headingLabel, NULL, NULL,
+                      NULL, flightDisplayElements.alignmentLabel,
                       NULL);
+
+//    gps->insertLabels(&gpsLatData, &gpsLongData, &gpsAltitudeData,
+//                      &gpsUTCtimeData, &gpsUTCdateData, &gpsUTCValidityData,
+//                      &gpsGroundSpeedData,
+//                      &gpsHeadingData, NULL, NULL,
+//                      &gpsQualityData,
+//                      NULL);
 
     //gps->insertPlots(&gpsPitchRollPlot, &gpsHeadingPlot);
     if(useAvionicsWidgets)
@@ -393,15 +299,17 @@ void flight_widget::handleNewFrame()
 
 void flight_widget::updateFPS()
 {
-    if(fw->delta < 12.8f)
-    {
-        processFPSError();
-    } else if (fw->delta < 13.0f) {
-        this->cameraLinkLED.setState(QLedLabel::StateWarning);
-    } else if ((fw->delta > 13.0f) && !stickyFPSError)
-    {
-        // to reset the warning, but not the sticky error:
-        this->cameraLinkLED.setState(QLedLabel::StateOk);
+    if(cameraLinkLED != NULL) {
+        if(fw->delta < 12.8f)
+        {
+            processFPSError();
+        } else if (fw->delta < 13.0f) {
+            this->cameraLinkLED->setState(QLedLabel::StateWarning);
+        } else if ((fw->delta > 13.0f) && !stickyFPSError)
+        {
+            // to reset the warning, but not the sticky error:
+            this->cameraLinkLED->setState(QLedLabel::StateOk);
+        }
     }
 }
 
@@ -425,17 +333,19 @@ void flight_widget::checkDiskSpace()
 
     if(havePrefs)
     {
-        if(percent > prefs.percentDiskStop)
-        {
-            diskLED.setState(QLedLabel::StateError);
-            stickyDiskFull = true;
-            //emit statusMessage(QString("[Flight Widget]: ERROR: Disk too full to use at percent %1").arg(percent));
-        } else if (percent > prefs.percentDiskWarning)
-        {
-            diskLED.setState(QLedLabel::StateWarning);
-            //emit statusMessage(QString("[Flight Widget]: Warning: Disk quite full at percent %1").arg(percent));
-        } else {
-            diskLED.setState(QLedLabel::StateOk);
+        if(diskLED != NULL) {
+            if(percent > prefs.percentDiskStop)
+            {
+                diskLED->setState(QLedLabel::StateError);
+                stickyDiskFull = true;
+                //emit statusMessage(QString("[Flight Widget]: ERROR: Disk too full to use at percent %1").arg(percent));
+            } else if (percent > prefs.percentDiskWarning)
+            {
+                diskLED->setState(QLedLabel::StateWarning);
+                //emit statusMessage(QString("[Flight Widget]: Warning: Disk quite full at percent %1").arg(percent));
+            } else {
+                diskLED->setState(QLedLabel::StateOk);
+            }
         }
     }
 
@@ -454,14 +364,18 @@ void flight_widget::processFPSError()
 
     if((FPSErrorCounter > 0) && !stickyFPSError)
     {
-        this->cameraLinkLED.setState(QLedLabel::StateError);
+        if(cameraLinkLED != NULL) {
+            this->cameraLinkLED->setState(QLedLabel::StateError);
+        }
         stickyFPSError = true;
     }
 }
 
 void flight_widget::resetFPSError()
 {
-    this->cameraLinkLED.setState(QLedLabel::StateOk);
+    if(cameraLinkLED != NULL) {
+        this->cameraLinkLED->setState(QLedLabel::StateOk);
+    }
     stickyFPSError = false;
 }
 
@@ -558,6 +472,17 @@ void flight_widget::setCrosshairs(QMouseEvent *event)
 void flight_widget::startDataCollection(QString secondaryLogFilename)
 {
     emit statusMessage(QString("[Flight Widget]: User pressed START Recording button"));
+    // Example filename:
+    // /tmp/flighttest/AV320230719t191438_gps
+    if(options.flightMode)
+    {
+        QString hhmm = secondaryLogFilename.mid(secondaryLogFilename.length()-10, 4);
+        hhmm.insert(2, ':');
+        fi->updateLastRec(hhmm);
+    } else {
+        // Can't rely on these filenames for non-flight recordings.
+        fi->updateLastRec();
+    }
     if(!options.disableGPS)
         emit beginSecondaryLog(secondaryLogFilename);
 }
@@ -565,6 +490,7 @@ void flight_widget::startDataCollection(QString secondaryLogFilename)
 void flight_widget::stopDataCollection()
 {
     emit statusMessage(QString("[Flight Widget]: User pressed STOP Recording button"));
+    fi->doneRecording();
     if(!options.disableGPS)
         emit stopSecondaryLog();
 }
@@ -600,8 +526,18 @@ void flight_widget::handleGPSConnectionError(int errorNum)
 void flight_widget::clearStickyErrors()
 {
     stickyDiskFull = false;
-    diskLED.setState(QLedLabel::StateOk);
+    if(diskLED != NULL) {
+        diskLED->setState(QLedLabel::StateOk);
+    }
     emit statusMessage("[Flight Widget]: User cleared sticky errors.");
+}
+
+void flight_widget::updateLabel(QLabel *label, QString text)
+{
+    if(label != NULL)
+    {
+        label->setText(text);
+    }
 }
 
 void flight_widget::showDebugMessage(QString debugMessage)
