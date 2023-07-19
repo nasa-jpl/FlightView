@@ -224,8 +224,15 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(wfThread, SIGNAL(finished()), waterfall_widget, SLOT(deleteLater()));
     wfThread->start();
 
-    setupWFConnections();
-
+    setupWFConnections();    
+    QList <int>rhSS;
+    rhSS.append(514);
+    rhSS.append(197);
+    rhSplitter.setSizes(rhSS);
+    QList <int>lrSS;
+    lrSS.append(830);
+    lrSS.append(684);
+    lrSplitter.setSizes(lrSS);
     emit statusMessage(QString("Finished flight constructor."));
 }
 
