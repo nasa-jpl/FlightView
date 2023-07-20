@@ -15,6 +15,12 @@ flightIndicators::flightIndicators(QWidget *parent) :
     alertLabelFont.setBold(true);
     defLabelFont = ui->lastRecLabel->font();
 
+    int ledSize = 18;
+    ui->diskLED->setSizeCustom(ledSize);
+    ui->imageLED->setSizeCustom(ledSize);
+    ui->gpsLinkLED->setSizeCustom(ledSize);
+    ui->gpsTroubleLED->setSizeCustom(ledSize);
+
     ssm("Setup complete.");
 }
 
@@ -90,5 +96,11 @@ fiUI_t flightIndicators::getElements()
 void flightIndicators::debugThis()
 {
     //ui->latLabel
+}
+
+
+void flightIndicators::on_clearErrorsBtn_clicked()
+{
+    emit clearErrors();
 }
 

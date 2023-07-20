@@ -57,13 +57,15 @@ class gpsManager : public QObject
     // Status:
     bool statusGNSSReceptionOk = true; // GNSS Info received on time or way too late
     bool statusGNSSReceptionWarning = false; // GNSS Info received late
-    bool statusUTCok = true; // UTC received on time
+
     bool statusMessageDecodeOk = true; // message decoded ok
-    bool statusGPSConnectionNoErrors = true; // Have not received any errors from the network socket
     bool statusConnectedToGPS = true; // Connected at this time to the GPS unit
     bool statusGPSHeartbeatOk = true; // Have received messages recently
     bool statusGPSMessagesDropped = false; // true if messages being dropped
-    bool statusStickyError = false; // stays true until cleared
+
+    bool statusLinkStickyError = false; // stays true until cleared
+    bool statusTroubleStickyError = false; //
+
     bool statusJustCleared = false; // True if we just cleared errors.
 
     // Status Bits from the device:
@@ -77,6 +79,12 @@ class gpsManager : public QObject
     dword priorSystemStatus1=0;
     dword priorSystemStatus2=0;
     dword priorSystemStatus3=0;
+
+    gpsQualityKinds gnssQualPrior = gpsQualityInvalid;
+    QString gnssQualStr = "";
+    QString gnssQualShortStr = "";
+    bool gnssAlignmentComplete = false;
+    QString gnssAlignmentPhase = "";
 
     // Record 1 out of every 40 points for 5 Hz updates to plots
     // therefore, for 90 seconds of data, we need 90*5 = 450 point vectors
@@ -136,9 +144,12 @@ class gpsManager : public QObject
     utcTime validityTime;
 
     void updateLabel(QLabel *label, QString text);
+    void updateLED(QLedLabel *led, QLedLabel::State s);
 
     // UI elements (set to NULL if unused):
-    QLedLabel *gpsOkLED = NULL;
+    QLedLabel *gpsLinkLED = NULL;
+    QLedLabel *gpsTroubleLED = NULL;
+
     QCustomPlot *plotRollPitch = NULL;
     QCustomPlot *plotHeading = NULL;
     QCPPlotTitle *titleHeading = NULL;
@@ -169,7 +180,7 @@ public:
     gpsManager();
     ~gpsManager();
 
-    void insertLEDs(QLedLabel *gpsOkLED);
+    void insertLEDs(QLedLabel *gpsLinkLED, QLedLabel *gpsTroubleLED);
     void insertPlots(QCustomPlot *gpsRollPitchPlot, QCustomPlot *gpsHeadingPlot);
     void insertLabels(QLabel *gpsLat, QLabel *gpsLong, QLabel *gpsAltitude,
                       QLabel *gpsUTCtime, QLabel *gpsUTCdate, QLabel *gpsUTCValidity,

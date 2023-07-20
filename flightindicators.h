@@ -55,6 +55,11 @@ public slots:
     void doneRecording();
     fiUI_t getElements();
 
+signals:
+    void clearErrors();
+
+private slots:
+    void on_clearErrorsBtn_clicked();
 
 private:
     QTimer *clock;

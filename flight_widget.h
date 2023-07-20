@@ -71,25 +71,25 @@ class flight_widget : public QWidget
     QLedLabel gpsLED;
     QLabel *cameraLinkLEDLabel = NULL;
     QLedLabel *cameraLinkLED = NULL;
-    QLabel aircraftLbl;
+    //QLabel aircraftLbl;
     QLabel diskLEDLabel;
     QLedLabel *diskLED = NULL;
 
     // GPS Text Labels:
-    QLabel gpsLatText;
-    QLabel gpsLatData;
-    QLabel gpsLongText;
-    QLabel gpsLongData;
-    QLabel gpsHeadingText;
-    QLabel gpsHeadingData;
-    QLabel gpsAltitudeText;
-    QLabel gpsAltitudeData;
-    QLabel gpsUTCtimeData, gpsUTCdateData, gpsUTCValidityData;
-    QLabel gpsUTCtimeText, gpsUTCdateText, gpsUTCValidityText;
-    QLabel gpsGroundSpeedData, gpsGroundSpeedText;
-    QLabel gpsQualityData, gpsQualityText;
-    QLabel gpsReadyText;
-    QLedLabel gpsReadyLED;
+//    QLabel gpsLatText;
+//    QLabel gpsLatData;
+//    QLabel gpsLongText;
+//    QLabel gpsLongData;
+//    QLabel gpsHeadingText;
+//    QLabel gpsHeadingData;
+//    QLabel gpsAltitudeText;
+//    QLabel gpsAltitudeData;
+//    QLabel gpsUTCtimeData, gpsUTCdateData, gpsUTCValidityData;
+//    QLabel gpsUTCtimeText, gpsUTCdateText, gpsUTCValidityText;
+//    QLabel gpsGroundSpeedData, gpsGroundSpeedText;
+//    QLabel gpsQualityData, gpsQualityText;
+//    QLabel gpsReadyText;
+//    QLedLabel gpsReadyLED;
 
     // GPS Plots:
     //QCustomPlot gpsPitchRollPlot;

@@ -36,31 +36,31 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     // Group Box "Flight Instrument Controls" items:
     resetStickyErrorsBtn.setText("Clear Errors");
     resetStickyErrorsBtn.setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    aircraftLbl.setText("AVIRIS-III");
-    gpsLatText.setText("GPS Latitude:");
-    gpsLatData.setText("########");
-    gpsAltitudeText.setText("GPS Altitude:");
-    gpsAltitudeData.setText("########");
-    gpsLongText.setText("GPS Longitude:");
-    gpsLongData.setText("########");
-    gpsLEDLabel.setText("GPS Status:");
-    gpsHeadingText.setText("Heading:");
-    gpsHeadingData.setText("###.###");
+    //aircraftLbl.setText("AVIRIS-III");
+    //gpsLatText.setText("GPS Latitude:");
+//    gpsLatData.setText("########");
+//    gpsAltitudeText.setText("GPS Altitude:");
+//    gpsAltitudeData.setText("########");
+//    gpsLongText.setText("GPS Longitude:");
+//    gpsLongData.setText("########");
+//    gpsLEDLabel.setText("GPS Status:");
+//    gpsHeadingText.setText("Heading:");
+//    gpsHeadingData.setText("###.###");
 
-    gpsUTCtimeText.setText("UTC Time:");
-    gpsUTCtimeData.setText("###TIME##");
-    gpsUTCdateText.setText("UTC Date:");
-    gpsUTCdateData.setText("########");
-    gpsUTCValidityText.setText("UTC Validity:");
-    gpsUTCValidityData.setText("##VAL TIME##");
+//    gpsUTCtimeText.setText("UTC Time:");
+//    gpsUTCtimeData.setText("###TIME##");
+//    gpsUTCdateText.setText("UTC Date:");
+//    gpsUTCdateData.setText("########");
+//    gpsUTCValidityText.setText("UTC Validity:");
+//    gpsUTCValidityData.setText("##VAL TIME##");
 
-    gpsGroundSpeedText.setText("Ground Speed:");
-    gpsGroundSpeedData.setText("########");
-    gpsQualityText.setText("GPS Quality:");
-    gpsQualityData.setText("########");
+//    gpsGroundSpeedText.setText("Ground Speed:");
+//    gpsGroundSpeedData.setText("########");
+//    gpsQualityText.setText("GPS Quality:");
+//    gpsQualityData.setText("########");
 
-    gpsReadyText.setText("GPS Ready:");
-    gpsReadyLED.setState(QLedLabel::StateOkBlue);
+//    gpsReadyText.setText("GPS Ready:");
+    //gpsReadyLED.setState(QLedLabel::StateOkBlue);
 
 
     gpsLED.setState(QLedLabel::StateOkBlue);
@@ -83,9 +83,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     }
 
     // Format is &item, row, col, rowSpan, colSpan. -1 = to "edge"
-    int row=0; // ROW, COL, ROWSPAN, COLSPAN
-    row += 4;
-    row++;
+
     flightControlLayout.addWidget(fi, 0, 0, 1,-1);
 
 
@@ -106,17 +104,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
         if(VSI!=NULL)  flightControlLayout.addWidget(VSI,  4, avColumn--, -1, 1); // col 4
     }
 
-//    flightControlLayout.setColumnStretch(0,0);
-//    flightControlLayout.setColumnStretch(1,0);
-//    flightControlLayout.setColumnStretch(2,0);
-//    flightControlLayout.setColumnStretch(3,1); // this is between the text and the avionics widgets
-
-//    flightControlLayout.setColumnStretch(4,0);
-//    flightControlLayout.setColumnStretch(5,0);
-//    flightControlLayout.setColumnStretch(6,0);
-//    flightControlLayout.setColumnStretch(7,0);
-
-//    flightControlLayout.setRowStretch(3,2); // stretch the plot area
 
     // Group Box "Flight Instrument Controls"
     flightControls.setTitle("Instrumentation Status");
@@ -141,7 +128,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     // Connections to GPS:
     connect(gps, SIGNAL(gpsStatusMessage(QString)), this, SLOT(showDebugMessage(QString)));
     connect(gps, SIGNAL(gpsConnectionError(int)), this, SLOT(handleGPSConnectionError(int)));
-    gps->insertLEDs(&gpsLED);
+    gps->insertLEDs(flightDisplayElements.gpsLinkLED, flightDisplayElements.gpsTroubleLED);
 
     diskLED = flightDisplayElements.diskLED;
     cameraLinkLED = flightDisplayElements.imageLED;
@@ -154,14 +141,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
                       NULL, flightDisplayElements.alignmentLabel,
                       NULL);
 
-//    gps->insertLabels(&gpsLatData, &gpsLongData, &gpsAltitudeData,
-//                      &gpsUTCtimeData, &gpsUTCdateData, &gpsUTCValidityData,
-//                      &gpsGroundSpeedData,
-//                      &gpsHeadingData, NULL, NULL,
-//                      &gpsQualityData,
-//                      NULL);
-
-    //gps->insertPlots(&gpsPitchRollPlot, &gpsHeadingPlot);
     if(useAvionicsWidgets)
     {
         gps->insertAvionicsWidgets(ASI, VSI, EADI, EHSI);
@@ -202,11 +181,10 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(this, &flight_widget::stopSecondaryLog, gps, &gpsManager::handleStopSecondaryLog);
 
 
+    connect(fi, SIGNAL(clearErrors()), this, SLOT(resetFPSError()));
+    connect(fi, SIGNAL(clearErrors()), gps, SLOT(clearStickyError()));
 
-    connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), gps, SLOT(clearStickyError()));
-    connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), this, SLOT(resetFPSError()));
-
-    connect(&resetStickyErrorsBtn, SIGNAL(clicked(bool)), this, SLOT(clearStickyErrors()));
+    connect(fi, SIGNAL(clearErrors()), this, SLOT(clearStickyErrors()));
 
     diskCheckerTimer = new QTimer();
     diskCheckerTimer->setInterval(1000);
@@ -229,19 +207,19 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     rhSS.append(514);
     rhSS.append(197);
     rhSplitter.setSizes(rhSS);
+    rhSplitter.setStretchFactor(0, 2);
+    rhSplitter.setStretchFactor(1, 0); // do not stretch the indicators
     QList <int>lrSS;
     lrSS.append(830);
     lrSS.append(684);
     lrSplitter.setSizes(lrSS);
+    lrSplitter.setStretchFactor(0, 2);
+    lrSplitter.setStretchFactor(1, 0); // do not stretch the indicators
     emit statusMessage(QString("Finished flight constructor."));
 }
 
 flight_widget::~flight_widget()
 {
-    // We are seeing a crash here on exit.
-    // Strategy: breakpoint here,
-    // compare with flight version.
-
     qDebug() << "Running flight_widget destructor.";
     if(wfThread != NULL)
     {

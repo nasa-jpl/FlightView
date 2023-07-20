@@ -409,7 +409,7 @@ int main(int argc, char *argv[])
     /* Step 2: Load the splash screen */
 
 
-    QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
+    QPixmap logo_pixmap(":images/aviris-logo-transparent.png"); // AVIRIS-NG
     //QSplashScreen splash(logo_pixmap);
     QSplashScreen *splash = new QSplashScreen(logo_pixmap);
     if(!startupOptions.xioCam)
@@ -438,8 +438,10 @@ int main(int argc, char *argv[])
                          Qt::LeftToRight,
                          Qt::AlignCenter,
                          w.size(),
-                         a.desktop()->availableGeometry()
+                         QGuiApplication::screens().at(0)->availableGeometry()
                          ));
+    // a.desktop()->availableGeometry()
+    // QGuiApplication::screens()
     QPixmap icon_pixmap(":images/icon.png");
     w.setWindowIcon(QIcon(icon_pixmap));
     w.show();

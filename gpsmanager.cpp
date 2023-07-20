@@ -3,7 +3,7 @@
 gpsManager::gpsManager()
 {
     qRegisterMetaType<gpsMessage>();
-    statusStickyError = false;
+    statusLinkStickyError = false;
 
     // May override later:
     baseSaveDirectory = QString("/tmp/gps");
@@ -103,8 +103,8 @@ void gpsManager::prepareVectors()
 void gpsManager::prepareLEDs()
 {
     // Initial state
-    if(gpsOkLED != NULL)gpsOkLED->setText("");
-    if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateOkBlue);
+    if(gpsLinkLED != NULL)gpsLinkLED->setText("");
+    if(gpsLinkLED != NULL)gpsLinkLED->setState(QLedLabel::StateOkBlue);
 }
 
 void gpsManager::prepareLabels()
@@ -309,9 +309,10 @@ void gpsManager::showStatusMessage(QString s)
     (void)s;
 }
 
-void gpsManager::insertLEDs(QLedLabel *gpsOk)
+void gpsManager::insertLEDs(QLedLabel *gpsLinkLED, QLedLabel *gpsTroubleLED)
 {
-    this->gpsOkLED = gpsOk;
+    this->gpsLinkLED = gpsLinkLED;
+    this->gpsTroubleLED = gpsTroubleLED;
 }
 
 void gpsManager::insertPlots(QCustomPlot *gpsRollPitchPlot, QCustomPlot *gpsHeadingPlot)
@@ -357,6 +358,13 @@ void gpsManager::updateLabel(QLabel *label, QString text)
     if(label != NULL)
     {
         label->setText(text);
+    }
+}
+
+void gpsManager::updateLED(QLedLabel *led, QLedLabel::State s)
+{
+    if(led != NULL) {
+        led->setState(s);
     }
 }
 
@@ -485,15 +493,21 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             bool courseAlignment = false;
             bool fineAlignment = false;
             if(getBit(m.algorithmStatus1, 1)) {
+                //gnssAlignmentPhase = "COURSE";
                 updateLabel(gpsAlignment, "COURSE");
                 courseAlignment = true;
+                gnssAlignmentComplete = false;
             }
             if(getBit(m.algorithmStatus1, 2)) {
-                updateLabel(gpsAlignment, "FINE");
+                //updateLabel(gpsAlignment, "FINE");
+                gnssAlignmentPhase = "FINE";
                 fineAlignment = true;
+                gnssAlignmentComplete = false;
             }
             if( (!courseAlignment) && (!fineAlignment) ) {
-                updateLabel(gpsAlignment, "COMPLETE");
+                    //updateLabel(gpsAlignment, "COMPLETE");
+                    gnssAlignmentPhase = "Ready";
+                    gnssAlignmentComplete = true;
             }
         }
         if( (firstMessage) || (priorAlgorithmStatus2 !=m.algorithmStatus2) ) {
@@ -528,6 +542,49 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         priorSystemStatus3 = m.systemStatus3;
     }
 
+    if((m.haveGNSSInfo1 && (m.gnss[0].gnssGPSQuality != gnssQualPrior)) || firstMessage) {
+        gnssInfo i = m.gnss[0];
+        gpsQualityKinds q = i.gnssGPSQuality;
+        switch(q)
+        {
+        case gpsQualityNatural_10m:
+            gnssQualStr = "Nat 10M";
+            gnssQualShortStr = "10M";
+            break;
+        case gpsQualityDifferential_3m:
+            gnssQualStr = "Diff 3M";
+            gnssQualShortStr = "3M";
+            break;
+        case gpsQualityMilitary_10m:
+            gnssQualStr = "Mil 10M";
+            gnssQualShortStr = "10M";
+            break;
+        case gpsQualityRTK_0p1m:
+            gnssQualStr = "RTK 0.1M";
+            gnssQualShortStr = "0.1M";
+            break;
+        case gpsQualityFloatRTK_0p3m:
+            gnssQualStr = "RTK 0.3M";
+            gnssQualShortStr = "0.3M";
+            break;
+        case gpsQualityOther:
+        case gpsQualityInvalid:
+        default:
+            gnssQualStr = "INVALID";
+            gnssQualShortStr = " ?";
+            break;
+        }
+        gnssQualPrior = q;
+    }
+
+    if(doLabelUpdate) {
+        QString alignmentText;
+        alignmentText.append(gnssAlignmentPhase);
+        if(gnssAlignmentComplete) {
+            alignmentText.append(QString(" %1").arg(gnssQualShortStr));
+        }
+        updateLabel(gpsAlignment, alignmentText);
+    }
 
     if(doPlotUpdate)
     {
@@ -676,7 +733,8 @@ void gpsManager::handleGPSConnectionError(int error)
     }
 
     emit gpsConnectionError(error);
-    statusStickyError = true;
+    statusLinkStickyError = true;
+    statusConnectedToGPS = false;
     processStatus();
     gpsReconnectTimer.start();
 }
@@ -692,7 +750,7 @@ void gpsManager::handleGPSReconnectTimer()
 void gpsManager::handleGPSConnectionGood()
 {
     emit gpsStatusMessage(QString("GPS: Connection good"));
-    statusStickyError = false; // Safe to clear when a new connection has been made.
+    statusLinkStickyError = false; // Safe to clear when a new connection has been made.
     statusConnectedToGPS = true;
     hbErrorCount = 0;
 }
@@ -734,40 +792,54 @@ void gpsManager::processStatus()
     // Central function to evaluate the status
     // of the GPS
 
-    bool trouble = statusStickyError || !statusGPSHeartbeatOk || !statusUTCok || !statusGNSSReceptionOk;
-    bool warning = statusGNSSReceptionWarning;
+    // Error status is an "OR" of prior error ('sticky') and current error conditions.
+    bool gpsLinkError = statusLinkStickyError || !statusGPSHeartbeatOk;
+    bool gpsLinkWarning = statusGPSMessagesDropped;
+
+    bool gpsTroubleError = statusTroubleStickyError || !statusGNSSReceptionOk;
+    bool gpsTroubleWarning = statusGNSSReceptionWarning;
 
     // Warnings are not sticky (automatically cleared)
-    if(warning && !trouble)
-    {
-        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateWarning);
-    }
 
-    // Check and see if things are back to normal and could be unflagged:
-    if(!statusGPSHeartbeatOk && !statusUTCok && !statusGNSSReceptionOk && statusStickyError)
-    {
-        // There's a sticky error, but the system is working
-        // TODO: Alert the user, but only once.
-    }
+    // Always show the current state of the above variables, which include the stickyness already:
 
-    // Trouble is sticky (clearing is manually done by the user)
-    if(trouble)
-    {
-        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateError);
-        statusStickyError = true;
+    if(gpsLinkError) {
+        updateLED(gpsLinkLED, QLedLabel::StateError);
+        statusLinkStickyError = true;
+    } else if (gpsLinkWarning) {
+        updateLED(gpsLinkLED, QLedLabel::StateWarning);
     } else {
-        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateOk);
+        updateLED(gpsLinkLED, QLedLabel::StateOk);
     }
-    if(statusJustCleared && !trouble)
-    {
-        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateOkBlue);
+
+    if(gpsTroubleError) {
+        updateLED(gpsTroubleLED, QLedLabel::StateError);
+        statusTroubleStickyError = true;
+    } else if (gpsTroubleWarning) {
+        updateLED(gpsTroubleLED, QLedLabel::StateWarning);
+    } else {
+        updateLED(gpsTroubleLED, QLedLabel::StateOk);
+    }
+
+    // Clear errors if we were asked to and if there isn't a new reason to
+    // flag errors...
+    if(statusJustCleared && (!gpsTroubleError) && (!gpsTroubleWarning)) {
+        // Reset
+        updateLED(gpsTroubleLED, QLedLabel::StateOkBlue);
+    }
+    if(statusJustCleared && (!gpsLinkError) && (!gpsLinkWarning)) {
+        // Reset
+        updateLED(gpsLinkLED, QLedLabel::StateOkBlue);
+    }
+
+    if(statusJustCleared)
         statusJustCleared = false;
-    }
 }
 
 void gpsManager::clearStickyError()
 {
-    statusStickyError = false;
+    statusLinkStickyError = false;
+    statusTroubleStickyError = false;
     statusJustCleared = true;
     processStatus();
 }
