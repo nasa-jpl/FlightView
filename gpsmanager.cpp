@@ -413,7 +413,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         }
     }
 
-    if(m.numberDropped > 0)
+    if( (m.numberDropped > 0) && (!firstMessage) )
     {
         statusGPSMessagesDropped = true;
     } else {
