@@ -382,8 +382,10 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     {
         this->m = m;
         statusMessageDecodeOk = true;
+        consecutiveDecodeErrors = 0;
     } else {
         statusMessageDecodeOk = false;
+        consecutiveDecodeErrors++;
         processStatus();
         return;
     }
@@ -509,15 +511,81 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
                     gnssAlignmentPhase = "Ready";
                     gnssAlignmentComplete = true;
             }
+            if(getBit(m.algorithmStatus1, 0)) {
+                navPhase = true;
+            } else {
+                navPhase = false;
+            }
+            if(getBit(m.algorithmStatus1, 12)) {
+                gpsReceived = true;
+            } else {
+                gpsReceived = false;
+            }
+            if(getBit(m.algorithmStatus1, 13)) {
+                gpsValid = true;
+            } else {
+                gpsValid = false;
+            }
+            if(getBit(m.algorithmStatus1, 14)) {
+                gpsWaiting = true;
+            } else {
+                gpsWaiting = false;
+            }
+            if(getBit(m.algorithmStatus1, 15)) {
+                gpsRejected = true;
+            } else {
+                gpsRejected = false;
+            }
+            if(getBit(m.algorithmStatus1, 28)) {
+                altitudeSaturation = true;
+            } else {
+                altitudeSaturation = false;
+            }
+            if(getBit(m.algorithmStatus1, 29)) {
+                speedSaturation = true;
+            } else {
+                speedSaturation = false;
+            }
+            if(getBit(m.algorithmStatus1, 30)) {
+                interpolationMissed = true;
+            } else {
+                interpolationMissed = false;
+            }
         }
         if( (firstMessage) || (priorAlgorithmStatus2 !=m.algorithmStatus2) ) {
+            if(getBit(m.algorithmStatus2, 15)) {
+                altitudeRejected = true;
+            } else {
+                altitudeRejected = false;
+            }
+            if(getBit(m.algorithmStatus2, 16)) {
+                zuptActive = true;
+            } else {
+                zuptActive = false;
+            }
+            if( getBit(m.algorithmStatus2, 17) ||
+                    getBit(m.algorithmStatus2, 18) ||
+                    getBit(m.algorithmStatus2, 19)) {
+                zuptOther = true;
+            } else {
+                zuptOther = false;
+            }
 
         }
         if( (firstMessage) || (priorAlgorithmStatus3 !=m.algorithmStatus3) ) {
-
+            // Currently not very interesting
         }
         if( (firstMessage) || (priorAlgorithmStatus4 !=m.algorithmStatus4) ) {
-
+            if(getBit(m.algorithmStatus4, 28)) {
+                flashWriteError = true;
+            } else {
+                flashWriteError = false;
+            }
+            if(getBit(m.algorithmStatus4, 29)) {
+                flashEraseError = true;
+            } else {
+                flashEraseError = false;
+            }
         }
 
         priorAlgorithmStatus1 = m.algorithmStatus1;
@@ -528,13 +596,30 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
 
     if(m.haveINSSystemStatus) {
         if( (firstMessage) || (priorSystemStatus1 != m.systemStatus1) ) {
-
+            if(getBit(m.systemStatus1, 17)) {
+                outputAFull = true;
+            } else {
+                outputAFull = false;
+            }
+            if(getBit(m.systemStatus1, 18)) {
+                outputBFull = true;
+            } else {
+                outputBFull = false;
+            }
         }
         if( (firstMessage) || (priorSystemStatus1 != m.systemStatus1) ) {
-
+            if(getBit(m.systemStatus2, 2)) {
+                gpsDetected = true;
+            } else {
+                gpsDetected = false;
+            }
         }
         if( (firstMessage) || (priorSystemStatus1 != m.systemStatus1) ) {
-
+            if(getBit(m.systemStatus3, 18)) {
+                systemReady = true;
+            } else {
+                systemReady = false;
+            }
         }
 
         priorSystemStatus1 = m.systemStatus1;
@@ -793,11 +878,28 @@ void gpsManager::processStatus()
     // of the GPS
 
     // Error status is an "OR" of prior error ('sticky') and current error conditions.
+
+    // Link errors and warnings relate to our GPS decode and connection to the unit over TCP/IP.
     bool gpsLinkError = statusLinkStickyError || !statusGPSHeartbeatOk;
     bool gpsLinkWarning = statusGPSMessagesDropped;
 
-    bool gpsTroubleError = statusTroubleStickyError || !statusGNSSReceptionOk;
-    bool gpsTroubleWarning = statusGNSSReceptionWarning;
+    if(consecutiveDecodeErrors > 10) {
+        gpsLinkWarning = true;
+    }
+    if(consecutiveDecodeErrors > 100) {
+        gpsLinkError = true;
+    }
+
+    // GPS Trouble errors and warnings relate to status received from the GPS
+    // Trouble: something really is badly wrong
+    // Warning: Not ready yet
+    bool gpsTroubleError = statusTroubleStickyError || !statusGNSSReceptionOk ||
+            !gpsValid || gpsRejected || altitudeSaturation || speedSaturation ||
+            interpolationMissed || altitudeRejected || zuptActive || zuptOther ||
+            flashWriteError || flashEraseError || outputAFull || outputBFull;
+
+    bool gpsTroubleWarning = statusGNSSReceptionWarning || !gpsReceived ||
+            gpsWaiting || !gpsDetected || !systemReady || !navPhase;
 
     // Warnings are not sticky (automatically cleared)
 

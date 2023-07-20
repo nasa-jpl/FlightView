@@ -68,6 +68,37 @@ class gpsManager : public QObject
 
     bool statusJustCleared = false; // True if we just cleared errors.
 
+    // Individual "now" errors which are made sticky by the process function:
+
+    // Algorithm Status 1:
+    bool navPhase = false; // Error or warning? Means nav ready, kalman filter ready
+    bool gpsReceived = false; // warning
+    bool gpsValid = false; // Error
+    bool gpsWaiting = true; // warning
+    bool gpsRejected = false; // Error
+    bool altitudeSaturation = false; // Error
+    bool speedSaturation = false; // Error
+    bool interpolationMissed = false; // Error
+
+    // Algorithm Status 2:
+    bool altitudeRejected = false; // Error
+    bool zuptActive = false; // Error
+    bool zuptOther = false; // Error, includes Valid, RotationMode, and RoValid
+
+    // Algorithm Status 3:
+    bool flashWriteError = false; // Error
+    bool flashEraseError = false; // Error
+
+    // INS System Status 1:
+    bool outputAFull = false; // Error
+    bool outputBFull = false; // Error
+
+    // INS System Status 2:
+    bool gpsDetected = false; // warning
+
+    // INS System Status 3:
+    bool systemReady = false; // warning
+
     // Status Bits from the device:
     // INS Algorithm Status
     dword priorAlgorithmStatus1=0;
@@ -79,6 +110,8 @@ class gpsManager : public QObject
     dword priorSystemStatus1=0;
     dword priorSystemStatus2=0;
     dword priorSystemStatus3=0;
+
+    int consecutiveDecodeErrors = 0;
 
     gpsQualityKinds gnssQualPrior = gpsQualityInvalid;
     QString gnssQualStr = "";
