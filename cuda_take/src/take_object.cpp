@@ -1359,6 +1359,20 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
         }
     }
     //We're done!
+
+    // Finish writing and clear the buffer out:
+    if( (num_avgs==1) || (num_avgs==0)) {
+        //errorMessage("Finishing write...");
+        while(saving_list.size() > 0) {
+            errorMessage("Writing additional frame");
+            uint16_t * data = saving_list.back();
+            saving_list.pop_back();
+            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
+            delete[] data;
+        }
+        //errorMessage("Done with write.");
+    }
+
     fclose(file_target);
     std::string hdr_text;
     if( (num_avgs !=0) && (num_avgs !=1) )
