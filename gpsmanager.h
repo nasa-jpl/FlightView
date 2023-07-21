@@ -3,6 +3,8 @@
 
 #include <QObject>
 #include <QLabel>
+#include <QMutex>
+#include <QMutexLocker>
 #include "qcustomplot.h"
 
 #include "filenamegenerator.h"
@@ -71,7 +73,7 @@ class gpsManager : public QObject
     // Individual "now" errors which are made sticky by the process function:
 
     // Algorithm Status 1:
-    bool navPhase = false; // Error or warning? Means nav ready, kalman filter ready
+    bool navPhase = false; // Warning? Means nav ready, kalman filter ready
     bool gpsReceived = false; // warning
     bool gpsValid = false; // Error
     bool gpsWaiting = true; // warning
@@ -171,6 +173,10 @@ class gpsManager : public QObject
 
     void showStatusMessage(QString);
     void processStatus();
+    void genStatusMessages();
+    QMutex messageMutex;
+    QStringList errorMessages;
+    QStringList warningMessages;
 
     utcTime processUTCstamp(uint64_t t);
     utcTime currentTime;
@@ -244,6 +250,8 @@ signals:
     void stopSecondaryLog();
     void disconnectFromGPS();
     void getDebugInfo();
+    void statusMessagesSig(QStringList errorMessages,
+                           QStringList warningMessages);
 
 private slots:
     void handleGPSStatusMessage(QString message);

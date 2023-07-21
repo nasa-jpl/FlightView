@@ -407,7 +407,7 @@
       </font>
      </property>
      <property name="text">
-      <string>HH:MM</string>
+      <string>NONE</string>
      </property>
     </widget>
    </item>

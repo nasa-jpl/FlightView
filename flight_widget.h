@@ -13,6 +13,8 @@ namespace fs = boost::filesystem;
 #include <QSplitter>
 #include <QTimer>
 #include <QThread>
+#include <QMutex>
+#include <QMutexLocker>
 
 // include <qcustomplot.h>
 
@@ -75,25 +77,14 @@ class flight_widget : public QWidget
     QLabel diskLEDLabel;
     QLedLabel *diskLED = NULL;
 
-    // GPS Text Labels:
-//    QLabel gpsLatText;
-//    QLabel gpsLatData;
-//    QLabel gpsLongText;
-//    QLabel gpsLongData;
-//    QLabel gpsHeadingText;
-//    QLabel gpsHeadingData;
-//    QLabel gpsAltitudeText;
-//    QLabel gpsAltitudeData;
-//    QLabel gpsUTCtimeData, gpsUTCdateData, gpsUTCValidityData;
-//    QLabel gpsUTCtimeText, gpsUTCdateText, gpsUTCValidityText;
-//    QLabel gpsGroundSpeedData, gpsGroundSpeedText;
-//    QLabel gpsQualityData, gpsQualityText;
-//    QLabel gpsReadyText;
-//    QLedLabel gpsReadyLED;
-
-    // GPS Plots:
-    //QCustomPlot gpsPitchRollPlot;
-    //QCustomPlot gpsHeadingPlot;
+    QStringList priorGPSErrorMessages;
+    QStringList priorGPSWarningMessages;
+    QStringList totalGPSStatusMessages;
+    QTimer *gpsMessageCycleTimer = NULL;
+    QTimer *gpsMessageToLogReporterTimer = NULL;
+    QMutex gpsMessageMutex;
+    unsigned int messageIndex = 0;
+    bool recentlyClearedErrors = false;
 
     // GPS Widgets:
     bool useAvionicsWidgets = false;
@@ -140,6 +131,11 @@ public slots:
     void handleNewColorScheme(int scheme, bool useDarkThemeVal);
     void handlePrefs(settingsT prefs);
     void handleGPSConnectionError(int errorNum);
+    void handleGPSStatusMessages(QStringList errorMessages,
+                                 QStringList warningMessages);
+    void cycleGPSStatusMessagesViaTimer();
+    void gpsMessageToLogReporterSlot();
+
     void colorMapScrolledY(const QCPRange &newRange);
     void colorMapScrolledX(const QCPRange &newRange);
     void setScrollX(bool Yenabled);
@@ -162,6 +158,7 @@ public slots:
 
 signals:
     void statusMessage(QString);
+    void haveGPSErrorWarningMessage(QString);
     void connectToGPS(QString host, int port);
     void beginSecondaryLog(QString filename);
     void stopSecondaryLog();

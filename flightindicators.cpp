@@ -65,6 +65,11 @@ void flightIndicators::updateLastRec(QString hhmm)
     ui->lastRecLabel->setFont(alertLabelFont);
 }
 
+void flightIndicators::updateLastIssue(QString message)
+{
+    ui->lastIssueLabel->setText(message);
+}
+
 void flightIndicators::doneRecording()
 {
     nowRecording = false;
@@ -88,8 +93,7 @@ fiUI_t flightIndicators::getElements()
     e.lastIssueLabel = ui->lastIssueLabel;
     e.groundSpeedLabel = ui->groundSpeedLabel;
     e.altitudeLabel = ui->altitudeLabel;
-    e.lastIssueLabel = ui->lastRecLabel;
-
+    e.lastRecLabel = ui->lastRecLabel;
     return e;
 }
 

@@ -508,7 +508,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             }
             if( (!courseAlignment) && (!fineAlignment) ) {
                     //updateLabel(gpsAlignment, "COMPLETE");
-                    gnssAlignmentPhase = "Ready";
+                    gnssAlignmentPhase = "Done";
                     gnssAlignmentComplete = true;
             }
             if(getBit(m.algorithmStatus1, 0)) {
@@ -634,23 +634,23 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         {
         case gpsQualityNatural_10m:
             gnssQualStr = "Nat 10M";
-            gnssQualShortStr = "10M";
+            gnssQualShortStr = "[10M]";
             break;
         case gpsQualityDifferential_3m:
             gnssQualStr = "Diff 3M";
-            gnssQualShortStr = "3M";
+            gnssQualShortStr = "[3M]";
             break;
         case gpsQualityMilitary_10m:
             gnssQualStr = "Mil 10M";
-            gnssQualShortStr = "10M";
+            gnssQualShortStr = "[10M]";
             break;
         case gpsQualityRTK_0p1m:
             gnssQualStr = "RTK 0.1M";
-            gnssQualShortStr = "0.1M";
+            gnssQualShortStr = "[0.1M]";
             break;
         case gpsQualityFloatRTK_0p3m:
             gnssQualStr = "RTK 0.3M";
-            gnssQualShortStr = "0.3M";
+            gnssQualShortStr = "[0.3M]";
             break;
         case gpsQualityOther:
         case gpsQualityInvalid:
@@ -880,7 +880,7 @@ void gpsManager::processStatus()
     // Error status is an "OR" of prior error ('sticky') and current error conditions.
 
     // Link errors and warnings relate to our GPS decode and connection to the unit over TCP/IP.
-    bool gpsLinkError = statusLinkStickyError || !statusGPSHeartbeatOk;
+    bool gpsLinkError = statusLinkStickyError || !statusGPSHeartbeatOk || !statusConnectedToGPS;
     bool gpsLinkWarning = statusGPSMessagesDropped;
 
     if(consecutiveDecodeErrors > 10) {
@@ -934,8 +934,67 @@ void gpsManager::processStatus()
         updateLED(gpsLinkLED, QLedLabel::StateOkBlue);
     }
 
+    genStatusMessages();
+
     if(statusJustCleared)
         statusJustCleared = false;
+}
+
+void gpsManager::genStatusMessages()
+{
+    QMutexLocker locker(&messageMutex);
+    errorMessages.clear();
+    warningMessages.clear();
+
+    // Warnings:
+    if(!navPhase)
+        warningMessages << "Not NavPhase";
+    if(!gpsReceived)
+        warningMessages << "No GPS Received";
+    if(gpsWaiting)
+        warningMessages << "GPS Waiting";
+    if(!gpsDetected)
+        warningMessages << "GPS NOT Detected";
+    if(!systemReady)
+        warningMessages << "SYS NOT Ready";
+    if(!statusGPSHeartbeatOk)
+        warningMessages << "GPS Msg Cadence";
+    if(statusGNSSReceptionWarning)
+        warningMessages << "Poor Sat RX";
+    if(statusGPSMessagesDropped)
+        warningMessages << "Msg Dropped";
+    if(consecutiveDecodeErrors > 100) {
+        errorMessages << "Many NG Decodes";
+    } else if (consecutiveDecodeErrors > 10) {
+        warningMessages << "NG Decode";
+    }
+
+    // Errors:
+    if(!statusConnectedToGPS)
+        errorMessages << "Not Connected";
+    if(!statusGNSSReceptionOk)
+        errorMessages << "No SAT RX";
+    if(!gpsValid)
+        errorMessages << "GPS invalid";
+    if(gpsRejected)
+        errorMessages << "GPS Rejected";
+    if(altitudeRejected)
+        errorMessages << "Alt Reject";
+    if(zuptActive)
+        errorMessages << "ZUpT Active";
+    if(zuptOther)
+        errorMessages << "ZUpT Other";
+    if(flashWriteError)
+        errorMessages << "Flash Write Er";
+    if(flashEraseError)
+        errorMessages << "Flash Erase Er";
+    if(outputAFull)
+        errorMessages << "Out A Full";
+    if(outputBFull)
+        errorMessages << "Out B Full";
+
+    emit statusMessagesSig(errorMessages,
+                           warningMessages);
 }
 
 void gpsManager::clearStickyError()

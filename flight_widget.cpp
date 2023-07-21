@@ -9,6 +9,10 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     fi = new flightIndicators();
     fiUI_t flightDisplayElements = fi->getElements();
 
+    if(flightDisplayElements.lastIssueLabel == NULL) {
+        qDebug() << "ERROR lastIssueLabel is NULL!!";
+    }
+
     stickyFPSError = false;
     FPSErrorCounter = 0;
     this->fw = fw;
@@ -23,6 +27,19 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     wfThread->setObjectName("lv:wfThread");
     dsf_widget = new frameview_widget(fw, DSF, this);
 
+    gpsMessageCycleTimer = new QTimer(this);
+    gpsMessageCycleTimer->setInterval(1500);
+
+    gpsMessageToLogReporterTimer = new QTimer(this);
+    gpsMessageToLogReporterTimer->setInterval(60*1000);
+
+    if(options.flightMode)
+    {
+        connect(gpsMessageToLogReporterTimer, SIGNAL(timeout()),
+                this, SLOT(gpsMessageToLogReporterSlot()));
+        gpsMessageToLogReporterTimer->start();
+    }
+
     startedPrimaryGPSLog = false;
     gps = new gpsManager();
 
@@ -36,32 +53,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     // Group Box "Flight Instrument Controls" items:
     resetStickyErrorsBtn.setText("Clear Errors");
     resetStickyErrorsBtn.setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    //aircraftLbl.setText("AVIRIS-III");
-    //gpsLatText.setText("GPS Latitude:");
-//    gpsLatData.setText("########");
-//    gpsAltitudeText.setText("GPS Altitude:");
-//    gpsAltitudeData.setText("########");
-//    gpsLongText.setText("GPS Longitude:");
-//    gpsLongData.setText("########");
-//    gpsLEDLabel.setText("GPS Status:");
-//    gpsHeadingText.setText("Heading:");
-//    gpsHeadingData.setText("###.###");
-
-//    gpsUTCtimeText.setText("UTC Time:");
-//    gpsUTCtimeData.setText("###TIME##");
-//    gpsUTCdateText.setText("UTC Date:");
-//    gpsUTCdateData.setText("########");
-//    gpsUTCValidityText.setText("UTC Validity:");
-//    gpsUTCValidityData.setText("##VAL TIME##");
-
-//    gpsGroundSpeedText.setText("Ground Speed:");
-//    gpsGroundSpeedData.setText("########");
-//    gpsQualityText.setText("GPS Quality:");
-//    gpsQualityData.setText("########");
-
-//    gpsReadyText.setText("GPS Ready:");
-    //gpsReadyLED.setState(QLedLabel::StateOkBlue);
-
 
     gpsLED.setState(QLedLabel::StateOkBlue);
 
@@ -128,7 +119,11 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     // Connections to GPS:
     connect(gps, SIGNAL(gpsStatusMessage(QString)), this, SLOT(showDebugMessage(QString)));
     connect(gps, SIGNAL(gpsConnectionError(int)), this, SLOT(handleGPSConnectionError(int)));
+    connect(gps, SIGNAL(statusMessagesSig(QStringList,QStringList)), this, SLOT(handleGPSStatusMessages(QStringList,QStringList)));
     gps->insertLEDs(flightDisplayElements.gpsLinkLED, flightDisplayElements.gpsTroubleLED);
+
+    connect(gpsMessageCycleTimer, SIGNAL(timeout()), this, SLOT(cycleGPSStatusMessagesViaTimer()));
+    gpsMessageCycleTimer->start();
 
     diskLED = flightDisplayElements.diskLED;
     cameraLinkLED = flightDisplayElements.imageLED;
@@ -183,8 +178,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     connect(fi, SIGNAL(clearErrors()), this, SLOT(resetFPSError()));
     connect(fi, SIGNAL(clearErrors()), gps, SLOT(clearStickyError()));
-
     connect(fi, SIGNAL(clearErrors()), this, SLOT(clearStickyErrors()));
+    connect(this, SIGNAL(haveGPSErrorWarningMessage(QString)), fi, SLOT(updateLastIssue(QString)));
 
     diskCheckerTimer = new QTimer();
     diskCheckerTimer->setInterval(1000);
@@ -508,12 +503,104 @@ void flight_widget::handleGPSConnectionError(int errorNum)
     (void)errorNum;
 }
 
+void flight_widget::handleGPSStatusMessages(QStringList errorMessages, QStringList warningMessages)
+{
+    // New messages from the gps manager.
+    // Copy in the new ones and update the big message thing.
+    QMutexLocker locker(&gpsMessageMutex);
+    bool update = false;
+
+    int newErrorMessagesSize = errorMessages.size();
+    int newWarningMessagesSize = warningMessages.size();
+    int currentErrorMessageSize = priorGPSErrorMessages.size();
+    int currentWarningMessageSize = priorGPSWarningMessages.size();
+
+    if( (newErrorMessagesSize+newWarningMessagesSize==0) &&
+            (!recentlyClearedErrors) &&
+            (currentErrorMessageSize+currentWarningMessageSize!=0) ) {
+        // The new messages are empty,
+        // But there are some old messages.
+        return;
+    }
+
+    if(priorGPSErrorMessages != errorMessages)
+    {
+        priorGPSErrorMessages = errorMessages;
+        update = true;
+    }
+
+    if(priorGPSWarningMessages != warningMessages)
+    {
+        priorGPSWarningMessages = warningMessages;
+        update = true;
+    }
+
+    if(update) {
+        recentlyClearedErrors = false; // reset this flag
+        totalGPSStatusMessages.clear(); // possibly clear the entire thing
+        totalGPSStatusMessages << errorMessages;
+        totalGPSStatusMessages << warningMessages;
+        messageIndex = 0;
+    }
+
+}
+
+void flight_widget::cycleGPSStatusMessagesViaTimer()
+{
+    QMutexLocker locker(&gpsMessageMutex);
+    QString messageStr;
+    int size = totalGPSStatusMessages.size();
+    if(size) {
+        messageStr = totalGPSStatusMessages.at(messageIndex%size);
+        messageIndex++;
+    } else {
+        messageStr = "None";
+    }
+    emit haveGPSErrorWarningMessage(messageStr);
+}
+
+void flight_widget::gpsMessageToLogReporterSlot()
+{
+    QMutexLocker locker(&gpsMessageMutex);
+
+    QString messageLogWarnings = QString("GPS Warnings: ");
+    QString messageLogErrors = QString("GPS Errors: ");
+
+    int warSize = priorGPSWarningMessages.size();
+    int erSize = priorGPSErrorMessages.size();
+
+    for(int i=0; i < warSize; i++) {
+        messageLogWarnings.append(priorGPSWarningMessages.at(i));
+        if(i<warSize-1)
+            messageLogWarnings.append(", ");
+    }
+
+    for(int i=0; i < erSize; i++) {
+        messageLogErrors.append(priorGPSErrorMessages.at(i));
+        if(i<warSize-1)
+            messageLogErrors.append(", ");
+    }
+
+    if(warSize!=0)
+        emit statusMessage(messageLogWarnings);
+    if(erSize!=0)
+        emit statusMessage(messageLogErrors);
+}
+
 void flight_widget::clearStickyErrors()
 {
     stickyDiskFull = false;
     if(diskLED != NULL) {
         diskLED->setState(QLedLabel::StateOk);
     }
+
+    gpsMessageToLogReporterSlot();
+
+    QMutexLocker locker(&gpsMessageMutex);
+    priorGPSErrorMessages.clear();
+    priorGPSWarningMessages.clear();
+    totalGPSStatusMessages.clear();
+    recentlyClearedErrors = true;
     emit statusMessage("[Flight Widget]: User cleared sticky errors.");
 }
 
@@ -537,6 +624,6 @@ void flight_widget::debugThis()
 {
     qDebug() << "in debug function using qDebug()";
     emit statusMessage("Debug function inside flight widget pressed.");
-    //gps->initiateGPSConnection("10.0.0.6", 8111, "");
-    //waterfall_widget->debugThis();
+    qDebug() << "Current GPS warnings: " << priorGPSWarningMessages;
+    qDebug() << "Current GPS errors: " << priorGPSErrorMessages;
 }

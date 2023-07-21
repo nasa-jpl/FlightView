@@ -53,6 +53,7 @@ public slots:
     void updateLastRec(QString hhmm);
     void updateLastRec();
     void doneRecording();
+    void updateLastIssue(QString message);
     fiUI_t getElements();
 
 signals:
