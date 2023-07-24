@@ -899,7 +899,7 @@ void gpsManager::processStatus()
             flashWriteError || flashEraseError || outputAFull || outputBFull;
 
     bool gpsTroubleWarning = statusGNSSReceptionWarning || !gpsReceived ||
-            gpsWaiting || !gpsDetected || !systemReady || !navPhase;
+            gpsWaiting || !gpsDetected || !systemReady || !navPhase || !statusConnectedToGPS;
 
     // Warnings are not sticky (automatically cleared)
 
