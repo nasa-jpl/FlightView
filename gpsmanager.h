@@ -73,10 +73,10 @@ class gpsManager : public QObject
     // Individual "now" errors which are made sticky by the process function:
 
     // Algorithm Status 1:
-    bool navPhase = false; // Warning? Means nav ready, kalman filter ready
-    bool gpsReceived = false; // warning
-    bool gpsValid = false; // Error
-    bool gpsWaiting = true; // warning
+    bool navPhase = true; // warning
+    bool gpsReceived = true; // warning
+    bool gpsValid = true; // Error
+    bool gpsWaiting = false; // warning
     bool gpsRejected = false; // Error
     bool altitudeSaturation = false; // Error
     bool speedSaturation = false; // Error
@@ -96,10 +96,10 @@ class gpsManager : public QObject
     bool outputBFull = false; // Error
 
     // INS System Status 2:
-    bool gpsDetected = false; // warning
+    bool gpsDetected = true; // warning
 
     // INS System Status 3:
-    bool systemReady = false; // warning
+    bool systemReady = true; // warning
 
     // Status Bits from the device:
     // INS Algorithm Status
