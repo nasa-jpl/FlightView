@@ -357,7 +357,7 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
 {
     // Creates a mask from a file containing multiple frames
     // The frames are expected to be the same geometry as the
-    // frame source, and the pixels are expected to be 16-bit int.
+    // frame source, and the pixels are expected to be 16-bit unsigned int.
 
     // This function was largly copied from the main.cpp file of
     // the included "statscli" program found under "utils".
