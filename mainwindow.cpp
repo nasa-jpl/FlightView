@@ -10,19 +10,27 @@
 #include "mainwindow.h"
 #include "image_type.h"
 
-MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *fw, QWidget *parent)
+MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker *fw, QWidget *parent)
     : QMainWindow(parent)
 {
-    qRegisterMetaType<frame_c*>("frame_c*");
-    //qRegisterMetaType<QVector<double>>("QVector<double>");
-    //qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");    
+    qRegisterMetaType<frame_c*>("frame_c*");    
     const QString name = "lv:";
     this->fw = fw;
-    this->options = options;
+    this->options = optionsIn;
+
+    startDateTime =  QDateTime::currentDateTimeUtc();
+    QString startDate;
+    startDate.append(startDateTime.toString("yyyyMMdd"));
 
     if(options->dataLocationSet)
     {
-        cLog = new consoleLog(options->dataLocation);
+        // Append today's date
+        // This will go in to the consoleLog, gps, and raw data saving functions
+        if(!options->dataLocation.endsWith("/"))
+            options->dataLocation.append("/");
+
+        this->options->dataLocation.append(startDate);
+        cLog = new consoleLog(this->options->dataLocation, options->flightMode);
     } else {
         cLog = new consoleLog();
     }

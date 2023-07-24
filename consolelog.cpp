@@ -12,8 +12,9 @@ consoleLog::consoleLog(QWidget *parent) : QWidget(parent)
     this->logSystemConfig();
  }
 
-consoleLog::consoleLog(QString logFileName, QWidget *parent) : QWidget(parent)
+consoleLog::consoleLog(QString logFileName, bool enableFlightMode, QWidget *parent) : QWidget(parent)
 {
+    this->flightMode = enableFlightMode;
     this->logFileName = createFilenameFromDirectory(logFileName);
     this->enableLogToFile = true;
 
@@ -179,8 +180,16 @@ QString consoleLog::createFilenameFromDirectory(QString directoryName)
     makeDirectory(directoryName);
 
     QDateTime now = QDateTime::currentDateTimeUtc();
-    QString dateString = now.toString("yyyy-MM-dd_hhmmss");
-
+    QString dateString;
+    QString namePrefix = "AV3";
+    if(flightMode) {
+        dateString.append(namePrefix);
+        dateString.append(now.toString("yyyyMMdd"));
+        dateString.append("t"); // t = "timezone" in datetime, so we must append it this way.
+        dateString.append(now.toString("hhmmss"));
+    } else {
+        dateString = now.toString("yyyy-MM-dd_hhmmss");
+    }
     filename = directoryName + dateString + "-FlightView.log";
     return filename;
 }
