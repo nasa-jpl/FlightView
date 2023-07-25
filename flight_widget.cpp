@@ -577,7 +577,7 @@ void flight_widget::gpsMessageToLogReporterSlot()
 
     for(int i=0; i < erSize; i++) {
         messageLogErrors.append(priorGPSErrorMessages.at(i));
-        if(i<warSize-1)
+        if(i<erSize-1)
             messageLogErrors.append(", ");
     }
 
