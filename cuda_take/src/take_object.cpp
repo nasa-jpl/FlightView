@@ -1244,20 +1244,14 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 }
 void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
 {
-    //Frame Save Thread (saving_thread)
-    //g_set_printerr_handler(NULL);
-    //g_set_print_handler(NULL);
+    // Frame Save Thread (saving_thread)
 
-    // 1 works fine
-//    std::cerr << "1. std::cerr: savingLoop: thread ID: " << boost::this_thread::get_id() << std::endl;
+    // The main loop (pdvLoop, etc) of take_object will place frames into save_list,
+    // and this thread will remove frames in save_list. While the data are being taken,
+    // this thread will not empty the list.
 
-//    g_message("2. test g_message"); // output with time stamp
-//    g_info("3. test g_info"); // no output
-//    g_critical("4. test g_critical"); // output with timestamp, program name, and stars
-//    g_debug("5. test g_debug"); // no output
+    // This thread ends when the file finished being written to and the buffer is empty.
 
-//    g_printerr("6. test g_printerr"); // ok, no additional text added
-//    g_printf("7. test g_printf"); // no output until program exit
     std::ostringstream ss;
     ss << "Starting saveLoop. Thread ID: " << boost::this_thread::get_id();
 
@@ -1375,12 +1369,13 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
             usleep(250);
         }
     }
-    //We're done!
+
+    // Almost done, let's take care of anything left in the buffer.
+
     statusMessage("Finished primary saving loop.");
     char message[128];
     sprintf(message, "Size of buffer: %ld", saving_list.size());
     statusMessage(message);
-    // Finish writing and clear the buffer out:
     if( (num_avgs==1) || (num_avgs==0)) {
         statusMessage("Finishing write...");
         while(saving_list.size() > 0) {
@@ -1441,9 +1436,6 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     if(sv_count == 1)
         usleep(500000);
     save_count.store(0, std::memory_order_seq_cst);
-    //std::cout << "save_count: " << std::to_string(save_count) << "\n";
-    //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
-    //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
     statusMessage("Saving complete.");
     savingMutex.unlock();
     savingData = false;

@@ -301,6 +301,9 @@
      <pointsize>14</pointsize>
     </font>
    </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
    <property name="text">
     <string>Close</string>
    </property>
