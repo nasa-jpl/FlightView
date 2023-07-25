@@ -1366,7 +1366,8 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
         while(saving_list.size() > 0) {
             errorMessage("Writing additional frame");
             uint16_t * data = saving_list.back();
-            saving_list.pop_back();
+            if(saving_list.size() > 0)
+                saving_list.pop_back();
             fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
             delete[] data;
         }
