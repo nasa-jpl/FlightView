@@ -1631,7 +1631,17 @@ void ControlsBox::show_save_dialog()
     /*! \brief Display the file dialog to specify the path for saving raw frames.
      * \author Noah Levy
      */
-    QString dialog_file_name = QFileDialog::getSaveFileName(this, tr("Save frames as raw"), "/home/", tr("Raw (*.raw *.bin *.hsi *.img)"));
+
+    QString startPath;
+    if(options.dataLocationSet)
+    {
+        startPath = options.dataLocation;
+    } else {
+        startPath = "/home/";
+    }
+    // On some platforms, the native file dialog box is not visible.
+    // It's a bug for sure, and this is the fix, using the non-native box:
+    QString dialog_file_name = QFileDialog::getSaveFileName(this, tr("Save frames as raw"), startPath, tr("Raw (*.raw *.bin *.hsi *.img)"), NULL, QFileDialog::DontUseNativeDialog);
     if (!dialog_file_name.isEmpty())
         filename_edit.setText(dialog_file_name);
 }
