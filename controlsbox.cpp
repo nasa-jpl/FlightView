@@ -456,6 +456,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //Third Row
     save_layout->addWidget(&stop_saving_frames_button, 1, 5, 1, 1);
     save_layout->addWidget(&frames_save_num_avgs_edit, 2, 5, 1, 1);
+
+    frames_save_num_avgs_edit.setDisabled(options.flightMode);
+    frames_save_num_edit.setDisabled(options.flightMode);
     
     //Forth Row (overlay plot only)
     //To Do: Add lh_select_slider (4th row) and then place width in 5th row
@@ -1736,8 +1739,9 @@ void ControlsBox::stop_continous_button_slot()
     stop_saving_frames_button.setEnabled(false);
     start_saving_frames_button.setEnabled(true);
     save_finite_button.setEnabled(true);
-    frames_save_num_edit.setEnabled(true);
-    frames_save_num_avgs_edit.setEnabled(true);
+
+    frames_save_num_edit.setDisabled(options.flightMode);
+    frames_save_num_avgs_edit.setDisabled(options.flightMode);
     frames_save_num_edit.setValue(previousNumSaved);
     emit stopDataCollection(); // goes to flight_screen
 }
@@ -1751,8 +1755,8 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
         stop_saving_frames_button.setEnabled(false);
         start_saving_frames_button.setEnabled(true);
         save_finite_button.setEnabled(true);
-        frames_save_num_avgs_edit.setEnabled(true);
-        frames_save_num_edit.setEnabled(true);
+        frames_save_num_avgs_edit.setDisabled(options.flightMode);
+        frames_save_num_edit.setDisabled(options.flightMode);
         frames_save_num_edit.setValue(previousNumSaved);
     } else {
         frames_save_num_edit.setValue(n);

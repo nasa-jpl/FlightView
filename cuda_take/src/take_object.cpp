@@ -1245,10 +1245,27 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
 {
     //Frame Save Thread (saving_thread)
+    //g_set_printerr_handler(NULL);
+    //g_set_print_handler(NULL);
+
+    // 1 works fine
+//    std::cerr << "1. std::cerr: savingLoop: thread ID: " << boost::this_thread::get_id() << std::endl;
+
+//    g_message("2. test g_message"); // output with time stamp
+//    g_info("3. test g_info"); // no output
+//    g_critical("4. test g_critical"); // output with timestamp, program name, and stars
+//    g_debug("5. test g_debug"); // no output
+
+//    g_printerr("6. test g_printerr"); // ok, no additional text added
+//    g_printf("7. test g_printf"); // no output until program exit
+    std::ostringstream ss;
+    ss << "Starting saveLoop. Thread ID: " << boost::this_thread::get_id();
+
+    statusMessage(ss);
 
     if(savingData)
     {
-        warningMessage("Saving loop hit but already saving data!");
+        errorMessage("Saving loop hit but already saving data! Not saving this data!");
         return;
     } else {
         savingData = true;
@@ -1271,32 +1288,31 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
         hdr_fname=fname+".hdr";
     }
 
-    //hdr_fname = fname.substr(0,fname.size()-3) + "hdr";
-
-//    statusMessage("Saving frames, modified filenames as follows:");
-//    std::cerr << "Saving to filename: " << fname << std::endl;
-//    std::cerr << "Header filename: " << hdr_fname << std::endl;
-
     FILE * file_target = fopen(fname.c_str(), "wb");
     int sv_count = 0;
 
-    while(  (save_framenum != 0 || continuousRecording)    ||  !saving_list.empty())
+    while(  (save_framenum != 0) || continuousRecording)
     {
-        if(!saving_list.empty())
+        if(saving_list.size() > 2)
         {
             if(num_avgs == 1)
             {
-                // This is the "normal" behavior.
-                uint16_t * data = saving_list.back();
-                saving_list.pop_back();
-                fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
-                delete[] data;
-                sv_count++;
-                if(sv_count == 1) {
-                    save_count.store(1, std::memory_order_seq_cst);
-                }
-                else {
-                    save_count++;
+                // This is our not-averaging save, where most saves go:
+                if(saving_list.size() > 2) {
+                    // We refuse to take the last item off the list.
+                    // it can wait until we are completely done recording.
+                    // This way the list remains valid in memory.
+                    uint16_t * data = saving_list.back();
+                    saving_list.pop_back();
+                    fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
+                    delete[] data;
+                    sv_count++;
+                    if(sv_count == 1) {
+                        save_count.store(1, std::memory_order_seq_cst);
+                    }
+                    else {
+                        save_count++;
+                    }
                 }
             }
             else if(saving_list.size() >= num_avgs && num_avgs != 1)
@@ -1359,19 +1375,22 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
         }
     }
     //We're done!
-
+    statusMessage("Finished primary saving loop.");
+    char message[128];
+    sprintf(message, "Size of buffer: %ld", saving_list.size());
+    statusMessage(message);
     // Finish writing and clear the buffer out:
     if( (num_avgs==1) || (num_avgs==0)) {
-        //errorMessage("Finishing write...");
+        statusMessage("Finishing write...");
         while(saving_list.size() > 0) {
-            errorMessage("Writing additional frame");
+            warningMessage("Writing additional frame");
             uint16_t * data = saving_list.back();
             if(saving_list.size() > 0)
                 saving_list.pop_back();
             fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
             delete[] data;
         }
-        //errorMessage("Done with write.");
+        statusMessage("Done with write.");
     }
 
     fclose(file_target);
@@ -1418,35 +1437,65 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
 void take_object::errorMessage(const char *message)
 {
-    std::cerr << "take_object: ERROR: " << message << std::endl;
+    if(!options.rtpCam)
+    {
+        std::cerr << "take_object: ERROR: " << message << std::endl;
+    } else {
+        g_critical("take_object: ERROR: %s", message);
+    }
 }
 
 void take_object::warningMessage(const char *message)
 {
-    std::cout << "take_object: WARNING: " << message << std::endl;
+    if(!options.rtpCam)
+    {
+        std::cout << "take_object: WARNING: " << message << std::endl;
+    } else {
+        g_message("take_object: WARNING: %s", message);
+    }
 }
 
 void take_object::statusMessage(const char *message)
 {
-    std::cout << "take_object: STATUS: " << message << std::endl;
+    if(!options.rtpCam) {
+        std::cout << "take_object: STATUS: " << message << std::endl;
+    } else {
+        g_message("take_object: STATUS: %s", message);
+    }
 }
 
 void take_object::errorMessage(const string message)
 {
-    std::cout << "take_object: ERROR: " << message << std::endl;
+    if(!options.rtpCam) {
+        std::cerr << "take_object: ERROR: " << message << std::endl;
+    } else {
+        g_error("take_object: ERROR: %s", message.c_str());
+    }
 }
 
 void take_object::warningMessage(const string message)
 {
-    std::cout << "take_object: WARNING: " << message << std::endl;
+    if(!options.rtpCam) {
+        std::cout << "take_object: WARNING: " << message << std::endl;
+    } else {
+        g_message("take_object: WARNING: %s", message.c_str());
+    }
 }
 
 void take_object::statusMessage(const string message)
 {
-    std::cout << "take_object: STATUS: " << message << std::endl;
+    if(!options.rtpCam) {
+        std::cout << "take_object: STATUS: " << message << std::endl;
+    } else {
+        g_message("take_object: STATUS: %s", message.c_str());
+    }
 }
 
 void take_object::statusMessage(std::ostringstream &message)
 {
-    std::cout << "take_object: STATUS: " << message.str() << std::endl;
+    if(!options.rtpCam) {
+        std::cout << "take_object: STATUS: " << message.str() << std::endl;
+    } else {
+        g_message("take_object: STATUS: %s", message.str().c_str());
+    }
 }
