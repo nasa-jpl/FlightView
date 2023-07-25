@@ -1360,6 +1360,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
             }
             else if(save_framenum == 0 && saving_list.size() < num_avgs)
             {
+                warningMessage("Erasing saving_list");
                 saving_list.erase(saving_list.begin(),saving_list.end());
             }
             else
@@ -1383,14 +1384,27 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     if( (num_avgs==1) || (num_avgs==0)) {
         statusMessage("Finishing write...");
         while(saving_list.size() > 0) {
-            warningMessage("Writing additional frame");
+            statusMessage("Writing additional frame");
             uint16_t * data = saving_list.back();
             if(saving_list.size() > 0)
                 saving_list.pop_back();
-            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
+            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target);
             delete[] data;
         }
         statusMessage("Done with write.");
+    } else {
+        while(saving_list.size() > 0) {
+            //statusMessage("Dropping additional frame at end that does not meet average interval.");
+            uint16_t * data = saving_list.back();
+            if(saving_list.size() > 0)
+                saving_list.pop_back();
+            // Since averaging is typically many frames (>100),
+            // we cannot really average the last two or three frames
+            // in a meaningfull way. Writing the data out will just
+            // confuse people about the scale of the last few frames.
+            //fwrite(data,sizeof(float),frWidth*dataHeight,file_target);
+            delete[] data;
+        }
     }
 
     fclose(file_target);
