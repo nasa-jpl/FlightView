@@ -51,7 +51,7 @@ class gpsManager : public QObject
 
     // Update Frequency:
     // data come in at 200 Hz
-    unsigned char updateLabelsInterval = 10;
+    unsigned char updateLabelsInterval = 20;
     unsigned char updatePlotsInverval = 90;
     unsigned char updateAvionicsWidgetsInterval = 10;
 
