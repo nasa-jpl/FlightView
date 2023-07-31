@@ -114,12 +114,12 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qcp->rescaleAxes();
     qcp->axisRect()->setBackgroundScaled(false);
 
-
     layout.addWidget(qcp, 0, 0, 8, 8);
 
-
-
-    fpsLabel.setText("FPS");
+    fpsLabel.setText("FPS of Display");
+    QRect fpsGeo = fpsLabel.geometry();
+    fpsGeo.setWidth(25);
+    fpsLabel.setGeometry(fpsGeo);
     layout.addWidget(&fpsLabel, 8, 0, 1, 2);
     layout.addWidget(&displayCrosshairCheck, 8, 2, 1, 2);
     layout.addWidget(&zoomXCheck, 8, 4, 1, 2);
@@ -470,7 +470,7 @@ done_here:
     if (count % 20 == 0 && count != 0) {
         fps = 20.0 / clock.restart() * 1000.0;
         fps_string = QString::number(fps, 'f', 1);
-        fpsLabel.setText(QString("fps of display: %1").arg(fps_string));
+        fpsLabel.setText(QString("FPS of Display: %1").arg(fps_string));
     }
 }
 
