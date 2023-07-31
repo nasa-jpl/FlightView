@@ -3,6 +3,7 @@
 
 /* Qt GUI incude */
 #include <QMainWindow>
+#include <QDateTime>
 
 /* Live View includes */
 #include "controlsbox.h"
@@ -44,7 +45,7 @@ private:
 
     startupOptionsType *options;
     QString settingsFilename;
-
+    QDateTime startDateTime;
     void prepareGPS();
     void processGPSMessage();
 

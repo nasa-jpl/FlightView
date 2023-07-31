@@ -26,6 +26,8 @@ private slots:
 
     void on_gammaEnableChk_clicked();
 
+    void on_closeBtn_clicked();
+
 private:
     Ui::rgbAdjustments *ui;
     double redLevel = 1.0;

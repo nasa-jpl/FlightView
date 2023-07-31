@@ -10,6 +10,7 @@ class fileNameGenerator
 {
 public:
     fileNameGenerator();
+    void setFlightFormat(bool useFlightFormat, QString flightNamePrefix);
     void setMainDirectory(QString basedir);
     void setFilenameExtension(QString extension);
     void generate(); // call this for new time stamp
@@ -29,6 +30,9 @@ private:
     QString shortFilename;
     QString directory;
     QString extension;
+
+    bool flightFormat = true;
+    QString namePrefix = "AV3";
 };
 
 #endif // FILENAMEGENERATOR_H

@@ -9,6 +9,8 @@
 #include <QTimer>
 
 #include <cstdio>
+#include <stdlib.h>
+
 #include <QDebug>
 
 /* LiveView includes */
@@ -362,6 +364,7 @@ int main(int argc, char *argv[])
 
     if(startupOptions.flightMode && !startupOptions.dataLocationSet)
     {
+        system("xmessage \"Error, flight mode requires --datastoragelocation\"");
         std::cerr << "Error, flight mode specified without data storage location." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
@@ -369,6 +372,7 @@ int main(int argc, char *argv[])
 
     if(startupOptions.flightMode && startupOptions.dataLocation.isEmpty())
     {
+        system("xmessage \"Error, flight mode requires --datastoragelocation with valid path set\"");
         std::cerr << "Error, flight mode specified without complete data storage location." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
@@ -377,6 +381,7 @@ int main(int argc, char *argv[])
 
     if(startupOptions.flightMode && !startupOptions.gpsIPSet && !startupOptions.disableGPS)
     {
+        system("xmessage \"Error, flight mode requires --gpsip with GPS ip address specified.\"");
         std::cerr << "Error, flight mode specified without GPS IP address." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
@@ -390,6 +395,7 @@ int main(int argc, char *argv[])
     if(heightSet ^ widthSet)
     {
         // XOR, only one was set
+        system("xmessage \"Error, both height and width must be specified.\"");
         std::cerr << "Error, height and width must both be specified." << std::endl;
         exit(-1);
     }
@@ -403,14 +409,16 @@ int main(int argc, char *argv[])
     /* Step 2: Load the splash screen */
 
 
-    QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
-    QSplashScreen splash(logo_pixmap);
+    QPixmap logo_pixmap(":images/aviris-logo-transparent.png"); // AVIRIS-NG
+    //QSplashScreen splash(logo_pixmap);
+    QSplashScreen *splash = new QSplashScreen(logo_pixmap);
     if(!startupOptions.xioCam)
     {
         // On some displays, the splash screen covers the setup dialog box
-        splash.show();
-        splash.showMessage(QObject::tr("Loading AVIRIS-Next Generation LiveView. Compiled on " __DATE__ ", " __TIME__ " PDT by " UNAME "@" HOST  ),
-                           Qt::AlignCenter | Qt::AlignBottom, Qt::gray);
+        splash->show();
+        splash->showMessage(QObject::tr("Loading AVIRIS LiveView. Compiled on " __DATE__ ", " __TIME__ " PDT by " UNAME "@" HOST  ),
+                           Qt::WindowStaysOnTopHint | Qt::AlignCenter | Qt::AlignBottom, Qt::gray);
+
     }
 
     /* Step 3: Load the parallel worker object which will act as a "backend" for LiveView */
@@ -430,13 +438,16 @@ int main(int argc, char *argv[])
                          Qt::LeftToRight,
                          Qt::AlignCenter,
                          w.size(),
-                         a.desktop()->availableGeometry()
+                         QGuiApplication::screens().at(0)->availableGeometry()
                          ));
+    // a.desktop()->availableGeometry()
+    // QGuiApplication::screens()
     QPixmap icon_pixmap(":images/icon.png");
     w.setWindowIcon(QIcon(icon_pixmap));
     w.show();
+    w.raise();
 
-    splash.finish(&w);
+    splash->finish(&w);
     /* Step 6: Close out the backend after the frontend is closed */
     int retval = a.exec();
 #ifdef VERBOSE

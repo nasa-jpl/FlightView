@@ -7,6 +7,16 @@ fileNameGenerator::fileNameGenerator()
     extension = "unset";
 }
 
+void fileNameGenerator::setFlightFormat(bool useFlightFormat, QString flightNamePrefix="")
+{
+    this->flightFormat = useFlightFormat;
+    if(flightFormat)
+    {
+        this->namePrefix = flightNamePrefix;
+        //this->extension = "";
+    }
+}
+
 void fileNameGenerator::setMainDirectory(QString basedir)
 {
     this->directory = basedir;
@@ -47,22 +57,34 @@ QString fileNameGenerator::getNewFullFilename()
 
 QString fileNameGenerator::getFullFilename()
 {
-    return directory + "/" + shortFilename + "." + extension;
+    if(extension.isEmpty())
+        return directory + "/" + shortFilename;
+    else
+        return directory + "/" + shortFilename + "." + extension;
 }
 
 QString fileNameGenerator::getFullFilename(QString extension)
 {
-    return directory + "/" + shortFilename + "." + extension;
+    if(extension.isEmpty())
+        return directory + "/" + shortFilename;
+    else
+        return directory + "/" + shortFilename + "." + extension;
 }
 
 QString fileNameGenerator::getFullFilename(QString prefix, QString postfix, QString extension)
 {
-    return directory + "/" + prefix + shortFilename + postfix + "." + extension;
+    if(extension.isEmpty())
+        return directory + "/" + prefix + shortFilename + postfix;
+    else
+        return directory + "/" + prefix + shortFilename + postfix + "." + extension;
 }
 
 QString fileNameGenerator::getShortFilename()
 {
-    return shortFilename + extension;
+    if(extension.isEmpty())
+        return shortFilename;
+    else
+        return shortFilename + extension;
 }
 
 QString fileNameGenerator::getFilenameExtension()
@@ -79,7 +101,17 @@ QString fileNameGenerator::getTimeDatestring()
 {
     // YYYY-MM-DD_HHMMSS UTC
     QDateTime now = QDateTime::currentDateTimeUtc();
-    QString dateString = now.toString("yyyy-MM-dd_hhmmss");
+    QString dateString;
+    if(flightFormat)
+    {
+        dateString.append(namePrefix);
+        dateString.append(now.toString("yyyyMMdd"));
+        dateString.append("t"); // t = "timezone" in datetime, so we must append it this way.
+        dateString.append(now.toString("hhmmss"));
+    } else {
+        // Older format:
+        dateString = now.toString("yyyy-MM-dd_hhmmss");
+    }
 
     //qDebug() << __PRETTY_FUNCTION__ << "time string: " << dateString;
     return dateString;

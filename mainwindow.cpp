@@ -10,19 +10,27 @@
 #include "mainwindow.h"
 #include "image_type.h"
 
-MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *fw, QWidget *parent)
+MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker *fw, QWidget *parent)
     : QMainWindow(parent)
 {
-    qRegisterMetaType<frame_c*>("frame_c*");
-    //qRegisterMetaType<QVector<double>>("QVector<double>");
-    //qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");
+    qRegisterMetaType<frame_c*>("frame_c*");    
     const QString name = "lv:";
     this->fw = fw;
-    this->options = options;
+    this->options = optionsIn;
+
+    startDateTime =  QDateTime::currentDateTimeUtc();
+    QString startDate;
+    startDate.append(startDateTime.toString("yyyyMMdd"));
 
     if(options->dataLocationSet)
     {
-        cLog = new consoleLog(options->dataLocation);
+        // Append today's date
+        // This will go in to the consoleLog, gps, and raw data saving functions
+        if(!options->dataLocation.endsWith("/"))
+            options->dataLocation.append("/");
+
+        this->options->dataLocation.append(startDate);
+        cLog = new consoleLog(this->options->dataLocation, options->flightMode);
     } else {
         cLog = new consoleLog();
     }
@@ -61,7 +69,9 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     dsf_widget = NULL;
     waterfall_widget = new frameview_widget(fw, WATERFALL);
 
+    //flight_screen = new flight_widget(fw, *options, this);
     flight_screen = new flight_widget(fw, *options);
+
     connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleGeneralStatusMessage(QString)));
 
     std_dev_widget = new frameview_widget(fw, STD_DEV);
@@ -214,6 +224,9 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     connect(save_server, SIGNAL(stopTakingDarks()), controlbox, SLOT(stopTakingDarks()));
     connect(save_server, SIGNAL(startSavingFlightData()), controlbox, SLOT(save_finite_button_slot()));
     connect(save_server, SIGNAL(stopSavingData()), controlbox, SLOT(stopSavingData()));
+    this->setWindowState( (windowState() & ~Qt::WindowMinimized ) | Qt::WindowActive);
+    this->raise();
+    this->activateWindow();
     handleMainWindowStatusMessage("Started");
 }
 
@@ -230,7 +243,7 @@ void MainWindow::closeEvent(QCloseEvent *e)
         QList<QWidget*> allWidgets = findChildren<QWidget*>();
         for(int i = 0; i < allWidgets.size(); ++i)
             allWidgets.at(i)->close();
-
+        //e->accept();
         QApplication::exit();
     } else {
         handleMainWindowStatusMessage("User canceled close request.");
@@ -435,12 +448,17 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
     }
 
     handleMainWindowStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
+
     if( (prefs.preferredWindowWidth < 4096 ) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
     {
         this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
     } else {
         handleMainWindowStatusMessage(QString("Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
     }
+
+    // Note: These prefs are not saved correctly currently, so do not restore.
+    // restoreGeometry(prefs.windowGeometry);
+    // restoreState(prefs.windowState);
 }
 
 void MainWindow::removeTab(QString tabTitle)

@@ -94,7 +94,15 @@ void rgbAdjustments::setRGBLevels(double r, double g, double b, double gamma)
     ui->greenSpin->setValue((int)(g*100));
     ui->blueSpin->setValue((int)(b*100));
     ui->gammaSpin->setValue(gamma);
-
+    gammaLevel = gamma;
+    oldGammaLevel = gamma;
+    if(gamma == 0.0)
+    {
+        ui->gammaEnableChk->setChecked(false);
+    } else {
+        ui->gammaEnableChk->setChecked(true);
+    }
+    on_gammaEnableChk_clicked();
     emitUpdateSignal = true;
 }
 
@@ -124,3 +132,9 @@ void rgbAdjustments::on_gammaEnableChk_clicked()
         ui->gammaSlider->setEnabled(false);
     }
 }
+
+void rgbAdjustments::on_closeBtn_clicked()
+{
+    this->close();
+}
+

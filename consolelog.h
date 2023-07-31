@@ -21,7 +21,7 @@ class consoleLog : public QWidget
     Q_OBJECT
 public:
     explicit consoleLog(QWidget *parent = nullptr);
-    explicit consoleLog(QString logFileName, QWidget *parent = nullptr);
+    explicit consoleLog(QString logFileName, bool enableFlightMode, QWidget *parent = nullptr);
     ~consoleLog();
 
 public slots:
@@ -46,6 +46,7 @@ private:
     void logSystemConfig();
     bool fileIsOpen = false;
     bool enableLogToFile = false;
+    bool flightMode = false;
     std::ofstream outfile;
     QString logFileName = "";
     QString createTimeStamp();

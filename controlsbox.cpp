@@ -63,9 +63,24 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     setupUI.setModal(true);
 
     rgbLevels = new rgbAdjustments(this);
+
+    // Set RGB Level UI to index 0 values.
+    rgbLevels->setRGBLevels(prefs.gainRed[0], \
+                                prefs.gainGreen[0], \
+                                prefs.gainBlue[0], \
+                                prefs.gamma[0]);
+
     connect(rgbLevels, &rgbAdjustments::haveRGBLevels,
             [=](const double &r, const double &g, const double &b, const double &gamma) {
         emit sendRGBLevels(r, g, b, gamma);
+        int cIndex = rgbPresetCombo.currentIndex();
+        if( (cIndex < 10) && (cIndex > -1))
+        {
+            prefs.gainRed[cIndex] = r;
+            prefs.gainGreen[cIndex] = g;
+            prefs.gainBlue[cIndex] = b;
+            prefs.gamma[cIndex] = gamma;
+        }
     });
 
 
@@ -441,6 +456,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //Third Row
     save_layout->addWidget(&stop_saving_frames_button, 1, 5, 1, 1);
     save_layout->addWidget(&frames_save_num_avgs_edit, 2, 5, 1, 1);
+
+    frames_save_num_avgs_edit.setDisabled(options.flightMode);
+    frames_save_num_edit.setDisabled(options.flightMode);
     
     //Forth Row (overlay plot only)
     //To Do: Add lh_select_slider (4th row) and then place width in 5th row
@@ -637,6 +655,17 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         redSpin.setValue(bandRed);
         greenSpin.setValue(bandGreen);
         blueSpin.setValue(bandBlue);
+        // Set the widget quietly:
+        rgbLevels->setRGBLevels(prefs.gainRed[index], \
+                                    prefs.gainGreen[index], \
+                                    prefs.gainBlue[index], \
+                                    prefs.gamma[index]);
+        // Export the new values:
+        emit sendRGBLevels(prefs.gainRed[index], \
+                           prefs.gainGreen[index], \
+                           prefs.gainBlue[index], \
+                           prefs.gamma[index]);
+
         previousRGBPresetIndex = index;
     });
 
@@ -732,6 +761,8 @@ void ControlsBox::loadSettings()
     prefs.stddevFloor = settings->value("stddevFloor", defaultPrefs.stddevFloor).toInt();
     prefs.preferredWindowWidth = settings->value("preferredWindowWidth", defaultPrefs.preferredWindowWidth).toInt();
     prefs.preferredWindowHeight = settings->value("preferredWindowHeight", defaultPrefs.preferredWindowHeight).toInt();
+    //restoreGeometry(settings->value("windowGeometry").toByteArray());
+
     settings->endGroup();
 
     // [RGB]:
@@ -748,6 +779,10 @@ void ControlsBox::loadSettings()
         prefs.bandGreen[i] = settings->value("bandGreen", defaultPrefs.bandGreen[i]).toInt();
         prefs.bandBlue[i] = settings->value("bandBlue", defaultPrefs.bandBlue[i]).toInt();
         prefs.presetName[i] = settings->value("bandName", QString("%1").arg(i+1)).toString();
+        prefs.gainRed[i] = settings->value("gainRed", defaultPrefs.gainRed[i]).toDouble();
+        prefs.gainGreen[i] = settings->value("gainGreen", defaultPrefs.gainGreen[i]).toDouble();
+        prefs.gainBlue[i] = settings->value("gainBlue", defaultPrefs.gainBlue[i]).toDouble();
+        prefs.gamma[i] = settings->value("gamma", defaultPrefs.gamma[i]).toDouble();
     }
 
     settings->endArray();
@@ -772,7 +807,14 @@ void ControlsBox::loadSettings()
 
     prefs.readFile = true;
     updateUIToPrefs();
-    setRGBWaterfall(0); // send the initial RGB values
+    setRGBWaterfall(0); // send the initial RGB band values
+
+    // Export the new values:
+    emit sendRGBLevels(prefs.gainRed[0], \
+                       prefs.gainGreen[0], \
+                       prefs.gainBlue[0], \
+                       prefs.gamma[0]);
+
     emit statusMessage(QString("[Controls Box]: 2s compliment setting from preferences: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
     emit haveReadPreferences(prefs);
 }
@@ -860,6 +902,8 @@ void ControlsBox::saveSettings()
     settings->setValue("preferredWindowWidth", prefs.preferredWindowWidth);
     settings->setValue("preferredWindowHeight", prefs.preferredWindowHeight);
 
+    settings->setValue("windowGeometry", prefs.windowGeometry);
+    settings->setValue("windowState", prefs.windowState);
     settings->endGroup();
 
     // [RGB]:
@@ -872,6 +916,10 @@ void ControlsBox::saveSettings()
         settings->setValue("bandGreen", prefs.bandGreen[i]);
         settings->setValue("bandBlue", prefs.bandBlue[i]);
         settings->setValue("bandName", rgbPresetCombo.itemText(i));
+        settings->setValue("gainRed", prefs.gainRed[i]);
+        settings->setValue("gainGreen", prefs.gainGreen[i]);
+        settings->setValue("gainBlue", prefs.gainBlue[i]);
+        settings->setValue("gamma", prefs.gamma[i]);
     }
     settings->endArray();
     settings->endGroup();
@@ -927,10 +975,17 @@ void ControlsBox::saveSingleRGBPreset(int index, int r, int g, int b)
             settings->setValue("bandRed", r);
             settings->setValue("bandGreen", g);
             settings->setValue("bandBlue", b);
-            //settings->setValue("bandName", rgbPresetCombo.itemText(selIndex));
+            settings->setValue("bandName", rgbPresetCombo.itemText(selIndex));
+            settings->setValue("gainRed", prefs.gainRed[selIndex]);
+            settings->setValue("gainGreen", prefs.gainGreen[selIndex]);
+            settings->setValue("gainBlue", prefs.gainBlue[selIndex]);
+            settings->setValue("gamma", prefs.gamma[selIndex]);
+            settings->setValue("gammaEnabled", prefs.gammaEnabled[selIndex]);
 
             settings->endArray();
             settings->endGroup();
+
+            settings->sync();
 
             prefs.bandRed[selIndex] = r;
             prefs.bandGreen[selIndex] = g;
@@ -953,10 +1008,16 @@ void ControlsBox::saveSingleRGBPreset(int index, int r, int g, int b)
                 prefs.bandRed[index] = settings->value("bandRed", prefs.bandRed[index]).toInt();
                 prefs.bandGreen[index] = settings->value("bandGreen", prefs.bandGreen[index]).toInt();
                 prefs.bandBlue[index] = settings->value("bandBlue", prefs.bandBlue[index]).toInt();
-                //prefs.presetName[index] = settings->value("bandName", QString("%1").arg(i+1)).toString();
+                prefs.presetName[index] = settings->value("bandName", QString("%1").arg(index)).toString();
+                prefs.gainRed[index] = settings->value("gainRed", prefs.gainRed[index]).toDouble();
+                prefs.gainGreen[index] = settings->value("gainGreen", prefs.gainGreen[index]).toDouble();
+                prefs.gainBlue[index] = settings->value("gainBlue", prefs.gainBlue[index]).toDouble();
+                prefs.gamma[index] = settings->value("gamma", prefs.gamma[index]).toDouble();
+                prefs.gammaEnabled[index] = settings->value("gammaEnabled", prefs.gammaEnabled[index]).toBool();
 
                 settings->endArray();
                 settings->endGroup();
+                settings->sync();
 
                 rgbPresetCombo.blockSignals(true);
                 rgbPresetCombo.setCurrentIndex(selIndex);
@@ -1002,6 +1063,11 @@ void ControlsBox::setDefaultSettings()
         defaultPrefs.bandGreen[i] = 200;
         defaultPrefs.bandBlue[i] = 300;
         defaultPrefs.presetName[i] = QString("%1").arg(i+1);
+        defaultPrefs.gainRed[i] = 1.0;
+        defaultPrefs.gainGreen[i] = 1.0;
+        defaultPrefs.gainBlue[i] = 1.0;
+        defaultPrefs.gamma[i] = 1.0;
+        defaultPrefs.gammaEnabled[i] = false;
     }
 
     // [Flight]:
@@ -1565,7 +1631,17 @@ void ControlsBox::show_save_dialog()
     /*! \brief Display the file dialog to specify the path for saving raw frames.
      * \author Noah Levy
      */
-    QString dialog_file_name = QFileDialog::getSaveFileName(this, tr("Save frames as raw"), "/home/", tr("Raw (*.raw *.bin *.hsi *.img)"));
+
+    QString startPath;
+    if(options.dataLocationSet)
+    {
+        startPath = options.dataLocation;
+    } else {
+        startPath = "/home/";
+    }
+    // On some platforms, the native file dialog box is not visible.
+    // It's a bug for sure, and this is the fix, using the non-native box:
+    QString dialog_file_name = QFileDialog::getSaveFileName(this, tr("Save frames as raw"), startPath, tr("Raw (*.raw *.bin *.hsi *.img)"), NULL, QFileDialog::DontUseNativeDialog);
     if (!dialog_file_name.isEmpty())
         filename_edit.setText(dialog_file_name);
 }
@@ -1617,10 +1693,10 @@ void ControlsBox::save_finite_button_slot()
     if(options.flightMode)
     {
         // Generate filenames:
-
+        fnamegen.setFlightFormat(true, "AV3");
         fnamegen.generate(); // new timestamp
-        QString rawDataFilename = fnamegen.getFullFilename("", "-scenedata", "raw");
-        QString gpsLogFilename = fnamegen.getFullFilename("", "-scenegps", "bin");
+        QString rawDataFilename = fnamegen.getFullFilename("", "_raw", "");
+        QString gpsLogFilename = fnamegen.getFullFilename("", "_gps", "");
 
         // Populate the text boxes with the filenames
 
@@ -1673,8 +1749,9 @@ void ControlsBox::stop_continous_button_slot()
     stop_saving_frames_button.setEnabled(false);
     start_saving_frames_button.setEnabled(true);
     save_finite_button.setEnabled(true);
-    frames_save_num_edit.setEnabled(true);
-    frames_save_num_avgs_edit.setEnabled(true);
+
+    frames_save_num_edit.setDisabled(options.flightMode);
+    frames_save_num_avgs_edit.setDisabled(options.flightMode);
     frames_save_num_edit.setValue(previousNumSaved);
     emit stopDataCollection(); // goes to flight_screen
 }
@@ -1688,8 +1765,8 @@ void ControlsBox::updateSaveFrameNum_slot(unsigned int n)
         stop_saving_frames_button.setEnabled(false);
         start_saving_frames_button.setEnabled(true);
         save_finite_button.setEnabled(true);
-        frames_save_num_avgs_edit.setEnabled(true);
-        frames_save_num_edit.setEnabled(true);
+        frames_save_num_avgs_edit.setDisabled(options.flightMode);
+        frames_save_num_edit.setDisabled(options.flightMode);
         frames_save_num_edit.setValue(previousNumSaved);
     } else {
         frames_save_num_edit.setValue(n);

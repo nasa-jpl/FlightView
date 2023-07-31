@@ -139,7 +139,8 @@ void waterfall::addNewFrame()
     int g_row_pix = frWidth * g_row;
     int b_row_pix = frWidth * b_row;
 
-    if(fw->dsfMaskCollected() && useDSF)
+    //    if(fw->dsfMaskCollected() && useDSF); // prior method
+    if(useDSF) // concurrent
     {
         copyPixToLine(local_image_ptr, line->getr_raw(), r_row_pix);
         copyPixToLine(local_image_ptr, line->getg_raw(), g_row_pix);
@@ -153,20 +154,10 @@ void waterfall::addNewFrame()
     // process initial RGB values:
     processLineToRGB(line);
 
-    // ATOMIC spin-lock on the wf deque
-//    while(wfInUse)
-//    {
-//        usleep(500);
-//    }
     QMutexLocker lockwf(&wfInUse);
-//    wfInUse = true;
-    // push front
-    wf.push_front(std::shared_ptr<rgbLine>(line));
 
-    // pop back to remove oldest line
-    //wf.pop_back();
+    wf.push_front(std::shared_ptr<rgbLine>(line));
     wf.resize(maxWFlength);
-//    wfInUse = false;
     addingFrame.unlock();
 }
 

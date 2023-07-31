@@ -33,11 +33,19 @@ struct settingsT {
     int preferredWindowWidth = 1280;
     int preferredWindowHeight = 1024;
 
+    QByteArray windowGeometry;
+    QByteArray windowState;
+
     // [RGB]:
     unsigned int bandRed[10];
     unsigned int bandBlue[10];
     unsigned int bandGreen[10];
     QString presetName[10];
+    double gainRed[10] = {1.0};
+    double gainBlue[10] = {1.0};
+    double gainGreen[10] = {1.0};
+    double gamma[10] = {1.0};
+    bool gammaEnabled[10] = {false};
 
     // [Flight]:
     bool hidePlayback = true;

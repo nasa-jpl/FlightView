@@ -357,7 +357,7 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
 {
     // Creates a mask from a file containing multiple frames
     // The frames are expected to be the same geometry as the
-    // frame source, and the pixels are expected to be 16-bit int.
+    // frame source, and the pixels are expected to be 16-bit unsigned int.
 
     // This function was largly copied from the main.cpp file of
     // the included "statscli" program found under "utils".
@@ -1244,11 +1244,22 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 }
 void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
 {
-    //Frame Save Thread (saving_thread)
+    // Frame Save Thread (saving_thread)
+
+    // The main loop (pdvLoop, etc) of take_object will place frames into save_list,
+    // and this thread will remove frames in save_list. While the data are being taken,
+    // this thread will not empty the list.
+
+    // This thread ends when the file finished being written to and the buffer is empty.
+
+    std::ostringstream ss;
+    ss << "Starting saveLoop. Thread ID: " << boost::this_thread::get_id();
+
+    statusMessage(ss);
 
     if(savingData)
     {
-        warningMessage("Saving loop hit but already saving data!");
+        errorMessage("Saving loop hit but already saving data! Not saving this data!");
         return;
     } else {
         savingData = true;
@@ -1256,35 +1267,46 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
     savingMutex.lock();
 
+    // if there is ".raw" already, then the hdr_fname shall be the same thing just without the .raw.
+    // if there is not ".raw" then we just add ".hdr"
+    std::string hdr_fname;
     if(fname.find(".")!=std::string::npos)
     {
-        fname.replace(fname.find("."),std::string::npos,".raw");
+        // The filename has ".", likely ".raw"
+        //fname.replace(fname.find("."),std::string::npos,".raw");
+        hdr_fname = fname.substr(0,fname.size()-3) + "hdr";
     }
     else
     {
-        fname+=".raw";
+        // The filename does not have "."
+        hdr_fname=fname+".hdr";
     }
-    std::string hdr_fname = fname.substr(0,fname.size()-3) + "hdr";
+
     FILE * file_target = fopen(fname.c_str(), "wb");
     int sv_count = 0;
 
-    while(  (save_framenum != 0 || continuousRecording)    ||  !saving_list.empty())
+    while(  (save_framenum != 0) || continuousRecording)
     {
-        if(!saving_list.empty())
+        if(saving_list.size() > 2)
         {
             if(num_avgs == 1)
             {
-                // This is the "normal" behavior.
-                uint16_t * data = saving_list.back();
-                saving_list.pop_back();
-                fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
-                delete[] data;
-                sv_count++;
-                if(sv_count == 1) {
-                    save_count.store(1, std::memory_order_seq_cst);
-                }
-                else {
-                    save_count++;
+                // This is our not-averaging save, where most saves go:
+                if(saving_list.size() > 2) {
+                    // We refuse to take the last item off the list.
+                    // it can wait until we are completely done recording.
+                    // This way the list remains valid in memory.
+                    uint16_t * data = saving_list.back();
+                    saving_list.pop_back();
+                    fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
+                    delete[] data;
+                    sv_count++;
+                    if(sv_count == 1) {
+                        save_count.store(1, std::memory_order_seq_cst);
+                    }
+                    else {
+                        save_count++;
+                    }
                 }
             }
             else if(saving_list.size() >= num_avgs && num_avgs != 1)
@@ -1332,6 +1354,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
             }
             else if(save_framenum == 0 && saving_list.size() < num_avgs)
             {
+                warningMessage("Erasing saving_list");
                 saving_list.erase(saving_list.begin(),saving_list.end());
             }
             else
@@ -1346,15 +1369,54 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
             usleep(250);
         }
     }
-    //We're done!
+
+    // Almost done, let's take care of anything left in the buffer.
+
+    statusMessage("Finished primary saving loop.");
+    char message[128];
+    sprintf(message, "Size of buffer: %ld", saving_list.size());
+    statusMessage(message);
+    if( (num_avgs==1) || (num_avgs==0)) {
+        statusMessage("Finishing write...");
+        while(saving_list.size() > 0) {
+            statusMessage("Writing additional frame");
+            uint16_t * data = saving_list.back();
+            if(saving_list.size() > 0)
+                saving_list.pop_back();
+            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target);
+            delete[] data;
+        }
+        statusMessage("Done with write.");
+    } else {
+        while(saving_list.size() > 0) {
+            //statusMessage("Dropping additional frame at end that does not meet average interval.");
+            uint16_t * data = saving_list.back();
+            if(saving_list.size() > 0)
+                saving_list.pop_back();
+            // Since averaging is typically many frames (>100),
+            // we cannot really average the last two or three frames
+            // in a meaningfull way. Writing the data out will just
+            // confuse people about the scale of the last few frames.
+            //fwrite(data,sizeof(float),frWidth*dataHeight,file_target);
+            delete[] data;
+        }
+    }
+
     fclose(file_target);
-    std::string hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frame mean per grab}\n";
+    std::string hdr_text;
+    if( (num_avgs !=0) && (num_avgs !=1) )
+    {
+        hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frames mean per line}\n";
+    } else {
+        hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file}\n";
+    }
+
     hdr_text= hdr_text + "samples = " + std::to_string(frWidth) +"\n";
-    hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n";
+    hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n"; // save count, ie, number of frames in the file
     hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
     hdr_text+= "header offset = 0\n";
     hdr_text+= "file type = ENVI Standard\n";
-    if(num_avgs != 1)
+    if((num_avgs != 1) && (num_avgs != 0))
     {
         hdr_text+= "data type = 4\n";
     }
@@ -1374,9 +1436,6 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     if(sv_count == 1)
         usleep(500000);
     save_count.store(0, std::memory_order_seq_cst);
-    //std::cout << "save_count: " << std::to_string(save_count) << "\n";
-    //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
-    //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
     statusMessage("Saving complete.");
     savingMutex.unlock();
     savingData = false;
@@ -1384,35 +1443,65 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
 void take_object::errorMessage(const char *message)
 {
-    std::cerr << "take_object: ERROR: " << message << std::endl;
+    if(!options.rtpCam)
+    {
+        std::cerr << "take_object: ERROR: " << message << std::endl;
+    } else {
+        g_critical("take_object: ERROR: %s", message);
+    }
 }
 
 void take_object::warningMessage(const char *message)
 {
-    std::cout << "take_object: WARNING: " << message << std::endl;
+    if(!options.rtpCam)
+    {
+        std::cout << "take_object: WARNING: " << message << std::endl;
+    } else {
+        g_message("take_object: WARNING: %s", message);
+    }
 }
 
 void take_object::statusMessage(const char *message)
 {
-    std::cout << "take_object: STATUS: " << message << std::endl;
+    if(!options.rtpCam) {
+        std::cout << "take_object: STATUS: " << message << std::endl;
+    } else {
+        g_message("take_object: STATUS: %s", message);
+    }
 }
 
 void take_object::errorMessage(const string message)
 {
-    std::cout << "take_object: ERROR: " << message << std::endl;
+    if(!options.rtpCam) {
+        std::cerr << "take_object: ERROR: " << message << std::endl;
+    } else {
+        g_error("take_object: ERROR: %s", message.c_str());
+    }
 }
 
 void take_object::warningMessage(const string message)
 {
-    std::cout << "take_object: WARNING: " << message << std::endl;
+    if(!options.rtpCam) {
+        std::cout << "take_object: WARNING: " << message << std::endl;
+    } else {
+        g_message("take_object: WARNING: %s", message.c_str());
+    }
 }
 
 void take_object::statusMessage(const string message)
 {
-    std::cout << "take_object: STATUS: " << message << std::endl;
+    if(!options.rtpCam) {
+        std::cout << "take_object: STATUS: " << message << std::endl;
+    } else {
+        g_message("take_object: STATUS: %s", message.c_str());
+    }
 }
 
 void take_object::statusMessage(std::ostringstream &message)
 {
-    std::cout << "take_object: STATUS: " << message.str() << std::endl;
+    if(!options.rtpCam) {
+        std::cout << "take_object: STATUS: " << message.str() << std::endl;
+    } else {
+        g_message("take_object: STATUS: %s", message.str().c_str());
+    }
 }

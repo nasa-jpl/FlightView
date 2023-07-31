@@ -141,7 +141,6 @@ void frameWorker::convertOptions()
     takeOptions.targetFPS = options.targetFPS;
 
 
-    qDebug() << "RTP camera: " << options.rtpCam << ", rtpHeight:" << takeOptions.rtpHeight << ", rtpWidth: " << takeOptions.rtpWidth;
     if(takeOptions.rtpCam)
     {
         if(takeOptions.rtpInterface != NULL)
