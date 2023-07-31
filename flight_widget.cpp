@@ -457,7 +457,8 @@ void flight_widget::startDataCollection(QString secondaryLogFilename)
     if(options.flightMode)
     {
         QString hhmm = secondaryLogFilename.mid(secondaryLogFilename.length()-10, 4);
-        hhmm.insert(2, ':');
+        //hhmm.insert(2, ':');
+        hhmm.prepend("t");
         fi->updateLastRec(hhmm);
     } else {
         // Can't rely on these filenames for non-flight recordings.
