@@ -916,10 +916,10 @@ void take_object::fileImageCopyLoop()
                 curFrame->image_data_ptr = curFrame->raw_data_ptr;
             }
 
-            if(cam_type == CL_6604A)
-                curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
-            else
-                curFrame->image_data_ptr = curFrame->raw_data_ptr;
+//            if(cam_type == CL_6604A)
+//                curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
+//            else
+            curFrame->image_data_ptr = curFrame->raw_data_ptr;
             if(inverted)
             { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
                 for(uint i = 0; i < frHeight*frWidth; i++ )
