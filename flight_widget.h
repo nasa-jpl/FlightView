@@ -37,7 +37,7 @@ class flight_widget : public QWidget
     frameWorker *fw;
 
     waterfall *waterfall_widget;
-    QThread *wfThread = NULL;
+    //QThread *wfThread = NULL;
     frameview_widget *dsf_widget;
     void setupWFConnections();
 

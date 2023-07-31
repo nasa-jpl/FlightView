@@ -21,10 +21,10 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     gpsPlotSplitter = new QSplitter();
 
     waterfall_widget = new waterfall(fw, 1, 1024, this);
-//    waterfall_widget = new waterfall(fw, 1, 1024, NULL);
+    // waterfall_widget = new waterfall(fw, 1, 1024);
 
-    wfThread = new QThread(this);
-    wfThread->setObjectName("lv:wfThread");
+    // wfThread = new QThread(this);
+    // wfThread->setObjectName("lv:wfThread");
     dsf_widget = new frameview_widget(fw, DSF, this);
 
     gpsMessageCycleTimer = new QTimer(this);
@@ -192,10 +192,10 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     hideRGBTimer.stop();
     connect(&hideRGBTimer, SIGNAL(timeout()), this, SLOT(hideRGB()));
 
-    waterfall_widget->moveToThread(wfThread);
-    connect(wfThread, SIGNAL(started()), waterfall_widget, SLOT(process()));
-    connect(wfThread, SIGNAL(finished()), waterfall_widget, SLOT(deleteLater()));
-    wfThread->start();
+    //waterfall_widget->moveToThread(wfThread);
+    //connect(wfThread, SIGNAL(started()), waterfall_widget, SLOT(process()));
+    //connect(wfThread, SIGNAL(finished()), waterfall_widget, SLOT(deleteLater()));
+    //wfThread->start();
 
     setupWFConnections();    
     QList <int>rhSS;
@@ -216,12 +216,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 flight_widget::~flight_widget()
 {
     qDebug() << "Running flight_widget destructor.";
-    if(wfThread != NULL)
-    {
-        wfThread->quit();
-        wfThread->wait();
-        //usleep(10000);
-    }
 
 //    if(gps != NULL)
 //    {
