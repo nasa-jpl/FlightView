@@ -54,7 +54,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Latitude</string>
+      <string>Latitude:</string>
      </property>
     </widget>
    </item>
@@ -66,7 +66,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Longitude</string>
+      <string>Longitude:</string>
      </property>
     </widget>
    </item>
@@ -191,7 +191,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Ground Speed</string>
+      <string>Gnd Speed:</string>
      </property>
     </widget>
    </item>
@@ -229,7 +229,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Altitude</string>
+      <string>Altitude:</string>
      </property>
     </widget>
    </item>
@@ -259,7 +259,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Heading</string>
+      <string>Heading:</string>
      </property>
     </widget>
    </item>
@@ -345,7 +345,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Alignment</string>
+      <string>Alignment:</string>
      </property>
     </widget>
    </item>

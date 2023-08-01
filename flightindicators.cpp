@@ -13,6 +13,7 @@ flightIndicators::flightIndicators(QWidget *parent) :
     clock->start();
     alertLabelFont = ui->lastRecLabel->font();
     alertLabelFont.setBold(true);
+    alertLabelFont.setPointSize(alertLabelFont.pointSize()*1.20);
     defLabelFont = ui->lastRecLabel->font();
 
     int ledSize = 18;
