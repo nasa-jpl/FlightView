@@ -423,9 +423,8 @@ int main(int argc, char *argv[])
     {
         // On some displays, the splash screen covers the setup dialog box
         splash->show();
-        splash->showMessage(QObject::tr("Loading AVIRIS LiveView. Compiled on " __DATE__ ", " __TIME__ " PDT by " UNAME "@" HOST  ),
+        splash->showMessage(QObject::tr(" "),
                            Qt::WindowStaysOnTopHint | Qt::AlignCenter | Qt::AlignBottom, Qt::black);
-
     }
 
     /* Step 3: Load the parallel worker object which will act as a "backend" for LiveView */
