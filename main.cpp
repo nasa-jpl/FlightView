@@ -408,9 +408,16 @@ int main(int argc, char *argv[])
 
     /* Step 2: Load the splash screen */
 
+    QString logoPath;
+    if(startupOptions.flightMode)
+    {
+        logoPath = ":images/aviris3-logo.png";
+    } else {
+        logoPath = ":images/aviris-logo-transparent.png";
+    }
 
-    QPixmap logo_pixmap(":images/aviris-logo-transparent.png"); // AVIRIS-NG
-    //QSplashScreen splash(logo_pixmap);
+    QPixmap logo_pixmap(logoPath);
+
     QSplashScreen *splash = new QSplashScreen(logo_pixmap);
     if(!startupOptions.xioCam)
     {

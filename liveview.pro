@@ -81,6 +81,7 @@ HEADERS  += mainwindow.h \
     preferences.h
 
 DISTFILES +=    cuda_take/include/take_object.hpp \
+                aviris3-logo.png \
                 cuda_take/include/chroma_translate_filter.hpp \
                 cuda_take/include/std_dev_filter_device_code.cuh \
                 cuda_take/include/mean_filter.hpp \
