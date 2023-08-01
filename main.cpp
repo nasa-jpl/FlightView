@@ -424,7 +424,7 @@ int main(int argc, char *argv[])
         // On some displays, the splash screen covers the setup dialog box
         splash->show();
         splash->showMessage(QObject::tr("Loading AVIRIS LiveView. Compiled on " __DATE__ ", " __TIME__ " PDT by " UNAME "@" HOST  ),
-                           Qt::WindowStaysOnTopHint | Qt::AlignCenter | Qt::AlignBottom, Qt::gray);
+                           Qt::WindowStaysOnTopHint | Qt::AlignCenter | Qt::AlignBottom, Qt::black);
 
     }
 
@@ -451,8 +451,12 @@ int main(int argc, char *argv[])
     // QGuiApplication::screens()
     QPixmap icon_pixmap(":images/icon.png");
     w.setWindowIcon(QIcon(icon_pixmap));
+    if(!startupOptions.xioCam)
+        splash->raise();
     w.show();
-    w.raise();
+    if(!startupOptions.xioCam)
+        splash->raise();
+    //w.raise();
 
     splash->finish(&w);
     /* Step 6: Close out the backend after the frontend is closed */

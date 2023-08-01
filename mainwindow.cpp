@@ -225,9 +225,9 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     connect(save_server, SIGNAL(stopTakingDarks()), controlbox, SLOT(stopTakingDarks()));
     connect(save_server, SIGNAL(startSavingFlightData()), controlbox, SLOT(save_finite_button_slot()));
     connect(save_server, SIGNAL(stopSavingData()), controlbox, SLOT(stopSavingData()));
-    this->setWindowState( (windowState() & ~Qt::WindowMinimized ) | Qt::WindowActive);
-    this->raise();
-    this->activateWindow();
+    //this->setWindowState( (windowState() & ~Qt::WindowMinimized ) | Qt::WindowActive);
+    //this->raise();
+    //this->activateWindow();
     handleMainWindowStatusMessage("Started");
 }
 
