@@ -246,8 +246,13 @@ void flight_widget::hideRGB()
 
 void flight_widget::handleNewFrame()
 {
-    dsf_widget->handleNewFrame();
-    waterfall_widget->handleNewFrame();
+    // this function is depreciated.
+    // New frames are "handled" by render timers
+    // in each of the widgets. The timers are set to a period
+    // defined in settings.h
+
+    //dsf_widget->handleNewFrame();
+    //waterfall_widget->handleNewFrame();
 }
 
 void flight_widget::updateFPS()
