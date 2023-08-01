@@ -21,10 +21,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     gpsPlotSplitter = new QSplitter();
 
     waterfall_widget = new waterfall(fw, 1, 1024, this);
-    // waterfall_widget = new waterfall(fw, 1, 1024);
-
-    // wfThread = new QThread(this);
-    // wfThread->setObjectName("lv:wfThread");
     dsf_widget = new frameview_widget(fw, DSF, this);
 
     gpsMessageCycleTimer = new QTimer(this);
@@ -50,24 +46,15 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
         // Simply comment out the widgets not desired.
     }
 
-    // Group Box "Flight Instrument Controls" items:
-    resetStickyErrorsBtn.setText("Clear Errors");
-    resetStickyErrorsBtn.setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-
-    gpsLED.setState(QLedLabel::StateOkBlue);
-
     if(options.rtpCam)
     {
-        updateLabel(cameraLinkLEDLabel, "RTP Link");
+        updateLabel(flightDisplayElements.imageLabel, "RTP Link:");
     } else if (options.xioCam) {
-        updateLabel(cameraLinkLEDLabel, "XIO Files");
+        updateLabel(flightDisplayElements.imageLabel, "XIO Files:");
     } else {
-        updateLabel(cameraLinkLEDLabel, "C Link");
+        updateLabel(flightDisplayElements.imageLabel, "Cam Link:");
     }
 
-    if(cameraLinkLED != NULL) {
-        cameraLinkLED->setState(QLedLabel::StateOk);
-    }
     diskLEDLabel.setText("Disk:");
     if(diskLED != NULL) {
         diskLED->setState(QLedLabel::StateOkBlue);
@@ -76,8 +63,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     // Format is &item, row, col, rowSpan, colSpan. -1 = to "edge"
 
     flightControlLayout.addWidget(fi, 0, 0, 1,-1);
-
-
 
     // Avionics Widget Layout Placement
     if(useAvionicsWidgets)
@@ -94,7 +79,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
         if(ASI!=NULL)  flightControlLayout.addWidget(ASI,  4, avColumn--, -1, 1); // col 5
         if(VSI!=NULL)  flightControlLayout.addWidget(VSI,  4, avColumn--, -1, 1); // col 4
     }
-
 
     // Group Box "Flight Instrument Controls"
     flightControls.setTitle("Instrumentation Status");
@@ -192,11 +176,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     hideRGBTimer.stop();
     connect(&hideRGBTimer, SIGNAL(timeout()), this, SLOT(hideRGB()));
 
-    //waterfall_widget->moveToThread(wfThread);
-    //connect(wfThread, SIGNAL(started()), waterfall_widget, SLOT(process()));
-    //connect(wfThread, SIGNAL(finished()), waterfall_widget, SLOT(deleteLater()));
-    //wfThread->start();
-
     setupWFConnections();    
     QList <int>rhSS;
     rhSS.append(514);
@@ -232,7 +211,7 @@ void flight_widget::setupWFConnections()
     connect(this, SIGNAL(changeWFLengthSignal(int)), waterfall_widget, SLOT(changeWFLength(int)));
     connect(this, SIGNAL(updateCeilingSignal(int)), waterfall_widget, SLOT(updateCeiling(int)));
     connect(this, SIGNAL(updateFloorSignal(int)), waterfall_widget, SLOT(updateFloor(int)));
-    connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double)), waterfall_widget, SLOT(setRGBLevels(double,double,double,double)));
+    connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double,bool)), waterfall_widget, SLOT(setRGBLevels(double,double,double,double,bool)));
     connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), waterfall_widget, SLOT(changeRGB(int,int,int)));
 }
 
@@ -417,10 +396,10 @@ void flight_widget::changeRGB(int r, int g, int b)
     //emit statusMessage(QString("Updated RGB lines: r:%1, g:%2, b:%3").arg(r).arg(g).arg(b));
 }
 
-void flight_widget::setRGBLevels(double r, double g, double b, double gamma)
+void flight_widget::setRGBLevels(double r, double g, double b, double gamma, bool reprocess)
 {
     //waterfall_widget->setRGBLevels(r, g, b, gamma);
-    emit setRGBLevelsSignal(r,g,b,gamma);
+    emit setRGBLevelsSignal(r,g,b,gamma, reprocess);
     //emit statusMessage(QString("Updated RGB levels: r:%1, g:%2, b:%3").arg(r).arg(g).arg(b));
 }
 
@@ -494,7 +473,7 @@ void flight_widget::handleGPSConnectionError(int errorNum)
 {
     // This usually means we could not connect to the GPS
     // The error string is already handled.
-    gpsLED.setState(QLedLabel::StateError);
+    // TODO: Switch to flightindicators LED
     (void)errorNum;
 }
 

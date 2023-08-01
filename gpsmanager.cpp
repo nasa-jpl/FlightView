@@ -495,8 +495,8 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             bool courseAlignment = false;
             bool fineAlignment = false;
             if(getBit(m.algorithmStatus1, 1)) {
-                //gnssAlignmentPhase = "COURSE";
-                updateLabel(gpsAlignment, "COURSE");
+                gnssAlignmentPhase = "COURSE";
+                //updateLabel(gpsAlignment, "COURSE");
                 courseAlignment = true;
                 gnssAlignmentComplete = false;
             }

@@ -70,9 +70,19 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
                                 prefs.gainBlue[0], \
                                 prefs.gamma[0]);
 
+    // Send the first preset out to the waterfall
+    // TODO, this doesn't work because it is in the constructor,
+    // and is thus emitted before the parent has a chance to connect
+    // it to anything.
+
+    // A possible fix is a one-shot timer for a second.
+    // Or we could signal to the controls box when the rest of the program is
+    // ready (mainWindow finishes constructor)
+
+
     connect(rgbLevels, &rgbAdjustments::haveRGBLevels,
-            [=](const double &r, const double &g, const double &b, const double &gamma) {
-        emit sendRGBLevels(r, g, b, gamma);
+            [=](const double &r, const double &g, const double &b, const double &gamma, const bool &reprocess) {
+        emit sendRGBLevels(r, g, b, gamma, reprocess);
         int cIndex = rgbPresetCombo.currentIndex();
         if( (cIndex < 10) && (cIndex > -1))
         {
@@ -664,7 +674,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         emit sendRGBLevels(prefs.gainRed[index], \
                            prefs.gainGreen[index], \
                            prefs.gainBlue[index], \
-                           prefs.gamma[index]);
+                           prefs.gamma[index], true);
 
         previousRGBPresetIndex = index;
     });
@@ -730,7 +740,18 @@ void ControlsBox::closeEvent(QCloseEvent *e)
 void ControlsBox::getPrefsExternalTrig()
 {
     // This is called by the MainWindow after we have setup.
+    // Reason: The preferences are read when ControlsBox is constructed.
+    // And once that has happened, we can send them to other places in the program.
+    // However, we can't send the right away because the parent, MainWindow,
+    // hasn't connected all the settings together yet. So therefore,
+    // we wait until MainWindow has finished connecting everything together,
+    // at which time the MainWindow will trigger this function.
+
     emit haveReadPreferences(prefs);
+    emit sendRGBLevels(prefs.gainRed[0],
+                       prefs.gainGreen[0],
+                       prefs.gainBlue[0],
+                       prefs.gamma[0], false);
 }
 
 void ControlsBox::loadSettings()
@@ -809,14 +830,8 @@ void ControlsBox::loadSettings()
     updateUIToPrefs();
     setRGBWaterfall(0); // send the initial RGB band values
 
-    // Export the new values:
-    emit sendRGBLevels(prefs.gainRed[0], \
-                       prefs.gainGreen[0], \
-                       prefs.gainBlue[0], \
-                       prefs.gamma[0]);
-
     emit statusMessage(QString("[Controls Box]: 2s compliment setting from preferences: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
-    emit haveReadPreferences(prefs);
+    emit haveReadPreferences(prefs); // mostly ignored. Parent, MainWindow, isn't ready to act on them yet.
 }
 
 void ControlsBox::updateUIToPrefs()

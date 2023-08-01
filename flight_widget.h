@@ -68,14 +68,9 @@ class flight_widget : public QWidget
     fiUI_t flightDisplayElements;
 
     // stand-in items for flight controls:
-    QPushButton resetStickyErrorsBtn;
-    QLabel gpsLEDLabel;
-    QLedLabel gpsLED;
-    QLabel *cameraLinkLEDLabel = NULL;
-    QLedLabel *cameraLinkLED = NULL;
-    //QLabel aircraftLbl;
     QLabel diskLEDLabel;
     QLedLabel *diskLED = NULL;
+    QLedLabel *cameraLinkLED = NULL;
 
     QStringList priorGPSErrorMessages;
     QStringList priorGPSWarningMessages;
@@ -143,7 +138,7 @@ public slots:
     void updateCeiling(int c);
     void updateFloor(int f);
     void changeRGB(int r, int g, int b);
-    void setRGBLevels(double red, double green, double blue, double gamma);
+    void setRGBLevels(double red, double green, double blue, double gamma, bool reprocess);
     void setShowRGBLines(bool showLines);
     void changeWFLength(int length);
     void rescaleRange();
@@ -168,7 +163,7 @@ signals:
     void updateCeilingSignal(int c);
     void updateFloorSignal(int f);
     void updateRGBbandSignal(int r, int g, int b);
-    void setRGBLevelsSignal(double r, double g, double b, double gamma);
+    void setRGBLevelsSignal(double r, double g, double b, double gamma, bool);
     void changeWFLengthSignal(int length);
 };
 

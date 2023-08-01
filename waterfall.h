@@ -89,7 +89,9 @@ public slots:
     void paintEvent(QPaintEvent *event);
     void handleNewFrame();
     void changeRGB(int r, int g, int b);
-    void setRGBLevels(double r, double g, double b, double gamma);
+    void setRGBLevels(double r, double g, double b, double gamma, bool reprocess);
+    void setRGBLevelsAndReprocess(double r, double g, double b, double gamma);
+
     void changeWFLength(int length);
     void setSpecOpacity(unsigned char opacity);
     void updateCeiling(int c);

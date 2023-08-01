@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>354</width>
-    <height>482</height>
+    <height>520</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -291,7 +291,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>420</y>
+     <y>460</y>
      <width>311</width>
      <height>41</height>
     </rect>
@@ -306,6 +306,24 @@
    </property>
    <property name="text">
     <string>Close</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="reprocessBtn">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>410</y>
+     <width>311</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>14</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>Reprocess Entire Image</string>
    </property>
   </widget>
  </widget>

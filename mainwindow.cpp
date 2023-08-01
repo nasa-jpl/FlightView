@@ -173,6 +173,8 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
     connect(fw, SIGNAL(setColorScheme_signal(int,bool)), flight_screen, SLOT(handleNewColorScheme(int,bool)));
     connect(this, SIGNAL(toggleStdDevCalc(bool)), fw, SLOT(enableStdDevCalculation(bool)));
+    connect(controlbox, SIGNAL(sendRGBLevels(double,double,double,double,bool)), flight_screen, SLOT(setRGBLevels(double,double,double,double,bool)));
+
     controlbox->getPrefsExternalTrig();
     connect(controlbox, &ControlsBox::showConsoleLog,
             [=]() {
@@ -212,7 +214,6 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
         }
     });
 
-    connect(controlbox, SIGNAL(sendRGBLevels(double,double,double,double)), flight_screen, SLOT(setRGBLevels(double,double,double,double)));
 
     connect(this->controlbox, &ControlsBox::loadDarkFile,
             [=](QString filename, fileFormat_t fileformat) {

@@ -230,14 +230,23 @@ void waterfall::changeRGB(int r, int g, int b)
     this->b_row = b;
 }
 
-void waterfall::setRGBLevels(double r, double g, double b, double gamma)
+void waterfall::setRGBLevels(double r, double g, double b, double gamma, bool reprocess)
 {
     this->redLevel = r;
     this->greenLevel = g;
     this->blueLevel = b;
     this->gammaLevel = gamma;
+    if(reprocess)
+        rescaleWF();
 }
-
+void waterfall::setRGBLevelsAndReprocess(double r, double g, double b, double gamma)
+{
+    this->redLevel = r;
+    this->greenLevel = g;
+    this->blueLevel = b;
+    this->gammaLevel = gamma;
+    rescaleWF();
+}
 
 void waterfall::setSpecOpacity(unsigned char opacity)
 {

@@ -19,7 +19,7 @@ public slots:
     void setRGBLevels(double r, double g, double b, double gamma);
 
 signals:
-    void haveRGBLevels(double r, double g, double b, double gamma);
+    void haveRGBLevels(double r, double g, double b, double gamma, bool reprocess);
 
 private slots:
     void on_gammaSpin_valueChanged(double arg1);
@@ -27,6 +27,8 @@ private slots:
     void on_gammaEnableChk_clicked();
 
     void on_closeBtn_clicked();
+
+    void on_reprocessBtn_clicked();
 
 private:
     Ui::rgbAdjustments *ui;
