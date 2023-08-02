@@ -249,12 +249,16 @@ void consoleLog::logSystemConfig()
     pclose(fp);
 
     handleOwnText(QString("Compiled against Qt version: %1").arg(QT_VERSION_STR));
-    if(QString(GIT_CURRENT_SHA1_SHORT).isEmpty())
-        return;
 
-    handleOwnText(QString("Git short SHA1: %1").arg(GIT_CURRENT_SHA1_SHORT));
-    handleOwnText(QString("Git long SHA1:  %1").arg(GIT_CURRENT_SHA1));
-    handleOwnText(QString("Link to commit: https://github.com/nasa-jpl/LiveViewLegacy/tree/%1").arg(GIT_CURRENT_SHA1_SHORT));
+    if(!QString(GIT_CURRENT_SHA1_SHORT).isEmpty()) {
+        handleOwnText(QString("Git short SHA1: %1").arg(GIT_CURRENT_SHA1_SHORT));
+        handleOwnText(QString("Git long SHA1:  %1").arg(GIT_CURRENT_SHA1));
+        handleOwnText(QString("Link to commit: https://github.com/nasa-jpl/LiveViewLegacy/tree/%1").arg(GIT_CURRENT_SHA1_SHORT));
+    }
+
+    if(!QString(SRC_DIR).isEmpty()) {
+        handleOwnText(QString("Source directory was: %1").arg(SRC_DIR));
+    }
 }
 
 void consoleLog::handleOwnText(QString message)
