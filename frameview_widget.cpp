@@ -297,6 +297,9 @@ void frameview_widget::handleNewColorScheme(int scheme, bool useDarkThemeVal)
     case 10:
         colorMap->setGradient(QCPColorGradient::gpGeography);
         break;
+    case 11:
+        colorMap->setGradient((QCPColorGradient::gpRedTop));
+        break;
     default:
         sMessage(QString("color scheme [%1] not recognized.").arg(fw->color_scheme));
         colorMap->setGradient(QCPColorGradient::gpJet);

@@ -126,6 +126,8 @@ void preferenceWindow::createRenderingTab()
     ColorScalePicker->addItem("Ion");
     ColorScalePicker->addItem("Spectrometer Candy");
     ColorScalePicker->addItem("Geography");
+    ColorScalePicker->addItem("Gray with Red Top");
+
     ColorScalePicker->setToolTip("So many to choose from! Use the scroll wheel while hovering over the combo box");
 
     darkThemeCheck = new QCheckBox("Use dark theme");

@@ -11541,6 +11541,12 @@ void QCPColorGradient::loadPreset(GradientPreset preset)
       setColorStopAt(2.0/3.0, QColor(0, 255, 0));
       setColorStopAt(1, QColor(255, 0, 0));
       break;
+  case gpRedTop:
+      setColorInterpolation(ciRGB);
+      setColorStopAt(0, Qt::black);
+      setColorStopAt(0.95, Qt::white);
+      setColorStopAt(1.00, Qt::red);
+      break;
   }
 }
 
