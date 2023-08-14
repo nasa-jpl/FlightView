@@ -1,5 +1,8 @@
 #include "waterfall.h"
 
+// This is the RGB waterfall widget used in the flight screen.
+// The "waterfall" tab is handled by a special instance of the Frameview Widget.
+
 waterfall::waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent) : QWidget(parent)
 {
     this->fw = fw;

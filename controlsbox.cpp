@@ -521,10 +521,39 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     connect(line_average_edit, SIGNAL(valueChanged(int)), lines_slider, SLOT(setValue(int)));
     connect(lines_slider, SIGNAL(valueChanged(int)), line_average_edit, SLOT(setValue(int)));
     connect(lines_slider, SIGNAL(valueChanged(int)), this, SLOT(transmitChange(int)));
-    connect(&ceiling_edit, SIGNAL(valueChanged(int)), &ceiling_slider, SLOT(setValue(int)));
-    connect(&ceiling_slider, SIGNAL(valueChanged(int)), &ceiling_edit, SLOT(setValue(int)));
-    connect(&floor_edit, SIGNAL(valueChanged(int)), &floor_slider, SLOT(setValue(int)));
-    connect(&floor_slider, SIGNAL(valueChanged(int)), &floor_edit, SLOT(setValue(int)));
+
+    // connect(&ceiling_edit, SIGNAL(valueChanged(int)), &ceiling_slider, SLOT(setValue(int)));
+    connect(&ceiling_edit, (void(QSpinBox::*)(int))&QSpinBox::valueChanged,
+            [&](int value) {
+        this->ceiling_slider.blockSignals(true);
+        this->ceiling_slider.setValue(value);
+        this->ceiling_slider.blockSignals(false);
+    });
+
+    // connect(&floor_edit, SIGNAL(valueChanged(int)), &floor_slider, SLOT(setValue(int)));
+    connect(&floor_edit, (void(QSpinBox::*)(int))&QSpinBox::valueChanged,
+            [&](int value) {
+        this->floor_slider.blockSignals(true);
+        this->floor_slider.setValue(value);
+        this->floor_slider.blockSignals(false);
+    });
+
+    // connect(&ceiling_slider, SIGNAL(valueChanged(int)), &ceiling_edit, SLOT(setValue(int)));
+    connect(&ceiling_slider, &QSlider::valueChanged,
+            [&](int value) {
+        this->ceiling_edit.blockSignals(true);
+        this->ceiling_edit.setValue(value);
+        this->ceiling_edit.blockSignals(false);
+    });
+
+    // connect(&floor_slider, SIGNAL(valueChanged(int)), &floor_edit, SLOT(setValue(int)));
+    connect(&floor_slider, &QSlider::valueChanged,
+            [&](int value) {
+        this->floor_edit.blockSignals(true);
+        this->floor_edit.setValue(value);
+        this->floor_edit.blockSignals(false);
+    });
+
 
     connect(&floor_slider, SIGNAL(valueChanged(int)), this, SLOT(updateFloor(int)));
     connect(&floor_edit, SIGNAL(valueChanged(int)), this, SLOT(updateFloor(int)));
@@ -772,14 +801,48 @@ void ControlsBox::loadSettings()
     settings->beginGroup("Interface");
     prefs.frameColorScheme = settings->value("frameColorScheme", defaultPrefs.frameColorScheme).toInt();
     prefs.useDarkTheme = settings->value("useDarkTheme", defaultPrefs.useDarkTheme).toBool();
+
+    // "FPA" tab:
     prefs.frameViewCeiling = settings->value("frameViewCeiling", defaultPrefs.frameViewCeiling).toInt();
     prefs.frameViewFloor = settings->value("frameViewFloor", defaultPrefs.frameViewFloor).toInt();
     prefs.dsfCeiling = settings->value("dsfCeiling", defaultPrefs.dsfCeiling).toInt();
     prefs.dsfFloor = settings->value("dsfFloor", defaultPrefs.dsfFloor).toInt();
+
+    // FFT:
     prefs.fftCeiling = settings->value("fftCeiling", defaultPrefs.fftCeiling).toInt();
     prefs.fftFloor = settings->value("fftFloor", defaultPrefs.fftFloor).toInt();
+
+    // STD DEV:
     prefs.stddevCeiling = settings->value("stddevCeiling", defaultPrefs.stddevCeiling).toInt();
     prefs.stddevFloor = settings->value("stddevFloor", defaultPrefs.stddevFloor).toInt();
+
+    // Flight:
+    prefs.flightDSFCeiling = settings->value("flightDSFCeiling", defaultPrefs.flightDSFCeiling).toInt();
+    prefs.flightDSFFloor = settings->value("flightDSFFloor", defaultPrefs.flightDSFFloor).toInt();
+    prefs.flightCeiling = settings->value("flightCeiling", defaultPrefs.flightCeiling).toInt();
+    prefs.flightFloor = settings->value("flightFloor", defaultPrefs.flightFloor).toInt();
+
+    // Monochrome WF:
+    prefs.monowfDSFCeiling = settings->value("monowfDSFCeiling", defaultPrefs.monowfDSFCeiling).toInt();
+    prefs.monowfDSFFloor = settings->value("monowfDSFFloor", defaultPrefs.monowfDSFFloor).toInt();
+    prefs.monowfCeiling = settings->value("monowfCeiling", defaultPrefs.monowfCeiling).toInt();
+    prefs.monowfFloor = settings->value("monowfFloor", defaultPrefs.monowfFloor).toInt();
+
+    // Profiles (line plots):
+    prefs.profileHorizDSFFloor = settings->value("profileHorizDSFFloor", defaultPrefs.profileHorizDSFFloor).toInt();
+    prefs.profileHorizDSFCeiling = settings->value("profileHorizDSFCeiling", defaultPrefs.profileHorizDSFCeiling).toInt();
+    prefs.profileHorizFloor = settings->value("profileHorizFloor", defaultPrefs.profileHorizFloor).toInt();
+    prefs.profileHorizCeiling = settings->value("profileHorizCeiling", defaultPrefs.profileHorizCeiling).toInt();
+    prefs.profileVertDSFFloor = settings->value("profileVertDSFFloor", defaultPrefs.profileVertDSFFloor).toInt();
+    prefs.profileVertDSFCeiling = settings->value("profileVertDSFCeiling", defaultPrefs.profileVertDSFCeiling).toInt();
+    prefs.profileVertFloor = settings->value("profileVertFloor", defaultPrefs.profileVertFloor).toInt();
+    prefs.profileVertCeiling = settings->value("profileVertCeiling", defaultPrefs.profileVertCeiling).toInt();
+    prefs.profileOverlayFloor = settings->value("profileOverlayFloor", defaultPrefs.profileOverlayFloor).toInt();
+    prefs.profileOverlayCeiling = settings->value("profileOverlayCeiling", defaultPrefs.profileOverlayCeiling).toInt();
+    prefs.profileOverlayDSFFloor = settings->value("profileOverlayDSFFloor", defaultPrefs.profileOverlayDSFFloor).toInt();
+    prefs.profileOverlayDSFCeiling = settings->value("profileOverlayDSFCeiling", defaultPrefs.profileOverlayDSFCeiling).toInt();
+
+    // Window geometry:
     prefs.preferredWindowWidth = settings->value("preferredWindowWidth", defaultPrefs.preferredWindowWidth).toInt();
     prefs.preferredWindowHeight = settings->value("preferredWindowHeight", defaultPrefs.preferredWindowHeight).toInt();
     //restoreGeometry(settings->value("windowGeometry").toByteArray());
@@ -906,17 +969,50 @@ void ControlsBox::saveSettings()
     settings->beginGroup("Interface");
     settings->setValue("frameColorScheme", prefs.frameColorScheme);
     settings->setValue("useDarkTheme", prefs.useDarkTheme);
+
+    // FPA Tab:
     settings->setValue("frameViewCeiling", prefs.frameViewCeiling);
     settings->setValue("frameViewFloor", prefs.frameViewFloor);
     settings->setValue("dsfCeiling", prefs.dsfCeiling);
     settings->setValue("dsfFloor", prefs.dsfFloor);
+
+    // FFT Tab:
     settings->setValue("fftCeiling", prefs.fftCeiling);
     settings->setValue("fftFloor", prefs.fftFloor);
+
+    // STD Dev Tab:
     settings->setValue("stddevCeiling", prefs.stddevCeiling);
     settings->setValue("stddevFloor", prefs.stddevFloor);
+
+    // Flight Tab:
+    settings->setValue("flightDSFCeiling", prefs.flightDSFCeiling);
+    settings->setValue("flightDSFFloor", prefs.flightDSFFloor);
+    settings->setValue("flightCeiling", prefs.flightCeiling);
+    settings->setValue("flightFloor", prefs.flightFloor);
+
+    // Monochrome Waterfall Tab:
+    settings->setValue("monowfDSFCeiling", prefs.monowfDSFCeiling);
+    settings->setValue("monowfDSFFloor", prefs.monowfDSFFloor);
+    settings->setValue("monowfCeiling", prefs.monowfCeiling);
+    settings->setValue("monowfFloor", prefs.monowfFloor);
+
+    // Profile Tabs (line plots):
+    settings->setValue("profileHorizDSFFloor", prefs.profileHorizDSFFloor);
+    settings->setValue("profileHorizDSFCeiling", prefs.profileHorizDSFCeiling);
+    settings->setValue("profileHorizFloor", prefs.profileHorizFloor);
+    settings->setValue("profileHorizCeiling", prefs.profileHorizCeiling);
+    settings->setValue("profileVertDSFFloor", prefs.profileVertDSFFloor);
+    settings->setValue("profileVertDSFCeiling", prefs.profileVertDSFCeiling);
+    settings->setValue("profileVertFloor", prefs.profileVertFloor);
+    settings->setValue("profileVertCeiling", prefs.profileVertCeiling);
+    settings->setValue("profileOverlayFloor", prefs.profileOverlayFloor);
+    settings->setValue("profileOverlayCeiling", prefs.profileOverlayCeiling);
+    settings->setValue("profileOverlayDSFFloor", prefs.profileOverlayDSFFloor);
+    settings->setValue("profileOverlayDSFCeiling", prefs.profileOverlayDSFCeiling);
+
+    // Window:
     settings->setValue("preferredWindowWidth", prefs.preferredWindowWidth);
     settings->setValue("preferredWindowHeight", prefs.preferredWindowHeight);
-
     settings->setValue("windowGeometry", prefs.windowGeometry);
     settings->setValue("windowState", prefs.windowState);
     settings->endGroup();
@@ -1125,8 +1221,10 @@ void ControlsBox::tab_changed_slot(int index)
     showRGBLevelsButton.setVisible(false);
     overlayControls(false);
 
+    bool darksub = use_DSF_cbox.isChecked();
 
     if (p_profile) {
+        // "profile" means a plot, horiz or vert mean or crosshair
         int frameMax, startVal;
         bool enable;
         use_DSF_cbox.setEnabled(true);
@@ -1134,10 +1232,55 @@ void ControlsBox::tab_changed_slot(int index)
         ceiling_maximum = p_profile->slider_max;
         low_increment_cbox.setChecked(p_profile->slider_low_inc);
         increment_slot(low_increment_cbox.isChecked());
-        ceiling_edit.setValue(p_profile->getCeiling());
-        floor_edit.setValue(p_profile->getFloor());
+
         connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateCeiling(int)));
         connect(&floor_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateFloor(int)));
+
+        int fl=0;
+        int ce=0;
+        int fl_ds=0;
+        int ce_ds=0;
+
+        switch(p_profile->itype) {
+        case VERTICAL_CROSS:
+        case VERTICAL_MEAN:
+            fl = prefs.profileVertFloor;
+            fl_ds = prefs.profileVertDSFFloor;
+            ce = prefs.profileVertCeiling;
+            ce_ds = prefs.profileVertDSFCeiling;
+            break;
+        case HORIZONTAL_CROSS:
+        case HORIZONTAL_MEAN:
+            fl = prefs.profileHorizFloor;
+            fl_ds = prefs.profileHorizDSFFloor;
+            ce = prefs.profileHorizCeiling;
+            ce_ds = prefs.profileHorizDSFCeiling;
+            break;
+        case VERT_OVERLAY:
+            fl = prefs.profileOverlayFloor;
+            fl_ds = prefs.profileOverlayDSFFloor;
+            ce = prefs.profileHorizCeiling;
+            ce_ds = prefs.profileHorizDSFCeiling;
+            break;
+        default:
+            errorMessage("Do not understand profile type.");
+            break;
+        }
+
+        if(darksub) {
+            ceiling_edit.setValue(ce_ds);
+            floor_edit.setValue(fl_ds);
+            p_profile->updateCeiling(ce_ds);
+            p_profile->updateFloor(fl_ds);
+        } else {
+            ceiling_edit.setValue(ce);
+            floor_edit.setValue(fl);
+            p_profile->updateCeiling(ce);
+            p_profile->updateFloor(fl);
+        }
+
+        //ceiling_edit.setValue(p_profile->getCeiling());
+        //floor_edit.setValue(p_profile->getFloor());
 
         frameMax = p_profile->itype == HORIZONTAL_MEAN || p_profile->itype == HORIZONTAL_CROSS \
                 ? fw->getFrameHeight() : fw->getFrameWidth();
@@ -1192,8 +1335,11 @@ void ControlsBox::tab_changed_slot(int index)
         ceiling_maximum = p_fft->slider_max;
         low_increment_cbox.setChecked(p_fft->slider_low_inc);
         increment_slot(low_increment_cbox.isChecked());
+
+        // TODO: Use prefs value to set values
         ceiling_edit.setValue(p_fft->getCeiling());
         floor_edit.setValue(p_fft->getFloor());
+
         connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_fft, SLOT(updateCeiling(int)));
         connect(&floor_slider, SIGNAL(valueChanged(int)), p_fft, SLOT(updateFloor(int)));
 
@@ -1201,8 +1347,8 @@ void ControlsBox::tab_changed_slot(int index)
         p_fft->updateCeiling(prefs.fftCeiling);
         p_fft->updateFloor(prefs.fftFloor);
 
-        lines_slider->setMaximum(fw->getFrameWidth());
-        line_average_edit->setMaximum(fw->getFrameWidth());
+        lines_slider->setMaximum(fw->getFrameWidth()-1);
+        line_average_edit->setMaximum(fw->getFrameWidth()-1);
         lines_slider->setValue(fw->horizLinesAvgd);
         if (p_fft->vCrossButton->isChecked() && fw->crosshair_x != -1) {
             lines_slider->setEnabled(true);
@@ -1218,8 +1364,9 @@ void ControlsBox::tab_changed_slot(int index)
         p_fft->rescaleRange();
         waterfallControls(false);
     } else {
-        display_std_dev_slider();
         if (p_frameview){
+            p_frameview->setPrefsPtr(&this->prefs);
+
             ceiling_maximum = p_frameview->slider_max;
             floor_slider.blockSignals(true);
             ceiling_slider.blockSignals(true);
@@ -1229,11 +1376,28 @@ void ControlsBox::tab_changed_slot(int index)
 
             increment_slot(low_increment_cbox.isChecked());
 
-            if(p_frameview->image_type != STD_DEV)
-            {
+            switch(p_frameview->image_type) {
+            case STD_DEV:
+                waterfallControls(false);
+                //use_DSF_cbox.setEnabled(false);
+                display_std_dev_slider();
+                p_frameview->updateCeiling(prefs.stddevCeiling);
+                p_frameview->updateFloor(prefs.stddevFloor);
+                std_dev_N_slider->setEnabled(true);
+                std_dev_N_edit->setEnabled(true);
+                low_increment_cbox.setChecked(true);
+                floor_slider.setValue(prefs.stddevFloor);
+                floor_edit.setValue(prefs.stddevFloor);
+                ceiling_slider.setValue(prefs.stddevCeiling);
+                ceiling_edit.setValue(prefs.stddevCeiling);
+                use_DSF_cbox.setEnabled(false);
+                break;
+            case DSF:
+                waterfallControls(false);
                 use_DSF_cbox.setEnabled(true);
-                if(use_DSF_cbox.isChecked())
-                {
+                std_dev_N_slider->setEnabled(false);
+                std_dev_N_edit->setEnabled(false);
+                if(darksub) {
                     ceiling_edit.setValue(prefs.dsfCeiling);
                     ceiling_slider.setValue(prefs.dsfCeiling);
                     floor_edit.setValue(prefs.dsfFloor);
@@ -1248,34 +1412,40 @@ void ControlsBox::tab_changed_slot(int index)
                     p_frameview->updateCeiling(prefs.frameViewCeiling);
                     p_frameview->updateFloor(prefs.frameViewFloor);
                 }
-            } else {
-                use_DSF_cbox.setEnabled(false);
+                break;
+            case WATERFALL:
+                // this is the monochrome waterfall, not the RGB one.
+                std_dev_N_slider->setEnabled(false);
+                std_dev_N_edit->setEnabled(false);
+                if(darksub) {
+                    ceiling_edit.setValue(prefs.monowfDSFCeiling);
+                    ceiling_slider.setValue(prefs.monowfDSFCeiling);
+                    floor_edit.setValue(prefs.monowfDSFFloor);
+                    floor_slider.setValue(prefs.monowfDSFFloor);
+                    p_frameview->updateCeiling(prefs.monowfDSFCeiling);
+                    p_frameview->updateFloor(prefs.monowfDSFFloor);
+                } else {
+                    ceiling_edit.setValue(prefs.monowfCeiling);
+                    ceiling_slider.setValue(prefs.monowfCeiling);
+                    floor_edit.setValue(prefs.monowfFloor);
+                    floor_slider.setValue(prefs.monowfFloor);
+                    p_frameview->updateCeiling(prefs.monowfCeiling);
+                    p_frameview->updateFloor(prefs.monowfFloor);
+                }
+                waterfallControls(true);
+                break;
+            default:
+                emit errorMessage("Switched tabs and don't understand result.");
+                break;
             }
+
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateCeiling(int)));
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateFloor(int)));
             connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_frameview, SLOT(setUseDSF(bool)));
-            // TODO: Maybe a careful copy is smarter than a live pointer?
-            // The live pointer can be changed in real time from either side...
-            p_frameview->setPrefsPtr(&this->prefs);
-            if (p_frameview->image_type == STD_DEV) {
-                p_frameview->updateCeiling(prefs.stddevCeiling);
-                p_frameview->updateFloor(prefs.stddevFloor);
-                std_dev_N_slider->setEnabled(true);
-                std_dev_N_edit->setEnabled(true);
-                low_increment_cbox.setChecked(true);
-                floor_slider.setValue(prefs.stddevFloor);
-                floor_edit.setValue(prefs.stddevFloor);
-                ceiling_slider.setValue(prefs.stddevCeiling);
-                ceiling_edit.setValue(prefs.stddevCeiling);
-                use_DSF_cbox.setEnabled(false);
-            } else {
-                std_dev_N_slider->setEnabled(false);
-                std_dev_N_edit->setEnabled(false);
-            }
+
             use_DSF_cbox.setChecked(fw->usingDSF());
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_frameview->rescaleRange();
-            waterfallControls(false);
 
             floor_edit.blockSignals(false);
             ceiling_edit.blockSignals(false);
@@ -1288,19 +1458,23 @@ void ControlsBox::tab_changed_slot(int index)
             increment_slot(low_increment_cbox.isChecked());
             //ceiling_edit.setValue(p_flight->getCeiling());
             //floor_edit.setValue(p_flight->getFloor());
+            ceiling_slider.blockSignals(true);
+            floor_slider.blockSignals(true);
             if(use_DSF_cbox.isChecked())
             {
                 // DSF
-                ceiling_edit.setValue(prefs.dsfCeiling);
-                floor_edit.setValue(prefs.dsfFloor);
-                p_flight->updateFloor(prefs.dsfFloor);
-                p_flight->updateCeiling(prefs.dsfCeiling);
+                ceiling_edit.setValue(prefs.flightDSFCeiling);
+                floor_edit.setValue(prefs.flightDSFFloor);
+                p_flight->updateFloor(prefs.flightDSFFloor);
+                p_flight->updateCeiling(prefs.flightDSFCeiling);
             } else {
-                ceiling_edit.setValue(prefs.frameViewCeiling);
-                floor_edit.setValue(prefs.frameViewFloor);
-                p_flight->updateFloor(prefs.frameViewFloor);
-                p_flight->updateCeiling(prefs.frameViewCeiling);
+                ceiling_edit.setValue(prefs.flightCeiling);
+                floor_edit.setValue(prefs.flightFloor);
+                p_flight->updateFloor(prefs.flightFloor);
+                p_flight->updateCeiling(prefs.flightCeiling);
             }
+            ceiling_slider.blockSignals(false);
+            floor_slider.blockSignals(false);
 
             waterfallControls(true);
 
@@ -1333,7 +1507,7 @@ void ControlsBox::tab_changed_slot(int index)
 
             p_flight->changeWFLength(wflength_slider.value());
             this->setMaximumHeight(230);
-            setRGBWaterfall(0);
+            setRGBWaterfall(0); // set wf to current RGB slider values
         } else if (p_histogram) {
             ceiling_maximum = p_histogram->slider_max;
             low_increment_cbox.setChecked(p_histogram->slider_low_inc);
@@ -1440,56 +1614,156 @@ void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
 
     current_tab = qtw->widget(qtw->currentIndex());
     attempt_pointers(current_tab);
-    if(p_profile || p_frameview || p_flight)
-    {
-        if (p_frameview && p_frameview->image_type == STD_DEV) {
-            if(isCeiling)
-                prefs.stddevCeiling = val;
-            else
-                prefs.stddevFloor = val;
-            return;
-        }
 
-        // profile plots and frame view images generally
-        // use the same levels.
-        // So therefore, we just have a DSF and not-DSF level for each.
-        if(use_DSF_cbox.isChecked())
+    bool darksub = use_DSF_cbox.isChecked();
+
+    if(p_flight) {
+        // The flight widget has both a DSF and the rgb waterfall.
+        // But it is saved into one preference set,
+        // for DSF and not-DSF.
+
+        if(darksub)
         {
-            if(isCeiling)
-            {
-                prefs.dsfCeiling = val;
-                //qDebug() << "Setting DSF Ceiling to : " << val;
-            }
-            else
-            {
-                prefs.dsfFloor = val;
-                //qDebug() << "Setting DSF Floor to : " << val;
-            }
+            if(isCeiling) prefs.flightDSFCeiling = val;
+            else prefs.flightDSFFloor = val;
         } else {
-            if(isCeiling)
-                prefs.frameViewCeiling = val;
-            else
-                prefs.frameViewFloor = val;
+            if(isCeiling) prefs.flightCeiling = val;
+            else prefs.flightFloor = val;
         }
-        return;
+        goto finished;
     }
 
-    if(p_fft)
-    {
-        if(isCeiling)
-            prefs.fftCeiling = val;
-        else
-            prefs.fftFloor = val;
-        return;
+    if(p_profile) {
+        // horizontal, vertical, mean or not mean
+        switch(p_profile->itype) {
+        case VERT_OVERLAY:
+            if(isCeiling && darksub) prefs.profileOverlayDSFCeiling = val;
+            else if(isCeiling && !darksub) prefs.profileOverlayCeiling = val;
+            else if(!isCeiling && darksub) prefs.profileOverlayDSFFloor = val;
+            else prefs.profileOverlayFloor = val;
+            break;
+        case VERTICAL_CROSS:
+        case VERTICAL_MEAN:
+            if(isCeiling && darksub) prefs.profileVertDSFCeiling = val;
+            else if(isCeiling && !darksub) prefs.profileVertCeiling = val;
+            else if(!isCeiling && darksub) prefs.profileVertDSFFloor = val;
+            else prefs.profileVertFloor = val;
+            break;
+        case HORIZONTAL_MEAN:
+        case HORIZONTAL_CROSS:
+            if(isCeiling && darksub) prefs.profileHorizDSFCeiling = val;
+            else if(isCeiling && !darksub) prefs.profileHorizCeiling = val;
+            else if(!isCeiling && darksub) prefs.profileHorizDSFFloor = val;
+            else prefs.profileHorizFloor = val;
+            break;
+        default:
+            emit errorMessage("Do not understand current profile type.");
+            break;
+        }
+        goto finished;
     }
-    if(p_histogram)
-    {
-        if(isCeiling)
-            prefs.stddevCeiling = val;
-        else
-            prefs.stddevFloor = val;
-        return;
+
+    if(p_frameview) {
+        switch(p_frameview->image_type) {
+        case STD_DEV:
+            if(isCeiling)prefs.stddevCeiling = val;
+            else prefs.stddevFloor = val;
+            break;
+        case DSF:
+            // this may be DSF'd or not.
+            if(isCeiling && darksub) prefs.dsfCeiling = val;
+            else if(isCeiling && !darksub) prefs.frameViewCeiling = val;
+            else if(!isCeiling && darksub) prefs.dsfFloor = val;
+            else prefs.frameViewFloor = val;
+            break;
+        case WATERFALL:
+            // This is the monochrome waterfall widget,
+            // not the RGB one.
+            if(isCeiling && darksub) prefs.monowfDSFCeiling = val;
+            else if(isCeiling && !darksub) prefs.monowfCeiling = val;
+            else if(!isCeiling && darksub) prefs.monowfDSFFloor = val;
+            else prefs.monowfFloor = val;
+            break;
+        default:
+            emit errorMessage("Do not understand current frameview type.");
+            break;
+        }
+        goto finished;
     }
+
+    if(p_histogram) {
+        if(isCeiling) prefs.stddevCeiling = val;
+        else prefs.stddevFloor = val;
+        goto finished;
+    }
+
+    if(p_fft) {
+        if(isCeiling) prefs.fftCeiling = val;
+        else prefs.fftFloor = val;
+        goto finished;
+    }
+
+
+    // Old code:
+
+//    if(p_profile || p_frameview || p_flight)
+//    {
+//        if (p_frameview && p_frameview->image_type == STD_DEV) {
+//            if(isCeiling)
+//                prefs.stddevCeiling = val;
+//            else
+//                prefs.stddevFloor = val;
+//            return;
+//        }
+
+//        // profile plots and frame view images generally
+//        // use the same levels.
+//        // So therefore, we just have a DSF and not-DSF level for each.
+//        if(use_DSF_cbox.isChecked())
+//        {
+//            if(isCeiling)
+//            {
+//                prefs.dsfCeiling = val;
+//                //qDebug() << "Setting DSF Ceiling to : " << val;
+//            }
+//            else
+//            {
+//                prefs.dsfFloor = val;
+//                //qDebug() << "Setting DSF Floor to : " << val;
+//            }
+//        } else {
+//            if(isCeiling)
+//                prefs.frameViewCeiling = val;
+//            else
+//                prefs.frameViewFloor = val;
+//        }
+//        return;
+//    }
+
+//    if(p_fft)
+//    {
+//        if(isCeiling)
+//            prefs.fftCeiling = val;
+//        else
+//            prefs.fftFloor = val;
+//        return;
+//    }
+//    if(p_histogram)
+//    {
+//        if(isCeiling)
+//            prefs.stddevCeiling = val;
+//        else
+//            prefs.stddevFloor = val;
+//        return;
+//    }
+
+    emit errorMessage("Cannot handle this type of frame levels.");
+    return;
+
+    finished:
+    emit statusMessage(QString("Correctly handled frame level Val = %1.").arg(val)); // EHL DEBUG only
+    return;
+
 }
 
 void ControlsBox::increment_slot(bool t)
@@ -2001,14 +2275,135 @@ void ControlsBox::use_DSF_general(bool checked)
      * as opposed to the others which use the recorded mask.
      * \author Jackie Ryan
      */
+    int fl=0;
+    int ce=0;
+    int fl_ds=0;
+    int ce_ds=0;
+
+    bool setUI_widgets = true;
+
     if (p_playback)
         p_playback->toggleUseDSF(checked);
     else
     {
+        // Alert the back-end
         fw->toggleUseDSF(checked);
-        if(p_frameview)
-        {
+//        if(p_frameview)
+//        {
+//        }
+        attempt_pointers(current_tab);
+
+        statusMessage(QString("Setting DSF to %1.").arg(checked));
+
+        if(p_frameview) {
             p_frameview->setUseDSF(checked);
+            switch(p_frameview->image_type) {
+            case STD_DEV:
+                fl = prefs.stddevFloor;
+                ce = prefs.stddevCeiling;
+                break;
+            case DSF:
+                fl = prefs.frameViewFloor;
+                ce = prefs.frameViewCeiling;
+                fl_ds = prefs.dsfFloor;
+                ce_ds = prefs.dsfCeiling;
+                break;
+            case WATERFALL:
+                fl = prefs.monowfFloor;
+                ce = prefs.monowfCeiling;
+                fl_ds = prefs.monowfDSFFloor;
+                ce_ds = prefs.monowfDSFCeiling;
+                break;
+            default:
+                setUI_widgets = false;
+                emit errorMessage("Changed DSF status but cannot figure out what to do with it.");
+                break;
+
+            }
+            if(checked) {
+                p_frameview->updateCeiling(ce_ds);
+                p_frameview->updateFloor(fl_ds);
+            } else {
+                p_frameview->updateCeiling(ce);
+                p_frameview->updateFloor(fl);
+            }
+
+        } else if (p_flight) {
+            p_flight->setUseDSF(checked);
+            if(use_DSF_cbox.isChecked())
+            {
+                // DSF
+                p_flight->updateFloor(prefs.flightDSFFloor);
+                p_flight->updateCeiling(prefs.flightDSFCeiling);
+                fl_ds = prefs.flightDSFFloor;
+                ce_ds = prefs.flightDSFCeiling;
+            } else {
+                p_flight->updateFloor(prefs.flightFloor);
+                p_flight->updateCeiling(prefs.flightCeiling);
+                fl = prefs.flightFloor;
+                ce = prefs.flightCeiling;
+            }
+        } else if (p_histogram) {
+            // this checkbox can't be checked
+            // with the histogram.
+        } else if (p_profile) {
+            switch(p_profile->itype) {
+            case VERTICAL_CROSS:
+            case VERTICAL_MEAN:
+                fl = prefs.profileVertFloor;
+                fl_ds = prefs.profileVertDSFFloor;
+                ce = prefs.profileVertCeiling;
+                ce_ds = prefs.profileVertDSFCeiling;
+                break;
+            case HORIZONTAL_CROSS:
+            case HORIZONTAL_MEAN:
+                fl = prefs.profileHorizFloor;
+                fl_ds = prefs.profileHorizDSFFloor;
+                ce = prefs.profileHorizCeiling;
+                ce_ds = prefs.profileHorizDSFCeiling;
+                break;
+            case VERT_OVERLAY:
+                fl = prefs.profileOverlayFloor;
+                fl_ds = prefs.profileOverlayDSFFloor;
+                ce = prefs.profileHorizCeiling;
+                ce_ds = prefs.profileHorizDSFCeiling;
+                break;
+            default:
+                setUI_widgets = false;
+                errorMessage("Do not understand profile type.");
+                break;
+            }
+        } else if (p_fft) {
+            // N/A
+            setUI_widgets = false;
+        } else if (p_playback) {
+            // N/A
+            setUI_widgets = false;
+        } else {
+            errorMessage("Do not understand type of tab to apply DSF status to.");
+            setUI_widgets = false;
+        }
+
+        // Now make the actual UI control update:
+        if(setUI_widgets) {
+            ceiling_slider.blockSignals(true);
+            floor_slider.blockSignals(true);
+            if(checked) {
+                // Dark subtracted levels please
+                // This should not get called for widgets that don't support DSF
+                // because we turn off the DSF box when those widgets come up.
+                ceiling_edit.setValue(ce_ds);
+                ceiling_slider.setValue(ce_ds);
+                floor_edit.setValue(fl_ds);
+                floor_slider.setValue(fl_ds);
+            } else {
+                ceiling_edit.setValue(ce);
+                ceiling_slider.setValue(ce);
+                floor_edit.setValue(fl);
+                floor_slider.setValue(fl);
+            }
+            ceiling_slider.blockSignals(false);
+            floor_slider.blockSignals(false);
         }
     }
 }
@@ -2201,14 +2596,24 @@ void ControlsBox::debugThis()
 
     qDebug() << "--- PREFS debug output: ---";
     qDebug() << "Levels: ";
-    qDebug() << "fv ceiling: " << prefs.frameViewCeiling;
-    qDebug() << "fv floor: " << prefs.frameViewFloor;
-    qDebug() << "dsf ceiling: " << prefs.dsfCeiling;
-    qDebug() << "dsf floor: " << prefs.dsfFloor;
-    qDebug() << "fft ceiling: " << prefs.fftCeiling;
-    qDebug() << "fft floor: " << prefs.fftFloor;
+    qDebug() << "      ----     ";
+    qDebug() << "FL DS Ceiling: " << prefs.flightDSFCeiling;
+    qDebug() << "FL DS Floor:   " << prefs.flightDSFFloor;
+    qDebug() << "FL RW Ceiling: " << prefs.flightCeiling;
+    qDebug() << "FL RW Floor:   " << prefs.flightFloor;
+    qDebug() << "      ----     ";
+    qDebug() << "FPA ceiling: " << prefs.frameViewCeiling;
+    qDebug() << "FPA floor: " << prefs.frameViewFloor;
+    qDebug() << "FPA dsf ceiling: " << prefs.dsfCeiling;
+    qDebug() << "FPA dsf floor: " << prefs.dsfFloor;
+    qDebug() << "      ----     ";
+    qDebug() << "fft ceiling:   " << prefs.fftCeiling;
+    qDebug() << "fft floor:     " << prefs.fftFloor;
     qDebug() << "stddevCeiling: " << prefs.stddevCeiling;
-    qDebug() << "stddevFloor: " << prefs.stddevFloor;
+    qDebug() << "stddevFloor:   " << prefs.stddevFloor;
+    qDebug() << "      ----     ";
+    qDebug() << "DSF status:    " << use_DSF_cbox.isChecked();
+    qDebug() << "      ----     ";
     qDebug() << "--- END PREFS debug output ---";
 
     //this->loadDarkFromFile();

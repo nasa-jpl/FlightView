@@ -575,30 +575,30 @@ void frameview_widget::setScrollY(bool Xenabled)
 void frameview_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
-    if(prefs)
-    {
-        switch(image_type)
-        {
-        case(DSF):
-            prefs->dsfCeiling = c;
-            break;
-        case(BASE):
-            if(useDSF)
-            {
-                prefs->dsfCeiling = c;
-            } else {
-                prefs->frameViewCeiling = c;
-            }
-            break;
+//    if(prefs)
+//    {
+//        switch(image_type)
+//        {
+//        case(DSF):
+//            prefs->dsfCeiling = c;
+//            break;
+//        case(BASE):
+//            if(useDSF)
+//            {
+//                prefs->dsfCeiling = c;
+//            } else {
+//                prefs->frameViewCeiling = c;
+//            }
+//            break;
 
-        case(STD_DEV):
-            prefs->stddevCeiling = c;
-            break;
+//        case(STD_DEV):
+//            prefs->stddevCeiling = c;
+//            break;
 
-        default:
-            break;
-        }
-    }
+//        default:
+//            break;
+//        }
+//    }
 
     ceiling = (double)c;
     rescaleRange();
@@ -607,31 +607,31 @@ void frameview_widget::updateCeiling(int c)
 void frameview_widget::updateFloor(int f)
 {
     /*! \brief Change the value  of the floor for this widget to the input parameter and replot the color scale. */   
-    if(prefs)
-    {
-        switch(image_type)
-        {
-        case(DSF):
-            prefs->dsfFloor = f;
-            break;
+//    if(prefs)
+//    {
+//        switch(image_type)
+//        {
+//        case(DSF):
+//            prefs->dsfFloor = f;
+//            break;
 
-        case(BASE):
-            if(useDSF)
-            {
-                prefs->dsfFloor = f;
-            } else {
-                prefs->frameViewFloor = f;
-            }
-            break;
+//        case(BASE):
+//            if(useDSF)
+//            {
+//                prefs->dsfFloor = f;
+//            } else {
+//                prefs->frameViewFloor = f;
+//            }
+//            break;
 
-        case(STD_DEV):
-            prefs->stddevFloor = f;
-            break;
+//        case(STD_DEV):
+//            prefs->stddevFloor = f;
+//            break;
 
-        default:
-            break;
-        }
-    }
+//        default:
+//            break;
+//        }
+//    }
     floor = (double)f;
     rescaleRange();
 }

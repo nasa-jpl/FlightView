@@ -18,9 +18,11 @@ struct settingsT {
     // [Interface]:
     int frameColorScheme;
     bool useDarkTheme;
+
+    // frameView for not-dark-subtracted FPA
+    // dsf for dark-subtracted FPA
     int frameViewCeiling;
     int frameViewFloor;
-
     int dsfCeiling;
     int dsfFloor;
 
@@ -29,6 +31,38 @@ struct settingsT {
 
     int stddevCeiling;
     int stddevFloor;
+
+    // New ones:
+
+    // Flight screen:
+    int flightDSFCeiling=2E4;
+    int flightDSFFloor=0;
+    int flightCeiling=2E4;
+    int flightFloor=0;
+
+    int monowfDSFCeiling=2E4;
+    int monowfDSFFloor=0;
+    int monowfCeiling=2E4;
+    int monowfFloor=0;
+
+    // Profiles:
+    // note: crosshair and mean share levels
+    int profileHorizDSFFloor=0;
+    int profileHorizDSFCeiling=2E4;
+
+    int profileHorizFloor=0;
+    int profileHorizCeiling=2E4;
+
+    int profileVertDSFFloor=0;
+    int profileVertDSFCeiling=2E4;
+
+    int profileVertFloor=0;
+    int profileVertCeiling=2E4;
+
+    int profileOverlayFloor=0;
+    int profileOverlayCeiling=2E4;
+    int profileOverlayDSFFloor=0;
+    int profileOverlayDSFCeiling=2E4;
 
     int preferredWindowWidth = 1280;
     int preferredWindowHeight = 1024;
