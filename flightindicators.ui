@@ -369,7 +369,7 @@
       </font>
      </property>
      <property name="text">
-      <string>UTC Time</string>
+      <string>UTC Time:</string>
      </property>
     </widget>
    </item>
