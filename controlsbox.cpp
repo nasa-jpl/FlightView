@@ -153,7 +153,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         collections_layout->addWidget(&pausePlaybackChk, 2, 3, 1, 1);
         frameNumberLabel.setText("0");
         collections_layout->addWidget(&frameNumberLabel, 3, 3, 1, 1);
-        collections_layout->addWidget(&showXioSetupBtn, 4, 3, 1, 1);
+        if(options.xioCam) {
+            collections_layout->addWidget(&showXioSetupBtn, 4, 3, 1, 1);
+        }
     }
 
     //Fifth Row:
@@ -390,8 +392,17 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     showConsoleLogBtn.setText("Log");
     showConsoleLogBtn.setToolTip("Show console log");
 
-    showXioSetupBtn.setText("Xio Setup");
-    showXioSetupBtn.setToolTip("Setup reading XIO files");
+    if(options.xioCam)
+    {
+        showXioSetupBtn.setText("Xio Setup");
+        showXioSetupBtn.setToolTip("Setup reading XIO files");
+    } else if (options.rtpCam) {
+        showXioSetupBtn.setText("RTP Setup");
+        showXioSetupBtn.setToolTip("Setup RTP camera");
+    } else {
+        showXioSetupBtn.setText("NONE");
+        showXioSetupBtn.setToolTip("none");
+    }
 
     save_finite_button.setText("Save Frames");
 
@@ -1221,6 +1232,16 @@ void ControlsBox::tab_changed_slot(int index)
     showRGBLevelsButton.setVisible(false);
     overlayControls(false);
 
+    line_average_edit->setVisible(false);
+    lines_label->setVisible(false);
+    lines_slider->setVisible(false);
+
+    std_dev_N_edit->setVisible(false);
+    std_dev_n_label->setVisible(false);
+    std_dev_N_slider->setVisible(false);
+
+    waterfallControls(false);
+
     bool darksub = use_DSF_cbox.isChecked();
 
     if (p_profile) {
@@ -1287,6 +1308,7 @@ void ControlsBox::tab_changed_slot(int index)
         startVal = p_profile->itype == HORIZONTAL_CROSS ? fw->vertLinesAvgd : frameMax;
         startVal = (p_profile->itype == VERTICAL_CROSS || p_profile->itype == VERT_OVERLAY) ? fw->horizLinesAvgd : startVal;
         enable = (p_profile->itype == VERTICAL_CROSS || p_profile->itype == HORIZONTAL_CROSS || p_profile->itype == VERT_OVERLAY) && fw->crosshair_x != -1;
+
         lines_slider->setMaximum(frameMax);
         line_average_edit->setMaximum(frameMax);
         lines_slider->setValue(startVal);
@@ -1295,6 +1317,7 @@ void ControlsBox::tab_changed_slot(int index)
         lines_slider->setVisible(enable);
         line_average_edit->setEnabled(enable);
         line_average_edit->setVisible(enable);
+
         display_lines_slider();
 
         if(p_profile->itype == VERT_OVERLAY)
@@ -1432,7 +1455,7 @@ void ControlsBox::tab_changed_slot(int index)
                     p_frameview->updateCeiling(prefs.monowfCeiling);
                     p_frameview->updateFloor(prefs.monowfFloor);
                 }
-                waterfallControls(true);
+                //waterfallControls(true);
                 break;
             default:
                 emit errorMessage("Switched tabs and don't understand result.");
@@ -2617,6 +2640,37 @@ void ControlsBox::debugThis()
     qDebug() << "--- END PREFS debug output ---";
 
     //this->loadDarkFromFile();
+
+    // Debug the text boxes
+    bool v=false;
+
+    // text boxes:
+//    filename_edit.setVisible(v);
+
+//    // Spin Boxes:
+
+    //std_dev_N_edit->setVisible(v);
+    line_average_edit->setVisible(v); // this was the problem one
+    // However, several other things appear when you remove it.
+    // There's a slider and a text label.
+    lines_label->setVisible(v);
+    lines_slider->setVisible(v);
+
+
+    //ceiling_edit.setVisible(v);
+
+
+//    floor_edit.setVisible(v);
+//    redSpin.setVisible(v);
+//    greenSpin.setVisible(v);
+//    blueSpin.setVisible(v);
+
+    // Not these!
+//    frames_save_num_edit.setVisible(v);
+//    frames_save_num_avgs_edit.setVisible(v);
+//    overlay_lh_width_spin->setVisible(v);
+//    overlay_cent_width_spin->setVisible(v);
+//    overlay_rh_width_spin->setVisible(v);
 
     emit debugSignal();
 }
