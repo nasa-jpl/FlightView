@@ -1222,6 +1222,8 @@ void ControlsBox::tab_changed_slot(int index)
      * \author Jackie Ryan
      */
 
+    emit statusMessage("EHL: Tab changed signal top.");
+
     bool see_it = false;
     current_tab = qtw->widget(index);
     disconnect_old_tab();
@@ -1387,16 +1389,14 @@ void ControlsBox::tab_changed_slot(int index)
         p_fft->rescaleRange();
         waterfallControls(false);
     } else {
-        if (p_frameview){
+        if (p_frameview) {
             p_frameview->setPrefsPtr(&this->prefs);
-
             ceiling_maximum = p_frameview->slider_max;
             floor_slider.blockSignals(true);
             ceiling_slider.blockSignals(true);
             floor_edit.blockSignals(true);
             ceiling_edit.blockSignals(true);
             low_increment_cbox.setChecked(p_frameview->slider_low_inc);
-
             increment_slot(low_increment_cbox.isChecked());
 
             switch(p_frameview->image_type) {
@@ -1415,11 +1415,13 @@ void ControlsBox::tab_changed_slot(int index)
                 ceiling_edit.setValue(prefs.stddevCeiling);
                 use_DSF_cbox.setEnabled(false);
                 break;
+            case BASE:
             case DSF:
                 waterfallControls(false);
                 use_DSF_cbox.setEnabled(true);
                 std_dev_N_slider->setEnabled(false);
                 std_dev_N_edit->setEnabled(false);
+                emit statusMessage("EHL: Called tab changed for DSF.");
                 if(darksub) {
                     ceiling_edit.setValue(prefs.dsfCeiling);
                     ceiling_slider.setValue(prefs.dsfCeiling);
@@ -1541,6 +1543,7 @@ void ControlsBox::tab_changed_slot(int index)
             floor_edit.setValue(p_histogram->getFloor());
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateCeiling(int)));
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateFloor(int)));
+
             std_dev_N_slider->setEnabled(true);
             std_dev_N_edit->setEnabled(true);
             use_DSF_cbox.setEnabled(false);
@@ -1693,7 +1696,8 @@ void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
             else prefs.stddevFloor = val;
             break;
         case DSF:
-            // this may be DSF'd or not.
+        case BASE:
+            // this "FPA" tab may be DSF'd or not.
             if(isCeiling && darksub) prefs.dsfCeiling = val;
             else if(isCeiling && !darksub) prefs.frameViewCeiling = val;
             else if(!isCeiling && darksub) prefs.dsfFloor = val;
@@ -1709,6 +1713,7 @@ void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
             break;
         default:
             emit errorMessage("Do not understand current frameview type.");
+            goto errorCondition;
             break;
         }
         goto finished;
@@ -1726,65 +1731,12 @@ void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
         goto finished;
     }
 
-
-    // Old code:
-
-//    if(p_profile || p_frameview || p_flight)
-//    {
-//        if (p_frameview && p_frameview->image_type == STD_DEV) {
-//            if(isCeiling)
-//                prefs.stddevCeiling = val;
-//            else
-//                prefs.stddevFloor = val;
-//            return;
-//        }
-
-//        // profile plots and frame view images generally
-//        // use the same levels.
-//        // So therefore, we just have a DSF and not-DSF level for each.
-//        if(use_DSF_cbox.isChecked())
-//        {
-//            if(isCeiling)
-//            {
-//                prefs.dsfCeiling = val;
-//                //qDebug() << "Setting DSF Ceiling to : " << val;
-//            }
-//            else
-//            {
-//                prefs.dsfFloor = val;
-//                //qDebug() << "Setting DSF Floor to : " << val;
-//            }
-//        } else {
-//            if(isCeiling)
-//                prefs.frameViewCeiling = val;
-//            else
-//                prefs.frameViewFloor = val;
-//        }
-//        return;
-//    }
-
-//    if(p_fft)
-//    {
-//        if(isCeiling)
-//            prefs.fftCeiling = val;
-//        else
-//            prefs.fftFloor = val;
-//        return;
-//    }
-//    if(p_histogram)
-//    {
-//        if(isCeiling)
-//            prefs.stddevCeiling = val;
-//        else
-//            prefs.stddevFloor = val;
-//        return;
-//    }
-
+    errorCondition:
     emit errorMessage("Cannot handle this type of frame levels.");
     return;
 
     finished:
-    emit statusMessage(QString("Correctly handled frame level Val = %1.").arg(val)); // EHL DEBUG only
+    //emit statusMessage(QString("Correctly handled frame level Val = %1.").arg(val)); // EHL DEBUG only
     return;
 
 }

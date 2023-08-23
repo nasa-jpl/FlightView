@@ -97,7 +97,7 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     }
 
     /* Add tabs in order */
-    tabWidget->addTab(unfiltered_widget, QString("Live View"));
+    tabWidget->addTab(unfiltered_widget, QString("FPA")); // check commit log here
     //tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
     tabWidget->addTab(waterfall_widget, QString("Waterfall"));
     tabWidget->addTab(flight_screen, QString("Flight"));
@@ -448,9 +448,23 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
         removeTab("Histogram View");
     }
 
+    // One of these two widgets may be the first widget shown,
+    // which will not receive the "tab changed" signal to update
+    // the levels. Thus, we update here:
+
+    if(unfiltered_widget) {
+        unfiltered_widget->updateCeiling(prefs.frameViewCeiling);
+        unfiltered_widget->updateFloor(prefs.frameViewFloor);
+    }
+
+    if(flight_screen) {
+        flight_screen->updateCeiling(prefs.flightCeiling);
+        flight_screen->updateFloor(prefs.flightFloor);
+    }
+
     handleMainWindowStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
 
-    if( (prefs.preferredWindowWidth < 4096 ) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
+    if( (prefs.preferredWindowWidth < 4096) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
     {
         this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
     } else {
