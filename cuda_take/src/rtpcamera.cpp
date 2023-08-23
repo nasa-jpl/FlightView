@@ -191,8 +191,11 @@ bool RTPCamera::initialize()
     for(int f = 0; f < guaranteedBufferFramesCount_rtp; f++)
     {
         guaranteedBufferFrames[f] = (uint16_t*)calloc(frame_width*data_height, sizeof(uint16_t));
-        if(guaranteedBufferFrames[f] == NULL)
+        if(guaranteedBufferFrames[f] == NULL) {
+            LOG << "ERROR, cannot allocate memory for frame buffer.";
+            LOG << "Calling abort()";
             abort();
+        }
     }
 
     data->buffer = guaranteedBufferFrames;
@@ -216,8 +219,10 @@ void RTPCamera::streamLoop()
         g_printerr ("Unable to set the sourcePipe to the playing state.\n");
         LOG << "Unable to set the sourcePipe to the playing state.";
         LOG << "State is: GST_STATE_CHANGE_FAILURE";
-        std::cerr << "Calling abort()\n" << std::flush;
         gst_object_unref (sourcePipe);
+        std::cerr  << "Check the ethernet interface for valid IP configuration\n" << std::flush;
+        std::cerr  << "and also verify the liveview program arguments.\n" << std::flush;
+        std::cerr  << "Calling abort()\n" << std::flush;
         abort();
     }
 
