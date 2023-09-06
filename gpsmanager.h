@@ -9,6 +9,12 @@
 
 #include "filenamegenerator.h"
 
+// Shared Memory:
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include "shm_gps.h"
+
 #include "gpsGUI/qfi/qfi_EADI.h"
 #include "gpsGUI/qfi/qfi_EHSI.h"
 #include "gpsGUI/qfi/qfi_ASI.h"
@@ -39,6 +45,14 @@ class gpsManager : public QObject
     gpsMessage m;
 
     fileNameGenerator filenamegen;
+
+    void shmSetup();
+    bool shmValid = false;
+    shmGPSDataStruct *shm = NULL;
+    int shmFd = 0;
+    int currentSHMIndex = 0;
+    int priorSHMIndex = 0;
+    uint16_t shmCounter = 0;
 
     QString baseSaveDirectory;
     QString gpsRecordingBinaryLogFilename;

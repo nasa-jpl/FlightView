@@ -78,6 +78,7 @@ HEADERS  += mainwindow.h \
     gpsGUI/gpsnetwork.h \
     gpsGUI/gpsbinaryreader.h \
     gpsGUI/gpsbinarylogger.h \
+    shm_gps.h \
     startupOptions.h \
     waterfall.h \
     preferences.h

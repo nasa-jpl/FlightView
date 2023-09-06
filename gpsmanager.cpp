@@ -52,6 +52,60 @@ void gpsManager::initiateGPSDisconnect()
 {
     emit disconnectFromGPS();
     firstMessage = true;
+    if(shmValid)
+        shm->connected = false;
+}
+
+void gpsManager::shmSetup()
+{
+    if(shmValid) {
+        emit gpsStatusMessage("SHM already setup");
+        return;
+    }
+
+    shmValid = false;
+
+    size_t shmLen = sizeof(struct shmGPSDataStruct);
+    shmFd = shm_open("/liveview_gnss", O_RDWR | O_CREAT ,S_IRUSR | S_IWUSR);
+
+    if(shmFd == -1) {
+        emit gpsStatusMessage("Error, could not open GNSS shared memory segment.");
+        shmValid = false;
+        goto cleanup;
+    }
+
+    if(ftruncate(shmFd, shmLen) == -1) {
+        emit gpsStatusMessage("Error, could not set size of GNSS shared memory segment.");
+        goto cleanup;
+    }
+
+    shm = (shmGPSDataStruct*)mmap(0, shmLen, PROT_WRITE, MAP_SHARED, shmFd, 0);
+    if( (shm==NULL) || (shm==MAP_FAILED)) {
+        emit gpsStatusMessage("Error, could not map GNSS shared memory segment to a local address pointer.");
+        goto cleanup;
+    }
+
+    shm->statusByte = SHM_STATUS_INITALIZING;
+    shm->connected = false;
+    shm->counter = 0;
+    shmCounter = 0;
+    shm->writingMessageNumber = 0;
+    for(int m=0; m < shmGPSMessageBufferSize; m++) {
+        shm->message[m].counter = 0;
+        shm->message[m].validDecode = false;
+    }
+    shm->statusByte = SHM_STATUS_WAITING;
+    currentSHMIndex = 0;
+    priorSHMIndex = 0;
+    goto cleanup;
+
+
+    cleanup:
+    if( (shmFd != -1) && (shmFd != 0) ) {
+        close(shmFd);
+        return;
+    }
+    return;
 }
 
 bool gpsManager::createLoggingDirectory()
@@ -388,6 +442,15 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         consecutiveDecodeErrors++;
         processStatus();
         return;
+    }
+
+    currentSHMIndex = (priorSHMIndex+1)%shmGPSMessageBufferSize;
+
+    if(shmValid) {
+        shm->writingMessageNumber = currentSHMIndex;
+        shm->statusByte = SHM_STATUS_READY;
+        shm->counter = shmCounter++;
+        shm->message[currentSHMIndex] = m;
     }
 
     msgsReceivedCount++;
@@ -768,6 +831,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     {
         firstMessage = false;
     }
+    priorSHMIndex = currentSHMIndex;
 }
 
 void gpsManager::handleStartsecondaryLog(QString filename)
@@ -838,6 +902,8 @@ void gpsManager::handleGPSConnectionGood()
     statusLinkStickyError = false; // Safe to clear when a new connection has been made.
     statusConnectedToGPS = true;
     hbErrorCount = 0;
+    if(shmValid)
+        shm->connected = true;
 }
 
 void gpsManager::handleGPSTimeout()

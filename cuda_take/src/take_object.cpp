@@ -203,7 +203,6 @@ void take_object::shmSetup()
     }
     shm->statusByte = SHM_STATUS_WAITING;
     shmValid = true;
-
     goto cleanup;
 
     cleanup:
