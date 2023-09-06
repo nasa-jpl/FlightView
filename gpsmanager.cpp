@@ -13,7 +13,7 @@ gpsManager::gpsManager()
 
     prepareVectors(); // size the vectors
     prepareGPS(); // get ready to connect the GPS
-
+    shmSetup(); // initialize the shared memory segment
 }
 
 gpsManager::~gpsManager()
@@ -97,6 +97,7 @@ void gpsManager::shmSetup()
     shm->statusByte = SHM_STATUS_WAITING;
     currentSHMIndex = 0;
     priorSHMIndex = 0;
+    shmValid = true;
     goto cleanup;
 
 

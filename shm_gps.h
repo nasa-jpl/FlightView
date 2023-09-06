@@ -18,6 +18,7 @@ struct shmGPSDataStruct {
     bool connected; // true with working GNSS connection
     uint16_t counter;
     int writingMessageNumber;
+    int messageBufferSize = shmGPSMessageBufferSize;
     gpsMessage message[shmGPSMessageBufferSize];
 };
 
