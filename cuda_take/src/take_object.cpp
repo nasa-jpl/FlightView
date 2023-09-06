@@ -146,6 +146,75 @@ void take_object::changeOptions(takeOptionsType optionsIn)
     deltaT_micros = 1000000.0 / options.targetFPS;
 }
 
+void take_object::shmSetup()
+{
+    statusMessage("Preparing shared memory segment for images.");
+
+    if(shmValid) {
+        // unexpected to be valid already
+        warningMessage("SHM already valid");
+        return;
+    }
+
+    size_t shmLen = sizeof(struct shmSharedDataStruct);
+    shmFd = shm_open ("/liveview_image", O_RDWR | O_CREAT ,S_IRUSR | S_IWUSR);
+
+    if(shmFd == -1) {
+        errorMessage("Could not open shared memory segment.");
+        shmValid = false;
+        return;
+    }
+
+    if(ftruncate(shmFd, shmLen) == -1) {
+        errorMessage("Could not truncate shared memory to required size");
+        shmValid = false;
+        goto cleanup;
+    }
+
+    shm = (shmSharedDataStruct*)mmap (0, shmLen, PROT_WRITE, MAP_SHARED, shmFd, 0);
+    if( (shm == NULL) || (shm==MAP_FAILED) ) {
+        errorMessage("Could not map memory shared memory segment to a local variable.");
+        shmValid = false;
+        goto cleanup;
+    }
+
+    shm->statusByte = SHM_STATUS_INITALIZING;
+    shm->recordingDataToFile = false;
+    shm->fps = 0.0;
+    shm->counter = 0;
+    shm->writingFrameNum = 0;
+    shm->bufferSizeFrames = shmFrameBufferSize;
+    shm->frameHeight = this->frHeight;
+    shm->frameWidth = this->frWidth;
+    shm->takingDark = false;
+
+    for(int i=0; i < shmFilenameBufferSize; i++) {
+        shm->lastFilename[i] = '\0';
+    }
+
+    for(int i=0; i < shmFrameBufferSize; i++) {
+        shm->frameTime[i] = 0;
+    }
+
+    for(int f=0; f < shmFrameBufferSize; f++) {
+        for(int p=0; p < shmHeight*shmWidth; p++) {
+            shm->frameBuffer[f][p] = 0;
+        }
+    }
+    shm->statusByte = SHM_STATUS_WAITING;
+    shmValid = true;
+
+    goto cleanup;
+
+    cleanup:
+    if( (shmFd != -1) && (shmFd != 0) ) {
+        close(shmFd);
+        return;
+    }
+
+
+}
+
 void take_object::start()
 {
     pdv_thread_run = 1;
@@ -239,6 +308,8 @@ void take_object::start()
     meanHeight = frHeight;
     meanWidth = frWidth;
 
+    // Get the shared memory segment for images ready:
+    shmSetup();
 
     numbufs = 16;
     int rtnval = 0;
@@ -344,6 +415,9 @@ void take_object::paraPixRemap(bool checked )
 void take_object::startCapturingDSFMask()
 {
     dsfMaskCollected = false;
+    if(shmValid) {
+        shm->takingDark = true;
+    }
     dsf->start_mask_collection();
 }
 void take_object::finishCapturingDSFMask()
@@ -351,6 +425,9 @@ void take_object::finishCapturingDSFMask()
     dsf->mask_mutex.lock();
     dsf->finish_mask_collection();
     dsf->mask_mutex.unlock();
+    if(shmValid) {
+        shm->takingDark = false;
+    }
     dsfMaskCollected = true;
 }
 void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format)
@@ -557,6 +634,12 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
     printf("Begin frame save! @ %s\n", raw_file_name.c_str());
 #endif
 
+    if(shmValid) {
+        strncpy(shm->lastFilename, raw_file_name.c_str(), shmFilenameBufferSize);
+        shm->recordingDataToFile = true;
+    }
+
+
     saving_thread = boost::thread(&take_object::savingLoop,this,raw_file_name,num_avgs_save,frames_to_save);
 }
 void take_object::stopSavingRaws()
@@ -565,6 +648,9 @@ void take_object::stopSavingRaws()
     save_framenum.store(0,std::memory_order_relaxed);
     save_count.store(0,std::memory_order_relaxed);
     save_num_avgs=1;
+    if(shmValid) {
+        shm->recordingDataToFile = false;
+    }
 #ifdef VERBOSE
     printf("Stop Saving Raws!");
 #endif
@@ -1065,6 +1151,9 @@ void take_object::rtpConsumeFrames()
     uint16_t *temp_frame = NULL;
     int lastFrameNumber = 0;
     count = 0;
+    if(shmValid) {
+        shm->statusByte = SHM_STATUS_READY;
+    }
     while(rtpConsumerRun)
     {
         begintp = std::chrono::steady_clock::now();
@@ -1091,6 +1180,12 @@ void take_object::rtpConsumeFrames()
                 curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
         }
 
+        // Copy to the SHM:
+        shmBufferPosition = (shmBufferPositionPrior + 1)%shmFrameBufferSize;
+        if(shmValid) {
+            shm->writingFrameNum = shmBufferPosition;
+            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth);
+        }
 
         // Calculating the filters for this frame
         if(runStdDev)
@@ -1129,6 +1224,15 @@ void take_object::rtpConsumeFrames()
         measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
         meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
 
+        if(shmValid) {
+            if(measuredDelta_micros_final != 0)
+                shm->fps = 1E6/measuredDelta_micros_final;
+            shm->frameTime[shmBufferPosition] = finaltp.time_since_epoch() / std::chrono::milliseconds(1);
+            shm->counter = count;
+        }
+
+        shmBufferPositionPrior = shmBufferPosition;
+
         last_framecount = framecount;
         count++;
         grabbing = false;
@@ -1153,6 +1257,10 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 
     std::chrono::steady_clock::time_point finaltp;
     std::chrono::steady_clock::time_point begintp;
+
+    if(shmValid) {
+        shm->statusByte = SHM_STATUS_READY;
+    }
 
     while(pdv_thread_run == 1)
     {	
@@ -1187,15 +1295,24 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
         if(pixRemap)
             apply_chroma_translate_filter(curFrame->raw_data_ptr);
-        if(cam_type == CL_6604A)
-            curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
-        else
-            curFrame->image_data_ptr = curFrame->raw_data_ptr;
+//        if(cam_type == CL_6604A)
+//            curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
+//        else
+        curFrame->image_data_ptr = curFrame->raw_data_ptr;
+
         if(inverted)
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
             for(uint i = 0; i < frHeight*frWidth; i++ )
                 curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
         }
+
+        // Copy to the SHM:
+        shmBufferPosition = (shmBufferPositionPrior + 1)%shmFrameBufferSize;
+        if(shmValid) {
+            shm->writingFrameNum = shmBufferPosition;
+            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth);
+        }
+
 
         // Calculating the filters for this frame
         if(runStdDev)
@@ -1228,12 +1345,21 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             }
         }
         last_framecount = framecount;
-        count++;
 
         finaltp = std::chrono::steady_clock::now();
         measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
         meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
 
+        if(shmValid) {
+            if(measuredDelta_micros_final != 0)
+                shm->fps = 1E6/measuredDelta_micros_final;
+            shm->frameTime[shmBufferPosition] = finaltp.time_since_epoch() / std::chrono::milliseconds(1);
+            shm->counter = count;
+        }
+
+        shmBufferPositionPrior = shmBufferPosition;
+
+        count++;
         grabbing = false;
         if(closing)
         {
