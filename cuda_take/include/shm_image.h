@@ -6,7 +6,7 @@
 
 // This file describes the shared memory segment
 // used for images and image meta-data.
-// The segment is named "/liveview-image"
+// The segment is named "/liveview_image"
 // Data are processed for 2s compliment and "invertedness" and then
 // memcpy'd to the shared memory segment.
 // Data are written here whenever liveview is open.
