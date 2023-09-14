@@ -634,7 +634,7 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 #endif
 
     if(shmValid) {
-        strncpy(shm->lastFilename, raw_file_name.c_str(), shmFilenameBufferSize);
+        strncpy(shm->lastFilename, raw_file_name.c_str(), shmFilenameBufferSize-1);
         shm->recordingDataToFile = true;
     }
 
@@ -1172,7 +1172,7 @@ void take_object::rtpConsumeFrames()
 //        if(cam_type == CL_6604A)
 //            curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
 //        else
-            curFrame->image_data_ptr = curFrame->raw_data_ptr;
+        curFrame->image_data_ptr = curFrame->raw_data_ptr;
         if(inverted)
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
             for(uint i = 0; i < frHeight*frWidth; i++ )
