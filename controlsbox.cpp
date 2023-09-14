@@ -1222,8 +1222,6 @@ void ControlsBox::tab_changed_slot(int index)
      * \author Jackie Ryan
      */
 
-    emit statusMessage("EHL: Tab changed signal top.");
-
     bool see_it = false;
     current_tab = qtw->widget(index);
     disconnect_old_tab();
@@ -1421,7 +1419,6 @@ void ControlsBox::tab_changed_slot(int index)
                 use_DSF_cbox.setEnabled(true);
                 std_dev_N_slider->setEnabled(false);
                 std_dev_N_edit->setEnabled(false);
-                emit statusMessage("EHL: Called tab changed for DSF.");
                 if(darksub) {
                     ceiling_edit.setValue(prefs.dsfCeiling);
                     ceiling_slider.setValue(prefs.dsfCeiling);
