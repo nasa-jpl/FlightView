@@ -37,7 +37,7 @@ extern "C" {
 
 // define GST_HAS_GRAY
 
-#define FRAME_WAIT_MIN_DELAY_US (1)
+#define FRAME_WAIT_MIN_DELAY_US (100)
 #define MAX_FRAME_WAIT_TAPS (100000)
 
 using namespace std::chrono;

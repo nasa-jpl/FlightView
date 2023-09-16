@@ -1144,6 +1144,7 @@ void take_object::rtpConsumeFrames()
 
     std::chrono::steady_clock::time_point begintp;
     std::chrono::steady_clock::time_point finaltp;
+    std::chrono::steady_clock::time_point priortp = std::chrono::steady_clock::now();
 
     int framecount = 0;
     int last_framecount __attribute__((unused)) = 0;
@@ -1155,11 +1156,12 @@ void take_object::rtpConsumeFrames()
     }
     while(rtpConsumerRun)
     {
-        begintp = std::chrono::steady_clock::now();
         grabbing = true;
         curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
         curFrame->reset();
+        begintp = std::chrono::steady_clock::now();
         temp_frame = Camera->getFrameWait(lastFrameNumber, &this->camStatus);
+
         memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight*2);
 
 
@@ -1218,9 +1220,11 @@ void take_object::rtpConsumeFrames()
             }
         }
         */
-
         finaltp = std::chrono::steady_clock::now();
-        measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
+        //measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
+        measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(begintp-priortp).count();
+
+        priortp = begintp;
         meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
 
         if(shmValid) {
@@ -1243,8 +1247,8 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 {
 	count = 0;
 
-    uint16_t framecount = 1;
-    uint16_t last_framecount = 0;
+    //uint16_t framecount = 1;
+    //uint16_t last_framecount = 0;
 	unsigned char* wait_ptr;
 
 
@@ -1335,15 +1339,15 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             save_framenum--;
         }
 
-        framecount = *(curFrame->raw_data_ptr + 160); // The framecount is stored 160 bytes offset from the beginning of the data
-        if(CHECK_FOR_MISSED_FRAMES_6604A && cam_type == CL_6604A)
-        {
-            if( (framecount - 1 != last_framecount) && (last_framecount != UINT16_MAX) )
-            {
-                std::cerr << "WARNING: MISSED FRAME " << framecount << std::endl;
-            }
-        }
-        last_framecount = framecount;
+        //framecount = *(curFrame->raw_data_ptr + 160); // The framecount is stored 160 bytes offset from the beginning of the data
+//        if(CHECK_FOR_MISSED_FRAMES_6604A && cam_type == CL_6604A)
+//        {
+//            if( (framecount - 1 != last_framecount) && (last_framecount != UINT16_MAX) )
+//            {
+//                std::cerr << "WARNING: MISSED FRAME " << framecount << std::endl;
+//            }
+//        }
+        //last_framecount = framecount;
 
         finaltp = std::chrono::steady_clock::now();
         measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
@@ -1499,7 +1503,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
     statusMessage("Finished primary saving loop.");
     char message[128];
-    sprintf(message, "Size of buffer: %ld", saving_list.size());
+    snprintf(message, 127, "Size of buffer: %ld", saving_list.size());
     statusMessage(message);
     if( (num_avgs==1) || (num_avgs==0)) {
         statusMessage("Finishing write...");
