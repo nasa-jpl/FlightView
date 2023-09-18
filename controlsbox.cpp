@@ -536,17 +536,17 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     // connect(&ceiling_edit, SIGNAL(valueChanged(int)), &ceiling_slider, SLOT(setValue(int)));
     connect(&ceiling_edit, (void(QSpinBox::*)(int))&QSpinBox::valueChanged,
             [&](int value) {
-        this->ceiling_slider.blockSignals(true);
+        //this->ceiling_slider.blockSignals(true);
         this->ceiling_slider.setValue(value);
-        this->ceiling_slider.blockSignals(false);
+        //this->ceiling_slider.blockSignals(false);
     });
 
     // connect(&floor_edit, SIGNAL(valueChanged(int)), &floor_slider, SLOT(setValue(int)));
     connect(&floor_edit, (void(QSpinBox::*)(int))&QSpinBox::valueChanged,
             [&](int value) {
-        this->floor_slider.blockSignals(true);
+        //this->floor_slider.blockSignals(true);
         this->floor_slider.setValue(value);
-        this->floor_slider.blockSignals(false);
+        //this->floor_slider.blockSignals(false);
     });
 
     // connect(&ceiling_slider, SIGNAL(valueChanged(int)), &ceiling_edit, SLOT(setValue(int)));
