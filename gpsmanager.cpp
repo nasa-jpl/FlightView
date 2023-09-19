@@ -720,7 +720,8 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         case gpsQualityInvalid:
         default:
             gnssQualStr = "INVALID";
-            gnssQualShortStr = " ?";
+            gnssQualShortStr = "?";
+            gnssAlignmentPhase = "UNKNOWN";
             break;
         }
         gnssQualPrior = q;
