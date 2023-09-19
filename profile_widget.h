@@ -70,8 +70,8 @@ class profile_widget : public QWidget
     QCPRange boundedRange_x;
     QCPRange boundedRange_y;
 
-    int x_coord;
-    volatile int y_coord;
+    int x_coord = 1;
+    int y_coord = 1;
     bool allow_callouts = true;
 
 public:

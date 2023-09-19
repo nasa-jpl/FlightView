@@ -67,6 +67,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     callout->setSelectedFont(QFont(font().family(), 16));
     callout->setSelectedPen(QPen(Qt::black));
     callout->setSelectedColor(Qt::black);
+    callout->setText("Double click\nto set point.");
     callout->setVisible(false);
     qcp->addLayer("Arrow Layer", qcp->currentLayer(), QCustomPlot::limBelow);
     qcp->setCurrentLayer("Arrow Layer");
@@ -404,6 +405,8 @@ void profile_widget::hideCallout()
         callout->setVisible(false);
         arrow->setVisible(false);
     } else {
+        if( (y.size()-1 < x_coord) || (x_coord <0))
+            return;
         callout->setVisible(true);
         arrow->setVisible(true);
     }
@@ -413,6 +416,8 @@ void profile_widget::hideCallout()
 // private slots
 void profile_widget::updateCalloutValue()
 {
+    if( (y.size()-1 < x_coord) || (x_coord <0))
+        return;
     y_coord = y[x_coord];
     arrow->end->setCoords(x_coord, y_coord);
     callout->setText(QString(" x: %1 \n y: %2 ").arg(x_coord).arg(y_coord));
