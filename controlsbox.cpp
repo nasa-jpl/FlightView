@@ -94,7 +94,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     });
 
 
-/* ====================================================================== */
+    /* ====================================================================== */
     // LEFT SIDE BUTTONS (Collections)
     collect_dark_frames_button.setText("Record Dark Frames");
     stop_dark_collection_button.setText("Stop Dark Frames");
@@ -386,7 +386,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     ThresholdingSlidersBox.setLayout(sliders_layout);
 
-/* ====================================================================== */
+    /* ====================================================================== */
     //RIGHT SIDE BUTTONS (Save)
     select_save_location.setText("Save Location");
     showConsoleLogBtn.setText("Log");
@@ -489,7 +489,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     SaveButtonsBox.setLayout(save_layout);
 
-/* =========================================================================== */
+    /* =========================================================================== */
     // OVERALL LAYOUT
     controls_layout.addWidget(&CollectionButtonsBox, 2);
     controls_layout.addWidget(&ThresholdingSlidersBox, 3);
@@ -497,7 +497,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     this->setLayout(&controls_layout);
     this->setMaximumHeight(200);
 
-/* =========================================================================== */
+    /* =========================================================================== */
     //Connections
     connect(&collect_dark_frames_button, SIGNAL(clicked()), this, SLOT(start_dark_collection_slot()));
     connect(&stop_dark_collection_button, SIGNAL(clicked()), this, SLOT(stop_dark_collection_slot()));
@@ -533,7 +533,6 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     connect(lines_slider, SIGNAL(valueChanged(int)), line_average_edit, SLOT(setValue(int)));
     connect(lines_slider, SIGNAL(valueChanged(int)), this, SLOT(transmitChange(int)));
 
-    // connect(&ceiling_edit, SIGNAL(valueChanged(int)), &ceiling_slider, SLOT(setValue(int)));
     connect(&ceiling_edit, (void(QSpinBox::*)(int))&QSpinBox::valueChanged,
             [&](int value) {
         //this->ceiling_slider.blockSignals(true);
@@ -541,7 +540,6 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         //this->ceiling_slider.blockSignals(false);
     });
 
-    // connect(&floor_edit, SIGNAL(valueChanged(int)), &floor_slider, SLOT(setValue(int)));
     connect(&floor_edit, (void(QSpinBox::*)(int))&QSpinBox::valueChanged,
             [&](int value) {
         //this->floor_slider.blockSignals(true);
@@ -549,7 +547,6 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         //this->floor_slider.blockSignals(false);
     });
 
-    // connect(&ceiling_slider, SIGNAL(valueChanged(int)), &ceiling_edit, SLOT(setValue(int)));
     connect(&ceiling_slider, &QSlider::valueChanged,
             [&](int value) {
         this->ceiling_edit.blockSignals(true);
@@ -557,7 +554,6 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         this->ceiling_edit.blockSignals(false);
     });
 
-    // connect(&floor_slider, SIGNAL(valueChanged(int)), &floor_edit, SLOT(setValue(int)));
     connect(&floor_slider, &QSlider::valueChanged,
             [&](int value) {
         this->floor_edit.blockSignals(true);
