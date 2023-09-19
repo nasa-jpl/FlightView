@@ -341,10 +341,16 @@ void take_object::paraPixRemap(bool checked )
         std::cout << "DISABLED" << std::endl;
     }
 }
+
+void take_object::enableDarkStatusPixelWrite(bool writeValues) {
+    setDarkStatusInFrame = writeValues;
+}
+
 void take_object::startCapturingDSFMask()
 {
     dsfMaskCollected = false;
     dsf->start_mask_collection();
+    darkStatusPixelVal = obcStatusDark1;
 }
 void take_object::finishCapturingDSFMask()
 {
@@ -352,6 +358,7 @@ void take_object::finishCapturingDSFMask()
     dsf->finish_mask_collection();
     dsf->mask_mutex.unlock();
     dsfMaskCollected = true;
+    darkStatusPixelVal = obcStatusScience;
 }
 void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format)
 {
@@ -1081,16 +1088,17 @@ void take_object::rtpConsumeFrames()
             curFrame->image_data_ptr = curFrame->raw_data_ptr;
         }
 
-//        if(cam_type == CL_6604A)
-//            curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
-//        else
-            curFrame->image_data_ptr = curFrame->raw_data_ptr;
+
+        curFrame->image_data_ptr = curFrame->raw_data_ptr;
         if(inverted)
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
             for(uint i = 0; i < frHeight*frWidth; i++ )
                 curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
         }
 
+        if(setDarkStatusInFrame) {
+            curFrame->image_data_ptr[obcStatusPixel] = darkStatusPixelVal;
+        }
 
         // Calculating the filters for this frame
         if(runStdDev)
@@ -1187,14 +1195,16 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
         if(pixRemap)
             apply_chroma_translate_filter(curFrame->raw_data_ptr);
-        if(cam_type == CL_6604A)
-            curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
-        else
-            curFrame->image_data_ptr = curFrame->raw_data_ptr;
+
+        curFrame->image_data_ptr = curFrame->raw_data_ptr;
         if(inverted)
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
             for(uint i = 0; i < frHeight*frWidth; i++ )
                 curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
+        }
+
+        if(setDarkStatusInFrame) {
+            curFrame->image_data_ptr[obcStatusPixel] = darkStatusPixelVal;
         }
 
         // Calculating the filters for this frame

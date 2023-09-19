@@ -84,6 +84,10 @@ void preferenceWindow::createRenderingTab()
     paraPixCheck->setToolTip("Enable or Disable 2s compliment filter on input data stream. See console output for initial filter state.");
     paraPixCheck->setChecked(true);
 
+    setDarkStatusInFrameCheck = new QCheckBox("Write Dark Status to Frame Data");
+    setDarkStatusInFrameCheck->setToolTip("Writes the dark collection status to the frame header");
+    setDarkStatusInFrameCheck->setChecked(false);
+
     ignoreFirstCheck = new QCheckBox(tr("Ignore First Row Data"));
     ignoreLastCheck  = new QCheckBox(tr("Ignore Last Row Data"));
     ignoreFirstCheck->setToolTip("Check if first row contains metadata. Only available on certain liveview tabs (profile and FFT)");
@@ -149,6 +153,7 @@ void preferenceWindow::createRenderingTab()
     connect(invert14bitButton, SIGNAL(clicked()), this, SLOT(invertRange()));
     connect(nativeScaleButton, SIGNAL(clicked()), this, SLOT(invertRange()));
     connect(paraPixCheck, SIGNAL(clicked(bool)), this, SLOT(enableParaPixMap(bool)));
+    connect(setDarkStatusInFrameCheck, SIGNAL(clicked(bool)), this, SLOT(dsInFrameSlot(bool)));
     connect(ColorScalePicker, SIGNAL(activated(int)), this, SLOT(setColorScheme(int)));
     connect(darkThemeCheck, SIGNAL(clicked(bool)), this, SLOT(setDarkTheme(bool)));
 
@@ -156,6 +161,7 @@ void preferenceWindow::createRenderingTab()
     QGridLayout *layout = new QGridLayout();
     layout->addWidget(camera_label, 0, 0, 1, 4);
     layout->addWidget(paraPixCheck, 1, 0, 1, 4);
+    layout->addWidget(setDarkStatusInFrameCheck, 1, 2, 1, 2);
     layout->addWidget(dataRangePrompt, 2, 0);
     layout->addWidget(leftBound, 2, 1);
     layout->addWidget(to, 2, 2);
@@ -220,6 +226,9 @@ void preferenceWindow::processPreferences()
     paraPixCheck->setChecked(preferences.use2sComp);
     paraPixCheck->clicked(preferences.use2sComp);
 
+    setDarkStatusInFrameCheck->setChecked(preferences.setDarkStatusInFrame);
+    setDarkStatusInFrameCheck->clicked(preferences.setDarkStatusInFrame);
+
     ColorScalePicker->setCurrentIndex(preferences.frameColorScheme);
     ColorScalePicker->activated(preferences.frameColorScheme);
 
@@ -273,6 +282,14 @@ void preferenceWindow::enableParaPixMap(bool checked)
     fw->to.paraPixRemap(checked);
     preferences.use2sComp = checked;
     makeStatusMessage(QString("2s Compliment Filter: %1").arg(checked?"Enabled":"Disabled"));
+}
+
+void preferenceWindow::dsInFrameSlot(bool checked) {
+    // Set dark status pixels in the frame data.
+    // Do not check if geometry is < 159 pixels!
+    fw->to.enableDarkStatusPixelWrite(checked);
+    preferences.setDarkStatusInFrame = checked;
+    makeStatusMessage(QString("Mark frames with dark status: %1").arg(checked?"Enabled":"Disabled"));
 }
 
 void preferenceWindow::setColorScheme(int index)

@@ -14,6 +14,7 @@ struct settingsT {
     bool nativeScale = true;
     bool brightSwap16 = false;
     bool brightSwap14 = false;
+    bool setDarkStatusInFrame = false;
 
     // [Interface]:
     int frameColorScheme;

@@ -802,6 +802,7 @@ void ControlsBox::loadSettings()
     prefs.skipFirstRow = settings->value("skipFirstRow", defaultPrefs.skipFirstRow).toBool();
     prefs.skipLastRow = settings->value("skipLastRow", defaultPrefs.skipLastRow).toBool();
     prefs.use2sComp = settings->value("use2sComp", defaultPrefs.use2sComp).toBool();
+    prefs.setDarkStatusInFrame = settings->value("setDarkStatusInFrame", defaultPrefs.setDarkStatusInFrame).toBool();
     settings->endGroup();
 
     // [Interface]:
@@ -954,6 +955,7 @@ void ControlsBox::triggerSaveSettings()
     prefs.brightSwap16 = pwprefs.brightSwap16;
     prefs.frameColorScheme = pwprefs.frameColorScheme;
     prefs.use2sComp = pwprefs.use2sComp;
+    prefs.setDarkStatusInFrame = pwprefs.setDarkStatusInFrame;
     prefs.useDarkTheme = pwprefs.useDarkTheme;
 
     // Now save:
@@ -970,6 +972,7 @@ void ControlsBox::saveSettings()
     settings->setValue("skipFirstRow", prefs.skipFirstRow);
     settings->setValue("skipLastRow", prefs.skipLastRow);
     settings->setValue("use2sComp", prefs.use2sComp);
+    settings->setValue("setDarkStatusInFrame", prefs.setDarkStatusInFrame);
     settings->endGroup();
 
     // [Interface]:

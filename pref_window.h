@@ -63,6 +63,7 @@ class preferenceWindow : public QWidget
     QPushButton *browseButton;
 
     QCheckBox *paraPixCheck;
+    QCheckBox *setDarkStatusInFrameCheck;
     QCheckBox *ignoreFirstCheck;
     QCheckBox *ignoreLastCheck;
 
@@ -95,6 +96,7 @@ private slots:
     void enableControls(int ndx);
 
     void enableParaPixMap(bool checked);
+    void dsInFrameSlot(bool checked);
     void invertRange();
     void ignoreFirstRow(bool checked);
     void ignoreLastRow(bool checked);
