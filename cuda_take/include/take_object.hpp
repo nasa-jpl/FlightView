@@ -67,6 +67,13 @@ static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence
 
 #define meanDeltaSize (20)
 
+#define obcStatusPixel (159)
+#define obcStatusDark1 (2)
+#define obcStatusScience (3)
+#define obcStatusDark2 (4)
+#define obcStatusClosing (8)
+#define obcStatusOpening (9)
+
 class take_object {
     PdvDev * pdv_p = NULL;
     unsigned int channel;
@@ -81,6 +88,7 @@ class take_object {
     shmSharedDataStruct *shm;
     void shmSetup();
 
+    bool setDarkStatusInFrame = false;
 
     bool closing = false;
     bool grabbing = true;
@@ -145,6 +153,7 @@ public:
     //Frame filters that affect everything at the raw data level
     void setInversion(bool checked, unsigned int factor);
     void paraPixRemap(bool checked);
+    void enableDarkStatusPixelWrite(bool writeValues);
 
     //DSF mask functions
 	void startCapturingDSFMask();
@@ -153,6 +162,7 @@ public:
     void loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format);
     bool dsfMaskCollected;
     bool useDSF = false;
+    uint16_t darkStatusPixelVal = obcStatusScience;
 
     // Std Dev Filter functions
     void setStdDev_N(int s);
