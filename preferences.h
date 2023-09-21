@@ -19,6 +19,7 @@ struct settingsT {
     // [Interface]:
     int frameColorScheme;
     bool useDarkTheme;
+    int plotPenThickness = 1;
 
     // frameView for not-dark-subtracted FPA
     // dsf for dark-subtracted FPA

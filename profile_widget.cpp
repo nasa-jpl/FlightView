@@ -403,6 +403,18 @@ void profile_widget::moveCallout(QMouseEvent *e)
     }
 
 }
+
+void profile_widget::setPenWidth(int penWidth) {
+    //qDebug() << "EHL DEBUG: Setting penWidth to " << penWidth;
+    QPen myPen;
+    for(int i=0; i < qcp->graphCount(); i++) {
+        //qDebug() << "EHL DEBUG: Setting penWidth to " << penWidth << " for plot number " << i;
+        myPen = qcp->graph(i)->pen();
+        myPen.setWidth(penWidth);
+        qcp->graph(i)->setPen(myPen);
+    }
+}
+
 void profile_widget::hideCallout()
 {
     if (callout->visible() || !allow_callouts) {

@@ -733,6 +733,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     // Preferences:
     connect(prefWindow, SIGNAL(saveSettings()), this, SLOT(triggerSaveSettings()));
+    connect(prefWindow, SIGNAL(newPenWidth(int)), this, SLOT(updatePenWidth(int)));
 
     rgbPresetCombo.setCurrentIndex(0);
     bandRed = prefs.bandRed[0];
@@ -809,6 +810,11 @@ void ControlsBox::loadSettings()
     settings->beginGroup("Interface");
     prefs.frameColorScheme = settings->value("frameColorScheme", defaultPrefs.frameColorScheme).toInt();
     prefs.useDarkTheme = settings->value("useDarkTheme", defaultPrefs.useDarkTheme).toBool();
+    prefs.plotPenThickness = settings->value("plotPenThickness", defaultPrefs.plotPenThickness).toInt();
+
+    if( (prefs.plotPenThickness < 1) || (prefs.plotPenThickness > 20) ) {
+        prefs.plotPenThickness = 1;
+    }
 
     // "FPA" tab:
     prefs.frameViewCeiling = settings->value("frameViewCeiling", defaultPrefs.frameViewCeiling).toInt();
@@ -907,11 +913,17 @@ void ControlsBox::loadSettings()
 
 void ControlsBox::updateUIToPrefs()
 {
+    // The current tab is brought up to speed on the loaded settings.
+    // Changing tabs also causes the preferences to be consulted.
+
     current_tab = qtw->widget(qtw->currentIndex());
     attempt_pointers(current_tab);
 
     if(p_profile || p_frameview || p_flight)
     {
+        if(p_profile) {
+            p_profile->setPenWidth(prefs.plotPenThickness);
+        }
         if (p_frameview && p_frameview->image_type == STD_DEV) {
             // Type is Standard Deviation Image
             floor_slider.setValue(prefs.stddevFloor);
@@ -957,6 +969,7 @@ void ControlsBox::triggerSaveSettings()
     prefs.use2sComp = pwprefs.use2sComp;
     prefs.setDarkStatusInFrame = pwprefs.setDarkStatusInFrame;
     prefs.useDarkTheme = pwprefs.useDarkTheme;
+    prefs.plotPenThickness = pwprefs.plotPenThickness;
 
     // Now save:
     saveSettings();
@@ -979,6 +992,7 @@ void ControlsBox::saveSettings()
     settings->beginGroup("Interface");
     settings->setValue("frameColorScheme", prefs.frameColorScheme);
     settings->setValue("useDarkTheme", prefs.useDarkTheme);
+    settings->setValue("plotPenThickness", prefs.plotPenThickness);
 
     // FPA Tab:
     settings->setValue("frameViewCeiling", prefs.frameViewCeiling);
@@ -1164,6 +1178,7 @@ void ControlsBox::setDefaultSettings()
     // [Interface]:
     defaultPrefs.frameColorScheme = 0; // Jet
     defaultPrefs.useDarkTheme = false;
+    defaultPrefs.plotPenThickness = 1;
 
     defaultPrefs.frameViewCeiling = 65000;
     defaultPrefs.frameViewFloor = 10000;
@@ -1247,6 +1262,8 @@ void ControlsBox::tab_changed_slot(int index)
         // "profile" means a plot, horiz or vert mean or crosshair
         int frameMax, startVal;
         bool enable;
+
+        p_profile->setPenWidth(prefs.plotPenThickness);
 
         use_DSF_cbox.setEnabled(true);
         //use_DSF_cbox.setChecked(fw->usingDSF());
@@ -2539,7 +2556,14 @@ void ControlsBox::transmitChange(int linesToAverage)
         fw->updateMeanRange(linesToAverage, BASE);
     }
 }
-
+void ControlsBox::updatePenWidth(int penWidth) {
+    prefs.plotPenThickness = penWidth;
+    current_tab = qtw->widget(qtw->currentIndex());
+    attempt_pointers(current_tab);
+    if(p_profile) {
+        p_profile->setPenWidth(penWidth);
+    }
+}
 void ControlsBox::updateOverlayParams(int dummy)
 {
     int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end;
@@ -2704,37 +2728,11 @@ void ControlsBox::debugThis()
     qDebug() << "--- END PREFS debug output ---";
 
     //this->loadDarkFromFile();
-
-    // Debug the text boxes
-    bool v=false;
-
-    // text boxes:
-//    filename_edit.setVisible(v);
-
-//    // Spin Boxes:
-
-    //std_dev_N_edit->setVisible(v);
-    line_average_edit->setVisible(v); // this was the problem one
-    // However, several other things appear when you remove it.
-    // There's a slider and a text label.
-    lines_label->setVisible(v);
-    lines_slider->setVisible(v);
-
-
-    //ceiling_edit.setVisible(v);
-
-
-//    floor_edit.setVisible(v);
-//    redSpin.setVisible(v);
-//    greenSpin.setVisible(v);
-//    blueSpin.setVisible(v);
-
-    // Not these!
-//    frames_save_num_edit.setVisible(v);
-//    frames_save_num_avgs_edit.setVisible(v);
-//    overlay_lh_width_spin->setVisible(v);
-//    overlay_cent_width_spin->setVisible(v);
-//    overlay_rh_width_spin->setVisible(v);
+    current_tab = qtw->widget(qtw->currentIndex());
+    attempt_pointers(current_tab);
+    if(p_profile) {
+        p_profile->setPenWidth(2);
+    }
 
     emit debugSignal();
 }

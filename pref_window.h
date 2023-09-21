@@ -11,7 +11,7 @@
 #include <QFileDialog>
 #include <QTabWidget>
 #include <QComboBox>
-#include <QLabel>
+#include <QSpinBox>
 
 //#include <QIntValidator>
 
@@ -76,6 +76,8 @@ class preferenceWindow : public QWidget
     QLabel *ColorLabel;
     QComboBox *ColorScalePicker;
     QCheckBox *darkThemeCheck;
+    QSpinBox *penWidthSpin = NULL;
+    QLabel *penWidthLabel = NULL;
 
     bool havePreferencesLoaded = false;
     settingsT preferences;
@@ -102,10 +104,12 @@ private slots:
     void ignoreLastRow(bool checked);
     void setColorScheme(int index);
     void setDarkTheme(bool useDarkChecked);
+    void setPenWidth(int penWidth);
     void saveSettingsNow();
 
 signals:
     void saveSettings();
+    void newPenWidth(int penWidth);
     void statusMessage(QString message);
 };
 

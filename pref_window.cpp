@@ -22,6 +22,9 @@ preferenceWindow::preferenceWindow(frameWorker *fw, QTabWidget *qtw, settingsT p
 
     closeButton = new QPushButton(tr("&Close"));
     saveSettingsBtn = new QPushButton(tr("&Save Settings"));
+    penWidthSpin = new QSpinBox();
+    penWidthSpin->setRange(1,20);
+    penWidthLabel = new QLabel("Pen Width (for plots)");
     //createLogFileTab();
     createRenderingTab();
 
@@ -156,7 +159,7 @@ void preferenceWindow::createRenderingTab()
     connect(setDarkStatusInFrameCheck, SIGNAL(clicked(bool)), this, SLOT(dsInFrameSlot(bool)));
     connect(ColorScalePicker, SIGNAL(activated(int)), this, SLOT(setColorScheme(int)));
     connect(darkThemeCheck, SIGNAL(clicked(bool)), this, SLOT(setDarkTheme(bool)));
-
+    connect(penWidthSpin, SIGNAL(valueChanged(int)), this, SLOT(setPenWidth(int)));
 
     QGridLayout *layout = new QGridLayout();
     layout->addWidget(camera_label, 0, 0, 1, 4);
@@ -174,6 +177,9 @@ void preferenceWindow::createRenderingTab()
     layout->addWidget(ColorLabel, 5, 0);
     layout->addWidget(ColorScalePicker, 5,1);
     layout->addWidget(darkThemeCheck, 5, 2);
+
+    layout->addWidget(penWidthLabel, 6,0,1,1);
+    layout->addWidget(penWidthSpin, 6,1,1,1);
 
     renderingTab->setLayout(layout);
     //enableControls(mainWinTab->currentIndex());
@@ -234,8 +240,10 @@ void preferenceWindow::processPreferences()
 
     darkThemeCheck->setChecked(preferences.useDarkTheme);
     darkThemeCheck->clicked(preferences.useDarkTheme);
-}
 
+    penWidthSpin->setValue(preferences.plotPenThickness);
+    emit newPenWidth(preferences.plotPenThickness);
+}
 
 void preferenceWindow::invertRange()
 {
@@ -304,6 +312,11 @@ void preferenceWindow::setDarkTheme(bool useDarkChecked)
 {
     preferences.useDarkTheme = useDarkChecked;
     fw->setColorScheme(preferences.frameColorScheme, preferences.useDarkTheme);
+}
+
+void preferenceWindow::setPenWidth(int penWidth) {
+    preferences.plotPenThickness = penWidth;
+    emit newPenWidth(penWidth);
 }
 
 void preferenceWindow::saveSettingsNow()
