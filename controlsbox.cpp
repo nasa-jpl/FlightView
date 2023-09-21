@@ -1257,9 +1257,6 @@ void ControlsBox::tab_changed_slot(int index)
 
         connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateCeiling(int)));
         connect(&floor_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateFloor(int)));
-
-        // EHL DEBUG: Do we need to disconnect this or is it ok to keep it? I think keep is ok
-        // since the signal can't get emitted unless the current tab is open and scrolling is happening.
         connect(p_profile, SIGNAL(haveNewRangeFC(double,double)), this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));
 
         int fl=0;
@@ -1513,7 +1510,6 @@ void ControlsBox::tab_changed_slot(int index)
             //floor_edit.setValue(p_flight->getFloor());
             ceiling_slider.blockSignals(true);
             floor_slider.blockSignals(true);
-            statusMessage(QString("EHL DEBUG: tab change, Flight screen DSF status:  %1.").arg(flightDSF));
 
             if(flightDSF)
             {
@@ -1813,7 +1809,7 @@ void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
     return;
 
     finished:
-    emit statusMessage(QString("Correctly handled frame level Val = %1.").arg(val)); // EHL DEBUG only
+    //emit statusMessage(QString("Correctly handled frame level Val = %1.").arg(val)); // EHL DEBUG only
     return;
 
 }
@@ -2344,7 +2340,6 @@ void ControlsBox::use_DSF_general(bool checked)
         attempt_pointers(current_tab);
 
         // EHL DEBUG:
-        statusMessage(QString("EHL DEBUG: Setting DSF to %1.").arg(checked));
 
         if(p_frameview) {
             p_frameview->setUseDSF(checked);

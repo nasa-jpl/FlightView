@@ -181,7 +181,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     connect(dsf_widget, &frameview_widget::haveFloorCeilingValuesFromColorScaleChange,
             [this](double nfloor, double nceiling) {
-        emit statusMessage("EHL DEBUG: Flight widget sending FC from frameview widget to controls box and RGB WF");
         emit updateFloorCeilingFromFrameviewChange(nfloor, nceiling);
         waterfall_widget->updateFloor(nfloor);
         waterfall_widget->updateCeiling(nceiling);
