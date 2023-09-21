@@ -121,11 +121,17 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     layout.addWidget(qcp, 0, 0, 8, 8);
 
     fpsLabel.setText("FPS of Display");
+    wfSelectedRow.setText("ROW NOT SET");
     QRect fpsGeo = fpsLabel.geometry();
     fpsGeo.setWidth(25);
     fpsLabel.setGeometry(fpsGeo);
     layout.addWidget(&fpsLabel, 8, 0, 1, 2);
-    layout.addWidget(&displayCrosshairCheck, 8, 2, 1, 2);
+
+    if (!((image_type == STD_DEV) || (image_type == WATERFALL))) {
+        layout.addWidget(&displayCrosshairCheck, 8, 2, 1, 2);
+    } else if (image_type==WATERFALL) {
+        layout.addWidget(&wfSelectedRow, 8,2,1,2);
+    }
 
     layout.addWidget(&zoomXCheck, 8, 4, 1, 2);
     layout.addWidget(&zoomYCheck, 8, 6, 1, 2);
@@ -356,6 +362,8 @@ void frameview_widget::handleNewFrame()
         int row = fw->crosshair_y;
         if(row < 0)
             return;
+
+        wfSelectedRow.setText(QString("Row: %1").arg(fw->crosshair_y));
 
         float *local_image_ptr = fw->curFrame->dark_subtracted_data;
         uint16_t* local_image_ptr_uint = fw->curFrame->image_data_ptr;

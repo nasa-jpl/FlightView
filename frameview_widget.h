@@ -59,6 +59,7 @@ class frameview_widget : public QWidget
      * Contains elements of the GUI specific to a widget */
     QGridLayout layout;
     QLabel fpsLabel;
+    QLabel wfSelectedRow;
     QCheckBox displayCrosshairCheck;
     QCheckBox zoomXCheck;
     QCheckBox zoomYCheck;
