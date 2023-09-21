@@ -175,8 +175,18 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     hideRGBTimer.setSingleShot(true);
     hideRGBTimer.stop();
     connect(&hideRGBTimer, SIGNAL(timeout()), this, SLOT(hideRGB()));
+    hideRGBTimer.start();
 
     setupWFConnections();    
+
+    connect(dsf_widget, &frameview_widget::haveFloorCeilingValuesFromColorScaleChange,
+            [this](double nfloor, double nceiling) {
+        emit statusMessage("EHL DEBUG: Flight widget sending FC from frameview widget to controls box and RGB WF");
+        emit updateFloorCeilingFromFrameviewChange(nfloor, nceiling);
+        waterfall_widget->updateFloor(nfloor);
+        waterfall_widget->updateCeiling(nceiling);
+    });
+
     QList <int>rhSS;
     rhSS.append(514);
     rhSS.append(197);
@@ -376,14 +386,18 @@ void flight_widget::updateCeiling(int c)
 {
     //waterfall_widget->updateCeiling(c);
     emit updateCeilingSignal(c);
+    dsf_widget->blockSignals(true);
     dsf_widget->updateCeiling(c);
+    dsf_widget->blockSignals(false);
 }
 
 void flight_widget::updateFloor(int f)
 {
     //waterfall_widget->updateFloor(f);
     emit updateFloorSignal(f);
+    dsf_widget->blockSignals(true);
     dsf_widget->updateFloor(f);
+    dsf_widget->blockSignals(false);
 }
 
 void flight_widget::rescaleRange()

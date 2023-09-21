@@ -71,8 +71,12 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qcp->setInteraction(QCP::iRangeZoom, true);
     // qcp->axisRect()->setRangeZoom(Qt::Horizontal);
     qcp->axisRect()->setupFullAxesBox(true);
-    qcp->xAxis->setLabel("x");
-    qcp->yAxis->setLabel("y");
+    qcp->xAxis->setLabel("X (Spatial)");
+    if(image_type == WATERFALL) {
+        qcp->yAxis->setLabel("Y (Time)");
+    } else {
+        qcp->yAxis->setLabel("Y (Spectral)");
+    }
     qcp->yAxis->setRangeReversed(true);
     //If this is uncommented, window size reflects focal plane size, otherwise it scales
     //qcp->setBackgroundScaled(Qt::AspectRatioMode);
@@ -122,13 +126,15 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     fpsLabel.setGeometry(fpsGeo);
     layout.addWidget(&fpsLabel, 8, 0, 1, 2);
     layout.addWidget(&displayCrosshairCheck, 8, 2, 1, 2);
+
     layout.addWidget(&zoomXCheck, 8, 4, 1, 2);
     layout.addWidget(&zoomYCheck, 8, 6, 1, 2);
     this->setLayout(&layout);
 
     displayCrosshairCheck.setText(tr("Display Crosshairs on Frame"));
     displayCrosshairCheck.setChecked(true);
-    if (image_type == STD_DEV) {
+
+    if ( (image_type == STD_DEV) || (image_type == WATERFALL)) {
         displayCrosshairCheck.setEnabled(false);
         displayCrosshairCheck.setChecked(false);
     }
@@ -144,6 +150,9 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
     connect(qcp->yAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(colorMapScrolledX(QCPRange)));
+
+    connect(colorScale, SIGNAL(dataRangeChanged(QCPRange)), this, SLOT(colorScaleRangeChanged(QCPRange)));
+
     connect(&displayCrosshairCheck, SIGNAL(toggled(bool)), fw, SLOT(updateCrossDiplay(bool)));
     connect(&zoomXCheck, SIGNAL(toggled(bool)), this, SLOT(setScrollX(bool)));
     connect(&zoomYCheck, SIGNAL(toggled(bool)), this, SLOT(setScrollY(bool)));
@@ -338,7 +347,10 @@ void frameview_widget::handleNewFrame()
     if(fw->curFrame == NULL)
         return;
 
-    if((fw->curFrame->image_data_ptr != NULL) && image_type == WATERFALL)
+    if(fw->curFrame->image_data_ptr == NULL)
+        return;
+
+    if(image_type == WATERFALL)
     {
         // Copy waterfall data in, even if hidden:
         int row = fw->crosshair_y;
@@ -346,10 +358,19 @@ void frameview_widget::handleNewFrame()
             return;
 
         float *local_image_ptr = fw->curFrame->dark_subtracted_data;
+        uint16_t* local_image_ptr_uint = fw->curFrame->image_data_ptr;
+
         std::vector <float> line;
-        for(int col = 0; col < frWidth; col++)
-        {
-            line.push_back(local_image_ptr[row * frWidth + col]);
+        if(useDSF) {
+            for(int col = 0; col < frWidth; col++)
+            {
+                line.push_back(local_image_ptr[row * frWidth + col]);
+            }
+        } else {
+            for(int col = 0; col < frWidth; col++)
+            {
+                line.push_back(local_image_ptr_uint[row * frWidth + col]);
+            }
         }
         // There's a better way, but for now this will be ok:
         wfimage.push_front(line); // Append to top
@@ -479,7 +500,7 @@ done_here:
 
 void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
 {
-    /*! \brief Controls the behavior of zooming the plot.
+    /*! \brief Controls the behavior of zooming or panning the frame image.
      * \param newRange Mouse wheel scrolled range.
      * Color Maps must not allow the user to zoom past the dimensions of the frame.
      */
@@ -508,7 +529,7 @@ void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
 }
 void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
 {
-    /*! \brief Controls the behavior of zooming the plot.
+    /*! \brief Controls the behavior of zooming or panning the frame image.
      * \param newRange Mouse wheel scrolled range.
      * Color Maps must not allow the user to zoom past the dimensions of the frame.
      */
@@ -530,6 +551,16 @@ void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
     }
     qcp->xAxis->setRange(boundedRange);
 }
+
+void frameview_widget::colorScaleRangeChanged(const QCPRange &newRange) {
+    // This is called when the color scale itself is scrolled or dragged.
+    // Interaction within QCP is already happening,
+    // so the only thing we need to do is update the local
+    // ceiling and floor values, UI elements, and preferences.
+    emit statusMessage("Color Scale Range Changed.");
+    emit haveFloorCeilingValuesFromColorScaleChange(newRange.lower, newRange.upper);
+}
+
 void frameview_widget::setScrollX(bool Yenabled)
 {
     scrollYenabled = !Yenabled;

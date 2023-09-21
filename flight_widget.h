@@ -165,6 +165,9 @@ signals:
     void updateRGBbandSignal(int r, int g, int b);
     void setRGBLevelsSignal(double r, double g, double b, double gamma, bool);
     void changeWFLengthSignal(int length);
+
+    // For the Controls Box:
+    void updateFloorCeilingFromFrameviewChange(double floor, double ceiling);
 };
 
 #endif // FLIGHT_WIDGET_H

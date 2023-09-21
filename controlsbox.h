@@ -185,6 +185,18 @@ private:
 
     int previousRGBPresetIndex = 0;
 
+    // Individual tab Dark Subtraction settings:
+    bool fpaDSF = false;
+    bool monoWFDSF = false;
+    bool flightDSF = false;
+    bool horizontalMeanDSF = false;
+    bool horizontalCrossDSF = false;
+    bool verticalMeanDSF = false;
+    bool verticalCrossDSF = false;
+    bool verticalOverlayDSF = false;
+    bool playbackDSF = false;
+
+
 signals:
     /*! \brief Passes the message to save raw frames at the backend.
      * \paragraph
@@ -229,6 +241,8 @@ public slots:
     void setRGBWaterfall(int value);
     void getPrefsExternalTrig();
     void setFrameNumber(int number);
+
+    void handleFloorCeilingChangeFromDisplayWidget(double floor, double ceiling);
 
     // These are intended to be run from ARTIC
     // in concert with shutter operation.

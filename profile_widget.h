@@ -110,6 +110,9 @@ public slots:
     void moveCallout(QMouseEvent *e);
     void hideCallout();
 
+signals:
+    void haveNewRangeFC(double floor, double ceiling);
+
 private:
     void updateCalloutValue();
 

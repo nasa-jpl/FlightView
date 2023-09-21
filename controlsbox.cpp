@@ -1247,8 +1247,10 @@ void ControlsBox::tab_changed_slot(int index)
         // "profile" means a plot, horiz or vert mean or crosshair
         int frameMax, startVal;
         bool enable;
+
         use_DSF_cbox.setEnabled(true);
-        use_DSF_cbox.setChecked(fw->usingDSF());
+        //use_DSF_cbox.setChecked(fw->usingDSF());
+
         ceiling_maximum = p_profile->slider_max;
         low_increment_cbox.setChecked(p_profile->slider_low_inc);
         increment_slot(low_increment_cbox.isChecked());
@@ -1256,36 +1258,62 @@ void ControlsBox::tab_changed_slot(int index)
         connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateCeiling(int)));
         connect(&floor_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateFloor(int)));
 
+        // EHL DEBUG: Do we need to disconnect this or is it ok to keep it? I think keep is ok
+        // since the signal can't get emitted unless the current tab is open and scrolling is happening.
+        connect(p_profile, SIGNAL(haveNewRangeFC(double,double)), this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));
+
         int fl=0;
         int ce=0;
         int fl_ds=0;
         int ce_ds=0;
 
+        // TODO: Restore dark subtraction state
+        // Don't need to know prior tab
+        // Just load tabTypeDSF bool into the checkbox
+
         switch(p_profile->itype) {
         case VERTICAL_CROSS:
+            fl = prefs.profileVertFloor;
+            fl_ds = prefs.profileVertDSFFloor;
+            ce = prefs.profileVertCeiling;
+            ce_ds = prefs.profileVertDSFCeiling;
+            use_DSF_cbox.setChecked(verticalCrossDSF);
+            break;
         case VERTICAL_MEAN:
             fl = prefs.profileVertFloor;
             fl_ds = prefs.profileVertDSFFloor;
             ce = prefs.profileVertCeiling;
             ce_ds = prefs.profileVertDSFCeiling;
+            use_DSF_cbox.setChecked(verticalMeanDSF);
             break;
         case HORIZONTAL_CROSS:
+            fl = prefs.profileHorizFloor;
+            fl_ds = prefs.profileHorizDSFFloor;
+            ce = prefs.profileHorizCeiling;
+            ce_ds = prefs.profileHorizDSFCeiling;
+            use_DSF_cbox.setChecked(horizontalCrossDSF);
+            break;
         case HORIZONTAL_MEAN:
             fl = prefs.profileHorizFloor;
             fl_ds = prefs.profileHorizDSFFloor;
             ce = prefs.profileHorizCeiling;
             ce_ds = prefs.profileHorizDSFCeiling;
+            use_DSF_cbox.setChecked(horizontalMeanDSF);
             break;
         case VERT_OVERLAY:
             fl = prefs.profileOverlayFloor;
             fl_ds = prefs.profileOverlayDSFFloor;
             ce = prefs.profileHorizCeiling;
             ce_ds = prefs.profileHorizDSFCeiling;
+            use_DSF_cbox.setChecked(verticalOverlayDSF);
             break;
         default:
             errorMessage("Do not understand profile type.");
             break;
         }
+
+        // Check again:
+        darksub = use_DSF_cbox.isChecked();
 
         if(darksub) {
             ceiling_edit.setValue(ce_ds);
@@ -1395,6 +1423,7 @@ void ControlsBox::tab_changed_slot(int index)
             ceiling_edit.blockSignals(true);
             low_increment_cbox.setChecked(p_frameview->slider_low_inc);
             increment_slot(low_increment_cbox.isChecked());
+            connect(p_frameview, SIGNAL(haveFloorCeilingValuesFromColorScaleChange(double,double)), this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));
 
             switch(p_frameview->image_type) {
             case STD_DEV:
@@ -1418,7 +1447,8 @@ void ControlsBox::tab_changed_slot(int index)
                 use_DSF_cbox.setEnabled(true);
                 std_dev_N_slider->setEnabled(false);
                 std_dev_N_edit->setEnabled(false);
-                if(darksub) {
+                use_DSF_cbox.setChecked(fpaDSF);
+                if(fpaDSF) {
                     ceiling_edit.setValue(prefs.dsfCeiling);
                     ceiling_slider.setValue(prefs.dsfCeiling);
                     floor_edit.setValue(prefs.dsfFloor);
@@ -1438,7 +1468,8 @@ void ControlsBox::tab_changed_slot(int index)
                 // this is the monochrome waterfall, not the RGB one.
                 std_dev_N_slider->setEnabled(false);
                 std_dev_N_edit->setEnabled(false);
-                if(darksub) {
+                use_DSF_cbox.setChecked(monoWFDSF);
+                if(monoWFDSF) {
                     ceiling_edit.setValue(prefs.monowfDSFCeiling);
                     ceiling_slider.setValue(prefs.monowfDSFCeiling);
                     floor_edit.setValue(prefs.monowfDSFFloor);
@@ -1476,12 +1507,15 @@ void ControlsBox::tab_changed_slot(int index)
         } else if (p_flight) {
             ceiling_maximum = p_flight->slider_max;
             low_increment_cbox.setChecked(p_flight->slider_low_inc);
+            use_DSF_cbox.setChecked(flightDSF);
             increment_slot(low_increment_cbox.isChecked());
             //ceiling_edit.setValue(p_flight->getCeiling());
             //floor_edit.setValue(p_flight->getFloor());
             ceiling_slider.blockSignals(true);
             floor_slider.blockSignals(true);
-            if(use_DSF_cbox.isChecked())
+            statusMessage(QString("EHL DEBUG: tab change, Flight screen DSF status:  %1.").arg(flightDSF));
+
+            if(flightDSF)
             {
                 // DSF
                 ceiling_edit.setValue(prefs.flightDSFCeiling);
@@ -1507,6 +1541,9 @@ void ControlsBox::tab_changed_slot(int index)
             connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseDSF(bool)));
             connect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)));
 
+            connect(p_flight, SIGNAL(updateFloorCeilingFromFrameviewChange(double,double)),
+                    this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));
+
             std_dev_n_label->hide();
             std_dev_N_slider->setEnabled(false);
             std_dev_N_edit->setEnabled(false);
@@ -1517,7 +1554,6 @@ void ControlsBox::tab_changed_slot(int index)
             showRGBLevelsButton.setVisible(true);
 
             use_DSF_cbox.setEnabled(true);
-            use_DSF_cbox.setChecked(false);
             show_rgb_lines_cbox.setEnabled(true);
             show_rgb_lines_cbox.setVisible(true);
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
@@ -1566,6 +1602,51 @@ void ControlsBox::tab_changed_slot(int index)
     }
 }
 
+
+void ControlsBox::handleFloorCeilingChangeFromDisplayWidget(double floor,
+                                               double ceiling) {
+    // This should be called when a profile plot
+    // has been scrolled, which needs to cause the
+    // floor and ceiling values to be updated.
+    // It is also called if a frame view Color Scale is scrolled or dragged.
+    attempt_pointers(current_tab);
+
+    if(p_profile) {
+        emit statusMessage(QString("Controls box caught f&c update. F: %1, C: %2").arg(floor).arg(ceiling));
+        // Now load the value into the sliders and edit boxes:
+        // The edit box will automatically update
+        // the slider, and the signals are not disabled for this
+        // Thus, the slider will then update the preferences.
+        floor_slider.blockSignals(true);
+        ceiling_slider.blockSignals(true);
+
+        floor_edit.setValue((int)floor);
+        ceiling_edit.setValue((int)ceiling);
+
+        floor_slider.blockSignals(false);
+        ceiling_slider.blockSignals(false);
+    } else if (p_frameview) {
+        emit statusMessage("Updating C and F for change emitted from a frameview tab");
+        floor_slider.blockSignals(true);
+        ceiling_slider.blockSignals(true);
+
+        floor_edit.setValue((int)floor);
+        ceiling_edit.setValue((int)ceiling);
+
+        floor_slider.blockSignals(false);
+        ceiling_slider.blockSignals(false);
+    } else if (p_flight) {
+        emit statusMessage("Updating C and F for change emitted from the FLIGHT tab");
+        floor_slider.blockSignals(true);
+        ceiling_slider.blockSignals(true);
+
+        floor_edit.setValue((int)floor);
+        ceiling_edit.setValue((int)ceiling);
+
+        floor_slider.blockSignals(false);
+        ceiling_slider.blockSignals(false);
+    }
+}
 // private slots
 
 void ControlsBox::updateFloor(int f)
@@ -1732,7 +1813,7 @@ void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
     return;
 
     finished:
-    //emit statusMessage(QString("Correctly handled frame level Val = %1.").arg(val)); // EHL DEBUG only
+    emit statusMessage(QString("Correctly handled frame level Val = %1.").arg(val)); // EHL DEBUG only
     return;
 
 }
@@ -2259,12 +2340,11 @@ void ControlsBox::use_DSF_general(bool checked)
     {
         // Alert the back-end
         fw->toggleUseDSF(checked);
-//        if(p_frameview)
-//        {
-//        }
+
         attempt_pointers(current_tab);
 
-        statusMessage(QString("Setting DSF to %1.").arg(checked));
+        // EHL DEBUG:
+        statusMessage(QString("EHL DEBUG: Setting DSF to %1.").arg(checked));
 
         if(p_frameview) {
             p_frameview->setUseDSF(checked);
@@ -2273,17 +2353,20 @@ void ControlsBox::use_DSF_general(bool checked)
                 fl = prefs.stddevFloor;
                 ce = prefs.stddevCeiling;
                 break;
+            case BASE:
             case DSF:
                 fl = prefs.frameViewFloor;
                 ce = prefs.frameViewCeiling;
                 fl_ds = prefs.dsfFloor;
                 ce_ds = prefs.dsfCeiling;
+                fpaDSF = checked;
                 break;
             case WATERFALL:
                 fl = prefs.monowfFloor;
                 ce = prefs.monowfCeiling;
                 fl_ds = prefs.monowfDSFFloor;
                 ce_ds = prefs.monowfDSFCeiling;
+                monoWFDSF = checked;
                 break;
             default:
                 setUI_widgets = false;
@@ -2301,6 +2384,7 @@ void ControlsBox::use_DSF_general(bool checked)
 
         } else if (p_flight) {
             p_flight->setUseDSF(checked);
+            flightDSF = checked;
             if(use_DSF_cbox.isChecked())
             {
                 // DSF
@@ -2320,36 +2404,61 @@ void ControlsBox::use_DSF_general(bool checked)
         } else if (p_profile) {
             switch(p_profile->itype) {
             case VERTICAL_CROSS:
+                fl = prefs.profileVertFloor;
+                fl_ds = prefs.profileVertDSFFloor;
+                ce = prefs.profileVertCeiling;
+                ce_ds = prefs.profileVertDSFCeiling;
+                verticalCrossDSF = checked;
+                break;
             case VERTICAL_MEAN:
                 fl = prefs.profileVertFloor;
                 fl_ds = prefs.profileVertDSFFloor;
                 ce = prefs.profileVertCeiling;
                 ce_ds = prefs.profileVertDSFCeiling;
+                verticalMeanDSF = checked;
                 break;
             case HORIZONTAL_CROSS:
+                fl = prefs.profileHorizFloor;
+                fl_ds = prefs.profileHorizDSFFloor;
+                ce = prefs.profileHorizCeiling;
+                ce_ds = prefs.profileHorizDSFCeiling;
+                horizontalCrossDSF = checked;
+                break;
             case HORIZONTAL_MEAN:
                 fl = prefs.profileHorizFloor;
                 fl_ds = prefs.profileHorizDSFFloor;
                 ce = prefs.profileHorizCeiling;
                 ce_ds = prefs.profileHorizDSFCeiling;
+                horizontalMeanDSF = checked;
                 break;
             case VERT_OVERLAY:
                 fl = prefs.profileOverlayFloor;
                 fl_ds = prefs.profileOverlayDSFFloor;
                 ce = prefs.profileHorizCeiling;
                 ce_ds = prefs.profileHorizDSFCeiling;
+                verticalOverlayDSF = checked;
                 break;
             default:
                 setUI_widgets = false;
                 errorMessage("Do not understand profile type.");
                 break;
             }
+
+            if(checked) {
+                p_profile->updateCeiling(ce_ds);
+                p_profile->updateFloor(fl_ds);
+            } else {
+                p_profile->updateCeiling(ce);
+                p_profile->updateFloor(fl);
+            }
+
         } else if (p_fft) {
             // N/A
             setUI_widgets = false;
         } else if (p_playback) {
             // N/A
             setUI_widgets = false;
+            playbackDSF = checked;
         } else {
             errorMessage("Do not understand type of tab to apply DSF status to.");
             setUI_widgets = false;
