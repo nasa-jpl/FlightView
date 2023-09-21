@@ -1881,16 +1881,28 @@ void ControlsBox::disconnect_old_tab()
     if (p_frameview) {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_frameview,SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateFloor(int)));
+        disconnect(p_frameview, SIGNAL(haveFloorCeilingValuesFromColorScaleChange(double,double)), this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));
+        disconnect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_frameview, SLOT(setUseDSF(bool)));
     } else if (p_flight)
     {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_flight,SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateFloor(int)));
+        disconnect(this, SIGNAL(updateRGB(int,int,int)), p_flight, SLOT(changeRGB(int,int,int)));
+        disconnect(&wflength_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(changeWFLength(int)));
+        disconnect(fw, SIGNAL(updateFPS()), p_flight, SLOT(updateFPS()));
+        disconnect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseDSF(bool)));
+        disconnect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)));
+
+        disconnect(p_flight, SIGNAL(updateFloorCeilingFromFrameviewChange(double,double)),
+                this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));
     } else if (p_histogram) {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_histogram,SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateFloor(int)));
     } else if (p_profile) {
         disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile,SLOT(updateCeiling(int)));
         disconnect(&floor_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateFloor(int)));
+        disconnect(p_profile, SIGNAL(haveNewRangeFC(double,double)), this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));
+
         if(p_profile->itype == VERT_OVERLAY)
         {            
             disconnect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
