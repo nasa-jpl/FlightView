@@ -607,14 +607,14 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
                 outputBFull = false;
             }
         }
-        if( (firstMessage) || (priorSystemStatus1 != m.systemStatus1) ) {
+        if( (firstMessage) || (priorSystemStatus2 != m.systemStatus2) ) {
             if(getBit(m.systemStatus2, 2)) {
                 gpsDetected = true;
             } else {
                 gpsDetected = false;
             }
         }
-        if( (firstMessage) || (priorSystemStatus1 != m.systemStatus1) ) {
+        if( (firstMessage) || (priorSystemStatus3 != m.systemStatus3) ) {
             if(getBit(m.systemStatus3, 18)) {
                 systemReady = true;
             } else {
