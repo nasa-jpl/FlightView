@@ -565,7 +565,7 @@ void frameview_widget::colorScaleRangeChanged(const QCPRange &newRange) {
     // Interaction within QCP is already happening,
     // so the only thing we need to do is update the local
     // ceiling and floor values, UI elements, and preferences.
-    emit statusMessage("Color Scale Range Changed.");
+    //emit statusMessage("Color Scale Range Changed.");
     emit haveFloorCeilingValuesFromColorScaleChange(newRange.lower, newRange.upper);
 }
 

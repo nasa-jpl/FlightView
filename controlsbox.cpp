@@ -1625,7 +1625,7 @@ void ControlsBox::handleFloorCeilingChangeFromDisplayWidget(double floor,
     attempt_pointers(current_tab);
 
     if(p_profile) {
-        emit statusMessage(QString("Controls box caught f&c update. F: %1, C: %2").arg(floor).arg(ceiling));
+        //emit statusMessage(QString("Controls box caught f&c update. F: %1, C: %2").arg(floor).arg(ceiling));
         // Now load the value into the sliders and edit boxes:
         // The edit box will automatically update
         // the slider, and the signals are not disabled for this
@@ -1639,7 +1639,7 @@ void ControlsBox::handleFloorCeilingChangeFromDisplayWidget(double floor,
         floor_slider.blockSignals(false);
         ceiling_slider.blockSignals(false);
     } else if (p_frameview) {
-        emit statusMessage("Updating C and F for change emitted from a frameview tab");
+        //emit statusMessage("Updating C and F for change emitted from a frameview tab");
         floor_slider.blockSignals(true);
         ceiling_slider.blockSignals(true);
 
@@ -1649,7 +1649,7 @@ void ControlsBox::handleFloorCeilingChangeFromDisplayWidget(double floor,
         floor_slider.blockSignals(false);
         ceiling_slider.blockSignals(false);
     } else if (p_flight) {
-        emit statusMessage("Updating C and F for change emitted from the FLIGHT tab");
+        //emit statusMessage("Updating C and F for change emitted from the FLIGHT tab");
         floor_slider.blockSignals(true);
         ceiling_slider.blockSignals(true);
 
