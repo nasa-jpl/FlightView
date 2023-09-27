@@ -307,8 +307,11 @@ void take_object::start()
     meanHeight = frHeight;
     meanWidth = frWidth;
 
+    // define this variable in take_object.hpp
+#ifdef USE_SHM
     // Get the shared memory segment for images ready:
     shmSetup();
+#endif
 
     numbufs = 16;
     int rtnval = 0;
