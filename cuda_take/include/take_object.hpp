@@ -13,7 +13,7 @@
 
 // Shared Memory:
 // Undefine this variable to disable SHM:
-#define USE_SHM
+// define USE_SHM
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>

@@ -311,6 +311,8 @@ void take_object::start()
 #ifdef USE_SHM
     // Get the shared memory segment for images ready:
     shmSetup();
+#else
+    statusMessage("Not using shared memory segment.");
 #endif
 
     numbufs = 16;
