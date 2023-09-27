@@ -185,6 +185,18 @@ private:
 
     int previousRGBPresetIndex = 0;
 
+    // Individual tab Dark Subtraction settings:
+    bool fpaDSF = false;
+    bool monoWFDSF = false;
+    bool flightDSF = false;
+    bool horizontalMeanDSF = false;
+    bool horizontalCrossDSF = false;
+    bool verticalMeanDSF = false;
+    bool verticalCrossDSF = false;
+    bool verticalOverlayDSF = false;
+    bool playbackDSF = false;
+
+
 signals:
     /*! \brief Passes the message to save raw frames at the backend.
      * \paragraph
@@ -230,6 +242,8 @@ public slots:
     void getPrefsExternalTrig();
     void setFrameNumber(int number);
 
+    void handleFloorCeilingChangeFromDisplayWidget(double floor, double ceiling);
+
     // These are intended to be run from ARTIC
     // in concert with shutter operation.
     void startTakingDarks();
@@ -272,6 +286,7 @@ private slots:
     /*! @} */
 
     void load_pref_window();
+    void updatePenWidth(int penWidth);
     void transmitChange(int linesToAverage);
     void updateOverlayParams(int dummy);
     void validateOverlayParams(int &lh_start, int &lh_end, int &cent_start, int &cent_end, int &rh_start, int &rh_end);

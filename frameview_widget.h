@@ -59,6 +59,7 @@ class frameview_widget : public QWidget
      * Contains elements of the GUI specific to a widget */
     QGridLayout layout;
     QLabel fpsLabel;
+    QLabel wfSelectedRow;
     QCheckBox displayCrosshairCheck;
     QCheckBox zoomXCheck;
     QCheckBox zoomYCheck;
@@ -127,6 +128,7 @@ public slots:
      *  @{ */
     void colorMapScrolledY(const QCPRange &newRange);
     void colorMapScrolledX(const QCPRange &newRange);
+    void colorScaleRangeChanged(const QCPRange &newRange);
     void setScrollX(bool Yenabled);
     void setScrollY(bool Xenabled);
     void updateCeiling(int c);
@@ -138,6 +140,8 @@ public slots:
     /*! @} */
 signals:
     void statusMessage(QString message);
+    void haveFloorCeilingValuesFromColorScaleChange(
+            double floor, double ceiling);
 };
 
 #endif // FRAMEVIEW_WIDGET_H

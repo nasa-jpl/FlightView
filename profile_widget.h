@@ -109,6 +109,10 @@ public slots:
     void setCallout(QMouseEvent *e);
     void moveCallout(QMouseEvent *e);
     void hideCallout();
+    void setPenWidth(int penWidth);
+
+signals:
+    void haveNewRangeFC(double floor, double ceiling);
 
 private:
     void updateCalloutValue();

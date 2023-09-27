@@ -259,13 +259,17 @@ void profile_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
     ceiling = (double)c;
+    this->blockSignals(true);
     rescaleRange();
+    this->blockSignals(false);
 }
 void profile_widget::updateFloor(int f)
 {
     /*! \brief Change the value of the floor for this widget to the input parameter and replot the color scale. */
     floor = (double)f;
+    this->blockSignals(true);
     rescaleRange();
+    this->blockSignals(false);
 }
 void profile_widget::rescaleRange()
 {
@@ -341,7 +345,7 @@ void profile_widget::profileScrolledY(const QCPRange &newRange)
         ceiling = boundedRange.upper;
         qcp->yAxis->setRange(boundedRange);
         boundedRange_y = boundedRange;
-
+        emit haveNewRangeFC(floor, ceiling);
     } else {
         qcp->yAxis->setRange(boundedRange_y);
     }
@@ -399,6 +403,18 @@ void profile_widget::moveCallout(QMouseEvent *e)
     }
 
 }
+
+void profile_widget::setPenWidth(int penWidth) {
+    //qDebug() << "EHL DEBUG: Setting penWidth to " << penWidth;
+    QPen myPen;
+    for(int i=0; i < qcp->graphCount(); i++) {
+        //qDebug() << "EHL DEBUG: Setting penWidth to " << penWidth << " for plot number " << i;
+        myPen = qcp->graph(i)->pen();
+        myPen.setWidth(penWidth);
+        qcp->graph(i)->setPen(myPen);
+    }
+}
+
 void profile_widget::hideCallout()
 {
     if (callout->visible() || !allow_callouts) {
