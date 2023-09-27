@@ -627,7 +627,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         priorSystemStatus3 = m.systemStatus3;
     }
 
-    if((m.haveGNSSInfo1 && (m.gnss[0].gnssGPSQuality != gnssQualPrior)) || firstMessage) {
+    if( m.haveGNSSInfo1 && (m.gnss[0].gnssGPSQuality != gnssQualPrior) ){
         gnssInfo i = m.gnss[0];
         gpsQualityKinds q = i.gnssGPSQuality;
         switch(q)
