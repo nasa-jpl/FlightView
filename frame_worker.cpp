@@ -99,7 +99,9 @@ void frameWorker::convertOptions()
         {
             abort();
         } else {
-            std::cout << "takeOptions xio directory: " << takeOptions.xioDirectory->c_str() << std::endl;
+            if(takeOptions.xioDirSet && takeOptions.xioCam) {
+                std::cout << "takeOptions xio directory: " << takeOptions.xioDirectory->c_str() << std::endl;
+            }
         }
     } else {
         abort();
@@ -125,6 +127,7 @@ void frameWorker::convertOptions()
         takeOptions.rtpWidth = options.rtpWidth;
         takeOptions.rtpInterface = options.rtpInterface;
         takeOptions.rtpAddress = options.rtpAddress;
+        takeOptions.rtprgb = options.rtprgb;
     } else {
         takeOptions.rtpHeight = 0;
         takeOptions.rtpWidth = 0;

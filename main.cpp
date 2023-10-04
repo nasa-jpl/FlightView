@@ -132,6 +132,14 @@ int main(int argc, char *argv[])
             startupOptions.rtpCam = true;
         }
 
+        if(currentArg == "--rtprgb") {
+            startupOptions.rtprgb = true;
+        }
+
+        if( (currentArg == "--rtpgray") || (currentArg == "--rtpgrey") ) {
+            startupOptions.rtprgb = false;
+        }
+
         if(currentArg == "--rtpheight")
         {
             if(argc > c)

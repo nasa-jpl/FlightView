@@ -23,7 +23,7 @@ extern "C" {
 // cuda_take:
 #include "cameramodel.h"
 #include "constants.h"
-#include "cudalog.h"
+#include "rtplog.h"
 #include "takeoptions.h"
 
 // define FPS_MEAS_ACQ
@@ -60,7 +60,8 @@ typedef struct
 
 static GstFlowReturn on_new_sample_from_sink(GstElement * elt, ProgramData * data);
 static gboolean on_source_message (GstBus * bus, GstMessage * message, ProgramData * data);
-static void siphonData (GstMapInfo* map, ProgramData *data);
+static void siphonDataRGB (GstMapInfo* map, ProgramData *data);
+static void siphonDataGray (GstMapInfo* map, ProgramData *data);
 
 
 class RTPCamera : public CameraModel
@@ -87,6 +88,7 @@ private:
     const char* interface;
     int payload = 90;
     int clockRate = 90000;
+    bool rtprgb = true;
     int port;
     int frWidth;
     int frHeight;

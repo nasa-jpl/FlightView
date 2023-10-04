@@ -15,6 +15,7 @@ take_object::take_object(int channel_num, int number_of_buffers,
 {
     statusMessage("Starting take_object with default options.");
     takeOptionsType options;
+    options.theseAreDefault = true;
     options.xioCam = false;
     changeOptions(options);
     initialSetup(channel_num, number_of_buffers,
@@ -124,22 +125,26 @@ void take_object::changeOptions(takeOptionsType optionsIn)
             }
    } else {
         // TODO: Wait safely for a directory, and do not try reading yet.
-        statusMessage("xio directory not set. Use interface to specify directory.");
+        if(optionsIn.xioCam) {
+            statusMessage("xio directory not set. Use interface to specify directory.");
+        }
     }
 
-    statusMessage(std::string("Accepted startup options. Target FPS: ") + std::to_string(options.targetFPS));
-    if(options.xioDirSet)
-    {
-        statusMessage(std::string("XIO directory: ") + *options.xioDirectory);
-    }
+    if(!options.theseAreDefault) {
+        statusMessage(std::string("Accepted startup options. Target FPS: ") + std::to_string(options.targetFPS));
+        if(options.xioDirSet && options.xioCam)
+        {
+            statusMessage(std::string("XIO directory: ") + *options.xioDirectory);
+        }
 
-    if(options.rtpCam)
-    {
-        statusMessage("RTP Camera enabled.");
-        statusMessage(std::string("RTP Height: ") + std::to_string(options.rtpHeight));
-        statusMessage(std::string("RTP Width:  ") + std::to_string(options.rtpWidth));
-    } else {
-        statusMessage("RTP Camera disabled.");
+        if(options.rtpCam)
+        {
+            statusMessage("RTP Camera enabled.");
+            statusMessage(std::string("RTP Height: ") + std::to_string(options.rtpHeight));
+            statusMessage(std::string("RTP Width:  ") + std::to_string(options.rtpWidth));
+        } else {
+            statusMessage("RTP Camera disabled.");
+        }
     }
 
     // Recalculate the frame-to-frame delay:

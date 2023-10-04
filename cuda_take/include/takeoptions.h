@@ -37,12 +37,15 @@ struct takeOptionsType
     uint16_t rtpWidth;
     int rtpPort = 5004;
     bool rtpCam = false;
+    bool rtprgb = true;
 
     uint16_t height;
     uint16_t width;
     float targetFPS = 100.00;
     bool xioDirSet = false;
     std::string *xioDirectory = NULL;
+
+    bool theseAreDefault = false;
 };
 
 

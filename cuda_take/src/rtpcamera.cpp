@@ -9,11 +9,13 @@ pthread_mutex_t rtpStreamLock;
 RTPCamera::RTPCamera(takeOptionsType opts)
 {
     this->options = opts;
-    LOG << "Starting RTP camera with width: " << options.rtpWidth << ", height: " << options.rtpHeight
-        << ", port: " << options.rtpPort <<", network interface: " << options.rtpInterface << ", multicast-group: " << options.rtpAddress;
+    RLOG << "Starting RTP camera with width: " << options.rtpWidth << ", height: " << options.rtpHeight
+        << ", port: " << options.rtpPort <<", network interface: " << options.rtpInterface << ", multicast-group: " << options.rtpAddress
+        << ", rgb mode: " << opts.rtprgb;
     haveInitialized = false;
 
     this->port = options.rtpPort;
+    this->rtprgb = options.rtprgb;
     this->frHeight = options.rtpHeight;
     this->frame_height = frHeight;
     this->data_height = frHeight;
@@ -24,16 +26,16 @@ RTPCamera::RTPCamera(takeOptionsType opts)
 
     if (initialize())
     {
-        LOG << "initialize successful";
+        RLOG << "initialize successful";
     } else {
-        LOG << "initialize fail";
+        RLOG << "initialize fail";
     }
 }
 
 RTPCamera::~RTPCamera()
 {
     destructorRunning = true;
-    LOG << "Running RTP camera destructor.";
+    RLOG << "Running RTP camera destructor.";
     g_main_loop_quit (data->loop);
 //    GstMessage *lmsg = gst_bus_timed_pop_filtered (busSourcePipe, GST_CLOCK_TIME_NONE,
 //                                        (GstMessageType)(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
@@ -48,32 +50,32 @@ RTPCamera::~RTPCamera()
     {
         usleep(10000);
     }
-    LOG << "Ran main_loop_quit.";
+    RLOG << "Ran main_loop_quit.";
 
     //LOG << "unreferencing bus source pipe";
     //gst_object_unref (busSourcePipe);
     //LOG << "unreferenced.";
 
-    LOG << "setting state to GST_STATE_NULL";
+    RLOG << "setting state to GST_STATE_NULL";
     gst_element_set_state (sourcePipe, GST_STATE_NULL);
-    LOG << "State set.";
+    RLOG << "State set.";
 
     if(busSourcePipe != NULL)
     {
-        LOG << "unreferencing bus source pipe";
+        RLOG << "unreferencing bus source pipe";
         gst_object_unref (busSourcePipe);
-        LOG << "unreferenced.";
+        RLOG << "unreferenced.";
     }
 
     if(sourcePipe != NULL)
     {
-        LOG << "Unreferencing sourcePipe";
+        RLOG << "Unreferencing sourcePipe";
         gst_object_unref (sourcePipe);
-        LOG << "Unreferenced.";
+        RLOG << "Unreferenced.";
     }
 
 
-    LOG << "Freeing buffer:";
+    RLOG << "Freeing buffer:";
     for(int b =0; b < guaranteedBufferFramesCount_rtp; b++)
     {
         if(guaranteedBufferFrames[b] != NULL)
@@ -81,7 +83,7 @@ RTPCamera::~RTPCamera()
             free(guaranteedBufferFrames[b]);
         }
     }
-    LOG << "Done freeing buffer";
+    RLOG << "Done freeing buffer";
 
 }
 
@@ -89,7 +91,7 @@ bool RTPCamera::initialize()
 {
     if(haveInitialized)
     {
-        LOG << "Warning, running initializing function after initialization...";
+        RLOG << "Warning, running initializing function after initialization...";
         // continue for now.
     }
 
@@ -117,7 +119,7 @@ bool RTPCamera::initialize()
 
     if (!sourcePipe || !source || !rtp || !appSink || !appSink || !queue) {
         g_printerr ("Not all gstreamer elements could be created.\n");
-        LOG << "ERROR, gstreamer RTP camera source failed to be created.";
+        RLOG << "ERROR, gstreamer RTP camera source failed to be created.";
         return false;
     }
 
@@ -141,8 +143,8 @@ bool RTPCamera::initialize()
 
     g_object_set (source, "port", options.rtpPort, NULL);
 
-    LOG << "RTP Caps: Height: " << options.rtpHeight;
-    LOG << "RTP Caps: Width: " << options.rtpWidth;
+    RLOG << "RTP Caps: Height: " << options.rtpHeight;
+    RLOG << "RTP Caps: Width: " << options.rtpWidth;
 
     // For reasons that I do not understand, height and width do not work as G_TYPE_INT
     // Therefore, I have converted them to strings:
@@ -150,31 +152,35 @@ bool RTPCamera::initialize()
     char heightStr[6] = {'\0'};
     sprintf(widthStr, "%d", options.rtpWidth);
     sprintf(heightStr, "%d", options.rtpHeight);
+    GstCaps *sourceCaps = NULL;
 
+    if(rtprgb) {
+        // RGB
+        RLOG << "Setting up RTP camera for 24-bit RGB to 16-bit Grayscale frame-conversion transfer.";
+        sourceCaps = gst_caps_new_simple( "application/x-rtp",
+                                           "media", G_TYPE_STRING, "video",
+                                           "clock-rate", G_TYPE_INT, 90000,
+                                           "encoding-name", G_TYPE_STRING, "RAW",
+                                           "sampling", G_TYPE_STRING, "RGB",
+                                           "depth", G_TYPE_STRING, "8",
+                                           "width", G_TYPE_STRING, widthStr,
+                                           "height", G_TYPE_STRING, heightStr,
+                                           "payload", G_TYPE_INT, 96, NULL);
+    } else {
+        // GRAY 16
+        RLOG << "Setting up RTP camera for native 16-bit Grayscale frame transfer.";
+        sourceCaps = gst_caps_new_simple( "application/x-rtp",
+                                           "media", G_TYPE_STRING, "video",
+                                           "clock-rate", G_TYPE_INT, 90000,
+                                           "encoding-name", G_TYPE_STRING, "RAW",
+                                           "sampling", G_TYPE_STRING, "GRAY",
+                                           "depth", G_TYPE_STRING, "16",
+                                           "width", G_TYPE_STRING, widthStr,
+                                           "height", G_TYPE_STRING, heightStr,
+                                           "payload", G_TYPE_INT, 96, NULL);
 
-#ifdef GST_HAS_GRAY
-    // GRAY 16
-    GstCaps *sourceCaps = gst_caps_new_simple( "application/x-rtp",
-                                               "media", G_TYPE_STRING, "video",
-                                               "clock-rate", G_TYPE_INT, 90000,
-                                               "encoding-name", G_TYPE_STRING, "RAW",
-                                               "sampling", G_TYPE_STRING, "GRAY",
-                                               "depth", G_TYPE_STRING, "16",
-                                               "width", G_TYPE_STRING, widthStr,
-                                               "height", G_TYPE_STRING, heightStr,
-                                               "payload", G_TYPE_INT, 96, NULL);
-#else
-    // RGB
-    GstCaps *sourceCaps = gst_caps_new_simple( "application/x-rtp",
-                                               "media", G_TYPE_STRING, "video",
-                                               "clock-rate", G_TYPE_INT, 90000,
-                                               "encoding-name", G_TYPE_STRING, "RAW",
-                                               "sampling", G_TYPE_STRING, "RGB",
-                                               "depth", G_TYPE_STRING, "8",
-                                               "width", G_TYPE_STRING, widthStr,
-                                               "height", G_TYPE_STRING, heightStr,
-                                               "payload", G_TYPE_INT, 96, NULL);
-#endif
+    }
+
     g_object_set (source, "caps", sourceCaps, NULL);
 
     // "data" is our i/o to the land of static functions and c functions.
@@ -192,8 +198,8 @@ bool RTPCamera::initialize()
     {
         guaranteedBufferFrames[f] = (uint16_t*)calloc(frame_width*data_height, sizeof(uint16_t));
         if(guaranteedBufferFrames[f] == NULL) {
-            LOG << "ERROR, cannot allocate memory for frame buffer.";
-            LOG << "Calling abort()";
+            RLOG << "ERROR, cannot allocate memory for frame buffer.";
+            RLOG << "Calling abort()";
             abort();
         }
     }
@@ -212,29 +218,27 @@ void RTPCamera::streamLoop()
     // This should be a thread which can run without expectation of returning
     // Here, the stream is started and ran from.
     loopRunning = true;
-    LOG << "Starting rtp streamLoop(), setting status to PLAYING";
+    RLOG << "Starting rtp streamLoop(), setting status to PLAYING";
 
     ret = gst_element_set_state (sourcePipe, GST_STATE_PLAYING);
     if (ret == GST_STATE_CHANGE_FAILURE) {
         g_printerr ("Unable to set the sourcePipe to the playing state.\n");
-        LOG << "Unable to set the sourcePipe to the playing state.";
-        LOG << "State is: GST_STATE_CHANGE_FAILURE";
+        RLOG << "Unable to set the sourcePipe to the playing state.";
+        RLOG << "State is: GST_STATE_CHANGE_FAILURE";
         gst_object_unref (sourcePipe);
         std::cerr  << "Check the ethernet interface for valid IP configuration\n" << std::flush;
         std::cerr  << "and also verify the liveview program arguments.\n" << std::flush;
+        if(!rtprgb) {
+            std::cerr  << "Make sure that gstreamer was compiled with 16-bit grayscale support.\n" << std::flush;
+        }
         std::cerr  << "Calling abort()\n" << std::flush;
         abort();
     }
 
-    //g_print ("Starting main gstreamer RTP loop.\n");
-    LOG << "Starting main gstreamer RTP loop.";
+    RLOG << "Starting main gstreamer RTP loop.";
     g_main_loop_run (data->loop); // this will run until told to stop
-    //g_print ("Main gstreamer RTP loop ended.\n");
-    LOG << "Main gstreamer RTP loop ended.";
-//    msg = gst_bus_timed_pop_filtered (busSourcePipe, GST_CLOCK_TIME_NONE,
-//                                      (GstMessageType)(GST_MESSAGE_ERROR | GST_MESSAGE_EOS));
+    RLOG << "Main gstreamer RTP loop ended.";
 
-//    on_source_message(busSourcePipe, msg, data);
     loopRunning = false;
     return;
 }
@@ -265,7 +269,7 @@ static GstFlowReturn on_new_sample_from_sink(GstElement * elt, ProgramData * dat
     gst_buffer_map (app_buffer, &map, GST_MAP_WRITE);
 
     // Copy the data into liveview:
-    siphonData (&map, data);
+    siphonDataRGB (&map, data);
 
     gst_sample_unref (sample);
     gst_buffer_unmap (app_buffer, &map);
@@ -275,7 +279,59 @@ static GstFlowReturn on_new_sample_from_sink(GstElement * elt, ProgramData * dat
     return ret;
 }
 
-static void siphonData (GstMapInfo* map, ProgramData *data)
+static void siphonDataRGB (GstMapInfo* map, ProgramData *data)
+{
+    pthread_mutex_lock(&rtpStreamLock);
+
+    size_t dataLengthBytes;
+    guint8 *rdata;
+
+    dataLengthBytes = map->size;
+    rdata = map->data;
+    //g_print ("%s dataLen = %zu\n", __func__, dataLengthBytes);
+
+    // The dataLength indicates the entire length of the frame
+    // in bytes. RGB format is 3 bytes per pixel,
+    // GRAY format is 2 bytes per pixel.
+
+    // The data are inside rdata, and are three bytes per pixel.
+    // The RGB data are 24 bits per pixel.
+
+    int ftab[10] = {4, 5, 6, 7, 8, 9, 0, 1, 2, 3};
+
+    data->doneFrameNumber = ftab[data->currentFrameNumber];
+    uint16_t* singleFrame = data->buffer[data->currentFrameNumber];
+
+    // Here, the first 16 bits of each 24-bit pixel are copied
+    size_t pixelNum = 0;
+    uint16_t pixel;
+    for(size_t pbyte=0; pbyte < dataLengthBytes; pbyte+=3)
+    {
+        pixel = (rdata[pbyte]&0x00ff) | ((rdata[pbyte+1] << 8)&0xff00);
+        // not used: rdata[pbyte+3];
+        pixelNum = pbyte/3;
+        singleFrame[pixelNum] = pixel;
+        //LOG << "byte: " << pbyte;
+    }
+
+    data->currentFrameNumber = (data->currentFrameNumber+1) % (guaranteedBufferFramesCount_rtp);
+    data->frameCounter++;
+
+    // Frame timing metric
+#ifdef FPS_MEAS_ACQ
+    gettimeofday(&tval_before, NULL);
+    timersub(&tval_before, &tval_after, &tval_result);
+
+    double deltaTsec = tval_result.tv_sec + (double)tval_result.tv_usec/(double)1E6;
+    if(deltaTsec != 0)
+        printf("FPS: %f\n", 1.0/deltaTsec);
+    tval_after = tval_before;
+#endif
+    pthread_mutex_unlock(&rtpStreamLock);
+    return;
+}
+
+static void siphonDataGray (GstMapInfo* map, ProgramData *data)
 {
     pthread_mutex_lock(&rtpStreamLock);
 
@@ -293,62 +349,16 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
     // The data are inside rdata, and are three bytes per pixel.
     // The intended RGB format is just 24-bit grayscale
 
-    // TODO: How are the bytes packed?
-    // 24 bits per pixel
-    // R  G  B
-    // But... R G is sufficient for 16-bit.
-
-    // TODO unpack into guarenteedBufferFrames[];
-    // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-    // 4, 5, 6, 7, 8, 9, 0, 1, 2, 3
-    // 9 0 1 2 3 4 5 6 7 8
-    //int ftab[3] = {2, 0, 1};
-    //int ftab[10] = {9, 0, 1, 2, 3, 4, 5, 6, 7, 8};
     int ftab[10] = {4, 5, 6, 7, 8, 9, 0, 1, 2, 3};
 
-    //LOG << "setting done frame number.";
-    // data->doneFrameNumber = ( data->currentFrameNumber - 1)% (guaranteedBufferFramesCount);
     data->doneFrameNumber = ftab[data->currentFrameNumber];
-    //LOG << "Siphon: Done frame number: " << data->doneFrameNumber << ", currentFrameNumber: " << data->currentFrameNumber << ", frame counter: " <<  data->frameCounter;
-
-    //LOG << "Grabbing pointer to single frame at position DNF " << data->currentFrameNumber;
     uint16_t* singleFrame = data->buffer[data->currentFrameNumber];
-    //LOG << "Have singleFrame pointer.";
-
-#ifdef GST_HAS_GRAY
-    // if this is defined, then the data are already 16-bit
-    // Check size!!
+    // We copy the entire frame, without any manipulation
     memcpy((char*)singleFrame, rdata, dataLengthBytes);
 
-#else
 
-    size_t pixelNum = 0;
-    uint16_t pixel;
-    //LOG << "Entering byte for byte copy loop:";
-    for(size_t pbyte=0; pbyte < dataLengthBytes; pbyte+=3)
-    {
-        pixel = (rdata[pbyte]&0x00ff) | ((rdata[pbyte+1] << 8)&0xff00);
-        // not used: rdata[pbyte+3];
-        pixelNum = pbyte/3;
-        singleFrame[pixelNum] = pixel;
-        //LOG << "byte: " << pbyte;
-    }
-    //(void)rdata;
-
-#endif
     data->currentFrameNumber = (data->currentFrameNumber+1) % (guaranteedBufferFramesCount_rtp);
     data->frameCounter++;
-
-    //size_t bytesWritten = 0;
-    // Write one frame to the fole, appending:
-    //bytesWritten = fwrite(rdata, 1, dataLength, fp);
-    //g_print("Wrote %lu bytes to binary file. Frame was %lu bytes.\n", bytesWritten, dataLength);
-    //g_print("---start frame---\n");
-    //  for (size_t i=0; i <= dataLength/2; i++) {
-    //      //g_print("[%d]=%d, ", i, rdata[i]);
-    //      rdata[i] = 0xff;
-    //  }
-    //g_print("---end frame---\n");
 
     // Frame timing metric
 #ifdef FPS_MEAS_ACQ
@@ -361,14 +371,13 @@ static void siphonData (GstMapInfo* map, ProgramData *data)
     tval_after = tval_before;
 #endif
     pthread_mutex_unlock(&rtpStreamLock);
-
     return;
 }
 
 static gboolean on_source_message (GstBus * bus, GstMessage * message, ProgramData * data)
 {
     // Called whenever there is a message from the source pipe.
-    LOG << "RTP Message: ";
+    //RLOG << "RTP Message: ";
     GstElement *source;
 
     GError *err;
@@ -457,13 +466,13 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
     if(camcontrol->pause)
     {
         *stat = CameraModel::camPaused;
-        LL(4) << "Camera paused";
+        RLL(4) << "Camera paused";
         return timeoutFrame;
     }
     if(camcontrol->exit)
     {
         *stat = CameraModel::camDone;
-        LOG << "Closing down RTP stream";
+        RLOG << "Closing down RTP stream";
         g_main_loop_quit (data->loop);
         return timeoutFrame;
     }
@@ -476,8 +485,8 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
         if(tap++ > MAX_FRAME_WAIT_TAPS)
         {
             *stat = camTimeout;
-            LOG << "RTP Camera timeout waiting for frames. Total frame count: " << *frameCounter << ", lastFrameDelivered: " << lastFrameDelivered << ", pos: " << pos;
-            LOG << "Timeout frame pixel zero: " << timeoutFrame[0]; // debug info
+            RLOG << "RTP Camera timeout waiting for frames. Total frame count: " << *frameCounter << ", lastFrameDelivered: " << lastFrameDelivered << ", pos: " << pos;
+            RLOG << "Timeout frame pixel zero: " << timeoutFrame[0]; // debug info
             return timeoutFrame;
         }
         pos = *doneFrameNumber;
@@ -495,7 +504,7 @@ uint16_t* RTPCamera::getFrame(CameraModel::camStatusEnum *stat)
 {
     // DO NOT USE
     (void)stat;
-    LOG << "ERROR, incorrect getFrame function called for RTP stream.";
+    RLOG << "ERROR, incorrect getFrame function called for RTP stream.";
     return timeoutFrame;
 }
 
