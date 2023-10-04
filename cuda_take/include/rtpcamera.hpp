@@ -102,13 +102,6 @@ private:
     uint16_t *guaranteedBufferFrames[guaranteedBufferFramesCount_rtp] = {NULL};
     uint16_t *timeoutFrame = NULL;
 
-    // GST:
-    // move to static void modify_in_data (GstMapInfo * map);
-    //static GstFlowReturn on_new_sample_from_sink(GstElement * elt, ProgramData * data);
-
-    // moved to static gboolean on_source_message (GstBus * bus, GstMessage * message, ProgramData * data);
-    //gboolean on_sink_message (GstBus * bus, GstMessage * message, ProgramData *);
-
     // GST Variables:
     GstElement *sourcePipe, *source, *rtp, *appSink;
     GstElement *queue;
