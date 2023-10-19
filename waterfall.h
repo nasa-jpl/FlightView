@@ -80,6 +80,9 @@ class waterfall : public QWidget
     QImage specImage;
     void redraw();
     bool useDSF;
+    bool recordToJPG = false;
+    unsigned int frameCount = 0;
+    void saveImage();
 
 public:
     explicit waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent = nullptr);
@@ -97,6 +100,7 @@ public slots:
     void updateCeiling(int c);
     void updateFloor(int f);
     void setUseDSF(bool useDSF);
+    void setRecordWFImage(bool recordImageOn);
     void debugThis();
 
 signals:

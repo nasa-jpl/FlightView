@@ -222,8 +222,19 @@ void waterfall::handleNewFrame()
     // We can add other functions that happen per-frame here.
     // But first, we will copy the frame in:
     addNewFrame();
-    // TODO: Update only every 25 ms
     this->redraw();
+    frameCount++;
+    if(recordToJPG && (frameCount%maxWFlength == 0)) {
+        saveImage();
+    }
+}
+
+void waterfall::saveImage() {
+    specImage.save("/tmp/wfimage.jpg");
+}
+
+void waterfall::setRecordWFImage(bool recordImageOn) {
+    recordToJPG = recordImageOn;
 }
 
 void waterfall::changeRGB(int r, int g, int b)
