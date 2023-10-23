@@ -67,7 +67,14 @@ int main(int argc, char *argv[])
     QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps "
                                "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 "
                                "--gpsport 5661 "
-                               "--no-stddev --xiocam --rtpcam")\
+                               "--no-stddev --xiocam --rtpcam"
+                               "--rtpheight 480"
+                               "--rtpwidth 1280"
+                               "--rtpaddress"
+                               "--wfpreview"
+                               "--wfpreviewcontinuous"
+                               "--wfpreviewlocation /path/to/waterfallpreview/files/"
+                               )\
             .arg(cmdName);
     QString currentArg;
     startupOptionsType startupOptions;
@@ -81,7 +88,6 @@ int main(int argc, char *argv[])
     startupOptions.gpsIP = QString("10.0.0.6");
     startupOptions.gpsPort = 8111;
     startupOptions.gpsPortSet = true;
-    //startupOptions.xioDirectory = new QString("");
     startupOptions.xioDirectoryArray = (char*)calloc(4096, sizeof(char));
     if(startupOptions.xioDirectoryArray == NULL)
         abort();
@@ -113,6 +119,9 @@ int main(int argc, char *argv[])
         if(currentArg == "--no-camera")
         {
             startupOptions.disableCamera = true;
+        }
+        if(currentArg == "--er2") {
+            startupOptions.er2mode = true;
         }
         if(currentArg == "--datastoragelocation")
         {
@@ -339,6 +348,24 @@ int main(int argc, char *argv[])
         {
             startupOptions.runStdDevCalculation = false;
         }
+        if(currentArg == "--wfpreview") {
+            startupOptions.wfPreviewEnabled = true;
+        }
+        if(currentArg == "--wfpreviewcontinuous") {
+            startupOptions.wfPreviewContinuousMode = true;
+            startupOptions.wfPreviewEnabled = true;
+        }
+        if(currentArg == "--wfpreviewlocation") {
+            if(argc > c)
+            {
+                startupOptions.wfPreviewLocation = argv[c+1];
+                startupOptions.wfPreviewlocationset = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
         if(currentArg == "--help" || currentArg == "-h" || currentArg.contains("?"))
         {
             std::cout << helptext.toStdString() << std::endl;
@@ -400,11 +427,11 @@ int main(int argc, char *argv[])
         std::cout << "WARNING:, flight mode specified with disabled GPS." << std::endl;
     }
 
-    if(heightSet ^ widthSet)
+    if( startupOptions.rtpCam && ((int)heightSet + (int)widthSet != 2))
     {
         // XOR, only one was set
-        system("xmessage \"Error, both height and width must be specified.\"");
-        std::cerr << "Error, height and width must both be specified." << std::endl;
+        system("xmessage \"Error, RTP requires both height and width to be specified.\"");
+        std::cerr << "Error, RTP mode requires both height and width to be specified." << std::endl;
         exit(-1);
     }
 
@@ -413,6 +440,10 @@ int main(int argc, char *argv[])
         startupOptions.heightWidthSet = true;
     }
 
+
+    if(startupOptions.wfPreviewEnabled && (!startupOptions.wfPreviewlocationset)) {
+        std::cerr << "Warning, waterfall preview option enabled but --wfpreviewlocation was not set." << std::endl;
+    }
 
     /* Step 2: Load the splash screen */
 
@@ -447,15 +478,12 @@ int main(int argc, char *argv[])
 
     /* Step 5: Open the main window (GUI/frontend) */
     MainWindow w(&startupOptions, workerThread, fw);
-    //QObject::connect(fw, SIGNAL(sendStatusMessage(QString)), w, SLOT(handleStatusMessage(QString)));
     w.setGeometry(   QStyle::alignedRect(
                          Qt::LeftToRight,
                          Qt::AlignCenter,
                          w.size(),
                          QGuiApplication::screens().at(0)->availableGeometry()
                          ));
-    // a.desktop()->availableGeometry()
-    // QGuiApplication::screens()
     QPixmap icon_pixmap(":images/icon.png");
     w.setWindowIcon(QIcon(icon_pixmap));
     if(!startupOptions.xioCam)
@@ -463,7 +491,7 @@ int main(int argc, char *argv[])
     w.show();
     if(!startupOptions.xioCam)
         splash->raise();
-    //w.raise();
+
 
     splash->finish(&w);
     /* Step 6: Close out the backend after the frontend is closed */

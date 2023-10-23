@@ -34,6 +34,13 @@ struct startupOptionsType
     int rtpPort = 5004;
     bool rtpCam = false;
     bool rtprgb = true;
+
+    bool er2mode = false;
+
+    bool wfPreviewEnabled = false;
+    bool wfPreviewContinuousMode = false;
+    bool wfPreviewlocationset = false;
+    QString wfPreviewLocation = QString("/tmp");
 };
 
 

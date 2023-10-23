@@ -3,11 +3,16 @@
 // This is the RGB waterfall widget used in the flight screen.
 // The "waterfall" tab is handled by a special instance of the Frameview Widget.
 
-waterfall::waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent) : QWidget(parent)
+waterfall::waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType options, QWidget *parent) : QWidget(parent)
 {
     this->fw = fw;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
+    this->options = options;
+    recordToJPG = options.wfPreviewContinuousMode;
+    // if not continuous mode, then if previewEnabled,
+    // the flight widget will call the waterfall
+    // to enable previews when recording.
 
     //rgbLineStruct blank = allocateLine();
     maxWFlength = 1024;
@@ -230,7 +235,10 @@ void waterfall::handleNewFrame()
 }
 
 void waterfall::saveImage() {
-    specImage.save("/tmp/wfimage.jpg");
+    if(options.wfPreviewlocationset) {
+        specImage.save(options.wfPreviewLocation + "/wfpreview.jpg",
+                       nullptr, jpgQuality);
+    }
 }
 
 void waterfall::setRecordWFImage(bool recordImageOn) {

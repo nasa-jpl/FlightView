@@ -20,7 +20,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     useAvionicsWidgets = false;
     gpsPlotSplitter = new QSplitter();
 
-    waterfall_widget = new waterfall(fw, 1, 1024, this);
+    waterfall_widget = new waterfall(fw, 1, 1024, options, this);
     dsf_widget = new frameview_widget(fw, DSF, this);
 
     gpsMessageCycleTimer = new QTimer(this);
@@ -457,6 +457,10 @@ void flight_widget::startDataCollection(QString secondaryLogFilename)
     }
     if(!options.disableGPS)
         emit beginSecondaryLog(secondaryLogFilename);
+
+    if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
+        waterfall_widget->setRecordWFImage(true);
+    }
 }
 
 void flight_widget::stopDataCollection()
@@ -465,6 +469,9 @@ void flight_widget::stopDataCollection()
     fi->doneRecording();
     if(!options.disableGPS)
         emit stopSecondaryLog();
+    if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
+        waterfall_widget->setRecordWFImage(false);
+    }
 }
 
 void flight_widget::startGPS(QString gpsHostname, uint16_t gpsPort, QString primaryLogLocation)

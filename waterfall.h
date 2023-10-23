@@ -18,6 +18,7 @@
 #include <QTimer>
 
 #include "settings.h"
+#include "startupOptions.h"
 #include "frame_worker.h"
 #include "rgbline.h"
 
@@ -34,6 +35,7 @@ class waterfall : public QWidget
     frameWorker *fw;
     int frHeight;
     int frWidth;
+    startupOptionsType options;
 
     QTimer rendertimer;
 
@@ -81,11 +83,12 @@ class waterfall : public QWidget
     void redraw();
     bool useDSF;
     bool recordToJPG = false;
+    int jpgQuality = 75;
     unsigned int frameCount = 0;
     void saveImage();
 
 public:
-    explicit waterfall(frameWorker *fw, int vSize, int hSize, QWidget *parent = nullptr);
+    explicit waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType options, QWidget *parent = nullptr);
     void process();
 
 public slots:
