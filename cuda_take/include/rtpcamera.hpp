@@ -56,7 +56,9 @@ typedef struct
 } ProgramData;
 
 
-static GstFlowReturn on_new_sample_from_sink(GstElement * elt, ProgramData * data);
+static GstFlowReturn on_new_sample_from_sink_rgb(GstElement * elt, ProgramData * data);
+static GstFlowReturn on_new_sample_from_sink_gray(GstElement * elt, ProgramData * data);
+
 static gboolean on_source_message (GstBus * bus, GstMessage * message, ProgramData * data);
 static void siphonDataRGB (GstMapInfo* map, ProgramData *data);
 static void siphonDataGray (GstMapInfo* map, ProgramData *data);

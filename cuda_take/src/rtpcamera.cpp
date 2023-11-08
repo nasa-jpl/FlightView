@@ -190,7 +190,12 @@ bool RTPCamera::initialize()
     frameCounter = &data->frameCounter;
 
     g_object_set(appSink, "emit-signals", TRUE, "sync", FALSE, NULL);
-    g_signal_connect(appSink, "new-sample", G_CALLBACK (on_new_sample_from_sink), data);
+
+    if(rtprgb) {
+        g_signal_connect(appSink, "new-sample", G_CALLBACK (on_new_sample_from_sink_rgb), data);
+    } else {
+        g_signal_connect(appSink, "new-sample", G_CALLBACK (on_new_sample_from_sink_gray), data);
+    }
 
     timeoutFrame = (uint16_t*)calloc(frame_width*data_height, sizeof(uint16_t));
 
@@ -243,7 +248,7 @@ void RTPCamera::streamLoop()
     return;
 }
 
-static GstFlowReturn on_new_sample_from_sink(GstElement * elt, ProgramData * data)
+static GstFlowReturn on_new_sample_from_sink_rgb(GstElement * elt, ProgramData * data)
 {
     // This is the entry point from which we obtain the stream's data.
     // This function is called whenever there is a new frame in the source pipe appSink.
@@ -269,7 +274,43 @@ static GstFlowReturn on_new_sample_from_sink(GstElement * elt, ProgramData * dat
     gst_buffer_map (app_buffer, &map, GST_MAP_WRITE);
 
     // Copy the data into liveview:
-    siphonDataRGB (&map, data);
+    siphonDataRGB(&map, data);
+
+    gst_sample_unref(sample);
+    gst_buffer_unmap(app_buffer, &map);
+    gst_buffer_unref(app_buffer);
+
+    (void)data;
+    return ret;
+}
+
+static GstFlowReturn on_new_sample_from_sink_gray(GstElement * elt, ProgramData * data)
+{
+    // This is the entry point from which we obtain the stream's data.
+    // This function is called whenever there is a new frame in the source pipe appSink.
+    //LOG << "New RTP Sample";
+    //g_print("new sample from sink\n");
+    GstSample *sample;
+    GstBuffer *app_buffer, *buffer;
+    //GstElement *source;
+    GstFlowReturn ret = GST_FLOW_OK;
+    GstMapInfo map;
+    //    guint8 *rdata;
+    //    int dataLength;
+    //    int i;
+    //g_print ("%s\n", __func__);
+
+    // Obtain sample
+    sample = gst_app_sink_pull_sample (GST_APP_SINK (elt));
+    buffer = gst_sample_get_buffer (sample);
+
+    // Make a copy:
+    app_buffer = gst_buffer_copy_deep (buffer);
+
+    gst_buffer_map (app_buffer, &map, GST_MAP_WRITE);
+
+    // Copy the data into liveview:
+    siphonDataGray(&map, data);
 
     gst_sample_unref (sample);
     gst_buffer_unmap (app_buffer, &map);
@@ -482,13 +523,13 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
     {
         *stat = camWaiting;
         usleep(FRAME_WAIT_MIN_DELAY_US);
-        if(tap++ > MAX_FRAME_WAIT_TAPS)
-        {
-            *stat = camTimeout;
-            RLOG << "RTP Camera timeout waiting for frames. Total frame count: " << *frameCounter << ", lastFrameDelivered: " << lastFrameDelivered << ", pos: " << pos;
-            RLOG << "Timeout frame pixel zero: " << timeoutFrame[0]; // debug info
-            return timeoutFrame;
-        }
+//        if(tap++ > MAX_FRAME_WAIT_TAPS)
+//        {
+//            *stat = camTimeout;
+//            RLOG << "RTP Camera timeout waiting for frames. Total frame count: " << *frameCounter << ", lastFrameDelivered: " << lastFrameDelivered << ", pos: " << pos;
+//            RLOG << "Timeout frame pixel zero: " << timeoutFrame[0]; // debug info
+//            return timeoutFrame;
+//        }
         pos = *doneFrameNumber;
     }
     // TODO, check on this idea...
