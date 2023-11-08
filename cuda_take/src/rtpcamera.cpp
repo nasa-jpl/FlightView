@@ -309,6 +309,15 @@ static GstFlowReturn on_new_sample_from_sink_gray(GstElement * elt, ProgramData 
 
     gst_buffer_map (app_buffer, &map, GST_MAP_WRITE);
 
+#ifdef EXTRA_DEBUG
+
+    GstClockTime t = GST_BUFFER_TIMESTAMP(buffer);
+    if(data->frameCounter%100 == 0) {
+        //g_printerr("RTP frame [%ld], Timestamp: %lu\n", data->frameCounter, t);
+        g_printerr("RTP frame[%ld] timestamp (hh:mm:ss): %" GST_TIME_FORMAT "\n", data->frameCounter, GST_TIME_ARGS(t));
+    }
+#endif
+
     // Copy the data into liveview:
     siphonDataGray(&map, data);
 
