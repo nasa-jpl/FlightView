@@ -35,6 +35,7 @@
 #include "safestringset.h"
 #include "takeoptions.h"
 #include "fileformats.h"
+#include "rtpnextgen.hpp"
 #include "rtpcamera.hpp"
 
 //** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
@@ -179,13 +180,23 @@ public:
     FFT_t getFFTtype();
 
 private:
+    // PDV Camera Link:
     void pdv_loop();
+
+    // XIO (files):
     void fileImageCopyLoop();
     void fileImageReadingLoop();
     void prepareFileReading();
+
+    // RTP using gstreamer library:
     void prepareRTPCamera();
     void rtpStreamLoop(); // acquire from RTP network source
     void rtpConsumeFrames(); // copy into take object.
+
+    // RTP using NextGen RTP:
+    void prepareRTPNGCamera();
+    void rtpNGStreamLoop();
+
     CameraModel *Camera = NULL;
     bool fileReadingLoopRun = false;
     bool rtpConsumerRun = false;

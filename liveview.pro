@@ -24,6 +24,7 @@ TEMPLATE = app
 SOURCES += main.cpp\
     consolelog.cpp \
     cuda_take/src/take_object.cpp \
+    cuda_take/src/rtpnextgen.cpp \
     filenamegenerator.cpp \
     flight_widget.cpp \
     flightindicators.cpp \
@@ -51,6 +52,7 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     consolelog.h \
     cuda_take/include/fileformats.h \
+    cuda_take/src/rtpnextgen.hpp \
     filenamegenerator.h \
     flight_widget.h \
     flightindicators.h \

@@ -33,6 +33,7 @@ struct startupOptionsType
     uint16_t rtpWidth;
     int rtpPort = 5004;
     bool rtpCam = false;
+    bool rtpNextGen = false;
     bool rtprgb = true;
 
     bool er2mode = false;

@@ -6,7 +6,7 @@
 
 // Lower numbers are lower-level things, which are hidden unless logginglevel is set to a lower number.
 
-#define logginglevel (8)
+#define logginglevel (1)
 
 // If you #define MUTE_LOG, then no output at all.
 // define MUTE_LOG

@@ -38,6 +38,7 @@ struct takeOptionsType
     int rtpPort = 5004;
     bool rtpCam = false;
     bool rtprgb = true;
+    bool rtpNextGen = false;
 
     uint16_t height;
     uint16_t width;

@@ -145,6 +145,9 @@ void take_object::changeOptions(takeOptionsType optionsIn)
         } else {
             statusMessage("RTP Camera disabled.");
         }
+        if(options.rtpNextGen) {
+            statusMessage("RTP Camera is NextGen model");
+        }
     }
 
     // Recalculate the frame-to-frame delay:
@@ -287,6 +290,30 @@ void take_object::start()
         info << "Self thread name: " << string(threadinfo);
         statusMessage(info);
 
+
+    } else if (options.rtpNextGen) {
+        statusMessage("Starting RTP NextGen camera in take object.");
+        cam_thread_start_complete = false;
+        statusMessage("Preparing RTP NextGen camera");
+        prepareRTPNGCamera();
+
+        statusMessage("Creating boost thread for RTP NextGen camera streamLoop()");
+        rtpAcquireThread = boost::thread(&take_object::rtpNGStreamLoop, this);
+        rtpAcquireThreadHandler = rtpAcquireThread.native_handle();
+        pthread_setname_np(rtpAcquireThreadHandler, "RTPNG Stream");
+        statusMessage("Created RTP NextGen streamLoop() thread.");
+
+        // At this point, the RTP camera is initialized and now it is running.
+        // Data is being acquired if the stream source is emitting data,
+        // and data is being copied into the guarenteed frame buffer of the RTPCamera.
+
+        // These functions get the data into the rest of take object:
+        rtpConsumerRun = true;
+        statusMessage("Creating RTP NextGen consumer thread to copy data into take_object");
+        rtpCopyThread = boost::thread(&take_object::rtpConsumeFrames, this);
+        rtpCopyThreadHandler = rtpCopyThread.native_handle();
+        pthread_setname_np(rtpCopyThreadHandler, "RTPNG Consume");
+        statusMessage("Created RTP NextGen consumer thread.");
 
     } else if (options.rtpCam) {
         statusMessage("Starting RTP camera in take object.");
@@ -657,6 +684,21 @@ void take_object::prepareRTPCamera()
         }
     } else {
         errorMessage("RTP Camera should be NULL at start but isn't");
+    }
+}
+
+void take_object::prepareRTPNGCamera() {
+    if(Camera == NULL) {
+        Camera = new rtpnextgen(options);
+        if(Camera == NULL) {
+            errorMessage("RTP NextGen camera was NULL");
+        } else {
+            statusMessage("RTP NextGen camera created.");
+        }
+        this->Camera->setCamControlPtr(&this->cameraController);
+    } else {
+        // re-create camera?
+        errorMessage("RTP NextGen camera was expected to be NULL but was not!");
     }
 }
 
@@ -1052,6 +1094,11 @@ camControlType* take_object::getCamControl()
 
 void take_object::rtpStreamLoop()
 {
+    LOG << "Entering streamLoop";
+    Camera->streamLoop();
+}
+
+void take_object::rtpNGStreamLoop() {
     LOG << "Entering streamLoop";
     Camera->streamLoop();
 }

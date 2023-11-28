@@ -140,6 +140,9 @@ int main(int argc, char *argv[])
         {
             startupOptions.rtpCam = true;
         }
+        if(currentArg == "--rtpnextgen") {
+            startupOptions.rtpNextGen = true;
+        }
 
         if(currentArg == "--rtprgb") {
             startupOptions.rtprgb = true;
@@ -389,6 +392,11 @@ int main(int argc, char *argv[])
 
         if(startupOptions.rtpAddress != NULL)
             std::cout << "rtpAddress:    " << startupOptions.rtpAddress << std::endl;
+
+        if(startupOptions.rtpNextGen) {
+            std::cout << "Using NextGen RTP code" << std::endl;
+        }
+
         if(widthSet && heightSet)
         {
             startupOptions.heightWidthSet = true;

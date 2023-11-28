@@ -121,6 +121,7 @@ void frameWorker::convertOptions()
     takeOptions.gpsPort = options.gpsPort;
     takeOptions.xioCam = options.xioCam;
     takeOptions.rtpCam = options.rtpCam;
+    takeOptions.rtpNextGen = options.rtpNextGen;
     if(options.rtpCam)
     {
         takeOptions.rtpHeight = options.rtpHeight;
