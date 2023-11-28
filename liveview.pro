@@ -52,7 +52,7 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     consolelog.h \
     cuda_take/include/fileformats.h \
-    cuda_take/src/rtpnextgen.hpp \
+    cuda_take/include/rtpnextgen.hpp \
     filenamegenerator.h \
     flight_widget.h \
     flightindicators.h \

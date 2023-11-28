@@ -218,6 +218,7 @@ private:
     bool checkFrame(uint16_t *Frame);
     void clearAllRingBuffer();
 
+    std::streambuf *coutbuf;
     void errorMessage(const char* message);
     void warningMessage(const char* message);
     void statusMessage(const char* message);

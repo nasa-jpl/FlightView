@@ -6,7 +6,7 @@
 
 // Lower numbers are lower-level things, which are hidden unless logginglevel is set to a lower number.
 
-#define logginglevel (1)
+#define cuda_logginglevel (1)
 
 // If you #define MUTE_LOG, then no output at all.
 // define MUTE_LOG
@@ -30,7 +30,7 @@ public:
     Log(const std::string &funcName, int logLevel)
     {
 #ifndef MUTE_LOG
-        if(logLevel >= logginglevel)
+        if(logLevel >= cuda_logginglevel)
         {
             std::cout << funcName << " [" << logLevel << "]: ";
         } else {

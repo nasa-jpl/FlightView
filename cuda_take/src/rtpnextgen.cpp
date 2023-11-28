@@ -24,6 +24,18 @@ rtpnextgen::rtpnextgen(takeOptionsType opts) {
         LOG << "initialize fail";
     }
 
+    // Test the logging capability:
+    // LOG TEST:
+    std::cout << "std::cout Testing logging capability from rtpnextgen:" << std::endl;
+    std::cerr << "std::cerr Error output" << std::endl;
+    LOG << "Testing the log.";
+    LOG << "Current log level: " << cuda_logginglevel;
+    // Change in cudalog.h
+    for(int n=0; n < 10; n++)
+    {
+        LL(n) << "Testing log level " << n;
+    }
+    LOG << "Done testing log.";
 }
 
 rtpnextgen::~rtpnextgen() {
@@ -274,7 +286,7 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     }
     size_t uOffset = uChunkIndex * rtp.m_uRTPChunkSize;
     if( ( uOffset + uChunkSize ) > rtp.m_uOutputBufferSize ) {
-        LOG << "A end of frame marker was missed!";
+        LOG << "An end of frame marker was missed, or the frame being received is larger than expected. Not keeping this chunk: " << rtp.m_uRTPChunkCnt+1;
     } else {
         // VALID data for a frame!! Let's keep it!
         memcpy( rtp.m_pOutputBuffer + uOffset, pData, uChunkSize );
@@ -283,7 +295,7 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     rtp.m_uOutputBufferUsed += uChunkSize;
     if( bMarker ) // EoF (Frame complete)
     {
-        LL(2) << "MARK end of frame";
+        LL(2) << "MARK end of frame #" << frameCounter << ", Buffer used: " << rtp.m_uOutputBufferUsed << " bytes, buffer size allocated: " << rtp.m_uOutputBufferSize << " bytes, chunk count: " << rtp.m_uRTPChunkCnt << " chunks.";
         RTPGetNextOutputBuffer( rtp, true );
         // Reset buffer
         rtp.m_uRTPChunkCnt = 0;

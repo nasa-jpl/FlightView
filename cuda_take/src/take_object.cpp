@@ -25,6 +25,9 @@ take_object::take_object(int channel_num, int number_of_buffers,
 void take_object::initialSetup(int channel_num, int number_of_buffers,
                                int filter_refresh_rate, bool runStdDev)
 {
+    coutbuf = std::cout.rdbuf();
+    std::cout.rdbuf(coutbuf);
+
     closing = false;
     this->channel = channel_num;
     this->numbufs = number_of_buffers;
@@ -295,7 +298,9 @@ void take_object::start()
         statusMessage("Starting RTP NextGen camera in take object.");
         cam_thread_start_complete = false;
         statusMessage("Preparing RTP NextGen camera");
+        std::cout.rdbuf(coutbuf); // restore cout
         prepareRTPNGCamera();
+        std::cout.rdbuf(coutbuf);
 
         statusMessage("Creating boost thread for RTP NextGen camera streamLoop()");
         rtpAcquireThread = boost::thread(&take_object::rtpNGStreamLoop, this);
@@ -1505,7 +1510,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
 void take_object::errorMessage(const char *message)
 {
-    if(!options.rtpCam)
+    if((!options.rtpCam) || (options.rtpNextGen))
     {
         std::cerr << "take_object: ERROR: " << message << std::endl;
     } else {
@@ -1515,7 +1520,7 @@ void take_object::errorMessage(const char *message)
 
 void take_object::warningMessage(const char *message)
 {
-    if(!options.rtpCam)
+    if((!options.rtpCam) || (options.rtpNextGen))
     {
         std::cout << "take_object: WARNING: " << message << std::endl;
     } else {
@@ -1525,7 +1530,7 @@ void take_object::warningMessage(const char *message)
 
 void take_object::statusMessage(const char *message)
 {
-    if(!options.rtpCam) {
+    if((!options.rtpCam) || (options.rtpNextGen)) {
         std::cout << "take_object: STATUS: " << message << std::endl;
     } else {
         g_message("take_object: STATUS: %s", message);
@@ -1534,7 +1539,7 @@ void take_object::statusMessage(const char *message)
 
 void take_object::errorMessage(const string message)
 {
-    if(!options.rtpCam) {
+    if((!options.rtpCam) || (options.rtpNextGen)) {
         std::cerr << "take_object: ERROR: " << message << std::endl;
     } else {
         g_error("take_object: ERROR: %s", message.c_str());
@@ -1543,7 +1548,7 @@ void take_object::errorMessage(const string message)
 
 void take_object::warningMessage(const string message)
 {
-    if(!options.rtpCam) {
+    if((!options.rtpCam) || (options.rtpNextGen)) {
         std::cout << "take_object: WARNING: " << message << std::endl;
     } else {
         g_message("take_object: WARNING: %s", message.c_str());
@@ -1552,7 +1557,7 @@ void take_object::warningMessage(const string message)
 
 void take_object::statusMessage(const string message)
 {
-    if(!options.rtpCam) {
+    if((!options.rtpCam) || (options.rtpNextGen)) {
         std::cout << "take_object: STATUS: " << message << std::endl;
     } else {
         g_message("take_object: STATUS: %s", message.c_str());
@@ -1561,7 +1566,7 @@ void take_object::statusMessage(const string message)
 
 void take_object::statusMessage(std::ostringstream &message)
 {
-    if(!options.rtpCam) {
+    if((!options.rtpCam) || (options.rtpNextGen)) {
         std::cout << "take_object: STATUS: " << message.str() << std::endl;
     } else {
         g_message("take_object: STATUS: %s", message.str().c_str());
