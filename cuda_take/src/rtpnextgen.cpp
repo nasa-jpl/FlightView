@@ -286,7 +286,7 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     }
     size_t uOffset = uChunkIndex * rtp.m_uRTPChunkSize;
     if( ( uOffset + uChunkSize ) > rtp.m_uOutputBufferSize ) {
-        LOG << "An end of frame marker was missed, or the frame being received is larger than expected, or the chunks are not all the same size. Not keeping this chunk: " << rtp.m_uRTPChunkCnt+1;
+        LL(3) << "An end of frame marker was missed, or the frame being received is larger than expected, or the chunks are not all the same size. Not keeping this chunk: " << rtp.m_uRTPChunkCnt+1;
     } else {
         // VALID data for a frame!! Let's keep it!
         memcpy( rtp.m_pOutputBuffer + uOffset, pData, uChunkSize );
