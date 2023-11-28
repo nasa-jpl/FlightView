@@ -41,7 +41,7 @@ rtpnextgen::rtpnextgen(takeOptionsType opts) {
 rtpnextgen::~rtpnextgen() {
     destructorRunning = true;
     LOG << "Running RTP NextGen camera destructor.";
-
+    g_bRunning = false;
 
     // close socket
 
@@ -313,6 +313,9 @@ void rtpnextgen::streamLoop() {
         // Function returns once bytes are received.
         RTPPump(rtp);
         pumpCount++;
+        if(camcontrol != NULL)
+            if(camcontrol->exit)
+                g_bRunning = false;
     }
     LOG << "Finished RTPPump() with pumpCount = " << pumpCount;
 }
@@ -339,6 +342,8 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
         *stat = camWaiting;
         usleep(NG_FRAME_WAIT_MIN_DELAY_US);
         pos = doneFrameNumber;
+        if(camcontrol->exit)
+            return timeoutFrame;
     }
 
     *stat = camPlaying;
