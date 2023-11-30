@@ -7,9 +7,10 @@
 // but it does not require any qt libraries.
 // It is used by take_object and the cuda back-end.
 // Not all attributes are currently used.
-//
-// The attributes are copied inside frame_worker.cpp
-//
+
+// Make sure when updating this file to also update
+// void frameWorker::convertOptions() in frame_worker.cpp
+// as well as the struct in startupOptions.h
 
 struct takeOptionsType
 {
@@ -31,8 +32,10 @@ struct takeOptionsType
     uint16_t xioHeight;
     uint16_t xioWidth;
 
-    const char* rtpInterface;
-    const char* rtpAddress;
+    const char* rtpInterface = NULL;
+    const char* rtpAddress = NULL;
+    bool havertpAddress = false;
+    bool havertpInterface = false;
     uint16_t rtpHeight;
     uint16_t rtpWidth;
     int rtpPort = 5004;

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <iostream>
+#include <iomanip>
 #include <cstring>
 #include <chrono>
 #include <pthread.h>
@@ -15,7 +16,13 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <unistd.h>
+
+#include <sys/types.h>
+#include <ifaddrs.h>
+
+#ifndef IFNAMSIZ
+#define IFNAMSIZ (16)
+#endif
 
 // cuda_take:
 #include "cameramodel.h"
@@ -70,6 +77,7 @@ public:
 
 private:
     bool initialize(); // all setup functions
+    std::streambuf *coutbuf;
     takeOptionsType options;
     const char* interface;
     int payload = 90;
@@ -100,6 +108,9 @@ private:
     bool RTPExtract( uint8_t* pBuffer, size_t uSize, bool& bMarker, uint8_t** ppData, size_t& uChunkSize, uint16_t& uSeqNumber,
         uint8_t &uVer, bool& bPadding, bool& bExtension, uint8_t& uCRSCCount, uint8_t& uPayloadType, uint32_t& uTimeStamp, uint32_t& uSource
         );
+
+    bool getIfAddr(const char* ifString, in_addr *addr);
+
     void debugMessage(const char* msg);
     void debugMessage(const std::string msg);
 };

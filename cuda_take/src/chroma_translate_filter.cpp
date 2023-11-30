@@ -9,16 +9,17 @@ void setup_filter(camera_t camera_type)
 	frWidth = width[hardware];
 	num_taps = number_of_taps[hardware];
 	MAX_VAL = max_val[hardware];
-    std::cout << "------------------ Completed setup_filter(camType) with height: " << frHeight << ", width: " << frWidth << std::endl;
+    //std::cout << "------------------ Completed setup_filter(camType) with height: " << frHeight << ", width: " << frWidth << std::endl;
+    std::cout << "Completed camera_type setup." << std::endl;
+
 }
 
 void setup_filter(unsigned int h, unsigned int w)
 {
     frHeight = h;
     frWidth = w;
-    std::cout << "Overriding camera geometry:\n";
-    std::cout << "------------------ Completed setup_filter(h,w) with height: " << frHeight << ", width: " << frWidth << std::endl;
-    std::cout << "------------------ h: " << h << ", w: " << w << std::endl;
+    std::cout << "Setting camera geometry:\n";
+    std::cout << "  Completed setup_filter(h,w) with height: " << frHeight << ", width: " << frWidth << std::endl;
 }
 
 uint16_t* apply_chroma_translate_filter(uint16_t *picture_in)

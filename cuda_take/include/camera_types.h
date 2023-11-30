@@ -8,6 +8,7 @@
 
 enum camera_t {SSD_ENVI, SSD_XIO, CL_6604A, CL_6604B};
 
+// EHL TODO: Expand these to include four options each with a null termination.
 const static unsigned int number_of_taps[] = {4,8,4};
 const static unsigned int max_val[] = {0x3fff,0xffff,0x3fff};
 const static unsigned int height[] = {481,480,480};

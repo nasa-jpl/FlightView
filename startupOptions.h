@@ -2,6 +2,10 @@
 #define STARTUPOPTIONS_H
 #include <QString>
 
+// Make sure when updating this file to also update
+// void frameWorker::convertOptions() in frame_worker.cpp
+// as well as the struct in takeoptions.h
+
 struct startupOptionsType
 {
     bool debug = false;
@@ -27,8 +31,10 @@ struct startupOptionsType
     uint16_t width;
     float targetFPS;
 
-    const char* rtpInterface;
-    const char* rtpAddress;
+    const char* rtpInterface = NULL;
+    const char* rtpAddress = NULL;
+    bool havertpAddress = false;
+    bool havertpInterface = false;
     uint16_t rtpHeight;
     uint16_t rtpWidth;
     int rtpPort = 5004;

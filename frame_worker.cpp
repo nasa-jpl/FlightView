@@ -126,7 +126,9 @@ void frameWorker::convertOptions()
     {
         takeOptions.rtpHeight = options.rtpHeight;
         takeOptions.rtpWidth = options.rtpWidth;
+        takeOptions.havertpInterface = options.havertpInterface;
         takeOptions.rtpInterface = options.rtpInterface;
+        takeOptions.havertpAddress = options.havertpAddress;
         takeOptions.rtpAddress = options.rtpAddress;
         takeOptions.rtprgb = options.rtprgb;
     } else {

@@ -202,6 +202,7 @@ int main(int argc, char *argv[])
             {
                 startupOptions.rtpInterface = argv[c+1];
                 rtpInterfaceSet = true;
+                startupOptions.havertpInterface = true;
                 c++;
             } else {
                 std::cout << helptext.toStdString() << std::endl;
@@ -215,6 +216,7 @@ int main(int argc, char *argv[])
             {
                 startupOptions.rtpAddress = argv[c+1];
                 rtpAddressSet = true;
+                startupOptions.havertpAddress = true;
                 c++;
             } else {
                 std::cout << helptext.toStdString() << std::endl;
@@ -391,10 +393,10 @@ int main(int argc, char *argv[])
             std::cout << "rtpInterface: " << startupOptions.rtpInterface << std::endl;
 
         if(startupOptions.rtpAddress != NULL)
-            std::cout << "rtpAddress:    " << startupOptions.rtpAddress << std::endl;
+            std::cout << "rtpAddress:   " << startupOptions.rtpAddress << std::endl;
 
         if(startupOptions.rtpNextGen) {
-            std::cout << "Using NextGen RTP code" << std::endl;
+            std::cout << "Using RTP NextGen code" << std::endl;
         }
 
         if(widthSet && heightSet)
@@ -440,6 +442,7 @@ int main(int argc, char *argv[])
         // XOR, only one was set
         system("xmessage \"Error, RTP requires both height and width to be specified.\"");
         std::cerr << "Error, RTP mode requires both height and width to be specified." << std::endl;
+        std::cout << helptext.toStdString() << std::endl;
         exit(-1);
     }
 
