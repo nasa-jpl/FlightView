@@ -451,6 +451,7 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
     {
         *stat = CameraModel::camPaused;
         LL(4) << "RTP NextGen Camera paused";
+        usleep(1E6);
         return timeoutFrame;
     }
     if(camcontrol->exit)
