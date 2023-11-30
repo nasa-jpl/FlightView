@@ -517,6 +517,7 @@ uint16_t* RTPCamera::getFrameWait(unsigned int lastFrameNumber, CameraModel::cam
     {
         *stat = CameraModel::camPaused;
         RLL(4) << "Camera paused";
+        usleep(1E6); // EHL DEBUG Pause for 1 FPS
         return timeoutFrame;
     }
     if(camcontrol->exit)

@@ -1115,6 +1115,10 @@ void take_object::rtpConsumeFrames()
     // The frames are copied using Camera->getFrameWait
     // which waits for new frames.
 
+    // Initializers just in case:
+    save_framenum = 0;
+    continuousRecording = false;
+
     mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
                                        meanStartRow,meanHeight,frWidth,useDSF,\
                                        whichFFT, lh_start, lh_end,\
