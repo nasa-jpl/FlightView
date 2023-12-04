@@ -167,6 +167,24 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
         handleMainWindowStatusMessage(QString("Server Port: %1").arg(save_server->port));
     }
 
+    if(options->rtpCam) {
+
+        QString listeningString = "RTP: ";
+
+        if(options->havertpInterface) {
+            listeningString.append(QString("%1:").arg(options->rtpInterface));
+        }
+        if(options->havertpAddress) {
+            listeningString.append(options->rtpAddress);
+        }
+        controlbox->server_ip_label.setText(listeningString);
+        controlbox->server_port_label.setText(QString("Port: %1").arg(options->rtpPort));
+    } else if(options->xioCam){
+        controlbox->server_ip_label.setText("XIO active");
+    } else {
+        controlbox->server_ip_label.setText("CameraLink active");
+    }
+
     connect(controlbox, SIGNAL(debugSignal()), this, SLOT(debugThis()));
 
     connect(controlbox, SIGNAL(startDataCollection(QString)), flight_screen, SLOT(startDataCollection(QString)));

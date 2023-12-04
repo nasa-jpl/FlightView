@@ -10,27 +10,12 @@ saveServer::saveServer(frameWorker *fw, QObject *parent ) :
     port = 65000; // we'll hardcode the port number for now
     clientConnection = new QTcpSocket();
     clientConnection->setObjectName("lv:saveconn");
-
-   // QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
-    // use the first non-localhost IPv4 address
-//    for (int i = 0; i < ipAddressesList.size(); ++i) {
-//        if (ipAddressesList.at(i) != QHostAddress::LocalHost && ipAddressesList.at(i).toIPv4Address()) {
-//            ipAddress = ipAddressesList.at(i);
-//            break;
-//        }
-//    }
-
-    ipAddress = QHostAddress::AnyIPv4; // 0.0.0.0
-
-    // if we did not find one, use IPv4 localhost
-    if (ipAddress.isNull())
-        ipAddress = QHostAddress::Any;
-
+    ipAddress = QHostAddress::Any;
     connect(clientConnection, SIGNAL(readyRead()), this, SLOT(readCommand()));
     connect(this, SIGNAL(newConnection()), this, SLOT(new_conn_slot())  );
     connect(clientConnection, SIGNAL(disconnected()), this, SLOT(handleDisconnect()));
     signalConnected = true;
-    listen(QHostAddress::Any, port); // This will automatically connect on the IP Address of the machine
+    listen(ipAddress, port); // This will automatically connect on the IP Address of the machine
 }
 
 void saveServer::reconnectSignal()

@@ -148,10 +148,15 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     collections_layout->addWidget(&showConsoleLogBtn, 4, 2, 1, 1);
     if((!options.flightMode) && (options.xioCam || options.rtpCam))
     {
-        pausePlaybackChk.setText("Pause");
+        if(options.debug) {
+            pausePlaybackChk.setText("DebugFrame");
+        } else {
+            pausePlaybackChk.setText("Pause");
+        }
         pausePlaybackChk.setChecked(false);
         collections_layout->addWidget(&pausePlaybackChk, 2, 3, 1, 1);
         frameNumberLabel.setText("0");
+        frameNumberLabel.setToolTip("Number of frames received");
         collections_layout->addWidget(&frameNumberLabel, 3, 3, 1, 1);
         if(options.xioCam) {
             collections_layout->addWidget(&showXioSetupBtn, 4, 3, 1, 1);
