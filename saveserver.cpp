@@ -11,18 +11,20 @@ saveServer::saveServer(frameWorker *fw, QObject *parent ) :
     clientConnection = new QTcpSocket();
     clientConnection->setObjectName("lv:saveconn");
 
-    QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
+   // QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
     // use the first non-localhost IPv4 address
-    for (int i = 0; i < ipAddressesList.size(); ++i) {
-        if (ipAddressesList.at(i) != QHostAddress::LocalHost && ipAddressesList.at(i).toIPv4Address()) {
-            ipAddress = ipAddressesList.at(i);
-            break;
-        }
-    }
+//    for (int i = 0; i < ipAddressesList.size(); ++i) {
+//        if (ipAddressesList.at(i) != QHostAddress::LocalHost && ipAddressesList.at(i).toIPv4Address()) {
+//            ipAddress = ipAddressesList.at(i);
+//            break;
+//        }
+//    }
+
+    ipAddress = QHostAddress::AnyIPv4; // 0.0.0.0
 
     // if we did not find one, use IPv4 localhost
     if (ipAddress.isNull())
-        ipAddress = QHostAddress::LocalHost;
+        ipAddress = QHostAddress::Any;
 
     connect(clientConnection, SIGNAL(readyRead()), this, SLOT(readCommand()));
     connect(this, SIGNAL(newConnection()), this, SLOT(new_conn_slot())  );
