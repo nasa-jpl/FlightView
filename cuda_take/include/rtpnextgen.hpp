@@ -58,6 +58,7 @@ struct SRTPData {
     uint16_t	  m_uFrameStartSeq;
     uint16_t      m_uSequenceNumber;
     uint32_t      m_uSource;
+    uint32_t      m_timestamp;
 };
 
 
@@ -84,6 +85,7 @@ private:
     bool rtprgb = true;
     bool firstChunk = true;
     uint32_t sourceNumber = 0;
+    uint32_t lastTimeStamp = 0;
     int port;
     int frWidth;
     int frHeight;

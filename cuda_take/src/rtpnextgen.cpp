@@ -379,6 +379,7 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
         return;
     }
     rtp.m_uSource = uSource;
+    rtp.m_timestamp = uTimeStamp;
 
     // We have to be careful here. The FPIE-D could reboot and we will not be
     // ready for the new source number if it is selected at random.
@@ -435,6 +436,12 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
             }
             std::cout << std::endl;
         }
+        if((rtp.m_timestamp < lastTimeStamp) && (lastTimeStamp != 0)) {
+            LOG << "Error, frame timestamp decreased. Prior frame: " << lastTimeStamp << ", this frame: " << rtp.m_timestamp;
+            // keep the frame anyway.
+            // Also, there is a minor issue that the timestamp is only compared from the last packet of the frame versus all packets of a frame, etc.
+        }
+        lastTimeStamp = rtp.m_timestamp;
         RTPGetNextOutputBuffer( rtp, true );
         // Reset buffer
         rtp.m_uRTPChunkCnt = 0;
