@@ -161,10 +161,10 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     connect(fw, SIGNAL(updateFrameCountDisplay(int)), controlbox, SLOT(setFrameNumber(int)));
     controlbox->fps_label.setStyleSheet("QLabel {color: green;}");
     if(save_server->isListening()) {
-        controlbox->server_ip_label.setText(tr("Server IP: %1").arg(save_server->ipAddress.toString()));
-        controlbox->server_port_label.setText(tr("Server Port: %1").arg(save_server->port));
-        handleMainWindowStatusMessage(QString("Server IP: %1").arg(save_server->ipAddress.toString()));
-        handleMainWindowStatusMessage(QString("Server Port: %1").arg(save_server->port));
+        //controlbox->server_ip_label.setText(tr("Server IP: %1").arg(save_server->ipAddress.toString()));
+        //controlbox->server_port_label.setText(tr("Server Port: %1").arg(save_server->port));
+        handleMainWindowStatusMessage(QString("SaveServer IP: %1").arg(save_server->ipAddress.toString()));
+        handleMainWindowStatusMessage(QString("SaveServer Port: %1").arg(save_server->port));
     }
 
     if(options->rtpCam) {
