@@ -57,6 +57,7 @@ struct SRTPData {
     size_t	      m_uRTPChunkCnt;
     uint16_t	  m_uFrameStartSeq;
     uint16_t      m_uSequenceNumber;
+    uint32_t      m_uSource;
 };
 
 
@@ -80,9 +81,9 @@ private:
     std::streambuf *coutbuf;
     takeOptionsType options;
     const char* interface;
-    int payload = 90;
-    int clockRate = 90000;
     bool rtprgb = true;
+    bool firstChunk = true;
+    uint32_t sourceNumber = 0;
     int port;
     int frWidth;
     int frHeight;

@@ -156,6 +156,7 @@ bool rtpnextgen::initialize() {
     rtp.m_uSequenceNumber = 0;
     rtp.m_uFrameStartSeq = 0;
     rtp.m_bFirstPacket = true;
+    firstChunk = true;
 
     // Set up the network listening socket:
     rtp.m_nHostSocket = socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );
@@ -377,6 +378,22 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
         LOG << "ERROR, bad RTP packet!";
         return;
     }
+    rtp.m_uSource = uSource;
+
+    // We have to be careful here. The FPIE-D could reboot and we will not be
+    // ready for the new source number if it is selected at random.
+    // On the other hand, it seems to always be set to zero.
+    if(firstChunk) {
+        this->sourceNumber = rtp.m_uSource;
+        LL(3) << "Message source set to: [" << std::setfill('0') << std::setw(8) << std::right << std::hex << rtp.m_uSource << "]." << std::dec;
+        firstChunk = false;
+    } else {
+        if(rtp.m_uSource != this->sourceNumber) {
+            LOG << "Warning, rejecting chunk. Message source does not match. Initial: [" << std::setfill('0') << std::setw(8) << std::right << std::hex << this->sourceNumber << "], this chunk: [" << rtp.m_uSource << "]." << std::dec;
+            return;
+        }
+    }
+
     if( !rtp.m_bFirstPacket )
     {
         uint16_t uNext = rtp.m_uSequenceNumber + 1;
@@ -387,9 +404,10 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     }
     rtp.m_bFirstPacket = false;
     rtp.m_uSequenceNumber = uSeqNumber;
+
     if( rtp.m_uOutputBufferUsed == 0 ) // Make a note of chunk size on first packet of frame so we can data that is missing in the right place
     {
-        // First packet
+        // First packet of this frame
         rtp.m_uRTPChunkSize = uChunkSize;
         rtp.m_uFrameStartSeq = uSeqNumber;
     }
@@ -401,7 +419,7 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     }
     size_t uOffset = uChunkIndex * rtp.m_uRTPChunkSize;
     if( ( uOffset + uChunkSize ) > rtp.m_uOutputBufferSize ) {
-        LOG << "An end of frame marker was missed, or the frame being received is larger than expected, or the chunks are not all the same size. Not keeping this chunk: " << rtp.m_uRTPChunkCnt+1;
+        //LOG << "An end of frame marker was missed, or the frame being received is larger than expected, or the chunks are not all the same size. Not keeping this chunk: " << rtp.m_uRTPChunkCnt+1;
     } else {
         // VALID data for a frame!! Let's keep it!
         memcpy( rtp.m_pOutputBuffer + uOffset, pData, uChunkSize );

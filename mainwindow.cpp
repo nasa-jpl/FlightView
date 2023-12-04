@@ -168,21 +168,31 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     }
 
     if(options->rtpCam) {
+        if(options->rtpNextGen) {
+            handleMainWindowStatusMessage("Camera: RTP NextGen");
+        } else {
+            handleMainWindowStatusMessage("Camera: RTP gstreamer");
+        }
 
-        QString listeningString = "RTP: ";
+        QString listeningString = "RTP SRC";
 
         if(options->havertpInterface) {
-            listeningString.append(QString("%1:").arg(options->rtpInterface));
+            listeningString.append(QString(": %1").arg(options->rtpInterface));
         }
         if(options->havertpAddress) {
-            listeningString.append(options->rtpAddress);
+            listeningString.append(QString(": %1").arg(options->rtpAddress));
         }
+
         controlbox->server_ip_label.setText(listeningString);
-        controlbox->server_port_label.setText(QString("Port: %1").arg(options->rtpPort));
+        handleMainWindowStatusMessage(listeningString);
+        controlbox->server_port_label.setText(QString("RTP Port: %1").arg(options->rtpPort));
+        handleMainWindowStatusMessage(QString("RTP Port: %1").arg(options->rtpPort));
     } else if(options->xioCam){
         controlbox->server_ip_label.setText("XIO active");
+        handleMainWindowStatusMessage("Camera: XIO (files)");
     } else {
         controlbox->server_ip_label.setText("CameraLink active");
+        handleMainWindowStatusMessage("Camera: CameraLink");
     }
 
     connect(controlbox, SIGNAL(debugSignal()), this, SLOT(debugThis()));
