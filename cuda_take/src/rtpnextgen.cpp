@@ -90,10 +90,21 @@ rtpnextgen::~rtpnextgen() {
     LL(3) << "Freeing RTP Frame buffer:";
     for(int b =0; b < guaranteedBufferFramesCount_rtpng; b++) {
         if(guaranteedBufferFrames[b] != NULL) {
+            // EHL TODO: CAREFUL
             free(guaranteedBufferFrames[b]);
         }
     }
     LL(3) << "Done freeing RTP Frame buffer";
+
+    LL(3) << "Freeing RTP LargePacketBuffer:";
+    for(int b =0; b < guaranteedBufferFramesCount_rtpng; b++) {
+        if(largePacketBuffer[b] != NULL) {
+            // EHL TODO: CAREFUL
+            free(largePacketBuffer[b]);
+        }
+    }
+    LL(3) << "Done freeing RTP LPB.";
+
 
     LL(4) << "Done with RTP NextGen destructor";
 }
@@ -124,8 +135,10 @@ bool rtpnextgen::initialize() {
     rtp.m_uOutputBufferUsed = 0;
 
     // Allocate frame buffer for completed frames, as well as timeout frame
+    LL(5) << "Allocating TF and GBF";
     frameBufferSizeBytes = frame_width*data_height*sizeof(uint16_t);
     timeoutFrame = (uint16_t*)calloc(frameBufferSizeBytes, 1);
+    timeoutFrame[0] = 0x0045; timeoutFrame[1] = 0x0084; timeoutFrame[2] = 0x004C;
     for(int f = 0; f < guaranteedBufferFramesCount_rtpng; f++)
     {
         guaranteedBufferFrames[f] = (uint16_t*)calloc(frameBufferSizeBytes, 1);
@@ -136,18 +149,33 @@ bool rtpnextgen::initialize() {
         }
     }
 
-    // Consider removing this since we do not use it
-    //
-    // Generate static table for buffer position:
-    // Write order is: 5,6,7,8,9,0,1,2,3,4 (sequential plus offset)
-    // Read order is:  0,1,2,3,4,5,6,7,8,9 (sequential)
-    // ftab[10] = {5, 6, 7, 8, 9, 0, 1, 2, 3, 4};
-    //
-//    int halfPt = guaranteedBufferFramesCount_rtpng/2;
-//    for(int b=0; b < guaranteedBufferFramesCount_rtpng; b++) {
-//        ftab[b] = (b-halfPt)%guaranteedBufferFramesCount_rtpng;
-//        // LOG << "ftab[" << b << "] = " << ftab[b]; // EHL DEBUG remove later
-//    }
+    // Allocate large packet buffer, into which packets are received.
+    // At this stage in the game, we have no idea how many chunks will
+    // be needed per frame, so we make a generous estimate and live with it.
+    // We are going to allocate 2x the frame size for the packets.
+    // Generally we are using 12 bytes for the packet header, and perhaps 500 packets per frame
+    // worst case, so perhaps 600kbyte of overhead is actually needed. Oh well, memory is cheap
+    LL(5) << "Allocating LPB";
+    for(int f = 0; f < guaranteedBufferFramesCount_rtpng; f++)
+    {
+        largePacketBuffer[f] = (uint8_t*)calloc(frameBufferSizeBytes*2, 1); // 2x overhead allowed
+        if(largePacketBuffer[f] == NULL) {
+            LOG << "ERROR, cannot allocate memory for RTP NextGen Large Packet Buffer. Asked for " << frameBufferSizeBytes*2 << " bytes.";
+            LOG << "ERROR, calling abort(). Program will crash.";
+            abort();
+        }
+    }
+
+    // Here we prepare the secondary buffer which stores only the size of each packet:
+    LL(5) << "Preparing PSB";
+    for(int f = 0; f < guaranteedBufferFramesCount_rtpng; f++)
+    {
+        for(int n = 0; n < 1024; n++) {
+            packetSizeBuffer[f][n] = 0;
+        }
+    }
+
+
 
     rtp.m_uRTPChunkSize = 0;
     rtp.m_uRTPChunkCnt = 0;
@@ -155,7 +183,7 @@ bool rtpnextgen::initialize() {
     rtp.m_uFrameStartSeq = 0;
     rtp.m_bFirstPacket = true;
     firstChunk = true;
-
+    LL(3) << "Setting up socket";
     // Set up the network listening socket:
     rtp.m_nHostSocket = socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );
 
@@ -213,12 +241,15 @@ bool rtpnextgen::initialize() {
     frameCounter = 0;
     doneFrameNumber = guaranteedBufferFramesCount_rtpng-1; // last position. Data not valid anyway.
     lastFrameDelivered = doneFrameNumber;
-    rtp.m_pOutputBuffer = (uint8_t *)guaranteedBufferFrames[0];
+    //rtp.m_pOutputBuffer = (uint8_t *)guaranteedBufferFrames[0];
     rtp.m_uOutputBufferSize = frameBufferSizeBytes;
 
     // RTPGetNextOutputBuffer( rtp, false );
     rtp.m_bInitOK = true;
-
+    lpbPos = 0;
+    psbPos = 0;
+    psbFramePos = 0;
+    lpbFramePos = 0;
 
     haveInitialized = true;
     LL(4) << "Completed RTP NextGen init";
@@ -276,26 +307,15 @@ bool rtpnextgen::getIfAddr(const char *ifString, in_addr *addr) {
 }
 
 void rtpnextgen::RTPGetNextOutputBuffer( SRTPData& rtp, bool bLastBufferReady ) {
-    // This is called at the very start of the program,
-    // and at the completion of each frame.
-    // rtp.m_pOutputBuffer holds the completed frame.
-    // bLastBufferReady is true when there is a complete frame ready for copy
-    // bLastBufferReady is false when we are merely getting ready for that first frame.
+    // This is called at the completion of each frame.
+    // The largePacketBuffer has the frame data,
+    // we merely need to note the new buffer position for the next frame,
+    // which is also picked up as a "new frame event" by the watching
+    // thread when the number changes.
 
-
-    // The frame has been copied already into rtp.m_pOutputBuffer
-    // All we have to do here is point the buffer to prepare for the next frame.
-
-    if( bLastBufferReady )
-    {
-        // At this point, a new complete frame is available.
-        doneFrameNumber = currentFrameNumber; // position
-        currentFrameNumber = (currentFrameNumber+1) % (guaranteedBufferFramesCount_rtpng);
-        rtp.m_pOutputBuffer = (uint8_t *)guaranteedBufferFrames[currentFrameNumber]; // buffer for NEXT frame
-        frameCounter++;
-    } else {
-        LOG << "ERROR, was asked to get RTP NextGen buffer ready for next frame but frame was not ready!";
-    }
+    doneFrameNumber = currentFrameNumber; // position
+    currentFrameNumber = (currentFrameNumber+1) % (guaranteedBufferFramesCount_rtpng);
+    frameCounter++;
 }
 
 bool rtpnextgen::RTPExtract( uint8_t* pBuffer, size_t uSize, bool& bMarker,
@@ -321,10 +341,14 @@ bool rtpnextgen::RTPExtract( uint8_t* pBuffer, size_t uSize, bool& bMarker,
     uTimeStamp = (((uint32_t)pBuffer[4]) << 24 ) | (((uint32_t)pBuffer[5]) << 16 ) | (((uint32_t)pBuffer[6]) << 8 ) | (uint32_t)pBuffer[7];
     uSource    = (((uint32_t)pBuffer[8]) << 24 ) | (((uint32_t)pBuffer[9]) << 16 ) | (((uint32_t)pBuffer[10]) << 8 ) | (uint32_t)pBuffer[11];
     uChunkSize = uSize - 12;
-    if( ppData != nullptr )
-    {
-        *ppData = pBuffer + 12;
-    }
+    // Here, we have assumed that the frame data is the
+    // entire packet size, minus the 12 bytes of header.
+    // We are thus assuming that uCRSCCount is zero.
+
+//    if( ppData != nullptr )
+//    {
+//        *ppData = pBuffer + 12;
+//    }
     return true;
 }
 
@@ -336,14 +360,28 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     //
     // This function will hang here waiting for data without timeout.
     // Thus, it should be watched externally to see what is happening.
+    bool bMarker = false;
+
+    if((size_t)(lpbPos+rtp.m_uPacketBufferSize) > frameBufferSizeBytes*2) {
+        LOG << "Error, cannot store this much data. Likely the end of frame was missed.";
+        // TODO: goto cleanup;
+        lpbFramePos = (lpbFramePos+1)%guaranteedBufferFramesCount_rtpng;
+        psbFramePos = (psbFramePos+1)%guaranteedBufferFramesCount_rtpng;
+        psbPos = 0;
+        lpbPos = 0;
+        return;
+    }
 
     // Receive from network into rtp.m_pPacketBuffer:
     receiveFromWaiting = true; // for debug readout
+    // Receive directly into the large packet buffer
+    // at an offset:
     ssize_t uRxSize = recvfrom(
-                rtp.m_nHostSocket, rtp.m_pPacketBuffer, rtp.m_uPacketBufferSize,
+                rtp.m_nHostSocket, (void*)(largePacketBuffer[lpbFramePos]+lpbPos), rtp.m_uPacketBufferSize,
                 0, nullptr, nullptr
                 );
     receiveFromWaiting = false;
+
 
     if( uRxSize == -1 )
     {
@@ -358,7 +396,12 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
         g_bRunning = false;
         return;
     }
-    bool bMarker = false;
+
+    // The number of non-zero members at each primary position's sub entries
+    // tells how many chunks per frame.
+    // The number stored in each tells how large each chunk is.
+    packetSizeBuffer[psbFramePos][psbPos] = uRxSize;
+
     uint8_t* pData = nullptr;
     size_t uChunkSize = 0;
     uint16_t uSeqNumber = 0;
@@ -368,9 +411,13 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     // Examine the packet:
     // Essentially from m_pPacketBuffer to the payload, &pData. By reference of course.
     bool bChunkOK = RTPExtract(
-                rtp.m_pPacketBuffer, uRxSize, bMarker, &pData, uChunkSize, uSeqNumber,
+                largePacketBuffer[lpbFramePos]+lpbPos,  uRxSize, bMarker, &pData, uChunkSize, uSeqNumber,
                 uVer, bPadding, bExtension, uCRSCCount, uPayloadType, uTimeStamp, uSource
                 );
+
+    lpbPos = lpbPos+uRxSize;
+    psbPos++;
+
     if( !bChunkOK )
     {
         LOG << "ERROR, bad RTP packet!";
@@ -398,7 +445,10 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
         uint16_t uNext = rtp.m_uSequenceNumber + 1;
         if( uNext != uSeqNumber )
         {
-            LOG << "ERROR, RTP sequence number. Got: " << std::dec << uSeqNumber << ", expected: " << uNext;
+            // There is no point notifying when the drop is so large
+            // that is is likely simply an indication of a reboot
+            if(uNext-uSeqNumber < 600)
+                LOG << "ERROR, RTP sequence number. Got: " << std::dec << uSeqNumber << ", expected: " << uNext << ", missed: " << uSeqNumber-uNext << " chunks.";
         }
     }
     rtp.m_bFirstPacket = false;
@@ -407,8 +457,8 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     if( rtp.m_uOutputBufferUsed == 0 ) // Make a note of chunk size on first packet of frame so we can data that is missing in the right place
     {
         // First packet of this frame
-        rtp.m_uRTPChunkSize = uChunkSize;
-        rtp.m_uFrameStartSeq = uSeqNumber;
+        rtp.m_uRTPChunkSize = uChunkSize; // size of first packet minus 12 bytes header.
+        rtp.m_uFrameStartSeq = uSeqNumber; // sequence number from first packet.
     }
     size_t uChunkIndex;
     if( uSeqNumber >= rtp.m_uFrameStartSeq ) {
@@ -417,34 +467,121 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
         uChunkIndex = 0x10000 - ((size_t)rtp.m_uFrameStartSeq - (size_t)uSeqNumber);
     }
     size_t uOffset = uChunkIndex * rtp.m_uRTPChunkSize;
+    // Offset is how far into the frame data we are.
+    // The offset must not exceed the size of a frame!
     if( ( uOffset + uChunkSize ) > rtp.m_uOutputBufferSize ) {
         LOG << "An end of frame marker was missed, or the frame being received is larger than expected, or the chunks are not all the same size. Not keeping this chunk: " << rtp.m_uRTPChunkCnt+1;
+        LOG << "  Chunk count for last good frame was " << chunksPerFramePrior << ". Size (bytes) of this chunk: " << rtp.m_uRTPChunkSize << ", offset into frame: " << uOffset << ", size of buffer for single frame storage: " << rtp.m_uOutputBufferSize;
+        LOG << "  Forcing end-of-frame MARK.";
+        if(uRxSize-uRxSizePrior != 0) {
+            LOG << "  Size (bytes) of this UDP transaction: " << uRxSize << ", size of prior transaction: " << uRxSizePrior << ". Delta: " << uRxSize-uRxSizePrior;
+        }
+        // At this point, we've received more data than we expected in this frame. We probably missed a MARK packet,
+        // and to recover, we will fake the MARK and take the data at the quantity we expected, and move on.
+        // There is no need to memcpy since we're dealing with corrupted data anyway. How would we know where to put it?
+        bMarker = true;
+        // We also don't need to record the size of this packet since it may be in error anyway.
+        // A consequence of this is that the next frame received may be offset by the error,
+        // but it will all get straightened out once the next MARK is received.
     } else {
         // VALID data for a frame!! Let's keep it!
-        memcpy( rtp.m_pOutputBuffer + uOffset, pData, uChunkSize );
+        // TODO
+        //memcpy( rtp.m_pOutputBuffer + uOffset, pData, uChunkSize );
+        uRxSizePrior = uRxSize;
     }
     rtp.m_uRTPChunkCnt++;
     rtp.m_uOutputBufferUsed += uChunkSize;
     if( bMarker ) // EoF (Frame complete)
     {
         if(options.debug) {
-            LL(2) << "MARK end of frame #" << frameCounter << ", Buffer used: " << rtp.m_uOutputBufferUsed << " bytes, buffer size allocated: " << rtp.m_uOutputBufferSize << " bytes, chunk count: " << rtp.m_uRTPChunkCnt << " chunks.";
+            LL(3) << "MARK end of frame #" << frameCounter << ", Buffer used: " << rtp.m_uOutputBufferUsed << " bytes, buffer size allocated: " << rtp.m_uOutputBufferSize << " bytes, chunk count: " << rtp.m_uRTPChunkCnt << " chunks.";
             for(int b=0; b < 40; b++) {
                 std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << (int)rtp.m_pOutputBuffer[b] << std::dec << " ";
             }
             std::cout << std::endl;
         }
-        if((rtp.m_timestamp < lastTimeStamp) && (lastTimeStamp != 0)) {
-            LOG << "Error, frame timestamp decreased. Prior frame: " << lastTimeStamp << ", this frame: " << rtp.m_timestamp;
+        chunksPerFramePrior = rtp.m_uRTPChunkCnt;
+
+        if((rtp.m_timestamp < lastTimeStamp) && (lastTimeStamp != 0) && (rtp.m_timestamp != 0)) {
+            LOG << "Error, frame timestamp decreased. Prior frame: " << lastTimeStamp << ", this frame: " << rtp.m_timestamp << ", keeping anyway.";
             // keep the frame anyway.
             // Also, there is a minor issue that the timestamp is only compared from the last packet of the frame versus all packets of a frame, etc.
         }
         lastTimeStamp = rtp.m_timestamp;
-        RTPGetNextOutputBuffer( rtp, true );
+        RTPGetNextOutputBuffer( rtp, true ); // This is where the frame is advanced.
         // Reset buffer
         rtp.m_uRTPChunkCnt = 0;
         rtp.m_uOutputBufferUsed = 0;
+        // Mark the next spot as zero:
+        packetSizeBuffer[psbFramePos][psbPos] = 0; // psbPos has been ++ already.
+        // Advance to next slot of large packet buffer, and reset sub index
+        lpbFramePos = (lpbFramePos+1)%guaranteedBufferFramesCount_rtpng;
+        psbFramePos = (psbFramePos+1)%guaranteedBufferFramesCount_rtpng;
+
+        psbPos = 0;
+        lpbPos = 0;
     }
+}
+
+void rtpnextgen::debugFrame(uint8_t *buf, int start, int end) {
+    LOG << "Debugging frame from " << start << " to " << end;
+    unsigned char c = 0;
+    int ccount=0;
+    for(int b=start; b < end; b++) {
+        c = buf[b];
+        std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << (int)c << std::dec << " ";
+        ccount++;
+        if( (ccount % 40) == 0) {
+            std::cout << std::endl;
+        }
+    }
+
+    return;
+}
+
+bool rtpnextgen::buildFrameFromPackets(int pos) {
+
+    // For each chunk stored,
+    // there are 12 bytes of header
+    // and N bytes of frame, where N
+    // is the packetSize, as stored in packetSizeBuffer,
+    // minus the 12 bytes of header.
+    // Indeed, we are not even needing to read the header.
+
+    // The data are stored in largePacketBuffer[pos].
+    // we pass the position variable because it is possible
+    // that the frame advances significantly while we are here.
+
+    // We must be faster than 1/FPS to keep up.
+
+    // Keeping some of these volatile for debug purposes.
+    std::chrono::steady_clock::time_point starttp;
+    std::chrono::steady_clock::time_point endtp;
+    volatile size_t frameBytesMoved = 0;
+    volatile int chunk = 0;
+    int headerOffsetBytes = 12;
+    volatile int startOffset = 0;
+    starttp = std::chrono::steady_clock::now();
+
+    for(; packetSizeBuffer[pos][chunk] !=0; chunk++) {
+        /*
+        memmove(((uint8_t *)guaranteedBufferFrames[pos])+frameBytesMoved,
+                largePacketBuffer[pos]+startOffset+headerOffsetBytes,
+                packetSizeBuffer[pos][chunk]-headerOffsetBytes);
+        */
+
+        memcpy(((uint8_t *)guaranteedBufferFrames[pos])+frameBytesMoved,
+               largePacketBuffer[pos]+startOffset+headerOffsetBytes,
+               packetSizeBuffer[pos][chunk]-headerOffsetBytes);
+
+        startOffset += packetSizeBuffer[pos][chunk];
+        frameBytesMoved += packetSizeBuffer[pos][chunk]-headerOffsetBytes;
+    }
+
+    //debugFrame(guaranteedBufferFrames[pos], 0, 640*1280*2);
+    endtp = std::chrono::steady_clock::now();
+    durationOfMemoryCopy_microSec[pos] = std::chrono::duration_cast<std::chrono::microseconds>(endtp - starttp).count();
+    return true;
 }
 
 void rtpnextgen::streamLoop() {
@@ -487,14 +624,19 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
     while(lastFrameDelivered==(unsigned int)pos) {
         *stat = camWaiting;
         tap++;
-        usleep(NG_FRAME_WAIT_MIN_DELAY_US);
+        std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+        //usleep(NG_FRAME_WAIT_MIN_DELAY_US);
         pos = doneFrameNumber;
         if(camcontrol->exit)
             return timeoutFrame;
     }
 
     *stat = camPlaying;
+
     lastFrameDelivered = pos; // keep a copy around
+
+    // This is where to reconstruct the frame into the gbf[pos].
+    bool successBuilding = buildFrameFromPackets(pos);
     return guaranteedBufferFrames[pos];
     (void)lastFrameNumber_local_debug;
 }

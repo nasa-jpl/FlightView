@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <cstring>
 #include <chrono>
+#include <thread>
 #include <pthread.h>
 
 #include <cstdint>
@@ -104,6 +105,20 @@ private:
     uint16_t *timeoutFrame = NULL;
     int ftab[guaranteedBufferFramesCount_rtpng] = {0};
     size_t frameBufferSizeBytes = 0;
+    size_t uRxSizePrior = 0;
+    size_t chunksPerFramePrior = 0;
+
+    uint8_t *largePacketBuffer[guaranteedBufferFramesCount_rtpng] = {NULL};
+    //                        [lpbFramePos][lpbPos]
+    int lpbPos = 0;
+    int lpbFramePos = 0;
+
+    size_t packetSizeBuffer[guaranteedBufferFramesCount_rtpng][1024]; // buffer to hold the size of incomming packets.
+    //                     [psbFramePos][psbPos];
+    int psbFramePos = 0;
+    int psbPos = 0;
+
+
     SRTPData rtp;
     bool g_bRunning = false;
     void RTPGetNextOutputBuffer( SRTPData& rtp, bool bLastBufferReady );
@@ -112,7 +127,15 @@ private:
         uint8_t &uVer, bool& bPadding, bool& bExtension, uint8_t& uCRSCCount, uint8_t& uPayloadType, uint32_t& uTimeStamp, uint32_t& uSource
         );
 
+    bool buildFrameFromPackets(int pos);
+
+    void debugFrame(uint8_t *buf, int start, int end);
+
     bool getIfAddr(const char* ifString, in_addr *addr);
+
+    // Performance metrics:
+    int durationOfMemoryCopy_microSec[guaranteedBufferFramesCount_rtpng] = {0};
+    int frameReceive_microSec[guaranteedBufferFramesCount_rtpng] = {0};
 
     void debugMessage(const char* msg);
     void debugMessage(const std::string msg);
