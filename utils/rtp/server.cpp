@@ -224,7 +224,6 @@ int main() {
     std::chrono::steady_clock::time_point startMaintp;
     std::chrono::steady_clock::time_point begintp;
     std::chrono::steady_clock::time_point endtp;
-    std::chrono::steady_clock::time_point finaltp;
 
     uint16_t height = 480;
     uint16_t width = 1280;
@@ -300,13 +299,15 @@ int main() {
     // 2000 = 500 FPS (470 typically)
     int framePeriod = 3500; // microseconds
     int underspeedEvents = 0;
+    uintmax_t bytesSentTotal = 0;
 
     startMaintp = std::chrono::steady_clock::now();
     while(framesSent < 4000) {
         begintp = std::chrono::steady_clock::now();
 
-        // Generating a moving pattern costs us a lot,
-        genFrameOffset(frameImage, height, width, framesSent); // moving pattern, slows down loop though
+        // Optional, modify frame to have a moving pattern
+        genFrameOffset(frameImage, height, width, framesSent); // slows down loop
+
         // Mark the frame, in case we save data and look at it later.
         insertFrameHeader(frameImage, framesSent);
 
@@ -322,10 +323,10 @@ int main() {
                 padding, extension, uCRSCCount, 
                 payloadType, timestamp, ssrc);  
                    
-            chunks++;
-            buildPacket(headerBuffer, frameImage, packetBuffer, chunks-1, 
+            buildPacket(headerBuffer, frameImage, packetBuffer, chunks,
                     frameBytesPerPacket);
-                    
+
+            chunks++;
             packetSize = 12 + frameBytesPerPacket;
             
             bytesSent = sendto(sockfd, (const char *)packetBuffer, packetSize,  
@@ -333,24 +334,15 @@ int main() {
             if(packetSize != bytesSent) {
                 printf("Error, packetSize: %ld, Bytes sent: %ld. Consider increasing the MTU or chunks per frame.\n", packetSize, bytesSent);
             }
-            if(marker) {
-                //printf("!"); 
-            } else {
-                //printf(".");
-            }
-            //fflush(stdout);
+            bytesSentTotal += bytesSent;
+
             chunksSent++;
             sequenceNumber++;
-            //printf("Sent %ld bytes.\n", bytesSent);
             std::this_thread::sleep_for(std::chrono::nanoseconds(10));
         }
         timestamp++;
         framesSent++;
-        //sequenceNumber = 0;
         chunks = 0;
-        //printf("|"); fflush(stdout);
-        // The delay is meaningful when greater than 100 microseconds.
-        // Otherwise, frame rate is dominated by other things.
         endtp = std::chrono::steady_clock::now();
         int duration = std::chrono::duration_cast<std::chrono::microseconds>(endtp - begintp).count();
         if(duration < framePeriod) {
@@ -368,8 +360,12 @@ int main() {
     printf("Number of underspeed events: %d\n", underspeedEvents);
     printf("Effective frame rate: %3.3f\n",
         (1E6*(1.0/duration)*framesSent));
-    float gigabitsPerSec = 8*height*width*2*(1E6*(1.0/duration)*framesSent)/1024/1024/1024;
-    printf("Datarate: %f.2 gigabits/sec\n", gigabitsPerSec);
+
+    // This is not quite right as it does not account for the packet header of 12 bytes
+    // float gigabitsPerSec = 8*height*width*2*(1E6*(1.0/duration)*framesSent)/1024/1024/1024;
+    float gigabitsPerSec = 8*bytesSentTotal*(1E6*(1.0/duration))/1024/1024/1024;
+
+    printf("Datarate: %0.3f gigabits/sec (average)\n", gigabitsPerSec);
     printf("\n");
 
     printf("Done.\n");
