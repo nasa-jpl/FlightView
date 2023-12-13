@@ -172,6 +172,7 @@ public slots:
     void enableStdDevCalculation(bool enabled);
     void stop();
     void setColorScheme(int scheme, bool useDarkTheme);
+    void debugThis();
     void sMessage(QString message);
 };
 

@@ -256,7 +256,7 @@ int main() {
     // Filling server information 
     servaddr.sin_family    = AF_INET; // IPv4 
     //servaddr.sin_addr.s_addr = INADDR_ANY; 
-    servaddr.sin_addr.s_addr = inet_addr("0.0.0.0");
+    servaddr.sin_addr.s_addr = inet_addr("10.0.0.246");
     servaddr.sin_port = htons(PORT); 
        
     socklen_t len;
@@ -338,7 +338,7 @@ int main() {
 
             chunksSent++;
             sequenceNumber++;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+            std::this_thread::sleep_for(std::chrono::nanoseconds(20));
         }
         timestamp++;
         framesSent++;

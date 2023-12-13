@@ -534,6 +534,12 @@ void frameWorker::stop()
     doRun = false;
 }
 
+void frameWorker::debugThis()
+{
+    sMessage("debug feature reached.");
+    sMessage(QString("Take object frame count: %1").arg(to.count));
+}
+
 void frameWorker::sMessage(QString message)
 {
     message.prepend("[frameWorker]: ");

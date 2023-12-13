@@ -361,6 +361,8 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     // This function will hang here waiting for data without timeout.
     // Thus, it should be watched externally to see what is happening.
     bool bMarker = false;
+    std::chrono::steady_clock::time_point starttp;
+    std::chrono::steady_clock::time_point endtp;
 
     if((size_t)(lpbPos+rtp.m_uPacketBufferSize) > frameBufferSizeBytes*2) {
         LOG << "Error, cannot store this much data. Likely the end of frame was missed.";
@@ -372,7 +374,9 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
         return;
     }
 
+
     // Receive from network into rtp.m_pPacketBuffer:
+    starttp = std::chrono::steady_clock::now();
     receiveFromWaiting = true; // for debug readout
     // Receive directly into the large packet buffer
     // at an offset:
@@ -381,19 +385,21 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
                 0, nullptr, nullptr
                 );
     receiveFromWaiting = false;
+    endtp = std::chrono::steady_clock::now();
+    frameReceive_microSec[lpbFramePos%guaranteedBufferFramesCount_rtpng] = std::chrono::duration_cast<std::chrono::microseconds>(endtp - starttp).count();
 
 
     if( uRxSize == -1 )
     {
         // Handle error or cleanup.
         LOG << "ERROR, Received size -1 from RTP UDP socket.";
-        g_bRunning = false;
+        //g_bRunning = false;
         return;
     }
     if( uRxSize == 0) {
         // I believe that since we do not timeout, this should generally not happen.
         LOG << "ERROR, Received size 0 from RTP UDP socket.";
-        g_bRunning = false;
+        //g_bRunning = false;
         return;
     }
 
@@ -594,9 +600,17 @@ void rtpnextgen::streamLoop() {
         // Function returns once bytes are received.
         RTPPump(rtp);
         pumpCount++;
-        if(camcontrol != NULL)
+        if(camcontrol != NULL) {
             if(camcontrol->exit)
                 g_bRunning = false;
+            if(camcontrol->pause) {
+                // debug opportunity:
+                for(int n=0; n < guaranteedBufferFramesCount_rtpng; n++) {
+                    LOG << "[" << n << "]: " << frameReceive_microSec[n];
+                }
+            }
+        }
+
     }
     LL(3) << "Finished RTPPump() with pumpCount = " << pumpCount;
 }

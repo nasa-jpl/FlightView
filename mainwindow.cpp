@@ -523,4 +523,5 @@ void MainWindow::debugThis()
     handleMainWindowStatusMessage("Debug function reached.");
     qDebug() << __PRETTY_FUNCTION__ << ": Debug reached inside MainWindow class.";
     flight_screen->debugThis();
+    fw->debugThis();
 }
