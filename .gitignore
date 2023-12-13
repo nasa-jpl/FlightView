@@ -28,6 +28,6 @@ desktop.ini
 #Temp files
 *~
 *.pro.user
-Makefile
+#Makefile
 liveview2
 liveview
