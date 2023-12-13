@@ -361,8 +361,6 @@ int main() {
     printf("Effective frame rate: %3.3f\n",
         (1E6*(1.0/duration)*framesSent));
 
-    // This is not quite right as it does not account for the packet header of 12 bytes
-    // float gigabitsPerSec = 8*height*width*2*(1E6*(1.0/duration)*framesSent)/1024/1024/1024;
     float gigabitsPerSec = 8*bytesSentTotal*(1E6*(1.0/duration))/1024/1024/1024;
 
     printf("Datarate: %0.3f gigabits/sec (average)\n", gigabitsPerSec);
