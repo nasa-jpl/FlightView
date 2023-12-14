@@ -95,6 +95,8 @@ private:
     unsigned int lastFrameDelivered = 0;
     uint64_t frameCounter = 0;
     uint64_t framesDeliveredCounter = 0;
+    uint64_t lagLevel = 0;
+    uint64_t lagEventCounter = 0;
     bool haveInitialized = false;
     bool loopRunning = false;
     bool destructorRunning = false;

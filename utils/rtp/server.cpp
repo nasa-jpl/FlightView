@@ -28,8 +28,13 @@
 // 2500 = 400 FPS (385 typically)
 // 2000 = 500 FPS (470 typically)
 
-#define framePeriod_microsec (3333)
+#define framePeriod_microsec (3E3)
 #define packetDelay_ns (1)
+
+#define nFramesToDeliver (1000)
+
+// Frame size must be integer divisible
+#define chunksPerFrame_d (32)
 
 struct SRTPData {
     bool	      m_bFirstPacket;
@@ -201,8 +206,8 @@ void genFrame(uint8_t* buffer, uint16_t height, uint16_t width) {
 
 void genFrameOffset(uint8_t* buffer, uint16_t height, uint16_t width, uint8_t offset) {
     for(unsigned int p=0; p < height*width*2; p++) {
-        //buffer[p] = (uint16_t)p + offset; // straight column
-        buffer[p] = ((uint8_t)p + offset) + (p/width); // diagional pattern
+        //buffer[p] = (uint16_t)p + offset; // straight column, moves sideways
+        buffer[p] = ((uint8_t)p + offset) + (p/width); // diagional pattern, moves diagionally 
     }
 }
 
@@ -281,7 +286,7 @@ int main() {
 
     unsigned int frameSize = height*width*2; 
     bool marker = false; 
-    int chunksPerFrame = 32;
+    int chunksPerFrame = chunksPerFrame_d;
     size_t frameBytesPerPacket = frameSize/chunksPerFrame; 
     unsigned int chunksSent = 0;
     unsigned int chunks = 0;
@@ -313,7 +318,7 @@ int main() {
     uintmax_t bytesSentTotal = 0;
 
     startMaintp = std::chrono::steady_clock::now();
-    while(framesSent < 4000) {
+    while(framesSent < nFramesToDeliver) {
         begintp = std::chrono::steady_clock::now();
 
         // Optional, modify frame to have a moving pattern

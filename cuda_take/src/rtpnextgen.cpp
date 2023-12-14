@@ -501,8 +501,10 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     {
         if(options.debug) {
             LL(3) << "MARK end of frame #" << frameCounter << ", Buffer used: " << rtp.m_uOutputBufferUsed << " bytes, buffer size allocated: " << rtp.m_uOutputBufferSize << " bytes, chunk count: " << rtp.m_uRTPChunkCnt << " chunks.";
+            // This will only work if the packets are at least 40 bytes each.
+            // This is because it is a quick hack and looks at the packet buffer, not the actual assembled frame.
             for(int b=0; b < 40; b++) {
-                std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << (int)rtp.m_pOutputBuffer[b] << std::dec << " ";
+                std::cout << std::setfill('0') << std::setw(2) << std::right << std::hex << (int)(largePacketBuffer[lpbFramePos][12+b]) << std::dec << " ";
             }
             std::cout << std::endl;
         }
@@ -652,8 +654,17 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
     bool successBuilding = buildFrameFromPackets(frameToDeliver);
     lastFrameDelivered = frameToDeliver;
 
-
     framesDeliveredCounter++;
+
+    if((unsigned int)frameToDeliver != doneFrameNumber) {
+        lagEventCounter++;
+        if(options.debug)
+            LL(4) << "Frame delivery is LAGGING the buffer. Delivering frame " << frameToDeliver << ", fresh ready frame is " << doneFrameNumber << ", frame count: " << framesDeliveredCounter;
+    } else {
+        if(options.debug)
+            LL(4) << "Frame delivery is sync w/ the buffer. Delivering frame " << frameToDeliver << ", fresh ready frame is " << doneFrameNumber << ", frame count: " << framesDeliveredCounter;
+    }
+
     return guaranteedBufferFrames[frameToDeliver];
 
     (void)lastFrameNumber_local_debug;
