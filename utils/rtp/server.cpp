@@ -256,7 +256,7 @@ int main() {
     // Filling server information 
     servaddr.sin_family    = AF_INET; // IPv4 
     //servaddr.sin_addr.s_addr = INADDR_ANY; 
-    servaddr.sin_addr.s_addr = inet_addr("10.0.0.246");
+    servaddr.sin_addr.s_addr = inet_addr("0.0.0.0");
     servaddr.sin_port = htons(PORT); 
        
     socklen_t len;
@@ -293,11 +293,11 @@ int main() {
     // 8E3  = 125 FPS
     // 5E3  = 196 FPS
     // 4444 = 225 FPS
-    // 4E3  = 250 FPS (243.5 actual)
-    // 3333 = 300 FPS
+    // 4E3  = 250 FPS (243.5 typically)
+    // 3333 = 300 FPS (295 typically)
     // 2500 = 400 FPS (385 typically)
     // 2000 = 500 FPS (470 typically)
-    int framePeriod = 3500; // microseconds
+    int framePeriod = 3E3; // microseconds
     int underspeedEvents = 0;
     uintmax_t bytesSentTotal = 0;
 
@@ -338,7 +338,7 @@ int main() {
 
             chunksSent++;
             sequenceNumber++;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(20));
+            //std::this_thread::sleep_for(std::chrono::nanoseconds(5));
         }
         timestamp++;
         framesSent++;

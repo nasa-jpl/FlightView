@@ -576,10 +576,13 @@ bool rtpnextgen::buildFrameFromPackets(int pos) {
                 packetSizeBuffer[pos][chunk]-headerOffsetBytes);
         */
 
-        memcpy(((uint8_t *)guaranteedBufferFrames[pos])+frameBytesMoved,
-               largePacketBuffer[pos]+startOffset+headerOffsetBytes,
-               packetSizeBuffer[pos][chunk]-headerOffsetBytes);
-
+        if(packetSizeBuffer[pos][chunk] > 65535) {
+            LOG << "ERROR, packet size recorded is too large. Corruption likely. packetSizeBuffer[" << pos << "][" << chunk << "]: " << packetSizeBuffer[pos][chunk];
+        } else {
+            memcpy(((uint8_t *)guaranteedBufferFrames[pos])+frameBytesMoved,
+                   largePacketBuffer[pos]+startOffset+headerOffsetBytes,
+                   packetSizeBuffer[pos][chunk]-headerOffsetBytes);
+        }
         startOffset += packetSizeBuffer[pos][chunk];
         frameBytesMoved += packetSizeBuffer[pos][chunk]-headerOffsetBytes;
     }
@@ -625,6 +628,7 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
     {
         *stat = CameraModel::camPaused;
         LL(4) << "RTP NextGen Camera paused";
+        LOG << "Frames delivered: " << framesDeliveredCounter << ", frames received: " << frameCounter;
         usleep(1E6);
         return timeoutFrame;
     }
@@ -647,12 +651,38 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
 
     *stat = camPlaying;
 
-    lastFrameDelivered = pos; // keep a copy around
+    // EHL TODO: Change this so that we deliver the "next" frame
+    // from the buffer rather than the most recent new one.
+    // We should just deliver the next frame each time we come here,
+    // until we are "caught up".
+
+    // This way, if we are waiting, and we get behind somehow,
+    // we will catch up by coming here a few times and not
+    // waiting.
+
+    // if(last != pos) { send out next frame } { else...
+
+    // The only assumption here is that we have not been lapped.
+
+    // So, send out done frame
+    // come back, check. If same frame is done frame, do nothing, just wait around
+    // if some other frame is done frame, then, send out the "next" frame,
+    // which is +1 of the prior delivered frame. We don't care if that happens to be the
+    // most recent done frame or not. Just send it out.
+    // Come back here again. Check, was the frame we just sent out the same as the most recent
+    // done frame? If so, hang tight and wait. If not, send out the next (+1) frame from the
+    // prior sent out frame. And so on and so forth.
+
+    int frameToDeliver = (lastFrameDelivered+1)%guaranteedBufferFramesCount_rtpng;
+    bool successBuilding = buildFrameFromPackets(frameToDeliver);
+    lastFrameDelivered = frameToDeliver;
+
 
     // This is where to reconstruct the frame into the gbf[pos].
-    bool successBuilding = buildFrameFromPackets(pos);
+    framesDeliveredCounter++;
     return guaranteedBufferFrames[pos];
     (void)lastFrameNumber_local_debug;
+    (void)successBuilding;
 }
 
 uint16_t* rtpnextgen::getFrame(CameraModel::camStatusEnum *stat) {
