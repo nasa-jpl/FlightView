@@ -558,7 +558,7 @@ bool rtpnextgen::buildFrameFromPackets(int pos) {
     // we pass the position variable because it is possible
     // that the frame advances significantly while we are here.
 
-    // We must be faster than 1/FPS to keep up.
+    // We must be much faster than 1/FPS to keep up.
 
     // Keeping some of these volatile for debug purposes.
     std::chrono::steady_clock::time_point starttp;
@@ -570,14 +570,9 @@ bool rtpnextgen::buildFrameFromPackets(int pos) {
     starttp = std::chrono::steady_clock::now();
 
     for(; packetSizeBuffer[pos][chunk] !=0; chunk++) {
-        /*
-        memmove(((uint8_t *)guaranteedBufferFrames[pos])+frameBytesMoved,
-                largePacketBuffer[pos]+startOffset+headerOffsetBytes,
-                packetSizeBuffer[pos][chunk]-headerOffsetBytes);
-        */
-
         if(packetSizeBuffer[pos][chunk] > 65535) {
             LOG << "ERROR, packet size recorded is too large. Corruption likely. packetSizeBuffer[" << pos << "][" << chunk << "]: " << packetSizeBuffer[pos][chunk];
+            return false;
         } else {
             memcpy(((uint8_t *)guaranteedBufferFrames[pos])+frameBytesMoved,
                    largePacketBuffer[pos]+startOffset+headerOffsetBytes,
@@ -587,7 +582,7 @@ bool rtpnextgen::buildFrameFromPackets(int pos) {
         frameBytesMoved += packetSizeBuffer[pos][chunk]-headerOffsetBytes;
     }
 
-    //debugFrame(guaranteedBufferFrames[pos], 0, 640*1280*2);
+    // Capture the time spent copying for benchmark purposes:
     endtp = std::chrono::steady_clock::now();
     durationOfMemoryCopy_microSec[pos] = std::chrono::duration_cast<std::chrono::microseconds>(endtp - starttp).count();
     return true;
@@ -608,8 +603,10 @@ void rtpnextgen::streamLoop() {
                 g_bRunning = false;
             if(camcontrol->pause) {
                 // debug opportunity:
-                for(int n=0; n < guaranteedBufferFramesCount_rtpng; n++) {
-                    LOG << "[" << n << "]: " << frameReceive_microSec[n];
+                if(options.debug) {
+                    for(int n=0; n < guaranteedBufferFramesCount_rtpng; n++) {
+                        LOG << "[" << n << "]: " << frameReceive_microSec[n];
+                    }
                 }
             }
         }
@@ -643,7 +640,6 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
         *stat = camWaiting;
         tap++;
         std::this_thread::sleep_for(std::chrono::nanoseconds(10));
-        //usleep(NG_FRAME_WAIT_MIN_DELAY_US);
         pos = doneFrameNumber;
         if(camcontrol->exit)
             return timeoutFrame;
@@ -651,36 +647,15 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
 
     *stat = camPlaying;
 
-    // EHL TODO: Change this so that we deliver the "next" frame
-    // from the buffer rather than the most recent new one.
-    // We should just deliver the next frame each time we come here,
-    // until we are "caught up".
-
-    // This way, if we are waiting, and we get behind somehow,
-    // we will catch up by coming here a few times and not
-    // waiting.
-
-    // if(last != pos) { send out next frame } { else...
-
-    // The only assumption here is that we have not been lapped.
-
-    // So, send out done frame
-    // come back, check. If same frame is done frame, do nothing, just wait around
-    // if some other frame is done frame, then, send out the "next" frame,
-    // which is +1 of the prior delivered frame. We don't care if that happens to be the
-    // most recent done frame or not. Just send it out.
-    // Come back here again. Check, was the frame we just sent out the same as the most recent
-    // done frame? If so, hang tight and wait. If not, send out the next (+1) frame from the
-    // prior sent out frame. And so on and so forth.
-
+    // This is where to reconstruct the frame into the gbf[pos].
     int frameToDeliver = (lastFrameDelivered+1)%guaranteedBufferFramesCount_rtpng;
     bool successBuilding = buildFrameFromPackets(frameToDeliver);
     lastFrameDelivered = frameToDeliver;
 
 
-    // This is where to reconstruct the frame into the gbf[pos].
     framesDeliveredCounter++;
-    return guaranteedBufferFrames[pos];
+    return guaranteedBufferFrames[frameToDeliver];
+
     (void)lastFrameNumber_local_debug;
     (void)successBuilding;
 }

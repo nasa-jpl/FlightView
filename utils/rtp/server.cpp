@@ -20,6 +20,17 @@
 #define PORT      5004
 #define MAXLINE 1024 
 
+// 8E3  = 125 FPS
+// 5E3  = 196 FPS
+// 4444 = 225 FPS
+// 4E3  = 250 FPS (243.5 typically)
+// 3333 = 300 FPS (295 typically)
+// 2500 = 400 FPS (385 typically)
+// 2000 = 500 FPS (470 typically)
+
+#define framePeriod_microsec (3333)
+#define packetDelay_ns (1)
+
 struct SRTPData {
     bool	      m_bFirstPacket;
     bool		  m_bInitOK;
@@ -297,7 +308,7 @@ int main() {
     // 3333 = 300 FPS (295 typically)
     // 2500 = 400 FPS (385 typically)
     // 2000 = 500 FPS (470 typically)
-    int framePeriod = 3E3; // microseconds
+    int framePeriod = framePeriod_microsec; // microseconds
     int underspeedEvents = 0;
     uintmax_t bytesSentTotal = 0;
 
@@ -338,7 +349,7 @@ int main() {
 
             chunksSent++;
             sequenceNumber++;
-            //std::this_thread::sleep_for(std::chrono::nanoseconds(5));
+            std::this_thread::sleep_for(std::chrono::nanoseconds(packetDelay_ns));
         }
         timestamp++;
         framesSent++;
@@ -358,12 +369,12 @@ int main() {
     int duration = std::chrono::duration_cast<std::chrono::microseconds>(endtp - startMaintp).count();
 
     printf("Number of underspeed events: %d\n", underspeedEvents);
-    printf("Effective frame rate: %3.3f\n",
+    printf("Average frame rate: %3.3f FPS\n",
         (1E6*(1.0/duration)*framesSent));
 
     float gigabitsPerSec = 8*bytesSentTotal*(1E6*(1.0/duration))/1024/1024/1024;
 
-    printf("Datarate: %0.3f gigabits/sec (average)\n", gigabitsPerSec);
+    printf("Average Datarate: %0.3f gigabits/sec\n", gigabitsPerSec);
     printf("\n");
 
     printf("Done.\n");
