@@ -33,7 +33,7 @@
 
 
 #define RTPNG_TIMEOUT_DURATION 100
-#define guaranteedBufferFramesCount_rtpng (10)
+#define guaranteedBufferFramesCount_rtpng (30)
 
 #define NG_FRAME_WAIT_MIN_DELAY_US (1)
 #define MAX_FRAME_WAIT_TAPS (100000)

@@ -654,17 +654,33 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
     bool successBuilding = buildFrameFromPackets(frameToDeliver);
     lastFrameDelivered = frameToDeliver;
 
-    framesDeliveredCounter++;
+    lagLevel = (((doneFrameNumber-frameToDeliver)%guaranteedBufferFramesCount_rtpng)+guaranteedBufferFramesCount_rtpng)%guaranteedBufferFramesCount_rtpng;
 
-    if((unsigned int)frameToDeliver != doneFrameNumber) {
-        lagEventCounter++;
-        if(options.debug)
-            LL(4) << "Frame delivery is LAGGING the buffer. Delivering frame " << frameToDeliver << ", fresh ready frame is " << doneFrameNumber << ", frame count: " << framesDeliveredCounter;
-    } else {
-        if(options.debug)
-            LL(4) << "Frame delivery is sync w/ the buffer. Delivering frame " << frameToDeliver << ", fresh ready frame is " << doneFrameNumber << ", frame count: " << framesDeliveredCounter;
+    framesDeliveredCounter++;
+    float percentUsed = 100.0*lagLevel / guaranteedBufferFramesCount_rtpng;
+
+    if(percentUsed > 75.0) {
+        LOG << "WARNING, Lag level (percent): " << std::fixed << std::setprecision(1) << percentUsed << "%, lag frames: " << lagLevel << "/" << guaranteedBufferFramesCount_rtpng << ", frame count: " << framesDeliveredCounter;
     }
 
+    // TODO: Make this level of output a compile-time option
+    // so that we can have an even faster loop.
+    if((unsigned int)frameToDeliver != doneFrameNumber) {
+        lagEventCounter++;
+        if(options.debug) {
+            LL(4) << "Lag level (percent): " << std::fixed << std::setprecision(1) << percentUsed << "%, lag frames: " << lagLevel << "/" << guaranteedBufferFramesCount_rtpng << ", frame count: " << framesDeliveredCounter;
+            LL(4) << "Frame delivery is LAGGING the buffer. Delivering frame " << frameToDeliver << ", fresh ready frame is " << doneFrameNumber << ", frame count: " << framesDeliveredCounter;
+        }
+
+    } else {
+        if(options.debug) {
+            LL(4) << "Lag level (percent): " << std::fixed << std::setprecision(1) << percentUsed << "%, lag frames: " << lagLevel << "/" << guaranteedBufferFramesCount_rtpng ;
+            LL(4) << "Frame delivery is sync w/ the buffer. Delivering frame " << frameToDeliver << ", fresh ready frame is " << doneFrameNumber << ", frame count: " << framesDeliveredCounter;
+        }
+    }
+
+    // TODO: Make the gbf smaller, it does not need to be more than 2 or 3 frames.
+    // The other buffers can remain larger.
     return guaranteedBufferFrames[frameToDeliver];
 
     (void)lastFrameNumber_local_debug;

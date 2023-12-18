@@ -25,13 +25,14 @@
 // 4444 = 225 FPS
 // 4E3  = 250 FPS (243.5 typically)
 // 3333 = 300 FPS (295 typically)
+// 3E3  = 330 FPS (328 typically)
 // 2500 = 400 FPS (385 typically)
 // 2000 = 500 FPS (470 typically)
 
-#define framePeriod_microsec (3E3)
+#define framePeriod_microsec (3333)
 #define packetDelay_ns (1)
 
-#define nFramesToDeliver (1000)
+#define nFramesToDeliver (100000)
 
 // Frame size must be integer divisible
 #define chunksPerFrame_d (32)
