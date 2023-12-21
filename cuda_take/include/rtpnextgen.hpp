@@ -35,7 +35,7 @@
 #define RTPNG_TIMEOUT_DURATION 100
 // Safe level seems to be about 30.
 // We will use a level of 5 for testing.
-#define guaranteedBufferFramesCount_rtpng (60)
+#define networkPacketBufferFrames (300)
 #define rtpConstructedFrameBufferCount (3)
 
 #define NG_FRAME_WAIT_MIN_DELAY_US (1)
@@ -118,17 +118,16 @@ private:
     camControlType *camcontrol = NULL;
     uint16_t *guaranteedBufferFrames[rtpConstructedFrameBufferCount] = {NULL};
     uint16_t *timeoutFrame = NULL;
-    int ftab[guaranteedBufferFramesCount_rtpng] = {0};
     size_t frameBufferSizeBytes = 0;
     size_t uRxSizePrior = 0;
     size_t chunksPerFramePrior = 0;
 
-    uint8_t *largePacketBuffer[guaranteedBufferFramesCount_rtpng] = {NULL};
+    uint8_t *largePacketBuffer[networkPacketBufferFrames] = {NULL};
     //                        [lpbFramePos][lpbPos]
     int lpbPos = 0;
     int lpbFramePos = 0;
 
-    size_t packetSizeBuffer[guaranteedBufferFramesCount_rtpng][1024]; // buffer to hold the size of incomming packets.
+    size_t packetSizeBuffer[networkPacketBufferFrames][1024]; // buffer to hold the size of incomming packets.
     //                     [psbFramePos][psbPos];
     int psbFramePos = 0;
     int psbPos = 0;
@@ -149,8 +148,8 @@ private:
     bool getIfAddr(const char* ifString, in_addr *addr);
 
     // Performance metrics:
-    int durationOfMemoryCopy_microSec[guaranteedBufferFramesCount_rtpng] = {0};
-    int frameReceive_microSec[guaranteedBufferFramesCount_rtpng] = {0};
+    int durationOfMemoryCopy_microSec[networkPacketBufferFrames] = {0};
+    int frameReceive_microSec[networkPacketBufferFrames] = {0};
 
     void debugMessage(const char* msg);
     void debugMessage(const std::string msg);
