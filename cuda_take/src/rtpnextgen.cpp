@@ -485,7 +485,7 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     if( ( uOffset + uChunkSize ) > rtp.m_uOutputBufferSize ) {
         LOG << "An end of frame marker was missed, or the frame being received is larger than expected, or the chunks are not all the same size. Not keeping this chunk: " << rtp.m_uRTPChunkCnt+1;
         LOG << "  Chunk count for last good frame was " << chunksPerFramePrior << ". Size (bytes) of this chunk: " << rtp.m_uRTPChunkSize << ", offset into frame: " << uOffset << ", size of buffer for single frame storage: " << rtp.m_uOutputBufferSize;
-        LOG << "  Forcing end-of-frame MARK.";
+        LOG << "  Forcing end-of-frame MARK. Please check adapter MTU, net.core.rmem_default, and net.core.rmem_max.";
         if(uRxSize-uRxSizePrior != 0) {
             LOG << "  Size (bytes) of this UDP transaction: " << uRxSize << ", size of prior transaction: " << uRxSizePrior << ". Delta: " << uRxSize-uRxSizePrior;
         }
@@ -506,8 +506,10 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     rtp.m_uOutputBufferUsed += uChunkSize;
     if( bMarker ) // EoF (Frame complete)
     {
-        if(options.debug && false) {
-            LL(3) << "MARK end of frame #" << frameCounterNetworkSocket << ", Buffer used: " << rtp.m_uOutputBufferUsed << " bytes, buffer size allocated: " << rtp.m_uOutputBufferSize << " bytes, chunk count: " << rtp.m_uRTPChunkCnt << " chunks.";
+        if(options.debug) {
+            LL(3) << "MARK end of network frame #" << frameCounterNetworkSocket
+                  << ", write frame position: " << lpbFramePos
+                  << ", chunk count: " << rtp.m_uRTPChunkCnt << " chunks.";
             // This will only work if the packets are at least 40 bytes each.
             // This is because it is a quick hack and looks at the packet buffer, not the actual assembled frame.
             for(int b=0; b < 40; b++) {
@@ -710,9 +712,9 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
             waitingForFreshFrame = true;
             *stat = camWaiting;
             // Idea, wait only if less than 10ns have passed.
-            if((waitTaps%1000) == 0) {
-                LOG << "TAP " << waitTaps << ", " << "writeFrame: " << writeFrame << ", lastFrame: " << lastFrameDelivered << ", lag: " << lagLevel << ", priorLag: " << lagLevelPrior << ", frames delivered: " << framesDeliveredCounter;
-            }
+//            if((waitTaps%1000) == 0) {
+//                LOG << "TAP " << waitTaps << ", " << "writeFrame: " << writeFrame << ", lastFrame: " << lastFrameDelivered << ", lag: " << lagLevel << ", priorLag: " << lagLevelPrior << ", frames delivered: " << framesDeliveredCounter;
+//            }
             std::this_thread::sleep_for(std::chrono::nanoseconds(10));
             waitTaps++;
             writeFrame = doneFrameNumber; // update
@@ -738,19 +740,23 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
     }
 
     if(percentBufferUsed > 75) {
-            LOG << "WARN, buffer LAG,  utilization is " << std::fixed << std::setprecision(1) << percentBufferUsed << "%, " << lagLevel << "/"
-                << networkPacketBufferFrames << ", prior: " << lagLevelPrior << ", wait taps:" << waitTaps << ", frameCounter: " << framesDeliveredCounter
-                << ", frameDeliveredPosition: " << frameToDeliver << ", writeFrame: " << writeFrame << ", Correction applied? " << lagCorectionApplied;
-            lagEventCounter++;
+        LOG << "WARN, buffer LAG,  utilization is " << std::fixed << std::setprecision(1) << percentBufferUsed << "%, " << lagLevel << "/"
+            << networkPacketBufferFrames << ", prior: " << lagLevelPrior << ", wait taps:" << waitTaps << ", frameCounter: " << framesDeliveredCounter
+            << ", frameDeliveredPosition: " << frameToDeliver << ", writeFrame: " << writeFrame << ", Correction applied? " << lagCorectionApplied;
+        lagEventCounter++;
     } else if (options.debug) {
         if(lagLevel == 0) {
-            LOG << "NOTE, buffer SYNC, utilization is " << std::fixed << std::setprecision(1) << percentBufferUsed << "%, " << lagLevel << "/"
-                << networkPacketBufferFrames << ", prior: " << lagLevelPrior << ", wait taps:" << waitTaps << ", frameCounter: " << framesDeliveredCounter
-                << ", frameDeliveredPosition: " << frameToDeliver << ", writeFrame: " << writeFrame << ", Correction applied? " << lagCorectionApplied;
+            if(options.debug) {
+                LOG << "NOTE, buffer SYNC, utilization is " << std::fixed << std::setprecision(1) << percentBufferUsed << "%, " << lagLevel << "/"
+                    << networkPacketBufferFrames << ", prior: " << lagLevelPrior << ", wait taps:" << waitTaps << ", frameCounter: " << framesDeliveredCounter
+                    << ", frameDeliveredPosition: " << frameToDeliver << ", writeFrame: " << writeFrame << ", Correction applied? " << lagCorectionApplied;
+            }
         } else {
-            LOG << "NOTE, buffer LAG,  utilization is " << std::fixed << std::setprecision(1) << percentBufferUsed << "%, " << lagLevel << "/"
-                << networkPacketBufferFrames << ", prior: " << lagLevelPrior << ", wait taps:" << waitTaps << ", frameCounter: " << framesDeliveredCounter
-                << ", frameDeliveredPosition: " << frameToDeliver << ", writeFrame: " << writeFrame << ", Correction applied? " << lagCorectionApplied;
+            if(options.debug) {
+                LOG << "NOTE, buffer LAG,  utilization is " << std::fixed << std::setprecision(1) << percentBufferUsed << "%, " << lagLevel << "/"
+                    << networkPacketBufferFrames << ", prior: " << lagLevelPrior << ", wait taps:" << waitTaps << ", frameCounter: " << framesDeliveredCounter
+                    << ", frameDeliveredPosition: " << frameToDeliver << ", writeFrame: " << writeFrame << ", Correction applied? " << lagCorectionApplied;
+            }
             lagEventCounter++;
         }
     }
