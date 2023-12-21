@@ -33,7 +33,10 @@
 
 
 #define RTPNG_TIMEOUT_DURATION 100
-#define guaranteedBufferFramesCount_rtpng (30)
+// Safe level seems to be about 30.
+// We will use a level of 5 for testing.
+#define guaranteedBufferFramesCount_rtpng (60)
+#define rtpConstructedFrameBufferCount (3)
 
 #define NG_FRAME_WAIT_MIN_DELAY_US (1)
 #define MAX_FRAME_WAIT_TAPS (100000)
@@ -72,6 +75,7 @@ public:
 
     ~rtpnextgen();
 
+    uint16_t* getFrameWaitOld(unsigned int lastFrameNumber, CameraModel::camStatusEnum *stat);
     uint16_t* getFrameWait(unsigned int lastFrameNumber, CameraModel::camStatusEnum *stat);
     uint16_t* getFrame(CameraModel::camStatusEnum *stat);
     void streamLoop(); // This should be its own thread and is effectivly the producer of image data.
@@ -85,6 +89,7 @@ private:
     const char* interface;
     bool rtprgb = true;
     bool firstChunk = true;
+    bool waitingForFirstFrame = true;
     uint32_t sourceNumber = 0;
     uint32_t lastTimeStamp = 0;
     int port;
@@ -93,10 +98,17 @@ private:
     unsigned int currentFrameNumber = 0;
     unsigned int doneFrameNumber = 0;
     unsigned int lastFrameDelivered = 0;
-    uint64_t frameCounter = 0;
+    uint64_t frameCounterNetworkSocket = 0;
     uint64_t framesDeliveredCounter = 0;
     uint64_t lagLevel = 0;
+    uint64_t lagLevelPrior = 0;
+
     uint64_t lagEventCounter = 0;
+    uint64_t lapEventCounter = 0;
+    unsigned int constructedFramePosition = 0;
+    float percentBufferUsed = 0;
+    bool aboutToLap = false;
+    bool waitingForFreshFrame = true;
     bool haveInitialized = false;
     bool loopRunning = false;
     bool destructorRunning = false;
@@ -104,7 +116,7 @@ private:
     bool receiveFromWaiting = false;
 
     camControlType *camcontrol = NULL;
-    uint16_t *guaranteedBufferFrames[guaranteedBufferFramesCount_rtpng] = {NULL};
+    uint16_t *guaranteedBufferFrames[rtpConstructedFrameBufferCount] = {NULL};
     uint16_t *timeoutFrame = NULL;
     int ftab[guaranteedBufferFramesCount_rtpng] = {0};
     size_t frameBufferSizeBytes = 0;

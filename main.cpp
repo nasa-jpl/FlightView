@@ -315,7 +315,10 @@ int main(int argc, char *argv[])
                 exit(-1);
             }
         }
-
+        if(currentArg == "--laggy") {
+            startupOptions.laggy = true;
+            std::cout << "WARNING, laggy mode enabled." << std::endl;
+        }
         if(currentArg == "--gpsip")
         {
             // Only IPV4 supported, and no hostnames please, let's not depend upon DNS or resolv in the airplane...

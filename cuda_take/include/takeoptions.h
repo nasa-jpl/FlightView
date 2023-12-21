@@ -15,6 +15,7 @@
 struct takeOptionsType
 {
     bool debug = false;
+    bool laggy = false;
     bool flightMode = false;
     bool disableGPS = false;
     bool disableCamera = false;

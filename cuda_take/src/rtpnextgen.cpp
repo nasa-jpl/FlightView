@@ -105,7 +105,14 @@ rtpnextgen::~rtpnextgen() {
     }
     LL(3) << "Done freeing RTP LPB.";
 
-
+    LOG << "RTP NextGen Final Report: ";
+    LOG << "Lag events: " << lagEventCounter;
+    LOG << "LAP events: " << lapEventCounter;
+    LOG << "Network frame count:    " << frameCounterNetworkSocket;
+    LOG << "Delivered frame count:  " << framesDeliveredCounter;
+    LOG << "Definitely lost frames: " << frameCounterNetworkSocket-framesDeliveredCounter;
+    LOG << "Network frame buffer size: " << guaranteedBufferFramesCount_rtpng << " frames";
+    LOG << "Frame construction buffer size: " << guaranteedBufferFramesCount_rtpng << " frames";
     LL(4) << "Done with RTP NextGen destructor";
 }
 
@@ -217,7 +224,7 @@ bool rtpnextgen::initialize() {
         bool success_inet_conv = (bool)inet_aton(options.rtpAddress, &addr);
         if(success_inet_conv) {
             rtp.m_siHost.sin_addr.s_addr = addr.s_addr;
-            LL(2) << "Using user-supplied RTP listening address of [" << options.rtpAddress << "], hex: 0x" << std::hex << addr.s_addr;
+            LL(2) << "Using user-supplied RTP listening address of [" << options.rtpAddress << "], hex: 0x" << std::hex << addr.s_addr << std::dec;
         } else {
             LOG << "ERROR, cannot make use of supplied interface address [" << options.rtpAddress << "]. Listening on ALL interfaces as a fallback.";
             rtp.m_siHost.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -238,7 +245,7 @@ bool rtpnextgen::initialize() {
 
     // Prepare buffer:
     currentFrameNumber = 0;
-    frameCounter = 0;
+    frameCounterNetworkSocket = 0;
     doneFrameNumber = guaranteedBufferFramesCount_rtpng-1; // last position. Data not valid anyway.
     lastFrameDelivered = doneFrameNumber;
     //rtp.m_pOutputBuffer = (uint8_t *)guaranteedBufferFrames[0];
@@ -282,7 +289,6 @@ bool rtpnextgen::getIfAddr(const char *ifString, in_addr *addr) {
 
         family = ifa->ifa_addr->sa_family;
         if(family == AF_INET) {
-
             if( strncmp(ifa->ifa_name, ifString, IFNAMSIZ-1)==0 ) {
                 foundInterface = true;
                 addr->s_addr =  ((sockaddr_in*)ifa->ifa_addr)->sin_addr.s_addr;
@@ -315,7 +321,8 @@ void rtpnextgen::RTPGetNextOutputBuffer( SRTPData& rtp, bool bLastBufferReady ) 
 
     doneFrameNumber = currentFrameNumber; // position
     currentFrameNumber = (currentFrameNumber+1) % (guaranteedBufferFramesCount_rtpng);
-    frameCounter++;
+    frameCounterNetworkSocket++;
+    waitingForFirstFrame = false;
 }
 
 bool rtpnextgen::RTPExtract( uint8_t* pBuffer, size_t uSize, bool& bMarker,
@@ -499,8 +506,8 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     rtp.m_uOutputBufferUsed += uChunkSize;
     if( bMarker ) // EoF (Frame complete)
     {
-        if(options.debug) {
-            LL(3) << "MARK end of frame #" << frameCounter << ", Buffer used: " << rtp.m_uOutputBufferUsed << " bytes, buffer size allocated: " << rtp.m_uOutputBufferSize << " bytes, chunk count: " << rtp.m_uRTPChunkCnt << " chunks.";
+        if(options.debug && false) {
+            LL(3) << "MARK end of frame #" << frameCounterNetworkSocket << ", Buffer used: " << rtp.m_uOutputBufferUsed << " bytes, buffer size allocated: " << rtp.m_uOutputBufferSize << " bytes, chunk count: " << rtp.m_uRTPChunkCnt << " chunks.";
             // This will only work if the packets are at least 40 bytes each.
             // This is because it is a quick hack and looks at the packet buffer, not the actual assembled frame.
             for(int b=0; b < 40; b++) {
@@ -618,43 +625,204 @@ void rtpnextgen::streamLoop() {
 }
 
 uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *stat) {
+    // This is a new function that attempts to mitigate situations of extreme buffer lag.
+
+    // Note, doneFrameNumber is initialized to guaranteedBufferFramesCount_rtpng-1,
+    // but we write the first frame in at index zero. Thus, we do not get trapped waiting
+    // for the buffer to move.
+    // lastFrameDelivered is set equal to doneFrameNumber at init.
+
+    int writeFrame = doneFrameNumber; // latest available fully-written frame.
+    int frameToDeliver = (lastFrameDelivered+1)%guaranteedBufferFramesCount_rtpng;
+    volatile int waitTaps = 0; // metric to track how long we wait
+    bool lagCorectionApplied = false;
+
+    // These are re-calculated as needed:
+    if(writeFrame == (int)lastFrameDelivered) {
+        // The frame that was most recently written IS the frame last delivered,
+        // or, the frame most recently written just wrote over the frame recently delivered, and we are getting lapped.
+        lagLevel = 0;
+        percentBufferUsed = 0;
+    } else {
+        // First frame will get here. writeFrame = 0 and frameToDeliver will be 0. LastFrameDelivered will be bufsize-1.
+        lagLevel = (((writeFrame-frameToDeliver)%guaranteedBufferFramesCount_rtpng)+guaranteedBufferFramesCount_rtpng)%guaranteedBufferFramesCount_rtpng;
+        percentBufferUsed = 100.0*lagLevel / guaranteedBufferFramesCount_rtpng;
+    }
+
+    if(camcontrol->exit) {
+        *stat = CameraModel::camDone;
+        LL(4) << "Returning timeout rame due to camcontrol->exit flag.";
+        return timeoutFrame;
+    }
+
+    // DO NOT USE THIS for production:
+    // Add in delay to simulate additional lag:
+    if(options.laggy) {
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+
+    while(waitingForFirstFrame) {
+        // Wait here until we are actually receiving some data.
+        // A little delay keeps the processor happy
+        // Frames are available on the order of tens of microseconds.
+        *stat = camWaiting;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        // re-evaluate the current frame:
+        writeFrame = doneFrameNumber;
+    }
+    // Lap detection:
+
+    // The lag level can either:
+    // Stay the same, we are just as behind or ahead as before
+    // Get worse, we missed some frames
+    // Get better, we are catching up
+    //
+    // Got lapped, suddenly lag level is from high to low
+
+    // lagLevel cannot be trusted if we are caught up, as we will be planning to exceed...
+
+    if(( lagLevel < lagLevelPrior  ) && ((int)lastFrameDelivered==writeFrame) ) {
+        LOG << "WARN, potential LAP EVENT. lagLevel: " << lagLevel << ", prior lag: " << lagLevelPrior
+            << ", lastFrameDelivered: " << lastFrameDelivered << ", writeFrame: " << writeFrame
+            << ", FrameCounter: " << framesDeliveredCounter
+            << ". Advancing frameToDeliver from initial=" << frameToDeliver
+            << " to " << (frameToDeliver+4)%guaranteedBufferFramesCount_rtpng;
+        // Skip ahead by 4 frames:
+        frameToDeliver = (frameToDeliver+4)%guaranteedBufferFramesCount_rtpng;
+        aboutToLap = true;
+        lagCorectionApplied = true;
+        lapEventCounter++;
+    }
+
+    // There's no need to wait for a frame if we are lagging...
+    // Basically, if the lagLevel is >0, we are behind.
+    // And if the lastFrameDelivered is the write frame, we just got lapped (likely)
+
+    if(aboutToLap) {
+        // Jump ahead in the line (already done), skip waiting, clear the flag.
+        aboutToLap = false;
+    } else {
+        while((int)lastFrameDelivered==writeFrame) {
+            // wait here, the current frame is the same as
+            // the one just delivered.
+            // The first frame delivered will have writeFrame = 0 and lastFrameDelivered = bufsize-1.
+            // and thus should not end up inside here.
+            waitingForFreshFrame = true;
+            *stat = camWaiting;
+            // Idea, wait only if less than 10ns have passed.
+            if((waitTaps%1000) == 0) {
+                LOG << "TAP " << waitTaps << ", " << "writeFrame: " << writeFrame << ", lastFrame: " << lastFrameDelivered << ", lag: " << lagLevel << ", priorLag: " << lagLevelPrior << ", frames delivered: " << framesDeliveredCounter;
+            }
+            std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+            waitTaps++;
+            writeFrame = doneFrameNumber; // update
+            if(camcontrol->exit) {
+                LOG << "Exit within frame waiting loop";
+                return timeoutFrame;
+            }
+        }
+    }
+
+
+    *stat = camPlaying;
+    waitingForFreshFrame = false;
+
+
+    lagLevel = (((writeFrame-frameToDeliver)%guaranteedBufferFramesCount_rtpng)+guaranteedBufferFramesCount_rtpng)%guaranteedBufferFramesCount_rtpng;
+    percentBufferUsed = 100.0*lagLevel / guaranteedBufferFramesCount_rtpng;
+
+    if(lagLevel == guaranteedBufferFramesCount_rtpng-1) {
+        // With the next delivered frame, we will have been lapped.
+        LOG << "WARNING: Ring Buffer nearly full. LAP EVENT is imminent. lastFrameDelivered: " << lastFrameNumber << ", write frame: " << writeFrame << ", frameToDeliver: " << frameToDeliver  << ", frameCounter: " << framesDeliveredCounter;;
+        //aboutToLap = true;
+    }
+
+    if(percentBufferUsed > 75) {
+            LOG << "WARN, buffer LAG,  utilization is " << std::fixed << std::setprecision(1) << percentBufferUsed << "%, " << lagLevel << "/"
+                << guaranteedBufferFramesCount_rtpng << ", prior: " << lagLevelPrior << ", wait taps:" << waitTaps << ", frameCounter: " << framesDeliveredCounter
+                << ", frameDeliveredPosition: " << frameToDeliver << ", writeFrame: " << writeFrame << ", Correction applied? " << lagCorectionApplied;
+            lagEventCounter++;
+    } else if (options.debug) {
+        if(lagLevel == 0) {
+            LOG << "NOTE, buffer SYNC, utilization is " << std::fixed << std::setprecision(1) << percentBufferUsed << "%, " << lagLevel << "/"
+                << guaranteedBufferFramesCount_rtpng << ", prior: " << lagLevelPrior << ", wait taps:" << waitTaps << ", frameCounter: " << framesDeliveredCounter
+                << ", frameDeliveredPosition: " << frameToDeliver << ", writeFrame: " << writeFrame << ", Correction applied? " << lagCorectionApplied;
+        } else {
+            LOG << "NOTE, buffer LAG,  utilization is " << std::fixed << std::setprecision(1) << percentBufferUsed << "%, " << lagLevel << "/"
+                << guaranteedBufferFramesCount_rtpng << ", prior: " << lagLevelPrior << ", wait taps:" << waitTaps << ", frameCounter: " << framesDeliveredCounter
+                << ", frameDeliveredPosition: " << frameToDeliver << ", writeFrame: " << writeFrame << ", Correction applied? " << lagCorectionApplied;
+            lagEventCounter++;
+        }
+    }
+
+    framesDeliveredCounter++;
+    bool successBuilding = buildFrameFromPackets(frameToDeliver);
+    lastFrameDelivered = frameToDeliver;
+    if(lagCorectionApplied) {
+        lagLevelPrior = 0; // anti-double-trip protection
+    } else {
+        lagLevelPrior = lagLevel;
+    }
+
+    return guaranteedBufferFrames[frameToDeliver];
+    (void)successBuilding; // currently not used
+}
+
+
+uint16_t* rtpnextgen::getFrameWaitOld(unsigned int lastFrameNumber, camStatusEnum *stat) {
     // These volatiles are merely for debug and testing.
     volatile uint64_t tap = 0;
     volatile int lastFrameNumber_local_debug = lastFrameNumber;
     int pos = 0;
     pos = doneFrameNumber; // doneFrameNumber is a number that is the most recent frame finished.
-    if(camcontrol->pause)
-    {
-        *stat = CameraModel::camPaused;
-        LL(4) << "RTP NextGen Camera paused";
-        LOG << "Frames delivered: " << framesDeliveredCounter << ", frames received: " << frameCounter;
-        usleep(1E6);
-        return timeoutFrame;
-    }
-    if(camcontrol->exit)
-    {
-        *stat = CameraModel::camDone;
-        LL(3) << "Closing down RTP NextGen stream";
-        this->g_bRunning = false;
-        return timeoutFrame;
-    }
-    while(lastFrameDelivered==(unsigned int)pos) {
-        *stat = camWaiting;
-        tap++;
-        std::this_thread::sleep_for(std::chrono::nanoseconds(10));
-        pos = doneFrameNumber;
-        if(camcontrol->exit)
+    int frameToDeliver = (lastFrameDelivered+1)%guaranteedBufferFramesCount_rtpng;
+    if(false & aboutToLap) {
+        // determine if we just lapped, and, if so, clear the flag and advance the pointer.
+        if((unsigned int)frameToDeliver == doneFrameNumber) {
+            LOG << "WARNING: Detected ring buffer LAP EVENT. Advancing pointer over current position to catch up. One frame will be dropped.";
+            frameToDeliver = (frameToDeliver+1)%guaranteedBufferFramesCount_rtpng;
+        } else {
+            LOG << "WARNING: expected ring buffer lap event but we must have missed it. FrameToDeliver: " << frameToDeliver << ", lastFrameDelivered: " << lastFrameNumber << ", done: " << doneFrameNumber;
+        }
+        aboutToLap = false;
+    } else {
+        if(camcontrol->pause)
+        {
+            *stat = CameraModel::camPaused;
+            LL(4) << "RTP NextGen Camera paused";
+            LOG << "Frames delivered: " << framesDeliveredCounter << ", frames received: " << frameCounterNetworkSocket;
+            usleep(1E6);
             return timeoutFrame;
+        }
+        if(camcontrol->exit)
+        {
+            *stat = CameraModel::camDone;
+            LL(3) << "Closing down RTP NextGen stream";
+            this->g_bRunning = false;
+            return timeoutFrame;
+        }
+        while(lastFrameDelivered==(unsigned int)pos) {
+            *stat = camWaiting;
+            tap++;
+            std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+            pos = doneFrameNumber;
+            if(camcontrol->exit)
+                return timeoutFrame;
+        }
     }
-
     *stat = camPlaying;
 
-    // This is where to reconstruct the frame into the gbf[pos].
-    int frameToDeliver = (lastFrameDelivered+1)%guaranteedBufferFramesCount_rtpng;
+    // This is where the frame requested is reconstruted:
     bool successBuilding = buildFrameFromPackets(frameToDeliver);
     lastFrameDelivered = frameToDeliver;
 
     lagLevel = (((doneFrameNumber-frameToDeliver)%guaranteedBufferFramesCount_rtpng)+guaranteedBufferFramesCount_rtpng)%guaranteedBufferFramesCount_rtpng;
+
+    if(lagLevel == (guaranteedBufferFramesCount_rtpng-1)) {
+        aboutToLap = true;
+        LOG << "WARNING: Anticipating ring buffer LAP EVENT with next frame. lagLevel: " << lagLevel << ", frameCounter: " <<  framesDeliveredCounter;
+    }
+
 
     framesDeliveredCounter++;
     float percentUsed = 100.0*lagLevel / guaranteedBufferFramesCount_rtpng;

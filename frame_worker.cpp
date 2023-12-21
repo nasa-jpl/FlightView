@@ -111,6 +111,7 @@ void frameWorker::convertOptions()
     takeOptions.width = takeOptions.xioWidth;
 
     takeOptions.debug = options.debug;
+    takeOptions.laggy = options.laggy;
     takeOptions.flightMode = options.flightMode;
     takeOptions.disableGPS = options.disableGPS;
     takeOptions.disableCamera = options.disableCamera;
