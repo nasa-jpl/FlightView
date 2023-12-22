@@ -32,10 +32,10 @@
 #define framePeriod_microsec (3333)
 #define packetDelay_ns (1)
 
-#define nFramesToDeliver (10000)
+#define nFramesToDeliver (1000)
 
 // Frame size must be integer divisible
-#define chunksPerFrame_d (160)
+#define chunksPerFrame_d (32)
 
 struct SRTPData {
     bool	      m_bFirstPacket;

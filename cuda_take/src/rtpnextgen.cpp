@@ -370,8 +370,8 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     // This function will hang here waiting for data without timeout.
     // Thus, it should be watched externally to see what is happening.
     bool bMarker = false;
-    std::chrono::steady_clock::time_point starttp;
-    std::chrono::steady_clock::time_point endtp;
+    //std::chrono::steady_clock::time_point starttp;
+    //std::chrono::steady_clock::time_point endtp;
 
     if((size_t)(lpbPos+rtp.m_uPacketBufferSize) > frameBufferSizeBytes*2) {
         LOG << "Error, cannot store this much data. Likely the end of frame was missed.";
@@ -385,7 +385,7 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
 
 
     // Receive from network into rtp.m_pPacketBuffer:
-    starttp = std::chrono::steady_clock::now();
+    //starttp = std::chrono::steady_clock::now();
     receiveFromWaiting = true; // for debug readout
     // Receive directly into the large packet buffer
     // at an offset:
@@ -394,8 +394,8 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
                 0, nullptr, nullptr
                 );
     receiveFromWaiting = false;
-    endtp = std::chrono::steady_clock::now();
-    frameReceive_microSec[lpbFramePos%networkPacketBufferFrames] = std::chrono::duration_cast<std::chrono::microseconds>(endtp - starttp).count();
+    //endtp = std::chrono::steady_clock::now();
+    //frameReceive_microSec[lpbFramePos%networkPacketBufferFrames] = std::chrono::duration_cast<std::chrono::microseconds>(endtp - starttp).count();
 
 
     if( uRxSize == -1 )
