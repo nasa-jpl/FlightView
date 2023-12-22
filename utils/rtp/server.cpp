@@ -35,7 +35,7 @@
 #define nFramesToDeliver (10000)
 
 // Frame size must be integer divisible
-#define chunksPerFrame_d (32)
+#define chunksPerFrame_d (160)
 
 struct SRTPData {
     bool	      m_bFirstPacket;

@@ -64,6 +64,8 @@ rtpnextgen::~rtpnextgen() {
     destructorRunning = true;
     LL(4) << "Running RTP NextGen camera destructor.";
 
+    // EHL TODO: Consider writing out any frames that we haven't gotten to yet.
+
     // Mark the exit event:
     g_bRunning = false;
     if(camcontrol != NULL)
@@ -572,13 +574,13 @@ bool rtpnextgen::buildFrameFromPackets(int pos) {
     // We must be much faster than 1/FPS to keep up.
 
     // Keeping some of these volatile for debug purposes.
-    std::chrono::steady_clock::time_point starttp;
-    std::chrono::steady_clock::time_point endtp;
+    // std::chrono::steady_clock::time_point starttp;
+    // std::chrono::steady_clock::time_point endtp;
     volatile size_t frameBytesMoved = 0;
     volatile int chunk = 0;
     int headerOffsetBytes = 12;
     volatile int startOffset = 0;
-    starttp = std::chrono::steady_clock::now();
+    // starttp = std::chrono::steady_clock::now();
 
     for(; packetSizeBuffer[pos][chunk] !=0; chunk++) {
         if(packetSizeBuffer[pos][chunk] > 65535) {
@@ -594,8 +596,8 @@ bool rtpnextgen::buildFrameFromPackets(int pos) {
     }
 
     // Capture the time spent copying for benchmark purposes:
-    endtp = std::chrono::steady_clock::now();
-    durationOfMemoryCopy_microSec[pos] = std::chrono::duration_cast<std::chrono::microseconds>(endtp - starttp).count();
+    // endtp = std::chrono::steady_clock::now();
+    // durationOfMemoryCopy_microSec[pos] = std::chrono::duration_cast<std::chrono::microseconds>(endtp - starttp).count();
     return true;
 }
 
@@ -653,7 +655,7 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
 
     if(camcontrol->exit) {
         *stat = CameraModel::camDone;
-        LL(4) << "Returning timeout rame due to camcontrol->exit flag.";
+        LL(4) << "Returning timeout frame due to camcontrol->exit flag.";
         return timeoutFrame;
     }
 
