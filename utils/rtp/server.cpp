@@ -32,7 +32,7 @@
 #define framePeriod_microsec (3333)
 #define packetDelay_ns (1)
 
-#define nFramesToDeliver (1000)
+#define nFramesToDeliver (100000)
 
 // Frame size must be integer divisible
 #define chunksPerFrame_d (32)

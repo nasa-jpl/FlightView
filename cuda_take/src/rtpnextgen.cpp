@@ -856,8 +856,6 @@ uint16_t* rtpnextgen::getFrameWaitOld(unsigned int lastFrameNumber, camStatusEnu
         }
     }
 
-    // TODO: Make the gbf smaller, it does not need to be more than 2 or 3 frames.
-    // The other buffers can remain larger.
     return guaranteedBufferFrames[frameToDeliver];
 
     (void)lastFrameNumber_local_debug;

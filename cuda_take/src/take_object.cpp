@@ -1455,6 +1455,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
             if(saving_list.size() > 0)
                 saving_list.pop_back();
             fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target);
+            sv_count++;
             delete[] data;
         }
         statusMessage("Done with write.");
