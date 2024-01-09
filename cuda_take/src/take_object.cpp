@@ -1328,6 +1328,15 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
     statusMessage(ss);
 
+    if(options.debug) {
+        if(num_avgs > 1) {
+            statusMessage("Saving mode: averaging (float)");
+        } else {
+            statusMessage("Saving mode: uint16");
+        }
+    }
+
+
     if(savingData)
     {
         errorMessage("Saving loop hit but already saving data! Not saving this data!");
