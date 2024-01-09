@@ -671,6 +671,11 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
         // Frames are available on the order of tens of microseconds.
         *stat = camWaiting;
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        if(camcontrol->exit) {
+            *stat = CameraModel::camDone;
+            LL(4) << "Returning timeout frame due to camcontrol->exit flag.";
+            return timeoutFrame;
+        }
         // re-evaluate the current frame:
         writeFrame = doneFrameNumber;
     }
