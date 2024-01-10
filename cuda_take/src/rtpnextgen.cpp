@@ -41,23 +41,6 @@ rtpnextgen::rtpnextgen(takeOptionsType opts) {
     }
 
     std::cout.rdbuf(coutbuf);
-
-    // TODO, remove
-    if(false) {
-        // This test is here because sometimes the stdout gets stolen.
-        // We need to know when that happens.
-        // Test the logging capability:
-        // LOG TEST:
-        std::cout << "std::cout Testing std out logging capability from rtpnextgen:" << std::endl;
-        std::cerr << "std::cerr Testing std err output" << std::endl;
-        LOG << "Testing the log.";
-        LOG << "Current log level: " << cuda_logginglevel; // Change in cudalog.h
-        for(int n=0; n < 10; n++)
-        {
-            LL(n) << "Testing log level " << n;
-        }
-        LOG << "Done testing log.";
-    }
 }
 
 rtpnextgen::~rtpnextgen() {
@@ -144,7 +127,7 @@ bool rtpnextgen::initialize() {
     rtp.m_uOutputBufferUsed = 0;
 
     // Allocate frame buffer for completed frames, as well as timeout frame
-    LL(5) << "Allocating TF and GBF";
+    LL(5) << "Allocating TimeoutFrame and GuaranteedBufferFrame";
     frameBufferSizeBytes = frame_width*data_height*sizeof(uint16_t);
     timeoutFrame = (uint16_t*)calloc(frameBufferSizeBytes, 1);
     timeoutFrame[0] = 0x0045; timeoutFrame[1] = 0x0084; timeoutFrame[2] = 0x004C;
@@ -164,7 +147,7 @@ bool rtpnextgen::initialize() {
     // We are going to allocate 2x the frame size for the packets.
     // Generally we are using 12 bytes for the packet header, and perhaps 500 packets per frame
     // worst case, so perhaps 600kbyte of overhead is actually needed. Oh well, memory is cheap
-    LL(5) << "Allocating LPB";
+    LL(5) << "Allocating LargePacketBuffer";
     for(int f = 0; f < networkPacketBufferFrames; f++)
     {
         largePacketBuffer[f] = (uint8_t*)calloc(frameBufferSizeBytes*2, 1); // 2x overhead allowed
@@ -176,7 +159,7 @@ bool rtpnextgen::initialize() {
     }
 
     // Here we prepare the secondary buffer which stores only the size of each packet:
-    LL(5) << "Preparing PSB";
+    LL(5) << "Initalizing PacketSizeBuffer";
     for(int f = 0; f < networkPacketBufferFrames; f++)
     {
         for(int n = 0; n < 1024; n++) {
@@ -240,6 +223,8 @@ bool rtpnextgen::initialize() {
     if( nBinding == -1 )
     {
         LOG << "ERROR! RTP NextGen Failed to bind socket!";
+        LOG << "Verify specified IP address and/or interface name is valid.";
+        LOG << "Verify that only one copy of liveview is open.";
         return false;
     } else {
         LOG << "RTP NextGen bind to UDP socket success. Network ready.";
@@ -780,91 +765,6 @@ uint16_t* rtpnextgen::getFrameWait(unsigned int lastFrameNumber, camStatusEnum *
 
     return guaranteedBufferFrames[constructedFramePosition];
     (void)successBuilding; // currently not used
-}
-
-
-uint16_t* rtpnextgen::getFrameWaitOld(unsigned int lastFrameNumber, camStatusEnum *stat) {
-    // These volatiles are merely for debug and testing.
-    volatile uint64_t tap = 0;
-    volatile int lastFrameNumber_local_debug = lastFrameNumber;
-    int pos = 0;
-    pos = doneFrameNumber; // doneFrameNumber is a number that is the most recent frame finished.
-    int frameToDeliver = (lastFrameDelivered+1)%networkPacketBufferFrames;
-    if(false & aboutToLap) {
-        // determine if we just lapped, and, if so, clear the flag and advance the pointer.
-        if((unsigned int)frameToDeliver == doneFrameNumber) {
-            LOG << "WARNING: Detected ring buffer LAP EVENT. Advancing pointer over current position to catch up. One frame will be dropped.";
-            frameToDeliver = (frameToDeliver+1)%networkPacketBufferFrames;
-        } else {
-            LOG << "WARNING: expected ring buffer lap event but we must have missed it. FrameToDeliver: " << frameToDeliver << ", lastFrameDelivered: " << lastFrameNumber << ", done: " << doneFrameNumber;
-        }
-        aboutToLap = false;
-    } else {
-        if(camcontrol->pause)
-        {
-            *stat = CameraModel::camPaused;
-            LL(4) << "RTP NextGen Camera paused";
-            LOG << "Frames delivered: " << framesDeliveredCounter << ", frames received: " << frameCounterNetworkSocket;
-            usleep(1E6);
-            return timeoutFrame;
-        }
-        if(camcontrol->exit)
-        {
-            *stat = CameraModel::camDone;
-            LL(3) << "Closing down RTP NextGen stream";
-            this->g_bRunning = false;
-            return timeoutFrame;
-        }
-        while(lastFrameDelivered==(unsigned int)pos) {
-            *stat = camWaiting;
-            tap++;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(10));
-            pos = doneFrameNumber;
-            if(camcontrol->exit)
-                return timeoutFrame;
-        }
-    }
-    *stat = camPlaying;
-
-    // This is where the frame requested is reconstruted:
-    bool successBuilding = buildFrameFromPackets(frameToDeliver);
-    lastFrameDelivered = frameToDeliver;
-
-    lagLevel = (((doneFrameNumber-frameToDeliver)%networkPacketBufferFrames)+networkPacketBufferFrames)%networkPacketBufferFrames;
-
-    if(lagLevel == (networkPacketBufferFrames-1)) {
-        aboutToLap = true;
-        LOG << "WARNING: Anticipating ring buffer LAP EVENT with next frame. lagLevel: " << lagLevel << ", frameCounter: " <<  framesDeliveredCounter;
-    }
-
-
-    framesDeliveredCounter++;
-    float percentUsed = 100.0*lagLevel / networkPacketBufferFrames;
-
-    if(percentUsed > 75.0) {
-        LOG << "WARNING, Lag level (percent): " << std::fixed << std::setprecision(1) << percentUsed << "%, lag frames: " << lagLevel << "/" << networkPacketBufferFrames << ", frame count: " << framesDeliveredCounter;
-    }
-
-    // TODO: Make this level of output a compile-time option
-    // so that we can have an even faster loop.
-    if((unsigned int)frameToDeliver != doneFrameNumber) {
-        lagEventCounter++;
-        if(options.debug) {
-            LL(4) << "Lag level (percent): " << std::fixed << std::setprecision(1) << percentUsed << "%, lag frames: " << lagLevel << "/" << networkPacketBufferFrames << ", frame count: " << framesDeliveredCounter;
-            LL(4) << "Frame delivery is LAGGING the buffer. Delivering frame " << frameToDeliver << ", fresh ready frame is " << doneFrameNumber << ", frame count: " << framesDeliveredCounter;
-        }
-
-    } else {
-        if(options.debug) {
-            LL(4) << "Lag level (percent): " << std::fixed << std::setprecision(1) << percentUsed << "%, lag frames: " << lagLevel << "/" << networkPacketBufferFrames ;
-            LL(4) << "Frame delivery is sync w/ the buffer. Delivering frame " << frameToDeliver << ", fresh ready frame is " << doneFrameNumber << ", frame count: " << framesDeliveredCounter;
-        }
-    }
-
-    return guaranteedBufferFrames[frameToDeliver];
-
-    (void)lastFrameNumber_local_debug;
-    (void)successBuilding;
 }
 
 uint16_t* rtpnextgen::getFrame(CameraModel::camStatusEnum *stat) {

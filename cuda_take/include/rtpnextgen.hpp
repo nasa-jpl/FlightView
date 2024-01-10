@@ -75,7 +75,6 @@ public:
 
     ~rtpnextgen();
 
-    uint16_t* getFrameWaitOld(unsigned int lastFrameNumber, CameraModel::camStatusEnum *stat);
     uint16_t* getFrameWait(unsigned int lastFrameNumber, CameraModel::camStatusEnum *stat);
     uint16_t* getFrame(CameraModel::camStatusEnum *stat);
     void streamLoop(); // This should be its own thread and is effectivly the producer of image data.
