@@ -118,6 +118,7 @@ public:
     bool dsfMaskCollected();
     bool usingDSF();
     void useNewOptions(startupOptionsType newOpts);
+    startupOptionsType getStartupOptions();
 
 signals:
     /*! \brief Calls to update the value of the backend FPS label */

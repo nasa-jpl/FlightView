@@ -75,6 +75,10 @@ frameWorker::~frameWorker()
     this->camcontrol->exit = true;
 }
 
+startupOptionsType frameWorker::getStartupOptions() {
+    return options;
+}
+
 void frameWorker::useNewOptions(startupOptionsType newOpts)
 {
     this->options = newOpts;

@@ -24,6 +24,7 @@
 #include "image_type.h"
 #include "qcustomplot.h"
 #include "preferences.h"
+#include "startupOptions.h"
 
 
 /*! \file
@@ -93,6 +94,7 @@ class frameview_widget : public QWidget
     bool useDSF;
     bool havePrefs = false;
     settingsT *prefs;
+    startupOptionsType options;
     void sMessage(QString statusMessageText);
 
 public:

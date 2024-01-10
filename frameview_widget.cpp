@@ -26,6 +26,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     useDSF = false;
     havePrefs = false;
     prefs = NULL;
+    options = fw->getStartupOptions();
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     bool ok = false;
@@ -175,7 +176,11 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
         colorMapData = new QCPColorMapData(frWidth, frHeight, QCPRange(0, frWidth-1), QCPRange(0, frHeight-1));
     }
     colorMap->setData(colorMapData);
-    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    if(options.headless) {
+        sMessage("Frameview display disabled due to headless mode.");
+    } else {
+        rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    }
     sMessage(QString("%1: Finished constructor.").arg(QString(__PRETTY_FUNCTION__)));
     //qDebug() << __PRETTY_FUNCTION__ << ": Finished constructor";
 }
