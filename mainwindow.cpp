@@ -227,6 +227,12 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     } else {
         handleMainWindowStatusMessage("Flight Mode DISABLED.");
     }
+    if(options->er2mode) {
+        handleMainWindowStatusMessage("ER2 Mode ENABLED.");
+    }
+    if(options->headless) {
+        handleMainWindowStatusMessage("Headless Mode ENABLED.");
+    }
 
     connect(this->controlbox, &ControlsBox::setCameraPause,
             [=](bool paused) {
@@ -341,6 +347,11 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
      *
      * \author Jackie Ryan
      */
+
+    if(options->headless) {
+        return;
+    }
+
     QWidget* current_tab = tabWidget->widget(tabWidget->currentIndex());
     profile_widget *ppw;
     frameview_widget *fvw;
@@ -490,11 +501,15 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
 
     handleMainWindowStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
 
-    if( (prefs.preferredWindowWidth < 4096) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
-    {
-        this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
+    if(options->headless) {
+        this->resize(1558, 1024);
     } else {
-        handleMainWindowStatusMessage(QString("Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
+        if( (prefs.preferredWindowWidth < 4096) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
+        {
+            this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
+        } else {
+            handleMainWindowStatusMessage(QString("Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
+        }
     }
 
     // Note: These prefs are not saved correctly currently, so do not restore.

@@ -29,7 +29,7 @@
 // 2500 = 400 FPS (385 typically)
 // 2000 = 500 FPS (470 typically)
 
-#define framePeriod_microsec (8E3)
+#define framePeriod_microsec (4E3)
 #define packetDelay_ns (1)
 
 #define nFramesToDeliver (100000)

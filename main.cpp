@@ -123,6 +123,9 @@ int main(int argc, char *argv[])
         if(currentArg == "--er2") {
             startupOptions.er2mode = true;
         }
+        if(currentArg == "--headless") {
+            startupOptions.headless = true;
+        }
         if(currentArg == "--datastoragelocation")
         {
             if(argc > c)

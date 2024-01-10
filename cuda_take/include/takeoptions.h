@@ -44,6 +44,9 @@ struct takeOptionsType
     bool rtprgb = true;
     bool rtpNextGen = false;
 
+    bool er2mode = false;
+    bool headless = false;
+
     uint16_t height;
     uint16_t width;
     float targetFPS = 100.00;

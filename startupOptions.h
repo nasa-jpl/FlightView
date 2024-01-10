@@ -44,6 +44,7 @@ struct startupOptionsType
     bool rtprgb = true;
 
     bool er2mode = false;
+    bool headless = false;
 
     bool wfPreviewEnabled = false;
     bool wfPreviewContinuousMode = false;

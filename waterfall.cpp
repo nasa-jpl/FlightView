@@ -47,7 +47,11 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType o
 
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
     rendertimer.setInterval(FRAME_DISPLAY_PERIOD_MSECS);
-    rendertimer.start();
+    if(options.headless) {
+        statusMessage("Not starting waterfall display update timer for headless mode.");
+    } else {
+        rendertimer.start();
+    }
     QSizePolicy policy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     this->setSizePolicy(policy);
     statusMessage("Finished waterfall constructor.");

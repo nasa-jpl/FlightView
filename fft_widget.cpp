@@ -83,6 +83,9 @@ void fft_widget::handleNewFrame()
      * \author Noah Levy
      * \author Jackie Ryan
      */
+    if(fw->curFrame == NULL)
+        return;
+
     if (!this->isHidden() && fw->curFrame->fftMagnitude != NULL) {
         double nyquist_freq = 50.0;
         switch (fw->to.getFFTtype()) {

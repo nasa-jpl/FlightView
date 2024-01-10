@@ -112,6 +112,8 @@ void frameWorker::convertOptions()
 
     takeOptions.debug = options.debug;
     takeOptions.laggy = options.laggy;
+    takeOptions.er2mode = options.er2mode;
+    takeOptions.headless = options.headless;
     takeOptions.flightMode = options.flightMode;
     takeOptions.disableGPS = options.disableGPS;
     takeOptions.disableCamera = options.disableCamera;
