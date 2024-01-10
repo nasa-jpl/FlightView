@@ -165,6 +165,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(fi, SIGNAL(clearErrors()), this, SLOT(clearStickyErrors()));
     connect(this, SIGNAL(haveGPSErrorWarningMessage(QString)), fi, SLOT(updateLastIssue(QString)));
 
+    connect(waterfall_widget, SIGNAL(statusMessageOut(QString)), this, SLOT(showDebugMessage(QString)));
+
     diskCheckerTimer = new QTimer();
     diskCheckerTimer->setInterval(1000);
     diskCheckerTimer->setSingleShot(false);

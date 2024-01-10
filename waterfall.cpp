@@ -335,6 +335,8 @@ void waterfall::debugThis()
 void waterfall::statusMessage(QString m)
 {
     m.prepend(QString("WATERFALL: "));
-    std::cout << m.toLocal8Bit().toStdString() << std::endl;
+    // Note: Messages made during the constructor might get emitted before
+    // the console log is ready. Uncomment the next line to see them anyway:
+    //std::cout << m.toLocal8Bit().toStdString() << std::endl;
     emit statusMessageOut(m);
 }
