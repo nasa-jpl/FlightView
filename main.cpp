@@ -67,13 +67,16 @@ int main(int argc, char *argv[])
     QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps "
                                "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 "
                                "--gpsport 5661 "
-                               "--no-stddev --xiocam --rtpcam"
-                               "--rtpheight 480"
-                               "--rtpwidth 1280"
-                               "--rtpaddress"
-                               "--wfpreview"
-                               "--wfpreviewcontinuous"
-                               "--wfpreviewlocation /path/to/waterfallpreview/files/"
+                               "--no-stddev --xiocam --rtpcam "
+                               "--rtpnextgen "
+                               "--rtpheight 480 "
+                               "--rtpwidth 1280 "
+                               "--rtpaddress 1.2.3.4 "
+                               "--rtpinterface eth2 "
+                               "--er2 --headless "
+                               "--wfpreview "
+                               "--wfpreviewcontinuous "
+                               "--wfpreviewlocation /path/to/waterfallpreview/files/ "
                                )\
             .arg(cmdName);
     QString currentArg;
