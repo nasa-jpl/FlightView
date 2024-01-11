@@ -478,7 +478,7 @@ int main(int argc, char *argv[])
     QPixmap logo_pixmap(logoPath);
 
     QSplashScreen *splash = new QSplashScreen(logo_pixmap);
-    if(!startupOptions.xioCam)
+    if(! (startupOptions.xioCam || startupOptions.headless))
     {
         // On some displays, the splash screen covers the setup dialog box
         splash->show();
@@ -498,18 +498,20 @@ int main(int argc, char *argv[])
 
     /* Step 5: Open the main window (GUI/frontend) */
     MainWindow w(&startupOptions, workerThread, fw);
-    w.setGeometry(   QStyle::alignedRect(
-                         Qt::LeftToRight,
-                         Qt::AlignCenter,
-                         w.size(),
-                         QGuiApplication::screens().at(0)->availableGeometry()
-                         ));
+    if(!startupOptions.headless) {
+        w.setGeometry(   QStyle::alignedRect(
+                             Qt::LeftToRight,
+                             Qt::AlignCenter,
+                             w.size(),
+                             QGuiApplication::screens().at(0)->availableGeometry()
+                             ));
+    }
     QPixmap icon_pixmap(":images/icon.png");
     w.setWindowIcon(QIcon(icon_pixmap));
-    if(!startupOptions.xioCam)
+    if(! (startupOptions.xioCam || startupOptions.headless))
         splash->raise();
     w.show();
-    if(!startupOptions.xioCam)
+    if(! (startupOptions.xioCam || startupOptions.headless))
         splash->raise();
 
 
