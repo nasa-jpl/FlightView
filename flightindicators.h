@@ -58,6 +58,7 @@ public slots:
 
 signals:
     void clearErrors();
+    void statusText(QString);
 
 private slots:
     void on_clearErrorsBtn_clicked();

@@ -34,7 +34,11 @@ flightIndicators::~flightIndicators()
 void flightIndicators::ssm(QString stat)
 {
     // Send Status Message
-    qDebug() << "[Flight Indicators]: " << stat;
+    // Constructor and deconstructor messages
+    // will not make it through the signals and slots,
+    // so, uncomment the next line to see them:
+    // qDebug() << "[Flight Indicators]: " << stat;
+    emit statusText("[Flight Indicators]: " + stat);
 }
 
 void flightIndicators::updateTimeDate()
