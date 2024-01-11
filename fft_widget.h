@@ -13,6 +13,7 @@
 /* Live View includes */
 #include "qcustomplot.h"
 #include "frame_worker.h"
+#include "startupOptions.h"
 
 /*! \file
  * \brief Plots a bar graph of the FFT of a time series.
@@ -50,6 +51,7 @@ class fft_widget : public QWidget
     Q_OBJECT
 
     QTimer rendertimer;
+    startupOptionsType options;
 
     /* GUI elements */
     QGridLayout qgl;

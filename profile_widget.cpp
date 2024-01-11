@@ -12,6 +12,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     itype = image_type;
     qcp = NULL;
     this->fw = fw;
+    options = fw->getStartupOptions();
     ceiling = fw->base_ceiling;
     floor = 0;
     frHeight = fw->getFrameHeight();
@@ -156,7 +157,9 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     connect(showCalloutCheck, SIGNAL(clicked()), this, SLOT(hideCallout()));
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
 
-    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    if(!options.headless) {
+        rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    }
 }
 profile_widget::~profile_widget()
 {
@@ -405,10 +408,8 @@ void profile_widget::moveCallout(QMouseEvent *e)
 }
 
 void profile_widget::setPenWidth(int penWidth) {
-    //qDebug() << "EHL DEBUG: Setting penWidth to " << penWidth;
     QPen myPen;
     for(int i=0; i < qcp->graphCount(); i++) {
-        //qDebug() << "EHL DEBUG: Setting penWidth to " << penWidth << " for plot number " << i;
         myPen = qcp->graph(i)->pen();
         myPen.setWidth(penWidth);
         qcp->graph(i)->setPen(myPen);

@@ -8,6 +8,7 @@ histogram_widget::histogram_widget(frameWorker *fw, QWidget *parent) :
     floor = 0;
     qcp = NULL;
     this->fw = fw;
+    options = fw->getStartupOptions();
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     qcp = new QCustomPlot(this);
@@ -45,7 +46,9 @@ histogram_widget::histogram_widget(frameWorker *fw, QWidget *parent) :
     this->setLayout(&qvbl);
 
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
-    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    if(!options.headless) {
+        rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    }
 }
 
 // public functions

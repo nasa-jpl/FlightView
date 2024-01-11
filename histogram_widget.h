@@ -12,6 +12,7 @@
 #include "image_type.h"
 #include "std_dev_filter.hpp"
 #include "settings.h"
+#include "startupOptions.h"
 #include "constants.h"
 
 /*! \file
@@ -30,6 +31,7 @@ class histogram_widget : public QWidget
 
     frameWorker *fw;
     QTimer rendertimer;
+    startupOptionsType options;
 
     /*! GUI elements */
     QVBoxLayout qvbl;
