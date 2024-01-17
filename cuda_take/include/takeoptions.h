@@ -46,6 +46,7 @@ struct takeOptionsType
 
     bool er2mode = false;
     bool headless = false;
+    bool noGPU = false;
 
     uint16_t height;
     uint16_t width;

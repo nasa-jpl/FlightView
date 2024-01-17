@@ -45,6 +45,7 @@ struct startupOptionsType
 
     bool er2mode = false;
     bool headless = false;
+    bool noGPU = false;
 
     bool wfPreviewEnabled = false;
     bool wfPreviewContinuousMode = false;

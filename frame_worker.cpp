@@ -34,10 +34,6 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
         setupUI.setModal(true);
         setupUI.setWindowFlag(Qt::WindowStaysOnTopHint, true);
         setupUI.exec();
-
-//        convertOptions();
-
-//        to.changeOptions(takeOptions);
     }
 
     this->camcontrol = to.getCamControl();
@@ -118,6 +114,7 @@ void frameWorker::convertOptions()
     takeOptions.laggy = options.laggy;
     takeOptions.er2mode = options.er2mode;
     takeOptions.headless = options.headless;
+    takeOptions.noGPU = options.noGPU;
     takeOptions.flightMode = options.flightMode;
     takeOptions.disableGPS = options.disableGPS;
     takeOptions.disableCamera = options.disableCamera;

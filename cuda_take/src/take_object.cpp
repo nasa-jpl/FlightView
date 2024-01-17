@@ -1162,18 +1162,20 @@ void take_object::rtpConsumeFrames()
         }
 
         // Calculating the filters for this frame
-        if(runStdDev)
-        {
-            sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
-        }
-        dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
-        mf->update(curFrame,count,meanStartCol,meanWidth,\
-                   meanStartRow,meanHeight,frWidth,useDSF,\
-                   whichFFT, lh_start, lh_end,\
-                                           cent_start, cent_end,\
-                                           rh_start, rh_end);
+        if(!options.noGPU) {
+            if(runStdDev)
+            {
+                sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
+            }
+            dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
+            mf->update(curFrame,count,meanStartCol,meanWidth,\
+                       meanStartRow,meanHeight,frWidth,useDSF,\
+                       whichFFT, lh_start, lh_end,\
+                       cent_start, cent_end,\
+                       rh_start, rh_end);
 
-        mf->start_mean();
+            mf->start_mean();
+        }
 
         if((save_framenum > 0) || continuousRecording)
         {

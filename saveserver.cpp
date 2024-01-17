@@ -10,7 +10,7 @@ saveServer::saveServer(frameWorker *fw, QObject *parent ) :
     port = 65000; // we'll hardcode the port number for now
     clientConnection = new QTcpSocket();
     clientConnection->setObjectName("lv:saveconn");
-    ipAddress = QHostAddress::Any;
+    ipAddress = QHostAddress("127.0.0.1");
     connect(clientConnection, SIGNAL(readyRead()), this, SLOT(readCommand()));
     connect(this, SIGNAL(newConnection()), this, SLOT(new_conn_slot())  );
     connect(clientConnection, SIGNAL(disconnected()), this, SLOT(handleDisconnect()));
