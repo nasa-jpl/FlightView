@@ -56,6 +56,9 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType o
     }
     if(options.wfPreviewEnabled || options.wfPreviewContinuousMode) {
         statusMessage("Waterfall preview ENABLED.");
+        if(options.headless) {
+            this->useDSF = true; // start with this ON since it will never get toggled
+        }
     }
     QSizePolicy policy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     this->setSizePolicy(policy);
