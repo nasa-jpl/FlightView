@@ -47,10 +47,15 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType o
 
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
     rendertimer.setInterval(FRAME_DISPLAY_PERIOD_MSECS);
-    if(options.headless) {
+
+    if(options.headless && (!options.wfPreviewEnabled)) {
         statusMessage("Not starting waterfall display update timer for headless mode.");
     } else {
+        statusMessage("Starting waterfall");
         rendertimer.start();
+    }
+    if(options.wfPreviewEnabled || options.wfPreviewContinuousMode) {
+        statusMessage("Waterfall preview ENABLED.");
     }
     QSizePolicy policy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     this->setSizePolicy(policy);
