@@ -28,6 +28,7 @@ SOURCES += main.cpp\
     filenamegenerator.cpp \
     flight_widget.cpp \
     flightindicators.cpp \
+    gpsGUI/zupt.cpp \
     gpsmanager.cpp \
     initialsetup.cpp \
     mainwindow.cpp \
@@ -59,6 +60,7 @@ HEADERS  += mainwindow.h \
     frameview_widget.h \
     controlsbox.h\
     frame_worker.h \
+    gpsGUI/zupt.h \
     gpsmanager.h \
     image_type.h \
     initialsetup.h \

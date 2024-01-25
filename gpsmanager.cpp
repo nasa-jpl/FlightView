@@ -13,7 +13,6 @@ gpsManager::gpsManager()
 
     prepareVectors(); // size the vectors
     prepareGPS(); // get ready to connect the GPS
-
 }
 
 gpsManager::~gpsManager()
@@ -25,6 +24,9 @@ gpsManager::~gpsManager()
         //delete gpsThread;
     }
     //delete gps;
+    if(zuptCommander != NULL) {
+        delete zuptCommander;
+    }
 }
 
 void gpsManager::initiateGPSConnection(QString host = "192.168.2.101", int port=(int)8112, QString gpsBinaryLogFilename = "")
@@ -119,6 +121,9 @@ void gpsManager::prepareGPS()
     firstMessage = true;
     gps = new gpsNetwork();
     gpsThread = new QThread(this);
+    zuptCommander = new zupt();
+    zuptRetryTimer.setInterval(3000);
+    zuptRetryTimer.setSingleShot(true);
 
     gps->moveToThread(gpsThread);
 
@@ -136,6 +141,11 @@ void gpsManager::prepareGPS()
 
     connect(this, SIGNAL(startSecondaryLog(QString)), gps, SLOT(beginSecondaryBinaryLog(QString)));
     connect(this, SIGNAL(stopSecondaryLog()), gps, SLOT(stopSecondaryBinaryLog()));
+
+    connect(zuptCommander, SIGNAL(statusText(QString)), this, SLOT(handleGPSStatusMessage(QString)));
+    connect(zuptCommander, SIGNAL(errorText(QString)), this, SLOT(handleGPSStatusMessage(QString)));
+    connect(this, SIGNAL(turn_off_ZuPT(QString,int)), zuptCommander, SLOT(disableZUpT(QString,int)));
+    connect(&zuptRetryTimer, SIGNAL(timeout()), this, SLOT(handleZUpTRetryTimer()));
 
     gpsThread->setObjectName(name + "gps");
     gpsThread->start();
@@ -839,6 +849,12 @@ void gpsManager::handleGPSConnectionGood()
     statusLinkStickyError = false; // Safe to clear when a new connection has been made.
     statusConnectedToGPS = true;
     hbErrorCount = 0;
+    emit turn_off_ZuPT(host, 8110);
+    zuptRetryTimer.start(); // send again a few seconds later just in case.
+}
+
+void gpsManager::handleZUpTRetryTimer() {
+    emit turn_off_ZuPT(host, 8110);
 }
 
 void gpsManager::handleGPSTimeout()

@@ -17,6 +17,8 @@
 #include "gpsGUI/gpsnetwork.h"
 #include "gpsGUI/qledlabel.h"
 
+#include "gpsGUI/zupt.h"
+
 struct utcTime {
     int hour;
     int minute;
@@ -39,6 +41,9 @@ class gpsManager : public QObject
     gpsMessage m;
 
     fileNameGenerator filenamegen;
+
+    zupt *zuptCommander = NULL;
+    QTimer zuptRetryTimer;
 
     QString baseSaveDirectory;
     QString gpsRecordingBinaryLogFilename;
@@ -252,6 +257,7 @@ signals:
     void getDebugInfo();
     void statusMessagesSig(QStringList errorMessages,
                            QStringList warningMessages);
+    void turn_off_ZuPT(QString a7Host, int A7port);
 
 private slots:
     void handleGPSStatusMessage(QString message);
@@ -259,6 +265,7 @@ private slots:
     void handleGPSConnectionError(int error);
     void handleGPSConnectionGood();
     void handleGPSTimeout();
+    void handleZUpTRetryTimer();
 
 
 };
