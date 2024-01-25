@@ -940,6 +940,11 @@ void gpsManager::processStatus()
         updateLED(gpsTroubleLED, QLedLabel::StateOk);
     }
 
+    if(zuptActive && (!zuptRetryTimer.isActive())) {
+        emit gpsStatusMessage("Sending command to disable ZUpT");
+        zuptRetryTimer.start();
+    }
+
     // Clear errors if we were asked to and if there isn't a new reason to
     // flag errors...
     if(statusJustCleared && (!gpsTroubleError) && (!gpsTroubleWarning)) {
