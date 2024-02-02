@@ -8,6 +8,7 @@
 #include <atomic>
 #include <mutex>
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include <QObject>
@@ -16,6 +17,7 @@
 #include <QMutexLocker>
 #include <QPainter>
 #include <QTimer>
+#include <QDateTime>
 
 #include "settings.h"
 #include "startupOptions.h"
@@ -85,7 +87,9 @@ class waterfall : public QWidget
     bool recordToJPG = false;
     int jpgQuality = 75;
     unsigned int frameCount = 0;
+    void prepareWfImage();
     void saveImage();
+    bool saveImageReady = false;
 
 public:
     explicit waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType options, QWidget *parent = nullptr);

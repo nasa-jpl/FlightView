@@ -56,6 +56,7 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType o
     }
     if(options.wfPreviewEnabled || options.wfPreviewContinuousMode) {
         statusMessage("Waterfall preview ENABLED.");
+        prepareWfImage();
         if(options.headless) {
             this->useDSF = true; // start with this ON since it will never get toggled
         }
@@ -63,6 +64,51 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType o
     QSizePolicy policy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     this->setSizePolicy(policy);
     statusMessage("Finished waterfall constructor.");
+}
+
+void waterfall::prepareWfImage() {
+    statusMessage("Preparing waterfall data storage.");
+    bool borrowedFilePath = false;
+    // Examine WF path
+    if(!options.wfPreviewlocationset) {
+        if(options.dataLocationSet) {
+            options.wfPreviewLocation = options.dataLocation;
+            statusMessage("Saving waterfall image to datastoragelocation");
+            borrowedFilePath = true;
+        } else {
+            saveImageReady = false;
+            statusMessage("Waterfall image location and datastoragelocation both blank. Not saving waterfall previews.");
+            return;
+        }
+    }
+    options.wfPreviewlocationset = true;
+
+
+    if(!options.wfPreviewLocation.endsWith("/"))
+        options.wfPreviewLocation.append("/");
+    // Add "day" stamp to name
+    QDateTime t = QDateTime::currentDateTime();
+    QString dayStr = t.toUTC().toString("yyyyMMdd/");
+
+    if(!borrowedFilePath) {
+        statusMessage("Appending day to waterfall preview location");
+        options.wfPreviewLocation.append(dayStr);
+    }
+
+    options.wfPreviewLocation.append("wf/");
+
+    // mkdir
+    QString command = "mkdir -p " + options.wfPreviewLocation;
+    int sys_rtn = system(command.toLocal8Bit());
+    if(sys_rtn) {
+        statusMessage("Error, could not make waterfall preview location directory.");
+        saveImageReady = false;
+        return;
+    }
+
+    // if successful, mark ready:
+    statusMessage(QString("Saving waterfall preview images to %1").arg(options.wfPreviewLocation));
+    saveImageReady = true;
 }
 
 void waterfall::process()
@@ -247,8 +293,14 @@ void waterfall::handleNewFrame()
 }
 
 void waterfall::saveImage() {
-    if(options.wfPreviewlocationset) {
-        specImage.save(options.wfPreviewLocation + "/wfpreview.jpg",
+    if(options.wfPreviewlocationset && saveImageReady) {
+        QString filename = "AV3";
+        QDateTime now = QDateTime::currentDateTime();
+        QString dayStr = now.toUTC().toString("yyyyMMdd");
+        QString timeStr = now.toUTC().toString("hhmmss");
+        filename.append(QString("%1t%2-wf.jpg").arg(dayStr).arg(timeStr));
+
+        specImage.save(options.wfPreviewLocation + filename,
                        nullptr, jpgQuality);
     }
 }
@@ -345,6 +397,8 @@ void waterfall::statusMessage(QString m)
     m.prepend(QString("WATERFALL: "));
     // Note: Messages made during the constructor might get emitted before
     // the console log is ready. Uncomment the next line to see them anyway:
-    //std::cout << m.toLocal8Bit().toStdString() << std::endl;
+#ifdef QT_DEBUG
+    std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
+#endif
     emit statusMessageOut(m);
 }
