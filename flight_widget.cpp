@@ -176,6 +176,14 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(diskCheckerTimer, SIGNAL(timeout()), this, SLOT(checkDiskSpace()));
     diskCheckerTimer->start();
 
+    fpsLoggingTimer = new QTimer();
+    fpsLoggingTimer->setInterval(60*1000); // once per minute
+    fpsLoggingTimer->setSingleShot(false);
+    if(options.flightMode) {
+        connect(fpsLoggingTimer, SIGNAL(timeout()), this, SLOT(logFPSSlot()));
+        fpsLoggingTimer->start();
+    }
+
     hideRGBTimer.setInterval(30000);
     hideRGBTimer.setSingleShot(true);
     hideRGBTimer.stop();
@@ -283,6 +291,12 @@ void flight_widget::updateFPS()
             this->cameraLinkLED->setState(QLedLabel::StateOk);
         }
     }
+}
+
+void flight_widget::logFPSSlot() {
+    // Called once per minute during flight mode
+    emit statusMessage(QString("Logging FPS: %1").\
+                       arg(fw->delta));
 }
 
 void flight_widget::checkDiskSpace()

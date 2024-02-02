@@ -48,7 +48,8 @@ class flight_widget : public QWidget
     bool startedPrimaryGPSLog = false;
     startupOptionsType options;
     fs::space_info diskSpace;
-    QTimer *diskCheckerTimer;
+    QTimer *diskCheckerTimer = NULL;
+    QTimer *fpsLoggingTimer = NULL;
     QTimer hideRGBTimer;
 
     QSplitter lrSplitter;
@@ -150,6 +151,9 @@ public slots:
     void debugThis();
     // debug text handler:
     void showDebugMessage(QString debugMessage);
+
+private slots:
+    void logFPSSlot();
 
 signals:
     void statusMessage(QString);
