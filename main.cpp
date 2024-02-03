@@ -358,7 +358,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        if(currentArg == "--no-stddev")
+        if( (currentArg == "--no-stddev") || (currentArg == "--no-stdev") )
         {
             startupOptions.runStdDevCalculation = false;
         }

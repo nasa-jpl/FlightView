@@ -29,7 +29,7 @@
 // 2500 = 400 FPS (385 typically)
 // 2000 = 500 FPS (470 typically)
 
-#define framePeriod_microsec (8E3)
+#define framePeriod_microsec (4E3)
 #define packetDelay_ns (1)
 
 #define nFramesToDeliver (100000)
@@ -273,8 +273,8 @@ int main() {
     // Filling server information 
     servaddr.sin_family    = AF_INET; // IPv4 
     // servaddr.sin_addr.s_addr = INADDR_ANY; // traffic seen on "lo" interface only
-    servaddr.sin_addr.s_addr = inet_addr("0.0.0.0");  // no traffic seen
-    //servaddr.sin_addr.s_addr = inet_addr("10.10.10.1"); // traffic on both sides seen
+    // servaddr.sin_addr.s_addr = inet_addr("0.0.0.0");  // no traffic seen
+    servaddr.sin_addr.s_addr = inet_addr("10.10.10.1"); // traffic on both sides seen
     //servaddr.sin_addr.s_addr = inet_addr("10.10.10.0"); // no traffic seen
     servaddr.sin_port = htons(PORT); 
        
