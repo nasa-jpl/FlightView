@@ -237,6 +237,13 @@ public:
 
     void prepareElements();
 
+    // no-effort logging elements:
+    double chk_longitude = 0;
+    double chk_latiitude = 0;
+    double chk_altitude = 0;
+    float chk_gndspeed = 0;
+    bool haveData = false;
+
 public slots:
     void initiateGPSConnection(QString host, int port, QString gpsBinaryLogFilename);
     void initiateGPSDisconnect();

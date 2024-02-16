@@ -405,6 +405,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     if(firstMessage)
     {
         gnssStatusTime.start();
+        haveData = true;
     }
 
     gpsMessageHeartbeat.start();
@@ -479,6 +480,10 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             // Native altitude is meters
             // Converting to feet by multiplying by 3.28084
             updateLabel(gpsAltitude, QString("%1 ft").arg(m.altitude * 3.28084, 6, 'f', 1, QChar('0')));
+
+            this->chk_latiitude = m.latitude;
+            this->chk_longitude = longitude;
+            this->chk_altitude = m.altitude * 3.28084; // feet
         }
         if(m.haveCourseSpeedGroundData)
         {
@@ -488,6 +493,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             // To convert to KPH, multiply by 3.6
             // The abbreviation for knot or knots is "kt" or "kts", respectively.
             updateLabel(gpsGroundSpeed, QString("%1 kts").arg(m.speedOverGround * 1.94384, 6, 'f', 2, QChar('0')));
+            this->chk_gndspeed = m.speedOverGround * 1.94384; // knots
         }
         if(m.haveSpeedData)
         {

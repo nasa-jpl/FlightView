@@ -262,6 +262,7 @@ void frameWorker::captureFrames()
             // Every 25 frames, or, every 200ms, whichever comes first.
             if( (count%25 == 0) || ((clock.elapsed() - lastTime) > 50) )
             {
+                this->frameCount = to.count;
                 if(options.xioCam)
                     emit updateFrameCountDisplay(to.xioCount);
                 else

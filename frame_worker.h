@@ -82,6 +82,7 @@ public:
 
     float delta;
     quint16 navgs = 1;
+    uint64_t frameCount = 0;
 
     /* Used for frameview widgets */
     bool displayCross = true;

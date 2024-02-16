@@ -295,8 +295,17 @@ void flight_widget::updateFPS()
 
 void flight_widget::logFPSSlot() {
     // Called once per minute during flight mode
-    emit statusMessage(QString("Logging FPS: %1").\
-                       arg(fw->delta));
+    emit statusMessage(QString("Logging FPS: %1, back-end frame count: %2").\
+                       arg(fw->delta).arg(fw->frameCount));
+    if(gps->haveData) {
+        emit statusMessage(QString("GPS check: longitude: %1, latitude: %2, altitude: %3 (ft), "
+                                   "ground speed: %4 (knots)").arg(gps->chk_longitude)
+                           .arg(gps->chk_latiitude)
+                           .arg(gps->chk_altitude)
+                           .arg(gps->chk_gndspeed));
+    } else {
+        emit statusMessage("GPS check: gps message data not received yet.");
+    }
 }
 
 void flight_widget::checkDiskSpace()
