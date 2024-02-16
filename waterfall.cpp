@@ -299,7 +299,8 @@ void waterfall::saveImage() {
         QString dayStr = now.toUTC().toString("yyyyMMdd");
         QString timeStr = now.toUTC().toString("hhmmss");
         filename.append(QString("%1t%2-wf.jpg").arg(dayStr).arg(timeStr));
-
+        statusMessage(QString("Writing waterfall image to filename [%1]")
+                      .arg(options.wfPreviewLocation + filename));
         specImage.save(options.wfPreviewLocation + filename,
                        nullptr, jpgQuality);
     }

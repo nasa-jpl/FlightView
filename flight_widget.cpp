@@ -101,8 +101,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     this->setLayout(&layout);
 
-    connect(waterfall_widget, SIGNAL(statusMessageOut(QString)), this, SLOT(showDebugMessage(QString)));
-
     // Connections to GPS:
     connect(gps, SIGNAL(gpsStatusMessage(QString)), this, SLOT(showDebugMessage(QString)));
     connect(gps, SIGNAL(gpsConnectionError(int)), this, SLOT(handleGPSConnectionError(int)));
