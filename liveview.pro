@@ -62,6 +62,7 @@ HEADERS  += mainwindow.h \
     frame_worker.h \
     gpsGUI/zupt.h \
     gpsmanager.h \
+    shm_gps.h \
     image_type.h \
     initialsetup.h \
     preferences.h \

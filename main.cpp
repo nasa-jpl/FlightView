@@ -358,10 +358,16 @@ int main(int argc, char *argv[])
             }
         }
 
-        if( (currentArg == "--no-stddev") || (currentArg == "--no-stdev") )
+        if( (currentArg == "--no-stddev") || (currentArg == "--no-stdev")
+                || (currentArg == "--nostdev") || (currentArg == "--nostddev") )
         {
             startupOptions.runStdDevCalculation = false;
         }
+
+        if( (currentArg == "--no-gpu") || (currentArg == "--nogpu") ) {
+            startupOptions.noGPU = true;
+        }
+
         if(currentArg == "--wfpreview") {
             startupOptions.wfPreviewEnabled = true;
         }
