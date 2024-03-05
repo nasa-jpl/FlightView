@@ -25,6 +25,8 @@
 
 #include "gpsGUI/zupt.h"
 
+#include "startupOptions.h"
+
 struct utcTime {
     int hour;
     int minute;
@@ -45,6 +47,8 @@ class gpsManager : public QObject
     QThread *gpsThread;
     gpsNetwork *gps;
     gpsMessage m;
+
+    startupOptionsType options;
 
     fileNameGenerator filenamegen;
 
@@ -236,7 +240,7 @@ class gpsManager : public QObject
     qfi_EHSI *ehsi;
 
 public:
-    gpsManager();
+    gpsManager(startupOptionsType opts);
     ~gpsManager();
 
     void insertLEDs(QLedLabel *gpsLinkLED, QLedLabel *gpsTroubleLED);

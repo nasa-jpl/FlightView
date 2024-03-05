@@ -11,6 +11,14 @@
 #include <fstream>
 #include <chrono>
 
+// Shared Memory:
+// Undefine this variable to disable SHM:
+#define USE_SHM
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include "shm_image.h"
+
 //multithreading includes
 #include <atomic>
 #include <boost/shared_array.hpp>
@@ -73,6 +81,14 @@ class take_object {
     unsigned int channel;
     unsigned int numbufs;
     unsigned int filter_refresh_rate;
+
+    // Shared memory support:
+    int shmFd = 0;
+    bool shmValid = false;
+    unsigned char shmBufferPositionPrior = 0;
+    unsigned char shmBufferPosition = 0;
+    shmSharedDataStruct *shm = NULL;
+    void shmSetup();
 
     bool setDarkStatusInFrame = false;
 

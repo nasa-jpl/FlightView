@@ -151,10 +151,86 @@ void take_object::changeOptions(takeOptionsType optionsIn)
         if(options.rtpNextGen) {
             statusMessage("RTP Camera is NextGen model");
         }
+        if((!options.rtpCam) && (!options.xioCam)) {
+            statusMessage("CameraLink enabled.");
+        }
     }
 
     // Recalculate the frame-to-frame delay:
     deltaT_micros = 1000000.0 / options.targetFPS;
+}
+
+void take_object::shmSetup()
+{
+    statusMessage("Preparing shared memory segment for images.");
+
+    if(shmValid) {
+        // unexpected to be valid already
+        warningMessage("SHM already valid");
+        return;
+    }
+
+    size_t shmLen = sizeof(struct shmSharedDataStruct);
+    shmFd = shm_open("/liveview_image", O_RDWR | O_CREAT ,S_IRUSR | S_IWUSR);
+
+    if(shmFd == -1) {
+        errorMessage("Could not open shared memory segment.");
+        shmValid = false;
+        return;
+    } else {
+        statusMessage("Created shared memory segment /liveview_image");
+    }
+
+    char trunmessage[128];
+    if(ftruncate(shmFd, shmLen) == -1) {
+        sprintf(trunmessage, "Could not truncate shared memory segment to %zu bytes.", shmLen);
+        errorMessage(trunmessage);
+        shmValid = false;
+        goto cleanup;
+    } else {
+        sprintf(trunmessage, "Truncated shared memory segment to %zu bytes.", shmLen);
+        statusMessage(trunmessage);
+    }
+
+    shm = (shmSharedDataStruct*)mmap (0, shmLen, PROT_WRITE, MAP_SHARED, shmFd, 0);
+    if( (shm == NULL) || (shm==MAP_FAILED) ) {
+        errorMessage("Could not map memory shared memory segment to a local variable.");
+        shmValid = false;
+        goto cleanup;
+    }
+
+    shm->statusByte = SHM_STATUS_INITALIZING;
+    shm->recordingDataToFile = false;
+    shm->fps = 0.0;
+    shm->counter = 0;
+    shm->writingFrameNum = 0;
+    shm->bufferSizeFrames = shmFrameBufferSize;
+    shm->frameHeight = this->frHeight;
+    shm->frameWidth = this->frWidth;
+    shm->takingDark = false;
+
+    for(int i=0; i < shmFilenameBufferSize; i++) {
+        shm->lastFilename[i] = '\0';
+    }
+
+    for(int i=0; i < shmFrameBufferSize; i++) {
+        shm->frameTime[i] = 0;
+    }
+
+    for(int f=0; f < shmFrameBufferSize; f++) {
+        for(int p=0; p < shmHeight*shmWidth; p++) {
+            shm->frameBuffer[f][p] = 0;
+        }
+    }
+    shm->statusByte = SHM_STATUS_WAITING;
+    shmValid = true;
+    goto cleanup;
+
+    cleanup:
+    if( (shmFd != -1) && (shmFd != 0) ) {
+        close(shmFd);
+        return;
+    }
 }
 
 void take_object::start()
@@ -250,6 +326,15 @@ void take_object::start()
     meanHeight = frHeight;
     meanWidth = frWidth;
 
+#ifdef USE_SHM
+    // Get the shared memory segment for images ready:
+    if(options.useSHM) {
+        shmSetup();
+    }
+#else
+    statusMessage("Not initializing shared memory segment.");
+#endif
+
 
     numbufs = 16;
     int rtnval = 0;
@@ -343,6 +428,7 @@ void take_object::start()
         statusMessage("Created RTP consumer thread.");
 
     } else {
+        statusMessage("Creating CameraLink multibuf.");
         if(pdv_p != NULL)
             rtnval = pdv_multibuf(pdv_p,this->numbufs);
         if(rtnval != 0)
@@ -386,7 +472,12 @@ void take_object::enableDarkStatusPixelWrite(bool writeValues) {
 void take_object::startCapturingDSFMask()
 {
     dsfMaskCollected = false;
+
     dsf->start_mask_collection();
+    if(shmValid) {
+        shm->takingDark = true;
+    }
+
     darkStatusPixelVal = obcStatusDark1;
 }
 void take_object::finishCapturingDSFMask()
@@ -395,6 +486,9 @@ void take_object::finishCapturingDSFMask()
     dsf->finish_mask_collection();
     dsf->mask_mutex.unlock();
     dsfMaskCollected = true;
+    if(shmValid) {
+        shm->takingDark = false;
+    }
     darkStatusPixelVal = obcStatusScience;
 }
 void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format)
@@ -600,7 +694,10 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 #ifdef VERBOSE
     printf("Begin frame save! @ %s\n", raw_file_name.c_str());
 #endif
-
+    if(shmValid) {
+        strncpy(shm->lastFilename, raw_file_name.c_str(), shmFilenameBufferSize-1);
+        shm->recordingDataToFile = true;
+    }
     saving_thread = boost::thread(&take_object::savingLoop,this,raw_file_name,num_avgs_save,frames_to_save);
 }
 void take_object::stopSavingRaws()
@@ -609,6 +706,10 @@ void take_object::stopSavingRaws()
     save_framenum.store(0,std::memory_order_relaxed);
     save_count.store(0,std::memory_order_relaxed);
     save_num_avgs=1;
+    if(shmValid) {
+        shm->recordingDataToFile = false;
+    }
+
 #ifdef VERBOSE
     printf("Stop Saving Raws!");
 #endif
@@ -1133,6 +1234,13 @@ void take_object::rtpConsumeFrames()
     uint16_t *temp_frame = NULL;
     int lastFrameNumber = 0;
     count = 0;
+
+    if(shmValid) {
+        shm->statusByte = SHM_STATUS_READY;
+        shmBufferPosition = 0;
+        shmBufferPositionPrior = 0;
+    }
+
     while(rtpConsumerRun)
     {
         begintp = std::chrono::steady_clock::now();
@@ -1146,7 +1254,7 @@ void take_object::rtpConsumeFrames()
         if(pixRemap)
         {
             apply_chroma_translate_filter(curFrame->raw_data_ptr);
-            curFrame->image_data_ptr = curFrame->raw_data_ptr;
+            //curFrame->image_data_ptr = curFrame->raw_data_ptr;
         }
 
 
@@ -1160,6 +1268,13 @@ void take_object::rtpConsumeFrames()
         if(setDarkStatusInFrame) {
             curFrame->image_data_ptr[obcStatusPixel] = darkStatusPixelVal;
         }
+
+        shmBufferPosition = (shmBufferPositionPrior + 1)%shmFrameBufferSize;
+        if(shmValid) {
+            shm->writingFrameNum = shmBufferPosition;
+            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth);
+        }
+
 
         // Calculating the filters for this frame
         if(!options.noGPU) {
@@ -1200,6 +1315,15 @@ void take_object::rtpConsumeFrames()
         measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
         meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
 
+        if(shmValid) {
+            if(measuredDelta_micros_final != 0)
+                shm->fps = 1E6/measuredDelta_micros_final;
+            shm->frameTime[shmBufferPosition] = finaltp.time_since_epoch() / std::chrono::milliseconds(1);
+            shm->counter = count;
+        }
+        shmBufferPositionPrior = shmBufferPosition;
+
+
         last_framecount = framecount;
         count++;
         grabbing = false;
@@ -1225,6 +1349,9 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
     std::chrono::steady_clock::time_point finaltp;
     std::chrono::steady_clock::time_point begintp;
 
+    if(shmValid) {
+        shm->statusByte = SHM_STATUS_READY;
+    }
     while(pdv_thread_run == 1)
     {	
         grabbing = true;
@@ -1270,19 +1397,28 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             curFrame->image_data_ptr[obcStatusPixel] = darkStatusPixelVal;
         }
 
-        // Calculating the filters for this frame
-        if(runStdDev)
-        {
-            sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
+        shmBufferPosition = (shmBufferPositionPrior + 1)%shmFrameBufferSize;
+        if(shmValid) {
+            shm->writingFrameNum = shmBufferPosition;
+            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth);
         }
-        dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
-        mf->update(curFrame,count,meanStartCol,meanWidth,\
-                   meanStartRow,meanHeight,frWidth,useDSF,\
-                   whichFFT, lh_start, lh_end,\
-                                           cent_start, cent_end,\
-                                           rh_start, rh_end);
 
-        mf->start_mean();
+        // Calculating the filters for this frame
+        if(!options.noGPU) {
+
+            if(runStdDev)
+            {
+                sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
+            }
+            dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
+            mf->update(curFrame,count,meanStartCol,meanWidth,\
+                       meanStartRow,meanHeight,frWidth,useDSF,\
+                       whichFFT, lh_start, lh_end,\
+                       cent_start, cent_end,\
+                       rh_start, rh_end);
+
+            mf->start_mean();
+        }
 
         if((save_framenum > 0) || continuousRecording)
         {
@@ -1306,6 +1442,15 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         finaltp = std::chrono::steady_clock::now();
         measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
         meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
+
+        if(shmValid) {
+            if(measuredDelta_micros_final != 0)
+                shm->fps = 1E6/measuredDelta_micros_final;
+            shm->frameTime[shmBufferPosition] = finaltp.time_since_epoch() / std::chrono::milliseconds(1);
+            shm->counter = count;
+        }
+        shmBufferPositionPrior = shmBufferPosition;
+
 
         grabbing = false;
         if(closing)

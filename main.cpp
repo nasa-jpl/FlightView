@@ -364,8 +364,13 @@ int main(int argc, char *argv[])
             startupOptions.runStdDevCalculation = false;
         }
 
+        if( (currentArg == "--shm")) {
+            startupOptions.useSHM = true;
+        }
+
         if( (currentArg == "--no-gpu") || (currentArg == "--nogpu") ) {
             startupOptions.noGPU = true;
+            startupOptions.runStdDevCalculation = false;
         }
 
         if(currentArg == "--wfpreview") {

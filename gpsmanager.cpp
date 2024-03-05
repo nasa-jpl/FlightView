@@ -1,10 +1,10 @@
 #include "gpsmanager.h"
 
-gpsManager::gpsManager()
+gpsManager::gpsManager(startupOptionsType opts)
 {
     qRegisterMetaType<gpsMessage>();
     statusLinkStickyError = false;
-
+    options = opts;
     // May override later:
     baseSaveDirectory = QString("/tmp/gps");
     //createLoggingDirectory();
@@ -13,7 +13,11 @@ gpsManager::gpsManager()
 
     prepareVectors(); // size the vectors
     prepareGPS(); // get ready to connect the GPS
-    shmSetup(); // initialize the shared memory segment for GPS data
+    if(options.useSHM) {
+        shmSetup(); // initialize the shared memory segment for GPS data
+    } else {
+        shmValid = false;
+    }
 }
 
 gpsManager::~gpsManager()
@@ -80,6 +84,8 @@ void gpsManager::shmSetup()
         emit gpsStatusMessage("Error, could not open GNSS shared memory segment.");
         shmValid = false;
         goto cleanup;
+    } else {
+        emit gpsStatusMessage("Opened shared memory segment /liveview_gnss.");
     }
 
     if(ftruncate(shmFd, shmLen) == -1) {
@@ -106,12 +112,13 @@ void gpsManager::shmSetup()
     currentSHMIndex = 0;
     priorSHMIndex = 0;
     shmValid = true;
-    goto cleanup;
+    return;
 
 
     cleanup:
     if( (shmFd != -1) && (shmFd != 0) ) {
         close(shmFd);
+        shmValid = false;
         return;
     }
     return;

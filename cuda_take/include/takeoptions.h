@@ -48,6 +48,8 @@ struct takeOptionsType
     bool headless = false;
     bool noGPU = false;
 
+    bool useSHM = false;
+
     uint16_t height;
     uint16_t width;
     float targetFPS = 100.00;

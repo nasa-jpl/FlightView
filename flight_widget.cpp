@@ -40,7 +40,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     }
 
     startedPrimaryGPSLog = false;
-    gps = new gpsManager();
+    gps = new gpsManager(options);
 
     if(useAvionicsWidgets)
     {

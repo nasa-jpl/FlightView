@@ -47,6 +47,8 @@ struct startupOptionsType
     bool headless = false;
     bool noGPU = false;
 
+    bool useSHM = false;
+
     bool wfPreviewEnabled = false;
     bool wfPreviewContinuousMode = false;
     bool wfPreviewlocationset = false;
