@@ -108,15 +108,16 @@ void gpsManager::shmSetup()
         shm->message[m].counter = 0;
         shm->message[m].validDecode = false;
     }
-    shm->statusByte = SHM_STATUS_WAITING;
     currentSHMIndex = 0;
     priorSHMIndex = 0;
     shmValid = true;
+    shm->statusByte = SHM_STATUS_WAITING;
     return;
 
 
     cleanup:
     if( (shmFd != -1) && (shmFd != 0) ) {
+        emit gpsStatusMessage("Closing shared memory segment.");
         close(shmFd);
         shmValid = false;
         return;
@@ -472,9 +473,9 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
 
     if(shmValid) {
         shm->writingMessageNumber = currentSHMIndex;
-        shm->statusByte = SHM_STATUS_READY;
         shm->counter = shmCounter++;
         shm->message[currentSHMIndex] = m; // makes a copy
+        shm->statusByte = SHM_STATUS_READY;
     }
 
     msgsReceivedCount++;
