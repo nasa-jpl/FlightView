@@ -279,9 +279,10 @@ int main(int argc, char* argv[]) {
     std::chrono::steady_clock::time_point begintp;
     std::chrono::steady_clock::time_point endtp;
 
-    if(argc < 1) {
+    if(argc < 2) {
+        errno = 131;
         perror("Please specify filename to load data from as an argument to the program.\n");
-        return -1;
+        return errno;
     }
 
     uint16_t height = 328;
@@ -321,9 +322,9 @@ int main(int argc, char* argv[]) {
     
     // Filling server information 
     servaddr.sin_family    = AF_INET; // IPv4 
-    servaddr.sin_addr.s_addr = INADDR_ANY; // traffic seen on "lo" interface only
+    //servaddr.sin_addr.s_addr = INADDR_ANY; // traffic seen on "lo" interface only
     // servaddr.sin_addr.s_addr = inet_addr("0.0.0.0");  // no traffic seen
-    //servaddr.sin_addr.s_addr = inet_addr("10.10.10.1"); // traffic on both sides seen, good for fiber RTP testing
+    servaddr.sin_addr.s_addr = inet_addr("10.10.10.1"); // traffic on both sides seen, good for fiber RTP testing
     //servaddr.sin_addr.s_addr = inet_addr("10.10.10.0"); // no traffic seen
     servaddr.sin_port = htons(PORT); 
        
@@ -429,7 +430,7 @@ int main(int argc, char* argv[]) {
         int duration = std::chrono::duration_cast<std::chrono::microseconds>(endtp - begintp).count();
         if(duration < framePeriod) {
             if( (framesSent%200)==0) {
-                printf("Sent: %d frames", framesSent);
+                printf("Sent: %d frames\n", framesSent);
             }
             std::this_thread::sleep_for(std::chrono::microseconds(framePeriod-duration));
         } else {
