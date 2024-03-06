@@ -29,15 +29,13 @@
 // 2500 = 400 FPS (385 typically)
 // 2000 = 500 FPS (470 typically)
 
-#define framePeriod_microsec (8E3)
+#define framePeriod_microsec (4E3)
 #define packetDelay_ns (1)
 
 #define nFramesToDeliver (100000)
 
 // Frame size must be integer divisible
-// 32 for 1280*480
-// 41 for 1280*321
-#define chunksPerFrame_d (41)
+#define chunksPerFrame_d (32)
 
 struct SRTPData {
     bool	      m_bFirstPacket;
@@ -57,41 +55,6 @@ struct SRTPData {
     uint32_t      m_uSource;
     uint32_t      m_timestamp;
 };
-
-char * loadFile(char* filename, size_t *length) {
-    // Loads a file into memory. Returns pointer to memery.
-    // Calling function is responsible to free the memory.
-    // The entire file is loaded, be mindful of memory usage!
-    unsigned long primarySize = 0;
-    char *binBuffer = NULL;
-
-    printf("Opening binary file %s\n", filename);
-    FILE *fdPrimary = fopen(filename, "rb");
-    if(fdPrimary==NULL) {
-        fprintf(stderr, "Error, file is null.\n");
-        return NULL;
-    }
-
-    fseek(fdPrimary, 0, SEEK_END);
-    primarySize = ftell(fdPrimary);
-    fseek(fdPrimary, 0, SEEK_SET);
-
-    binBuffer = (char*)calloc(1, primarySize+1);
-
-    if(!binBuffer) {
-        fprintf(stderr, "Error, could not allocate for buffer. We might be out of memory.\n");
-        fclose(fdPrimary);
-        return NULL;
-    } else {
-        fread(binBuffer, primarySize, 1, fdPrimary);
-        printf("Read %lu bytes from binary file.\n", primarySize);
-    }
-
-    *length = primarySize;
-
-    fclose(fdPrimary);
-    return binBuffer;
-}
 
 void buildHeader(uint8_t* buffer, bool isMark, 
         uint16_t sequenceNumber, uint8_t ver, 
@@ -273,37 +236,25 @@ void insertFrameHeader(uint8_t* frameImage, unsigned int frameCounter) {
 }
 
 
-int main(int argc, char* argv[]) {
+int main() { 
 
     std::chrono::steady_clock::time_point startMaintp;
     std::chrono::steady_clock::time_point begintp;
     std::chrono::steady_clock::time_point endtp;
 
-    if(argc < 1) {
-        perror("Please specify filename to load data from as an argument to the program.\n");
-        return -1;
-    }
-
-    uint16_t height = 328;
+    uint16_t height = 480;
     uint16_t width = 1280;
-
-    size_t fileLen = 0;
-    printf("Loading file [%s]...\n", argv[argc-1]);
-    uint8_t* imageData = (uint8_t *)loadFile(argv[argc-1], &fileLen);
-    if(imageData) {
-        printf("Loaded %zu MiB from file into memory.\n", fileLen/1024/1024);
-    } else {
-        perror("ERROR, could not load file.\n");
-        abort();
-    }
     
-    printf("Allocating memory for header and packet buffer. Height = %d, width = %d\n",
+    printf("Allocating memory for header and frame image. Height = %d, width = %d\n",
             height, width); 
     uint8_t* headerBuffer = (uint8_t *)calloc(12, 1);
-    uint8_t* frameImage;
+    uint8_t* frameImage = (uint8_t *)malloc(height*width*2);
     uint8_t* packetBuffer = (uint8_t*)malloc(12 + (height*width*2));
     printf("\tDone.\n");
     
+    printf("Generating test pattern\n");
+    genFrame(frameImage, height, width); 
+    printf("\tDone.\n");
 
     int sockfd; 
     struct sockaddr_in servaddr;
@@ -311,7 +262,7 @@ int main(int argc, char* argv[]) {
     // Creating socket file descriptor
     printf("Creating socket file descriptor.\n"); 
     if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
-        perror("ERROR: socket creation failed\n");
+        perror("socket creation failed"); 
         exit(EXIT_FAILURE); 
     } else {
         printf("\tDone.\n");
@@ -368,24 +319,17 @@ int main(int argc, char* argv[]) {
     int framePeriod = framePeriod_microsec; // microseconds
     int underspeedEvents = 0;
     uintmax_t bytesSentTotal = 0;
-    size_t offsetIntoFrameData = 0;
 
     startMaintp = std::chrono::steady_clock::now();
-
-    frameImage = imageData;
-
-    bool keepGoing = true;
-
-    while(keepGoing) {
+    while(framesSent < nFramesToDeliver) {
         begintp = std::chrono::steady_clock::now();
 
         // Optional, modify frame to have a moving pattern
-        //genFrameOffset(frameImage, height, width, framesSent); // slows down loop
+        genFrameOffset(frameImage, height, width, framesSent); // slows down loop
 
         // Mark the frame, in case we save data and look at it later.
         insertFrameHeader(frameImage, framesSent);
-        //printf("Sending frame %d\n", framesSent);
-        // This loop sends ONE frame of data via chunksPerFrame number of packets.
+
         for(int c=0; c < chunksPerFrame; c++) {
 
             if( (chunks+1) * frameBytesPerPacket == frameSize) {
@@ -397,12 +341,9 @@ int main(int argc, char* argv[]) {
             buildHeader(headerBuffer, marker, sequenceNumber, ver,
                 padding, extension, uCRSCCount, 
                 payloadType, timestamp, ssrc);  
-
-
-            buildPacket(headerBuffer, frameImage+ (chunks*frameBytesPerPacket) , packetBuffer, chunks,
+                   
+            buildPacket(headerBuffer, frameImage, packetBuffer, chunks,
                     frameBytesPerPacket);
-
-            offsetIntoFrameData += frameBytesPerPacket;
 
             chunks++;
             packetSize = 12 + frameBytesPerPacket;
@@ -418,19 +359,12 @@ int main(int argc, char* argv[]) {
             sequenceNumber++;
             std::this_thread::sleep_for(std::chrono::nanoseconds(packetDelay_ns));
         }
-
-        frameImage += height*width*2; // next frame
-
-
         timestamp++;
         framesSent++;
         chunks = 0;
         endtp = std::chrono::steady_clock::now();
         int duration = std::chrono::duration_cast<std::chrono::microseconds>(endtp - begintp).count();
         if(duration < framePeriod) {
-            if( (framesSent%200)==0) {
-                printf("Sent: %d frames", framesSent);
-            }
             std::this_thread::sleep_for(std::chrono::microseconds(framePeriod-duration));
         } else {
             underspeedEvents++;
@@ -438,22 +372,6 @@ int main(int argc, char* argv[]) {
                     1E6*(1.0/duration), 
                     underspeedEvents); fflush(stdout);
         }
-        if(offsetIntoFrameData > (fileLen - (2*height*width))) {
-            // If we are "within a frame" of the end, let's just loop now.
-            // This prevents crashes at "partial" frame endings
-            printf("Looping back around. offset=%zu bytes, filelen=%zu bytes..\n",
-                   offsetIntoFrameData, fileLen);
-            int duration = std::chrono::duration_cast<std::chrono::microseconds>(endtp - startMaintp).count();
-            float gigabitsPerSec = 8*bytesSentTotal*(1E6*(1.0/duration))/1024/1024/1024;
-
-            printf("Average frame rate: %3.3f FPS\n",
-                (1E6*(1.0/duration)*framesSent));
-            printf("Average Datarate: %0.3f gigabits/sec\n", gigabitsPerSec);
-
-            offsetIntoFrameData = 0;
-            frameImage = imageData;
-        }
-
 
     }
     int duration = std::chrono::duration_cast<std::chrono::microseconds>(endtp - startMaintp).count();
@@ -466,8 +384,6 @@ int main(int argc, char* argv[]) {
 
     printf("Average Datarate: %0.3f gigabits/sec\n", gigabitsPerSec);
     printf("\n");
-    printf("Freeing %zu MiB of memory...\n", fileLen/1024/1024);
-    free(imageData);
 
     printf("Done.\n");
     return 0; 
