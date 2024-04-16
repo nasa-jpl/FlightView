@@ -44,7 +44,7 @@ waterfallViewerWindow::~waterfallViewerWindow()
 }
 
 void waterfallViewerWindow::setup(frameWorker *fw, int vSize, int hSize, startupOptionsType options) {
-    wf->setup(fw, vSize, hSize, options);
+    wf->setup(fw, vSize, hSize, true, options);
     wf->changeWFLength(ui->wflengthSlider->value());
 }
 

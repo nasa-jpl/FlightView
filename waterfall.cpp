@@ -9,12 +9,17 @@ waterfall::waterfall(QWidget *parent) : QWidget(parent) {
 
 }
 
-void waterfall::setup(frameWorker *fw, int vSize, int hSize, startupOptionsType options) {
+void waterfall::setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, startupOptionsType options) {
     this->fw = fw;
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     this->options = options;
-    recordToJPG = options.wfPreviewContinuousMode;
+    this->isSecondary = isSecondary;
+    if(isSecondary) {
+        recordToJPG = false;
+    } else {
+        recordToJPG = options.wfPreviewContinuousMode;
+    }
     // if not continuous mode, then if previewEnabled,
     // the flight widget will call the waterfall
     // to enable previews when recording.
@@ -54,16 +59,18 @@ void waterfall::setup(frameWorker *fw, int vSize, int hSize, startupOptionsType 
     rendertimer.setInterval(FRAME_DISPLAY_PERIOD_MSECS);
 
     if(options.headless && (!options.wfPreviewEnabled)) {
-        statusMessage("Not starting waterfall display update timer for headless mode.");
+        statusMessage("Not starting waterfall display update timer for headless mode without waterfall previews.");
     } else {
         statusMessage("Starting waterfall");
         rendertimer.start();
     }
-    if(options.wfPreviewEnabled || options.wfPreviewContinuousMode) {
-        statusMessage("Waterfall preview ENABLED.");
-        prepareWfImage();
-        if(options.headless) {
-            this->useDSF = true; // start with this ON since it will never get toggled
+    if(!isSecondary) {
+        if(options.wfPreviewEnabled || options.wfPreviewContinuousMode) {
+            statusMessage("Waterfall preview ENABLED.");
+            prepareWfImage();
+            if(options.headless) {
+                this->useDSF = true; // start with this ON since it will never get toggled
+            }
         }
     }
     QSizePolicy policy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
@@ -117,7 +124,7 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType o
     rendertimer.setInterval(FRAME_DISPLAY_PERIOD_MSECS);
 
     if(options.headless && (!options.wfPreviewEnabled)) {
-        statusMessage("Not starting waterfall display update timer for headless mode.");
+        statusMessage("Not starting waterfall display update timer for headless mode with preview disabled.");
     } else {
         statusMessage("Starting waterfall");
         rendertimer.start();
@@ -375,6 +382,9 @@ void waterfall::saveImage() {
 }
 
 void waterfall::setRecordWFImage(bool recordImageOn) {
+    if(isSecondary)
+        return;
+
     recordToJPG = recordImageOn;
     if(recordToJPG && options.headless) {
         this->useDSF = true;
@@ -383,6 +393,8 @@ void waterfall::setRecordWFImage(bool recordImageOn) {
 
 void waterfall::setSecondaryWF(bool isSecondary) {
     this->isSecondary = isSecondary;
+    if(isSecondary)
+        recordToJPG = false;
 }
 
 void waterfall::changeRGB(int r, int g, int b)

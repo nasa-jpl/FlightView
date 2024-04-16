@@ -96,7 +96,7 @@ class waterfall : public QWidget
 public:
     explicit waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType options, QWidget *parent = nullptr);
     explicit waterfall(QWidget *parent = nullptr);
-    void setup(frameWorker *fw, int vSize, int hSize, startupOptionsType options);
+    void setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, startupOptionsType options);
     void process();
     struct wfInfo_t {
         int wflength = 100;
