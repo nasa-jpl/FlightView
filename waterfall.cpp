@@ -376,6 +376,9 @@ void waterfall::saveImage() {
 
 void waterfall::setRecordWFImage(bool recordImageOn) {
     recordToJPG = recordImageOn;
+    if(recordToJPG && options.headless) {
+        this->useDSF = true;
+    }
 }
 
 void waterfall::setSecondaryWF(bool isSecondary) {
