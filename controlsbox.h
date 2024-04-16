@@ -77,6 +77,7 @@ public:
     QPushButton stop_dark_collection_button;
     QPushButton showRGBLevelsButton;
     QPushButton load_mask_from_file;
+    QPushButton showSecondWFBtn;
     QPushButton pref_button;
     QString fps;
     float fps_float = 0.0;
@@ -226,6 +227,7 @@ signals:
     void updateRGB(int r, int g, int b);
     void sendRGBLevels(double r, double g, double b, double gamma, bool reprocess);
     void updateWFLength(int length);
+    void showSecondWF();
     void haveReadPreferences(settingsT prefs);
 
     void setCameraPause(bool isPaused);

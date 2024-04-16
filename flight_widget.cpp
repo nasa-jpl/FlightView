@@ -461,6 +461,32 @@ void flight_widget::changeWFLength(int length)
     //waterfall_widget->changeWFLength(length);
 }
 
+void flight_widget::showSecondWF() {
+    if(secondWF == NULL) {
+        secondWF = new waterfallViewerWindow();
+
+        secondWF->setup(fw, 1, 1024, options);
+
+        connect(this, SIGNAL(changeWFLengthSignal(int)), secondWF, SLOT(changeWFLength(int)));
+        connect(this, SIGNAL(updateCeilingSignal(int)), secondWF, SLOT(updateCeiling(int)));
+        connect(this, SIGNAL(updateFloorSignal(int)), secondWF, SLOT(updateFloor(int)));
+        connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double,bool)), secondWF, SLOT(setRGBLevels(double,double,double,double,bool)));
+        connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), secondWF, SLOT(changeRGB(int,int,int)));
+
+        // Sync up with the current primary waterfall settings:
+        waterfall::wfInfo_t i = waterfall_widget->getSettings();
+        secondWF->changeWFLength(i.wflength);
+        secondWF->setUseDSF(i.useDSF);
+        secondWF->updateCeiling(i.ceiling);
+        secondWF->updateFloor(i.floor);
+        secondWF->setRGBLevels(i.redLevel, i.greenLevel, i.blueLevel, i.gammaLevel, true); // no need to process empty data
+        secondWF->changeRGB(i.r_row, i.g_row, i.b_row);
+    }
+
+    secondWF->show();
+    secondWF->raise();
+}
+
 void flight_widget::setCrosshairs(QMouseEvent *event)
 {
     dsf_widget->setCrosshairs(event);

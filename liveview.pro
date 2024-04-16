@@ -48,7 +48,8 @@ SOURCES += main.cpp\
     gpsGUI/gpsnetwork.cpp \
     gpsGUI/gpsbinaryreader.cpp \
     gpsGUI/gpsbinarylogger.cpp \
-    waterfall.cpp
+    waterfall.cpp \
+    waterfallviewerwindow.cpp
 
 HEADERS  += mainwindow.h \
     consolelog.h \
@@ -84,7 +85,8 @@ HEADERS  += mainwindow.h \
     gpsGUI/gpsbinarylogger.h \
     startupOptions.h \
     waterfall.h \
-    preferences.h
+    preferences.h \
+    waterfallviewerwindow.h
 
 DISTFILES +=    cuda_take/include/take_object.hpp \
                 aviris3-logo.png \
@@ -172,4 +174,5 @@ unix:!macx:!symbian: PRE_TARGETDEPS += $$PWD/cuda_take/libcuda_take.a
 FORMS += \
     flightindicators.ui \
     initialsetup.ui \
-    rgbadjustments.ui
+    rgbadjustments.ui \
+    waterfallviewerwindow.ui

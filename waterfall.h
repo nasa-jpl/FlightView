@@ -13,6 +13,7 @@
 
 #include <QObject>
 #include <QWidget>
+#include <QDebug>
 #include <QMutex>
 #include <QMutexLocker>
 #include <QPainter>
@@ -90,10 +91,29 @@ class waterfall : public QWidget
     void prepareWfImage();
     void saveImage();
     bool saveImageReady = false;
+    bool isSecondary = false;
 
 public:
     explicit waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType options, QWidget *parent = nullptr);
+    explicit waterfall(QWidget *parent = nullptr);
+    void setup(frameWorker *fw, int vSize, int hSize, startupOptionsType options);
     void process();
+    struct wfInfo_t {
+        int wflength = 100;
+        int ceiling = 255;
+        int floor = 0;
+        bool useDSF = false;
+        int r_row = 100;
+        int g_row = 102;
+        int b_row = 104;
+        double redLevel = 1.0;
+        double greenLevel = 1.0;
+        double blueLevel = 1.0;
+        double gammaLevel = 1.0;
+        bool recordToJPG = false;
+        int jpgQuality = 75;
+    };
+    wfInfo_t getSettings();
 
 public slots:
     void paintEvent(QPaintEvent *event);
@@ -108,6 +128,7 @@ public slots:
     void updateFloor(int f);
     void setUseDSF(bool useDSF);
     void setRecordWFImage(bool recordImageOn);
+    void setSecondaryWF(bool isSecondary);
     void debugThis();
 
 signals:

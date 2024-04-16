@@ -3,6 +3,74 @@
 // This is the RGB waterfall widget used in the flight screen.
 // The "waterfall" tab is handled by a special instance of the Frameview Widget.
 
+waterfall::waterfall(QWidget *parent) : QWidget(parent) {
+    // Widget constructor for inclusion in main window via Qt Designer.
+    // basically don't do much yet.
+
+}
+
+void waterfall::setup(frameWorker *fw, int vSize, int hSize, startupOptionsType options) {
+    this->fw = fw;
+    frHeight = fw->getFrameHeight();
+    frWidth = fw->getFrameWidth();
+    this->options = options;
+    recordToJPG = options.wfPreviewContinuousMode;
+    // if not continuous mode, then if previewEnabled,
+    // the flight widget will call the waterfall
+    // to enable previews when recording.
+
+    //rgbLineStruct blank = allocateLine();
+    maxWFlength = 1024;
+    wflength = maxWFlength;
+    //wf.resize(maxWFlength, blank);
+    allocateBlankWF();
+
+    ceiling = 16000;
+    floor = 0;
+
+    r_row = 200;
+    g_row = 250;
+    b_row = 300;
+
+    // Drawing:
+    // Pixel format is AA RR GG BB, where AA = 8-bit Alpha value
+    // AA = 0x00 = fully transparent
+    // AA = 0xff = fully opaque
+
+    vEdge = 0;
+    hEdge = 0;
+    this->vSize = vSize;
+    this->hSize = hSize;
+    // Override for now:
+    this->vSize = maxWFlength;
+    this->hSize = frWidth;
+    opacity = 0xff;
+    useDSF = false; // default to false since the program can't start up with a DSF mask anyway
+
+    specImage = QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
+    statusMessage(QString("Created specImage with height %1 and width %2.").arg(specImage.height()).arg(specImage.width()));
+
+    connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
+    rendertimer.setInterval(FRAME_DISPLAY_PERIOD_MSECS);
+
+    if(options.headless && (!options.wfPreviewEnabled)) {
+        statusMessage("Not starting waterfall display update timer for headless mode.");
+    } else {
+        statusMessage("Starting waterfall");
+        rendertimer.start();
+    }
+    if(options.wfPreviewEnabled || options.wfPreviewContinuousMode) {
+        statusMessage("Waterfall preview ENABLED.");
+        prepareWfImage();
+        if(options.headless) {
+            this->useDSF = true; // start with this ON since it will never get toggled
+        }
+    }
+    QSizePolicy policy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    this->setSizePolicy(policy);
+    statusMessage("Finished waterfall constructor.");
+}
+
 waterfall::waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType options, QWidget *parent) : QWidget(parent)
 {
     this->fw = fw;
@@ -310,6 +378,10 @@ void waterfall::setRecordWFImage(bool recordImageOn) {
     recordToJPG = recordImageOn;
 }
 
+void waterfall::setSecondaryWF(bool isSecondary) {
+    this->isSecondary = isSecondary;
+}
+
 void waterfall::changeRGB(int r, int g, int b)
 {
     this->r_row = r;
@@ -387,10 +459,29 @@ void waterfall::rescaleWF()
 
 }
 
+waterfall::wfInfo_t waterfall::getSettings() {
+
+    waterfall::wfInfo_t info;
+    info.wflength = this->wflength;
+    info.ceiling = this->ceiling;
+    info.floor = this->floor;
+    info.useDSF = this->useDSF;
+    info.r_row = this->r_row;
+    info.g_row = this->g_row;
+    info.b_row = this->b_row;
+    info.redLevel = this->redLevel;
+    info.greenLevel = this->greenLevel;
+    info.blueLevel = this->blueLevel;
+    info.gammaLevel = this->gammaLevel;
+    info.recordToJPG = this->recordToJPG;
+    info.jpgQuality = this->jpgQuality;
+    return info;
+}
+
 void waterfall::debugThis()
 {
     statusMessage("In debugThis function.");
-    this->redraw();
+    qDebug() << "isSecondary: " << isSecondary << ", r_row: " << r_row << ", g_row: " << g_row << ", b_row: " << b_row;
 }
 
 void waterfall::statusMessage(QString m)

@@ -111,6 +111,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     server_ip_label.setText("Server IP: Not Connected!");
     server_port_label.setText("Port Number: Not Connected!");
 
+    showSecondWFBtn.setText("Second WF");
+    showSecondWFBtn.setToolTip("Pop out a second waterfall view");
+
     // Overlay controls:
 
     //left:
@@ -138,6 +141,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //Second Row
     collections_layout->addWidget(&fps_label, 2, 1, 1, 1);
     collections_layout->addWidget(&load_mask_from_file, 2, 2, 1, 1);
+    collections_layout->addWidget(&showSecondWFBtn, 2,3,1,1);
 
     //Third Row
     collections_layout->addWidget(&pref_button, 3, 2, 1, 1);
@@ -506,7 +510,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //Connections
     connect(&collect_dark_frames_button, SIGNAL(clicked()), this, SLOT(start_dark_collection_slot()));
     connect(&stop_dark_collection_button, SIGNAL(clicked()), this, SLOT(stop_dark_collection_slot()));
-    connect(&load_mask_from_file, SIGNAL(clicked()), this, SLOT(getMaskFile()));
+    connect(&load_mask_from_file, SIGNAL(clicked()), this, SLOT(getMaskFile()));   
     connect(&pref_button, SIGNAL(clicked()), this, SLOT(load_pref_window()));
     connect(&showConsoleLogBtn, &QPushButton::pressed,
             [&]() {
@@ -1555,6 +1559,7 @@ void ControlsBox::tab_changed_slot(int index)
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateFloor(int)));
             connect(this, SIGNAL(updateRGB(int,int,int)), p_flight, SLOT(changeRGB(int,int,int)));
             connect(&wflength_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(changeWFLength(int)));
+            connect(&showSecondWFBtn, SIGNAL(pressed()), p_flight, SLOT(showSecondWF()));
             connect(fw, SIGNAL(updateFPS()), p_flight, SLOT(updateFPS()));
             connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseDSF(bool)));
             connect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)));
@@ -2671,6 +2676,8 @@ void ControlsBox::waterfallControls(bool enabled)
     saveRGBPresetButton.setVisible(enabled);
     diskSpaceBar.setVisible(enabled);
     diskSpaceLabel.setVisible(enabled);
+
+    showSecondWFBtn.setVisible(enabled);
 }
 
 void ControlsBox::overlayControls(bool see_it)

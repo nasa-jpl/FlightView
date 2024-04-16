@@ -26,6 +26,7 @@ namespace fs = boost::filesystem;
 #include "flightindicators.h"
 #include "startupOptions.h"
 #include "waterfall.h"
+#include "waterfallviewerwindow.h"
 #include "preferences.h"
 
 #include "qfi/qfi_EADI.h"
@@ -37,6 +38,8 @@ class flight_widget : public QWidget
     frameWorker *fw;
 
     waterfall *waterfall_widget;
+    waterfallViewerWindow *secondWF = NULL;
+
     //QThread *wfThread = NULL;
     frameview_widget *dsf_widget;
     void setupWFConnections();
@@ -142,6 +145,7 @@ public slots:
     void setRGBLevels(double red, double green, double blue, double gamma, bool reprocess);
     void setShowRGBLines(bool showLines);
     void changeWFLength(int length);
+    void showSecondWF();
     void rescaleRange();
     void setUseDSF(bool useDSF);
     void hideRGB();

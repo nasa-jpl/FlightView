@@ -29,7 +29,7 @@
 // 2500 = 400 FPS (385 typically)
 // 2000 = 500 FPS (470 typically)
 
-#define framePeriod_microsec (8E3)
+#define framePeriod_microsec (4444)
 #define packetDelay_ns (1)
 
 #define nFramesToDeliver (100000)
@@ -322,9 +322,9 @@ int main(int argc, char* argv[]) {
     
     // Filling server information 
     servaddr.sin_family    = AF_INET; // IPv4 
-    //servaddr.sin_addr.s_addr = INADDR_ANY; // traffic seen on "lo" interface only
+    servaddr.sin_addr.s_addr = INADDR_ANY; // traffic seen on "lo" interface only
     // servaddr.sin_addr.s_addr = inet_addr("0.0.0.0");  // no traffic seen
-    servaddr.sin_addr.s_addr = inet_addr("10.10.10.1"); // traffic on both sides seen, good for fiber RTP testing
+    // servaddr.sin_addr.s_addr = inet_addr("10.10.10.1"); // traffic on both sides seen, good for fiber RTP testing
     //servaddr.sin_addr.s_addr = inet_addr("10.10.10.0"); // no traffic seen
     servaddr.sin_port = htons(PORT); 
        
@@ -435,10 +435,12 @@ int main(int argc, char* argv[]) {
             std::this_thread::sleep_for(std::chrono::microseconds(framePeriod-duration));
         } else {
             underspeedEvents++;
-            printf("WARNING, not meeting frame rate. Effective rate (this frame): %3.1f FPS. Can't keep up. Event: %d\n",
-                    1E6*(1.0/duration), 
+            if(duration > framePeriod*1.5) {
+                // Don't print unless we're really slow. 
+            printf("WARNING, not meeting frame rate. Effective rate (this frame): %3.1f FPS (intended %3.1f FPS). Can't keep up. Event: %d\n",
+                    1E6*(1.0/duration), 1E6*(1.0/framePeriod), 
                     underspeedEvents); fflush(stdout);
-        }
+        } }
         if(offsetIntoFrameData > (fileLen - (2*height*width))) {
             // If we are "within a frame" of the end, let's just loop now.
             // This prevents crashes at "partial" frame endings
