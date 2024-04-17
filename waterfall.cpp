@@ -293,7 +293,7 @@ void waterfall::addNewFrame()
     }
 
     // process initial RGB values:
-    processLineToRGB(line);
+    processLineToRGB_MP(line);
 
     QMutexLocker lockwf(&wfInUse);
 
@@ -317,6 +317,32 @@ void waterfall::processLineToRGB(rgbLine* line)
     } else {
         for(int p=0; p < frWidth; p++)
         {
+            line->getRed()[p] = (unsigned char)MAX8(redLevel * pow(scaleDataPoint(line->getr_raw()[p]), gammaLevel));
+            line->getGreen()[p] = (unsigned char)MAX8(greenLevel * pow(scaleDataPoint(line->getg_raw()[p]), gammaLevel));
+            line->getBlue()[p] = (unsigned char)MAX8(blueLevel * pow(scaleDataPoint(line->getb_raw()[p]), gammaLevel));
+        }
+    }
+}
+
+void waterfall::processLineToRGB_MP(rgbLine* line)
+{
+    // go from float to RGB, with floor and ceiling scaling
+
+    if(gammaLevel == 1.0)
+    {
+#pragma omp parallel for num_threads(16)
+        for(int p=0; p < frWidth; p++)
+        {
+            pthread_setname_np(pthread_self(), "GUI_WF");
+            line->getRed()[p] =   (unsigned char)MAX8(redLevel *   scaleDataPoint(line->getr_raw()[p]));
+            line->getGreen()[p] = (unsigned char)MAX8(greenLevel * scaleDataPoint(line->getg_raw()[p]));
+            line->getBlue()[p] =  (unsigned char)MAX8(blueLevel *  scaleDataPoint(line->getb_raw()[p]));
+        }
+    } else {
+#pragma omp parallel for num_threads(16)
+        for(int p=0; p < frWidth; p++)
+        {
+            pthread_setname_np(pthread_self(), "GUI_WF");
             line->getRed()[p] = (unsigned char)MAX8(redLevel * pow(scaleDataPoint(line->getr_raw()[p]), gammaLevel));
             line->getGreen()[p] = (unsigned char)MAX8(greenLevel * pow(scaleDataPoint(line->getg_raw()[p]), gammaLevel));
             line->getBlue()[p] = (unsigned char)MAX8(blueLevel * pow(scaleDataPoint(line->getb_raw()[p]), gammaLevel));
@@ -465,9 +491,11 @@ void waterfall::rescaleWF()
     // atomic bool spin-lock on deque data
     scalingValues.lock();
     QMutexLocker lock(&wfInUse);
-#pragma omp parallel for
+
+#pragma omp parallel for num_threads(24)
     for(int wfrow=0; wfrow < maxWFlength; wfrow++)
     {
+        pthread_setname_np(pthread_self(), "GUIRepro");
         processLineToRGB( wf[wfrow].get() );
     }
     scalingValues.unlock();

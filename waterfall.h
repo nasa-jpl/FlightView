@@ -74,6 +74,8 @@ class waterfall : public QWidget
     void addNewFrame();
     std::mutex addingFrame;
     void processLineToRGB(rgbLine* line); // float data to scaled RGB values
+    void processLineToRGB_MP(rgbLine* line); // multi-processor version
+
     void rescaleWF();
     std::mutex scalingValues;
 
