@@ -248,6 +248,9 @@ double flight_widget::getFloor()
 void flight_widget::setUseDSF(bool useDSF)
 {
     waterfall_widget->setUseDSF(useDSF);
+    if(secondWF != NULL) {
+        secondWF->setUseDSF(useDSF);
+    }
     dsf_widget->setUseDSF(useDSF);
 }
 
@@ -472,6 +475,7 @@ void flight_widget::showSecondWF() {
         connect(this, SIGNAL(updateFloorSignal(int)), secondWF, SLOT(updateFloor(int)));
         connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double,bool)), secondWF, SLOT(setRGBLevels(double,double,double,double,bool)));
         connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), secondWF, SLOT(changeRGB(int,int,int)));
+        // DSF is handled directly, not via signal-slot.
 
         // Sync up with the current primary waterfall settings:
         waterfall::wfInfo_t i = waterfall_widget->getSettings();

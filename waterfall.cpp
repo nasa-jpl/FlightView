@@ -529,7 +529,11 @@ void waterfall::debugThis()
 
 void waterfall::statusMessage(QString m)
 {
-    m.prepend(QString("WATERFALL: "));
+    if(isSecondary) {
+        m.prepend(QString("WATERFALL (2): "));
+    } else {
+        m.prepend(QString("WATERFALL: "));
+    }
     // Note: Messages made during the constructor might get emitted before
     // the console log is ready. Uncomment the next line to see them anyway:
 #ifdef QT_DEBUG
