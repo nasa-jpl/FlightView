@@ -614,8 +614,11 @@ void flight_widget::cycleGPSStatusMessagesViaTimer()
     emit haveGPSErrorWarningMessage(messageStr);
 }
 
+
 void flight_widget::gpsMessageToLogReporterSlot()
 {
+    // Called every minute in flight mode via a timer.
+    // Also called whenever the user presses "Clear Errors"
     QMutexLocker locker(&gpsMessageMutex);
 
     QString messageLogWarnings = QString("GPS Warnings: ");
@@ -640,6 +643,14 @@ void flight_widget::gpsMessageToLogReporterSlot()
         emit statusMessage(messageLogWarnings);
     if(erSize!=0)
         emit statusMessage(messageLogErrors);
+
+    if(options.headless) {
+        // Clear errors every minute automatically when in this mode.
+        priorGPSErrorMessages.clear();
+        priorGPSWarningMessages.clear();
+        totalGPSStatusMessages.clear();
+        recentlyClearedErrors = true;
+    }
 }
 
 void flight_widget::clearStickyErrors()
@@ -649,7 +660,7 @@ void flight_widget::clearStickyErrors()
         diskLED->setState(QLedLabel::StateOk);
     }
 
-    gpsMessageToLogReporterSlot();
+    gpsMessageToLogReporterSlot(); // capture current warning set
 
     QMutexLocker locker(&gpsMessageMutex);
     priorGPSErrorMessages.clear();
