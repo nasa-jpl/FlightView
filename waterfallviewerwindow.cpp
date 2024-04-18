@@ -95,6 +95,13 @@ void waterfallViewerWindow::debugThis() {
     wf->debugThis();
 }
 
+void waterfallViewerWindow::useEntireScreen() {
+    ui->showWindowBoarderBtn->setChecked(false);
+    on_showWindowBoarderBtn_clicked(false);
+    this->showMaximized();
+    ui->maximizeBtn->setText("N");
+}
+
 void waterfallViewerWindow::on_closeBtn_clicked()
 {
     setWindowFlags((Qt::WindowType)(Qt::Window & ~Qt::FramelessWindowHint));

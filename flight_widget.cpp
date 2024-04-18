@@ -485,6 +485,15 @@ void flight_widget::showSecondWF() {
         secondWF->updateFloor(i.floor);
         secondWF->setRGBLevels(i.redLevel, i.greenLevel, i.blueLevel, i.gammaLevel, true); // no need to process empty data
         secondWF->changeRGB(i.r_row, i.g_row, i.b_row);
+
+        // Attempt to move to second display:
+        QList<QScreen *>  sl = QApplication::screens();
+        if(sl.size() == 2) {
+            emit statusMessage("Moving secondary waterfall to second screen.");
+            QRect s1 = sl.at(1)->geometry();
+            secondWF->move(s1.topLeft());
+            secondWF->useEntireScreen();
+        }
     }
 
     secondWF->show();

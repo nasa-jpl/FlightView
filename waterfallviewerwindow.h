@@ -30,6 +30,7 @@ public slots:
     void setUseDSF(bool useDSF);
     void setRecordWFImage(bool recordImageOn);
     void setSecondaryWF(bool isSecondary);
+    void useEntireScreen();
     void debugThis();
 
 signals:
