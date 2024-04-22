@@ -295,12 +295,15 @@ namespace doj
      implement "std::ostream operator<< (std::ostream&, const Ty&)".
   */
   template<class Ty>
-  struct alphanum_less : public std::binary_function<Ty, Ty, bool>
+  struct alphanum_less// : public std::binary_function<Ty, Ty, bool>
   {
-    bool operator()(const Ty& left, const Ty& right) const
-    {
-      return alphanum_comp(left, right) < 0;
-    }
+      typedef Ty first_argument_type;
+      typedef Ty second_argument_type;
+      typedef bool result_type;
+      bool operator()(const Ty& left, const Ty& right) const
+      {
+          return alphanum_comp(left, right) < 0;
+      }
   };
 
 }
