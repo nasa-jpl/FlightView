@@ -1337,7 +1337,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 
     uint16_t framecount = 1;
     uint16_t last_framecount = 0;
-	unsigned char* wait_ptr;
+    unsigned char* wait_ptr = NULL;
 
 
     mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
