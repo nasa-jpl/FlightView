@@ -36,7 +36,8 @@
 
 // Frame size must be integer divisible
 // 32 for 1280*480
-// 41 for 1280*321
+// 41 for 1280*328
+// ?? for 1280*328? 
 #define chunksPerFrame_d (41)
 
 struct SRTPData {
@@ -400,8 +401,9 @@ int main(int argc, char* argv[]) {
                 payloadType, timestamp, ssrc);  
 
 
-            buildPacket(headerBuffer, frameImage+ (chunks*frameBytesPerPacket) , packetBuffer, chunks,
-                    frameBytesPerPacket);
+            buildPacket(headerBuffer, frameImage, packetBuffer, chunks, frameBytesPerPacket);
+            //buildPacket(headerBuffer, frameImage+ (chunks*frameBytesPerPacket) , packetBuffer, chunks,
+            //        frameBytesPerPacket);
 
             offsetIntoFrameData += frameBytesPerPacket;
 
