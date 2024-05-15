@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <bits/shared_ptr.h>
 
 #include <QObject>
 #include <QWidget>
@@ -41,6 +42,10 @@ class waterfall : public QWidget
     startupOptionsType options;
 
     QTimer rendertimer;
+
+    QTimer FPSTimer;
+    QElapsedTimer FPSElapsedTimer;
+    unsigned int framesDelivered = 0;
 
     void allocateBlankWF();
     void copyPixToLine(float* image, float* dst, int pixPosition);
@@ -100,6 +105,7 @@ public:
     explicit waterfall(QWidget *parent = nullptr);
     void setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, startupOptionsType options);
     void process();
+    QImage* getImage();
     struct wfInfo_t {
         int wflength = 100;
         int ceiling = 255;
@@ -132,6 +138,10 @@ public slots:
     void setRecordWFImage(bool recordImageOn);
     void setSecondaryWF(bool isSecondary);
     void debugThis();
+
+private slots:
+    void computeFPS();
+
 
 signals:
     void statusMessageOut(QString);

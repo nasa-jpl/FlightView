@@ -58,11 +58,18 @@ void waterfall::setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, s
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
     rendertimer.setInterval(FRAME_DISPLAY_PERIOD_MSECS);
 
+    connect(&FPSTimer, SIGNAL(timeout()), this, SLOT(computeFPS()));
+    FPSElapsedTimer.start();
+    FPSTimer.setInterval(1000);
+    FPSTimer.setSingleShot(false);
+
+
     if(options.headless && (!options.wfPreviewEnabled)) {
         statusMessage("Not starting waterfall display update timer for headless mode without waterfall previews.");
     } else {
         statusMessage("Starting waterfall");
         rendertimer.start();
+        FPSTimer.start();
     }
     if(!isSecondary) {
         if(options.wfPreviewEnabled || options.wfPreviewContinuousMode) {
@@ -123,11 +130,17 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType o
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
     rendertimer.setInterval(FRAME_DISPLAY_PERIOD_MSECS);
 
+    connect(&FPSTimer, SIGNAL(timeout()), this, SLOT(computeFPS()));
+    FPSElapsedTimer.start();
+    FPSTimer.setInterval(1000);
+    FPSTimer.setSingleShot(false);
+
     if(options.headless && (!options.wfPreviewEnabled)) {
         statusMessage("Not starting waterfall display update timer for headless mode with preview disabled.");
     } else {
         statusMessage("Starting waterfall");
         rendertimer.start();
+        FPSTimer.start();
     }
     if(options.wfPreviewEnabled || options.wfPreviewContinuousMode) {
         statusMessage("Waterfall preview ENABLED.");
@@ -191,12 +204,19 @@ void waterfall::process()
     statusMessage("Thread started");
 }
 
+QImage* waterfall::getImage() {
+    return &specImage;
+}
+
 void waterfall::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
 
     // anti-alias:
-    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform); // smooth images
+    //painter.setRenderHint(QPainter::HighQualityAntialiasing); // blocky
+    //painter.setRenderHint(QPainter::Antialiasing); // blocky
+
 
     painter.setWindow(QRect(0, 0, hSize/4.0, 1024));
 
@@ -216,19 +236,34 @@ void waterfall::paintEvent(QPaintEvent *event)
 
 void waterfall::redraw()
 {
+    // Copy the waterfall data into the specImage.
+    // To increase speed,  we are ignoring the alpha (opacity) value
+
     QColor c;
+    QRgb *line = NULL;
+    //rgbLine *cl;
+    // new method:
+    unsigned char *r = NULL;
+    unsigned char *g = NULL;
+    unsigned char *b = NULL;
+
     for(int y = 0; y < vSize; y++)
     {
+        line = (QRgb*)specImage.scanLine(y);
+        r = wf[y]->getRed();
+        g = wf[y]->getGreen();
+        b = wf[y]->getBlue();
+
         for(int x = 0; x < hSize; x++)
         {
-            c.setAlpha(opacity);
-            c.setRed(wf.at(y)->getRed()[x]);
-            c.setGreen(wf.at(y)->getGreen()[x]);
-            c.setBlue(wf.at(y)->getBlue()[x]);
-
-            specImage.setPixel(x, y, c.rgba());
+            c.setRgb(r[x],
+                     g[x],
+                     b[x]);
+            line[x] = c.rgb();
         }
     }
+
+    framesDelivered++;
     this->repaint();
 }
 
@@ -293,7 +328,9 @@ void waterfall::addNewFrame()
     }
 
     // process initial RGB values:
-    processLineToRGB_MP(line);
+    //processLineToRGB(line); // single processor
+    processLineToRGB_MP(line); // multi-processor
+
 
     QMutexLocker lockwf(&wfInUse);
 
@@ -327,25 +364,36 @@ void waterfall::processLineToRGB(rgbLine* line)
 void waterfall::processLineToRGB_MP(rgbLine* line)
 {
     // go from float to RGB, with floor and ceiling scaling
+    // Note: If concurrency is set too high, then the hit
+    // taken is actually worse than single-cpu mode.
+    // Recommended value is 4.
+
+    float *r = line->getr_raw();
+    float *g = line->getg_raw();
+    float *b = line->getb_raw();
+
+    unsigned char *gr = line->getRed();
+    unsigned char *gg = line->getGreen();
+    unsigned char *gb = line->getBlue();
 
     if(gammaLevel == 1.0)
     {
-#pragma omp parallel for num_threads(16)
+#pragma omp parallel for num_threads(4)
         for(int p=0; p < frWidth; p++)
         {
-            pthread_setname_np(pthread_self(), "GUI_WF");
-            line->getRed()[p] =   (unsigned char)MAX8(redLevel *   scaleDataPoint(line->getr_raw()[p]));
-            line->getGreen()[p] = (unsigned char)MAX8(greenLevel * scaleDataPoint(line->getg_raw()[p]));
-            line->getBlue()[p] =  (unsigned char)MAX8(blueLevel *  scaleDataPoint(line->getb_raw()[p]));
+            pthread_setname_np(pthread_self(), "GUI_WF");            
+            gr[p] =   (unsigned char)MAX8(redLevel *   scaleDataPoint(r[p]));
+            gg[p] = (unsigned char)MAX8(greenLevel * scaleDataPoint(g[p]));
+            gb[p] =  (unsigned char)MAX8(blueLevel *  scaleDataPoint(b[p]));
         }
     } else {
-#pragma omp parallel for num_threads(16)
+#pragma omp parallel for num_threads(4)
         for(int p=0; p < frWidth; p++)
         {
-            pthread_setname_np(pthread_self(), "GUI_WF");
-            line->getRed()[p] = (unsigned char)MAX8(redLevel * pow(scaleDataPoint(line->getr_raw()[p]), gammaLevel));
-            line->getGreen()[p] = (unsigned char)MAX8(greenLevel * pow(scaleDataPoint(line->getg_raw()[p]), gammaLevel));
-            line->getBlue()[p] = (unsigned char)MAX8(blueLevel * pow(scaleDataPoint(line->getb_raw()[p]), gammaLevel));
+            pthread_setname_np(pthread_self(), "GUI_WF_G");
+            gr[p] = (unsigned char)MAX8(redLevel * pow(scaleDataPoint(r[p]), gammaLevel));
+            gg[p] = (unsigned char)MAX8(greenLevel * pow(scaleDataPoint(g[p]), gammaLevel));
+            gb[p] = (unsigned char)MAX8(blueLevel * pow(scaleDataPoint(b[p]), gammaLevel));
         }
     }
 }
@@ -382,7 +430,7 @@ unsigned char waterfall::scaleDataPoint(float dataPt)
 
 void waterfall::handleNewFrame()
 {
-    // Called externally when a new frame is available.
+    // Called via the renderTimer at regular intervals.
     // We can add other functions that happen per-frame here.
     // But first, we will copy the frame in:
     addNewFrame();
@@ -521,10 +569,25 @@ waterfall::wfInfo_t waterfall::getSettings() {
     return info;
 }
 
+void waterfall::computeFPS() {
+    // Called every one second for debug reasons:
+    float timeElapsed = FPSElapsedTimer.elapsed() / 1000.0;
+#ifdef QT_DEBUG
+    if(timeElapsed != 0) {
+        float fps = framesDelivered/timeElapsed;
+        QString s;
+        s = QString("isSecondary: %1, framesDelivered: %2, timeElapsed: %3, FPS: %4")
+                .arg(isSecondary).arg(framesDelivered).arg(timeElapsed).arg(fps);
+        statusMessage(s);
+    }
+#endif
+    FPSElapsedTimer.restart();
+    framesDelivered = 0;
+}
+
 void waterfall::debugThis()
 {
     statusMessage("In debugThis function.");
-    qDebug() << "isSecondary: " << isSecondary << ", r_row: " << r_row << ", g_row: " << g_row << ", b_row: " << b_row;
 }
 
 void waterfall::statusMessage(QString m)
