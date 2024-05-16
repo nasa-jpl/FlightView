@@ -1,8 +1,11 @@
-#-------------------------------------------------
+#----------------------------------------------------------
 #
-# Project created by QtCreator 2014-05-28T11:16:33
+# - LiveView  //  FlightView -
 #
-#-------------------------------------------------
+# https://github.com/nasa-jpl/LiveView
+# Copyright 2014-2024 California Institute of Technology.
+# Government Sponsorship(s) Acknowledged.
+#----------------------------------------------------------
 
 QT       += core gui
 QT       += network svg
@@ -146,7 +149,7 @@ DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 # qmake will create this directory automatically:
 DESTDIR = ./lv_release
 # Copy files into DESTDIR for potential releases:
-QMAKE_POST_LINK += cp ../LiveViewLegacy/liveview_icon.png $$DESTDIR;
+QMAKE_POST_LINK += cp ../LiveViewLegacy/liveview.png $$DESTDIR;
 QMAKE_POST_LINK += cp ../LiveViewLegacy/LiveView.desktop $$DESTDIR;
 
 
@@ -161,8 +164,6 @@ QMAKE_POST_LINK += cp ../LiveViewLegacy/LiveView.desktop $$DESTDIR;
 #  else: QCPLIB = qcustomplot
 #}
 #LIBS += -L$$PWD/lib/ -l$$QCPLIB
-
-#unix:!macx:!symbian: LIBS += -L$$PWD/../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -lokFrontPanel -ldl # -lGL -lQtOpenGL
 
 unix:!macx:!symbian: LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lboost_filesystem -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl -lrt # -lGL -lQtOpenGL
 INCLUDEPATH += $$PWD/cuda_take/include\
