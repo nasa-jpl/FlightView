@@ -19,6 +19,7 @@
 #include <QMutexLocker>
 #include <QPainter>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QDateTime>
 
 #include "settings.h"
