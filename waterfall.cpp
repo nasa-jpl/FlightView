@@ -56,7 +56,7 @@ void waterfall::setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, s
     statusMessage(QString("Created specImage with height %1 and width %2.").arg(specImage.height()).arg(specImage.width()));
 
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
-    rendertimer.setInterval(FRAME_DISPLAY_PERIOD_MSECS);
+    rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
 
     connect(&FPSTimer, SIGNAL(timeout()), this, SLOT(computeFPS()));
     FPSElapsedTimer.start();
@@ -124,11 +124,11 @@ waterfall::waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType o
     opacity = 0xff;
     useDSF = false; // default to false since the program can't start up with a DSF mask anyway
 
-    specImage = QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
+    specImage = QImage(this->hSize, this->vSize, QImage::Format_RGB32);
     statusMessage(QString("Created specImage with height %1 and width %2.").arg(specImage.height()).arg(specImage.width()));
 
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
-    rendertimer.setInterval(FRAME_DISPLAY_PERIOD_MSECS);
+    rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
 
     connect(&FPSTimer, SIGNAL(timeout()), this, SLOT(computeFPS()));
     FPSElapsedTimer.start();
@@ -343,7 +343,7 @@ void waterfall::processLineToRGB(rgbLine* line)
 {
     // go from float to RGB, with floor and ceiling scaling
 
-    if(gammaLevel == 1.0)
+    if(!useGamma)
     {
         for(int p=0; p < frWidth; p++)
         {
@@ -376,7 +376,7 @@ void waterfall::processLineToRGB_MP(rgbLine* line)
     unsigned char *gg = line->getGreen();
     unsigned char *gb = line->getBlue();
 
-    if(gammaLevel == 1.0)
+    if(!useGamma)
     {
 #pragma omp parallel for num_threads(4)
         for(int p=0; p < frWidth; p++)
@@ -484,6 +484,11 @@ void waterfall::setRGBLevels(double r, double g, double b, double gamma, bool re
     this->greenLevel = g;
     this->blueLevel = b;
     this->gammaLevel = gamma;
+    if( (gamma > 0.999) && (gamma < 1.001) ) {
+        useGamma = false;
+    } else {
+        useGamma = true;
+    }
     if(reprocess)
         rescaleWF();
 }
@@ -493,6 +498,11 @@ void waterfall::setRGBLevelsAndReprocess(double r, double g, double b, double ga
     this->greenLevel = g;
     this->blueLevel = b;
     this->gammaLevel = gamma;
+    if( (gamma > 0.999) && (gamma < 1.001) ) {
+        useGamma = false;
+    } else {
+        useGamma = true;
+    }
     rescaleWF();
 }
 

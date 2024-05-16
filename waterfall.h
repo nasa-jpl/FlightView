@@ -27,6 +27,8 @@
 #include "frame_worker.h"
 #include "rgbline.h"
 
+
+
 #define MAX8(x) ((x>255)?255:x)
 #define MAXWF(x,y) ((x>y)?x:y)
 #define MINWF(x,y) ((x<y)?x:y)
@@ -41,6 +43,9 @@ class waterfall : public QWidget
     int frHeight;
     int frWidth;
     startupOptionsType options;
+
+    unsigned int TARGET_WF_FRAMERATE = 20; // FPS
+    int WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
 
     QTimer rendertimer;
 
@@ -70,6 +75,8 @@ class waterfall : public QWidget
     double blueLevel = 1.0;
 
     double gammaLevel = 1.0;
+
+    bool useGamma = true;
 
     std::deque<std::shared_ptr<rgbLine>> wf;
     QMutex wfInUse;
