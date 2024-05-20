@@ -60,7 +60,7 @@ class waterfall : public QWidget
     void copyPixToLine(float* image, float* dst, int pixPosition);
     void copyPixToLine(uint16_t* image, float* dst, int pixPosition);
 
-    int maxWFlength;
+    int maxWFlength = 1024;
     void statusMessage(QString);
 
     int wflength; // length of graphics drawn
@@ -81,9 +81,10 @@ class waterfall : public QWidget
 
     bool useGamma = true;
 
-    std::deque<std::shared_ptr<rgbLine>> wf;
+    rgbLine* wflines[1024];
+    int currentWFLine = 0;
+
     QMutex wfInUse;
-    //std::atomic_bool wfInUse;
 
     unsigned char scaleDataPoint(float dataPt); // to ceiling and floor
 

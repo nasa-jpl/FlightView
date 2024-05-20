@@ -24,10 +24,8 @@ void waterfall::setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, s
     // the flight widget will call the waterfall
     // to enable previews when recording.
 
-    //rgbLineStruct blank = allocateLine();
     maxWFlength = 1024;
     wflength = maxWFlength;
-    //wf.resize(maxWFlength, blank);
     allocateBlankWF();
 
     ceiling = 16000;
@@ -231,7 +229,7 @@ void waterfall::cheapRedraw() {
 void waterfall::redraw()
 {
     // Copy the waterfall data into the specImage.
-    // To increase speed,  we are ignoring the alpha (opacity) value
+    // To increase speed, we are ignoring the alpha (opacity) value
 
     QColor c;
     QRgb *line = NULL;
@@ -241,12 +239,15 @@ void waterfall::redraw()
     unsigned char *g = NULL;
     unsigned char *b = NULL;
 
-    for(int y = 0; y < vSize; y++)
-    {
-        line = (QRgb*)specImage->scanLine(y);
-        r = wf[y]->getRed();
-        g = wf[y]->getGreen();
-        b = wf[y]->getBlue();
+    int wfpos = currentWFLine-1;
+
+    // Row zero of the specImage is the bottom
+    for(int y=maxWFlength; y > 0; y--) {
+        line = (QRgb*)specImage->scanLine(y-1);
+        wfpos = (wfpos+1)%maxWFlength;
+        r = wflines[wfpos]->getRed();
+        g = wflines[wfpos]->getGreen();
+        b = wflines[wfpos]->getBlue();
 
         for(int x = 0; x < hSize; x++)
         {
@@ -263,10 +264,11 @@ void waterfall::redraw()
 
 void waterfall::allocateBlankWF()
 {
+    // Static waterfall allocation:
     for(int n=0; n < maxWFlength; n++)
     {
         rgbLine* line = new rgbLine(frWidth, false);
-        wf.push_back(std::shared_ptr<rgbLine>(line));
+        wflines[n] = line;
     }
 }
 
@@ -301,7 +303,7 @@ void waterfall::addNewFrame()
     local_image_ptr = fw->curFrame->dark_subtracted_data;
     local_image_ptr_uint16 = fw->curFrame->image_data_ptr;
 
-    rgbLine *line = new rgbLine(frWidth);
+    rgbLine *line = wflines[currentWFLine];
 
     // Copy portions of the frame into the line
 
@@ -326,10 +328,11 @@ void waterfall::addNewFrame()
     processLineToRGB_MP(line); // multi-processor
 
 
-    QMutexLocker lockwf(&wfInUse);
+    //QMutexLocker lockwf(&wfInUse);
 
-    wf.push_front(std::shared_ptr<rgbLine>(line));
-    wf.resize(maxWFlength);
+    //wf.push_front(std::shared_ptr<rgbLine>(line));
+    //wf.resize(maxWFlength);
+    currentWFLine = (currentWFLine + 1) % maxWFlength;
     addingFrame.unlock();
 }
 
@@ -548,10 +551,9 @@ void waterfall::rescaleWF()
     for(int wfrow=0; wfrow < maxWFlength; wfrow++)
     {
         pthread_setname_np(pthread_self(), "GUIRepro");
-        processLineToRGB( wf[wfrow].get() );
+        processLineToRGB( wflines[wfrow] );
     }
     scalingValues.unlock();
-
 }
 
 waterfall::wfInfo_t waterfall::getSettings() {
