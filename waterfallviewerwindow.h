@@ -48,7 +48,7 @@ private slots:
 private:
     Ui::waterfallViewerWindow *ui;
     waterfall *wf = NULL;
-    bool independentLengthControl = true;
+    //bool independentLengthControl = true;
     QString sliderStylesheet;
 };
 

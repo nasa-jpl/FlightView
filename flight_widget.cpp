@@ -470,21 +470,25 @@ void flight_widget::showSecondWF() {
 
         secondWF->setup(fw, 1, 1024, options);
 
-        connect(this, SIGNAL(changeWFLengthSignal(int)), secondWF, SLOT(changeWFLength(int)));
-        connect(this, SIGNAL(updateCeilingSignal(int)), secondWF, SLOT(updateCeiling(int)));
-        connect(this, SIGNAL(updateFloorSignal(int)), secondWF, SLOT(updateFloor(int)));
-        connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double,bool)), secondWF, SLOT(setRGBLevels(double,double,double,double,bool)));
-        connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), secondWF, SLOT(changeRGB(int,int,int)));
+        // Since we are following the primary waterfal, we do not need most of this:
+        // Connect the wf length if you want the length always the same.
+        // Otherwise, the initial length is the same and the length is sync'd when
+        // the secondary WF button is pressed again.
+        //connect(this, SIGNAL(changeWFLengthSignal(int)), secondWF, SLOT(changeWFLength(int)));
+        //connect(this, SIGNAL(updateCeilingSignal(int)), secondWF, SLOT(updateCeiling(int)));
+        //connect(this, SIGNAL(updateFloorSignal(int)), secondWF, SLOT(updateFloor(int)));
+        //connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double,bool)), secondWF, SLOT(setRGBLevels(double,double,double,double,bool)));
+        //connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), secondWF, SLOT(changeRGB(int,int,int)));
         // DSF is handled directly, not via signal-slot.
 
         // Sync up with the current primary waterfall settings:
         waterfall::wfInfo_t i = waterfall_widget->getSettings();
         secondWF->changeWFLength(i.wflength);
-        secondWF->setUseDSF(i.useDSF);
-        secondWF->updateCeiling(i.ceiling);
-        secondWF->updateFloor(i.floor);
-        secondWF->setRGBLevels(i.redLevel, i.greenLevel, i.blueLevel, i.gammaLevel, true); // no need to process empty data
-        secondWF->changeRGB(i.r_row, i.g_row, i.b_row);
+        //secondWF->setUseDSF(i.useDSF);
+        //secondWF->updateCeiling(i.ceiling);
+        //secondWF->updateFloor(i.floor);
+        //secondWF->setRGBLevels(i.redLevel, i.greenLevel, i.blueLevel, i.gammaLevel, true); // no need to process empty data
+        //secondWF->changeRGB(i.r_row, i.g_row, i.b_row);
 
         // Copy the specImage from one waterfall to the other to save on computation
         emit statusMessage("Copying data from primary waterfall to secondary waterfall.");
@@ -498,8 +502,10 @@ void flight_widget::showSecondWF() {
             secondWF->move(s1.topLeft());
             secondWF->useEntireScreen();
         }
+    } else {
+        waterfall::wfInfo_t i = waterfall_widget->getSettings();
+        secondWF->changeWFLength(i.wflength);
     }
-
     secondWF->show();
     secondWF->raise();
 }

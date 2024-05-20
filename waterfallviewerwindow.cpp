@@ -71,8 +71,11 @@ void waterfallViewerWindow::setRGBLevelsAndReprocess(double r, double g, double 
 
 void waterfallViewerWindow::changeWFLength(int length) {
     // We might disable this for independent control
-    if(!independentLengthControl)
-        wf->changeWFLength(length);
+    //if(!independentLengthControl)
+    ui->wflengthSlider->blockSignals(true);
+    ui->wflengthSlider->setValue(length);
+    ui->wflengthSlider->blockSignals(false);
+    wf->changeWFLength(length);
 }
 
 void waterfallViewerWindow::setSpecOpacity(unsigned char opacity) {

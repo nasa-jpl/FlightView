@@ -56,7 +56,11 @@ void waterfall::setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, s
     statusMessage(QString("Created specImage with height %1 and width %2.").arg(specImage->height()).arg(specImage->width()));
 
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
-    rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
+    if(isSecondary) {
+        rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS_SECONDARY);
+    } else {
+        rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
+    }
 
     connect(&FPSTimer, SIGNAL(timeout()), this, SLOT(computeFPS()));
     FPSElapsedTimer.start();

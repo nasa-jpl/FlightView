@@ -44,8 +44,11 @@ class waterfall : public QWidget
     int frWidth;
     startupOptionsType options;
 
-    unsigned int TARGET_WF_FRAMERATE = 35; // FPS
+    unsigned int TARGET_WF_FRAMERATE = 29; // FPS
     int WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
+
+    unsigned int TARGET_WF_FRAMERATE_SECONDARY = 24; // FPS
+    int WF_DISPLAY_PERIOD_MSECS_SECONDARY = 1000 / TARGET_WF_FRAMERATE_SECONDARY;
 
     QTimer rendertimer;
 
