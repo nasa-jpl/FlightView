@@ -486,6 +486,10 @@ void flight_widget::showSecondWF() {
         secondWF->setRGBLevels(i.redLevel, i.greenLevel, i.blueLevel, i.gammaLevel, true); // no need to process empty data
         secondWF->changeRGB(i.r_row, i.g_row, i.b_row);
 
+        // Copy the specImage from one waterfall to the other to save on computation
+        emit statusMessage("Copying data from primary waterfall to secondary waterfall.");
+        secondWF->setSpecImage(true, waterfall_widget->getImage());
+
         // Attempt to move to second display:
         QList<QScreen *>  sl = QApplication::screens();
         if(sl.size() == 2) {

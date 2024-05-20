@@ -52,6 +52,10 @@ void waterfallViewerWindow::setSecondaryWF(bool isSecondary) {
     wf->setSecondaryWF(isSecondary);
 }
 
+void waterfallViewerWindow::setSpecImage(bool followMe, QImage *specImage) {
+    wf->setSpecImage(followMe, specImage);
+}
+
 void waterfallViewerWindow::changeRGB(int r, int g, int b) {
     // Row numbers
     wf->changeRGB(r,g,b);

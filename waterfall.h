@@ -44,7 +44,7 @@ class waterfall : public QWidget
     int frWidth;
     startupOptionsType options;
 
-    unsigned int TARGET_WF_FRAMERATE = 20; // FPS
+    unsigned int TARGET_WF_FRAMERATE = 35; // FPS
     int WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
 
     QTimer rendertimer;
@@ -97,7 +97,9 @@ class waterfall : public QWidget
     int vEdge;
     int hEdge;
     unsigned char opacity;
-    QImage specImage;
+    QImage *specImage = NULL;
+    QImage *priorSpecImage = NULL;
+
     void redraw();
     bool useDSF;
     bool recordToJPG = false;
@@ -107,6 +109,7 @@ class waterfall : public QWidget
     void saveImage();
     bool saveImageReady = false;
     bool isSecondary = false;
+    bool followingExternalSpecImage = false;
 
 public:
     explicit waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType options, QWidget *parent = nullptr);
@@ -114,6 +117,7 @@ public:
     void setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, startupOptionsType options);
     void process();
     QImage* getImage();
+    void setSpecImage(bool followMe, QImage *specImage);
     struct wfInfo_t {
         int wflength = 100;
         int ceiling = 255;
@@ -149,6 +153,7 @@ public slots:
 
 private slots:
     void computeFPS();
+    void cheapRedraw(); // follows other waterfall, no calculation
 
 
 signals:

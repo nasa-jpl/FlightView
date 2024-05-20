@@ -52,8 +52,8 @@ void waterfall::setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, s
     opacity = 0xff;
     useDSF = false; // default to false since the program can't start up with a DSF mask anyway
 
-    specImage = QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
-    statusMessage(QString("Created specImage with height %1 and width %2.").arg(specImage.height()).arg(specImage.width()));
+    specImage = new QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
+    statusMessage(QString("Created specImage with height %1 and width %2.").arg(specImage->height()).arg(specImage->width()));
 
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
     rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
@@ -142,12 +142,59 @@ void waterfall::process()
 }
 
 QImage* waterfall::getImage() {
-    return &specImage;
+    return specImage;
+}
+
+void waterfall::setSpecImage(bool followMe, QImage *extSpecImage) {
+    if(followMe && (extSpecImage != NULL)) {
+        statusMessage("Switching to extSpecImage");
+        statusMessage("Locking mutexes and pausing render timer");
+        rendertimer.stop();
+        addingFrame.lock();
+        scalingValues.lock();
+
+        QMutexLocker lockwf(&wfInUse);
+        this->priorSpecImage = this->specImage;
+        this->specImage = extSpecImage;
+        followingExternalSpecImage = true;
+        statusMessage("Disconnecting render timer from handleNewFrame");
+        disconnect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
+        statusMessage("Connecting render time directly to cheapRedraw function");
+        connect(&rendertimer, SIGNAL(timeout()), this, SLOT(cheapRedraw()));
+        statusMessage("Starting render timer.");
+        addingFrame.unlock();
+        scalingValues.unlock();
+        rendertimer.start();
+    } else {
+        // Either we were told not to follow or we were given a NULL pointer,
+        // in either case we go back to using our old image.
+        if(priorSpecImage!=NULL) {
+            statusMessage("Reverting to priorSpecImage");
+            statusMessage("Locking mutexes and pausing render timer");
+            rendertimer.stop();
+            scalingValues.lock();
+            addingFrame.lock();
+            QMutexLocker lockwf(&wfInUse);
+            followingExternalSpecImage = false;
+            this->specImage = this->priorSpecImage;
+            connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
+            addingFrame.unlock();
+            scalingValues.unlock();
+            rendertimer.start();
+        } else {
+            statusMessage("Error, priorSpecImage is NULL. Not sure what to do.");
+            // do nothing
+        }
+    }
 }
 
 void waterfall::paintEvent(QPaintEvent *event)
 {
+    if(specImage == NULL)
+        return;
+
     QPainter painter(this);
+
 
     // anti-alias:
     painter.setRenderHint(QPainter::SmoothPixmapTransform); // smooth images
@@ -168,7 +215,13 @@ void waterfall::paintEvent(QPaintEvent *event)
 
     QRectF target(0, 0, hSize/4.0, vSize);
     QRectF source(0.0f, 0.0f, hSize, wflength); // use source geometry to "crop" the waterfall image
-    painter.drawImage(target, specImage, source);
+        painter.drawImage(target, *specImage, source);
+}
+
+void waterfall::cheapRedraw() {
+    // Redraws from a given spec image, does not compute much.
+    framesDelivered++;
+    this->repaint();
 }
 
 void waterfall::redraw()
@@ -186,7 +239,7 @@ void waterfall::redraw()
 
     for(int y = 0; y < vSize; y++)
     {
-        line = (QRgb*)specImage.scanLine(y);
+        line = (QRgb*)specImage->scanLine(y);
         r = wf[y]->getRed();
         g = wf[y]->getGreen();
         b = wf[y]->getBlue();
@@ -387,7 +440,7 @@ void waterfall::saveImage() {
         filename.append(QString("%1t%2-wf.jpg").arg(dayStr).arg(timeStr));
         statusMessage(QString("Writing waterfall image to filename [%1]")
                       .arg(options.wfPreviewLocation + filename));
-        specImage.save(options.wfPreviewLocation + filename,
+        specImage->save(options.wfPreviewLocation + filename,
                        nullptr, jpgQuality);
     }
 }
