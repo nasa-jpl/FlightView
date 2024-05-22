@@ -83,7 +83,9 @@ class waterfall : public QWidget
 
     rgbLine* wflines[1024];
     int currentWFLine = 0;
-
+    unsigned int recordingStartLineNumber = 0;
+    bool justStartedRecording = false;
+    bool justStoppedRecording = false;
     QMutex wfInUse;
 
     unsigned char scaleDataPoint(float dataPt); // to ceiling and floor
@@ -152,6 +154,7 @@ public slots:
     void updateFloor(int f);
     void setUseDSF(bool useDSF);
     void setRecordWFImage(bool recordImageOn);
+    void immediatelySaveImage(); // save image right now, no questions asked.
     void setSecondaryWF(bool isSecondary);
     void debugThis();
 

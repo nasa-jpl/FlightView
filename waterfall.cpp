@@ -433,9 +433,21 @@ void waterfall::handleNewFrame()
     addNewFrame();
     this->redraw();
     frameCount++;
-    if(recordToJPG && (frameCount%maxWFlength == 0)) {
-        saveImage();
+
+    if(saveImageReady) {
+        // Either we are in a recording and it's time to save, or we are just starting, or we are just ending.
+        if(  ((recordingStartLineNumber == (frameCount%maxWFlength)) && recordToJPG) || (justStartedRecording) || (justStoppedRecording)  ) {
+            saveImage();
+            // Clear the flags here
+            justStartedRecording = false;
+            justStoppedRecording = false;
+        }
     }
+}
+
+void waterfall::immediatelySaveImage() {
+    statusMessage("Immediately saving current waterfall image.");
+    saveImage();
 }
 
 void waterfall::saveImage() {
@@ -457,6 +469,13 @@ void waterfall::setRecordWFImage(bool recordImageOn) {
         return;
 
     recordToJPG = recordImageOn;
+    recordingStartLineNumber = (currentWFLine - 1)%maxWFlength;
+    if(recordImageOn) {
+        justStartedRecording = true;
+    }
+    if(!recordImageOn) {
+        justStoppedRecording = true;
+    }
     if(recordToJPG && options.headless) {
         this->useDSF = true;
     }
