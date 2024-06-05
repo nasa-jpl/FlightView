@@ -934,7 +934,7 @@ void take_object::clearAllRingBuffer()
     {
         curFrame = &frame_ring_buffer[f];
         curFrame->reset();
-        memcpy(curFrame->raw_data_ptr,zeroFrame,frWidth*dataHeight);
+        memcpy(curFrame->raw_data_ptr,zeroFrame,frWidth*dataHeight*2);
     }
     statusMessage("Done zero-setting memory in frame_ring_buffer");
 }
@@ -1272,7 +1272,7 @@ void take_object::rtpConsumeFrames()
         shmBufferPosition = (shmBufferPositionPrior + 1)%shmFrameBufferSize;
         if(shmValid) {
             shm->writingFrameNum = shmBufferPosition;
-            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth);
+            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth*2);
         }
 
 
@@ -1400,7 +1400,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         shmBufferPosition = (shmBufferPositionPrior + 1)%shmFrameBufferSize;
         if(shmValid) {
             shm->writingFrameNum = shmBufferPosition;
-            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth);
+            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth*2);
         }
 
         // Calculating the filters for this frame
