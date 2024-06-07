@@ -1,5 +1,5 @@
 # FlightView
-2014-2022 Jet Propulsion Laboratory, AVIRIS lab
+2014-2024 Jet Propulsion Laboratory, AVIRIS lab
 
 Author/Maintainer: Elliott Liggett
 
@@ -9,15 +9,32 @@ This version of LiveView uses NVIDIA's CUDA toolkit for real-time processing, wh
 
 [LiveView: A new utility for real-time calibration of focal plane arrays using commodity hardware](https://ieeexplore.ieee.org/abstract/document/7500690)
 
-## Contact Us!
-
-Elliott Liggett:
-JPL email: [Elliott.Liggett@jpl.nasa.gov](mailto:Elliott.Liggett@jpl.nasa.gov)
-
 ## Overview
-*LiveView* is graphical program which displays real-time information about imagign data from imagine spectrometers. Liveview supports high data rate acquisition over CameraLink and via reading files created by other processes. The branch [**FlightView**](https://github.com/nasa-jpl/LiveViewLegacy/tree/flightview) is AVIRIS-III's flight acquisition system, and includes an RGB waterfall. 
+*LiveView* (aka *FlightView*) is graphical program which displays real-time data from imaging spectrometers. Liveview supports high data rate (in excess of 3 gigabits/sec) acquisition over Ethernet (typically 10G fiber optic) with the RTP protocol, as well as over CameraLink (EDT cards are supported). 
+
+The branch [**FlightView**](https://github.com/nasa-jpl/LiveViewLegacy/tree/flightview) is AVIRIS-III's flight data acquisition system, and includes an second RGB waterfall which can be shown on a dedicated display. 
+
+Standard deviation is computed in real-time using the GPU via CUDA. 
 
 Plots are implemented using the [QCustomPlot](http://www.qcustomplot.com) library, which generates live color maps, bar graphs, and line graphs within the Qt C++ environment.
+
+A real-time feed of the current frame data is made available over a Shared Memory Segment. 
+
+A TCP/IP socket allows for rudimentry control such as saving, dark averaging, and so on. 
+
+The AVIRIS-III flight system uses an Atlans A7 for GNSS/IMU data, and LiveView connects to this device to save the binary data and present it to the operator for verification. 
+
+FlightView is used or has been used on the following instruments for I&T and/or aircraft Flight Operations:
+
+- GAO (Global Airborne Observatory, formerly CAO)
+- NGIS NIS-1, NIS-2, and NIS-3
+- AVIRIS Next Gen
+- AVIRIS-III (*)
+- AVIRIS-IV
+- EMIT
+- CPM
+
+(*) = Flight Operations
 
 ## Installation
 
@@ -25,38 +42,13 @@ Please see the documentation folder for the latest detailed directions.
 
 ## System Requirements
 ### Minimum Requirements:
-Quad-core processor (x86 Architecture)
-8GB RAM
-NVIDIA Graphics Card with 512MB VRAM, i.e, GTX 560 (adjust the size of GPU_BUFFER_SIZE in constants.h of cuda_take and make a clean compile to change this setting)
-Linux OS such as Ubuntu or Mint
+- Fast, modern, multi-core CPU. 
+- NVIDIA Graphics Card with 512MB VRAM, i.e, GTX 560 (adjust the size of GPU_BUFFER_SIZE in constants.h of cuda_take and make a clean compile to change this setting)
+- Linux OS such as Debian, Ubuntu, or Mint
+- Proprietary NVIDIA CUDA-capable driver version 10.1 or greqater (>=12.1 preferred). 
 
-### Recommended Settings:
-32-core CPU array
-16GB RAM (depending on the imaging application, memory allocation will increase)
-2 SSLI NVIDIA Graphics Card with 1GB VRAM (or one high-end GPU)
+## Contact Us!
 
-## Keyboard Controls
-### General
-* p - Toggle the Precision Slider
-* m - Toggle the Dark Subtraction Mask (if one is present)
-* , - Begin recording Dark Frames
-* . - Stop recording dark frames
+Elliott Liggett:
 
-### For frame views (raw image, dark subtraction, standard deviation)
-* left click - profile the data at the specified coordinate
-* esc - reset the crosshairs
-* d - Toggle display of the crosshairs
-
-### For the Histogram Widget
-* r - reset the range of the display. Zooming may make it difficult to return to the original scale of the plot.
-
-### For the Playback Widget
-* *drag and drop onto the viewing window* - load the selected file. WARNING: Any filetype is accepted. This means if the filetype is not data, garbage will be displayed in the viewing window. This is done by design.
-* s - Stop playback and return to the first frame
-return - Play/Pause
-* f - Fast Forward. Multiple presses increase the fast forward multiplier up to 64x faster.
-* r - Rewind. Multple presses inreas the rewind multiplier up to 64x faster.
-* a - Move back one frame. Only works when playback is paused.
-* d - Move forward one frame. Only works when playback is paused.
-
-
+JPL email: [Elliott.H.Liggett@jpl.nasa.gov](mailto:Elliott.H.Liggett@jpl.nasa.gov)
