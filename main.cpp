@@ -29,12 +29,12 @@
 #endif
 
 // These are here for the purpose of easily finding the strings within the binary.
-const char* COMPILE_INFO_STR =     "---------- Compile-time information (CTIF) string: ----------";
-const char* DATE_COMPILE_STR =     "  CTIF      Compile Date: " __DATE__;
-const char* GIT_BRANCH_STR =       "  CTIF      Git Branch: " GIT_BRANCH;
-const char* GIT_CURRENT_SHA1_STR = "  CTIF      Git SHA1: " GIT_CURRENT_SHA1;
-const char* SRC_DIR_STR =          "  CTIF      Source Directory: " SRC_DIR;
-const char* COMPILE_INFO_END_STR = "-------------------------------------------------------------";
+const volatile char* COMPILE_INFO_STR =     "---------- Compile-time information (CTIF) string: ----------";
+const volatile char* DATE_COMPILE_STR =     "  CTIF      Compile Date: " __DATE__;
+const volatile char* GIT_BRANCH_STR =       "  CTIF      Git Branch: " GIT_BRANCH;
+const volatile char* GIT_CURRENT_SHA1_STR = "  CTIF      Git SHA1: " GIT_CURRENT_SHA1;
+const volatile char* SRC_DIR_STR =          "  CTIF      Source Directory: " SRC_DIR;
+const volatile char* COMPILE_INFO_END_STR = "-------------------------------------------------------------";
 
 
 /*! \file */
