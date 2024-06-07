@@ -13,6 +13,7 @@ QT       += network svg
 greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
 DEFINES += GIT_CURRENT_SHA1="\\\"$(shell git -C \"$$PWD\" rev-parse HEAD)\\\""
 DEFINES += GIT_CURRENT_SHA1_SHORT="\\\"$(shell git -C \"$$PWD\" rev-parse --short HEAD)\\\""
+DEFINES += GIT_BRANCH="\\\"$(shell git -C \"$$PWD\" symbolic-ref --short HEAD)\\\""
 DEFINES += SRC_DIR="\\\"\'$$PWD\'\\\""
 
 CONFIG+=link_pkgconfig

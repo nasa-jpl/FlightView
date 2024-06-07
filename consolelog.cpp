@@ -254,11 +254,17 @@ void consoleLog::logSystemConfig()
         handleOwnText(QString("Git short SHA1: %1").arg(GIT_CURRENT_SHA1_SHORT));
         handleOwnText(QString("Git long SHA1:  %1").arg(GIT_CURRENT_SHA1));
         handleOwnText(QString("Link to commit: https://github.com/nasa-jpl/LiveViewLegacy/tree/%1").arg(GIT_CURRENT_SHA1_SHORT));
+        handleOwnText(QString("Git branch: %1").arg(GIT_BRANCH));
     }
 
     if(!QString(SRC_DIR).isEmpty()) {
         handleOwnText(QString("Source directory was: %1").arg(SRC_DIR));
     }
+#ifdef QT_DEBUG
+    handleOwnText(QString("Compiled as a DEBUG version"));
+#else
+    handleOwnText(QString("Compiled as a RELEASE version"));
+#endif
 }
 
 void consoleLog::handleOwnText(QString message)
