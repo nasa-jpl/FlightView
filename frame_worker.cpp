@@ -22,6 +22,10 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     this->options = optionsIn;
     this->takeOptions.xioDirectory = new std::string();
 
+    convertOptions();
+
+    to.changeOptions(takeOptions);
+
     if(options.xioCam)
     {
         // Initial Setup. Program is paused while this dialog is open.
@@ -30,10 +34,6 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
         setupUI.setModal(true);
         setupUI.setWindowFlag(Qt::WindowStaysOnTopHint, true);
         setupUI.exec();
-
-        convertOptions();
-
-        to.changeOptions(takeOptions);
     }
 
     this->camcontrol = to.getCamControl();
@@ -64,6 +64,15 @@ frameWorker::~frameWorker()
     qDebug() << "end frameWorker";
 #endif
     doRun = false;
+    if(this->camcontrol == NULL)
+    {
+        abort();
+    }
+    this->camcontrol->exit = true;
+}
+
+startupOptionsType frameWorker::getStartupOptions() {
+    return options;
 }
 
 void frameWorker::useNewOptions(startupOptionsType newOpts)
@@ -90,7 +99,9 @@ void frameWorker::convertOptions()
         {
             abort();
         } else {
-            std::cout << "takeOptions xio directory: " << takeOptions.xioDirectory->c_str() << std::endl;
+            if(takeOptions.xioDirSet && takeOptions.xioCam) {
+                std::cout << "takeOptions xio directory: " << takeOptions.xioDirectory->c_str() << std::endl;
+            }
         }
     } else {
         abort();
@@ -100,6 +111,11 @@ void frameWorker::convertOptions()
     takeOptions.width = takeOptions.xioWidth;
 
     takeOptions.debug = options.debug;
+    takeOptions.laggy = options.laggy;
+    takeOptions.er2mode = options.er2mode;
+    takeOptions.headless = options.headless;
+    takeOptions.noGPU = options.noGPU;
+    takeOptions.useSHM = options.useSHM;
     takeOptions.flightMode = options.flightMode;
     takeOptions.disableGPS = options.disableGPS;
     takeOptions.disableCamera = options.disableCamera;
@@ -109,12 +125,40 @@ void frameWorker::convertOptions()
     takeOptions.gpsPortSet = options.gpsPortSet;
     takeOptions.gpsPort = options.gpsPort;
     takeOptions.xioCam = options.xioCam;
+    takeOptions.rtpCam = options.rtpCam;
+    takeOptions.rtpNextGen = options.rtpNextGen;
+    if(options.rtpCam)
+    {
+        takeOptions.rtpHeight = options.rtpHeight;
+        takeOptions.rtpWidth = options.rtpWidth;
+        takeOptions.havertpInterface = options.havertpInterface;
+        takeOptions.rtpInterface = options.rtpInterface;
+        takeOptions.havertpAddress = options.havertpAddress;
+        takeOptions.rtpAddress = options.rtpAddress;
+        takeOptions.rtprgb = options.rtprgb;
+    } else {
+        takeOptions.rtpHeight = 0;
+        takeOptions.rtpWidth = 0;
+        takeOptions.rtpInterface = NULL;
+        takeOptions.rtpAddress = NULL;
+    }
+
+
     takeOptions.height = options.height;
     takeOptions.width = options.width;
     takeOptions.xioHeight = options.xioHeight;
     takeOptions.xioWidth = options.xioWidth;
     takeOptions.heightWidthSet = options.heightWidthSet;
     takeOptions.targetFPS = options.targetFPS;
+
+
+    if(takeOptions.rtpCam)
+    {
+        if(takeOptions.rtpInterface != NULL)
+            qDebug() << "RTP Interface: " << takeOptions.rtpInterface;
+        if(takeOptions.rtpAddress != NULL)
+            qDebug() << "RTP Address: " << takeOptions.rtpAddress;
+    }
 }
 
 // public functions
@@ -219,6 +263,7 @@ void frameWorker::captureFrames()
             // Every 25 frames, or, every 200ms, whichever comes first.
             if( (count%25 == 0) || ((clock.elapsed() - lastTime) > 50) )
             {
+                this->frameCount = to.count;
                 if(options.xioCam)
                     emit updateFrameCountDisplay(to.xioCount);
                 else
@@ -493,6 +538,12 @@ void frameWorker::stop()
     qDebug() << "stop frameWorker";
 #endif
     doRun = false;
+}
+
+void frameWorker::debugThis()
+{
+    sMessage("debug feature reached.");
+    sMessage(QString("Take object frame count: %1").arg(to.count));
 }
 
 void frameWorker::sMessage(QString message)

@@ -3,9 +3,17 @@
 
 #include <QObject>
 #include <QLabel>
+#include <QMutex>
+#include <QMutexLocker>
 #include "qcustomplot.h"
 
 #include "filenamegenerator.h"
+
+// Shared Memory:
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include "shm_gps.h"
 
 #include "gpsGUI/qfi/qfi_EADI.h"
 #include "gpsGUI/qfi/qfi_EHSI.h"
@@ -14,6 +22,10 @@
 
 #include "gpsGUI/gpsnetwork.h"
 #include "gpsGUI/qledlabel.h"
+
+#include "gpsGUI/zupt.h"
+
+#include "startupOptions.h"
 
 struct utcTime {
     int hour;
@@ -36,7 +48,21 @@ class gpsManager : public QObject
     gpsNetwork *gps;
     gpsMessage m;
 
+    startupOptionsType options;
+
     fileNameGenerator filenamegen;
+
+    void shmSetup();
+    bool shmValid = false;
+    shmGPSDataStruct *shm = NULL;
+    int shmFd = 0;
+    int currentSHMIndex = 0;
+    int priorSHMIndex = 0;
+    uint16_t shmCounter = 0;
+
+
+    zupt *zuptCommander = NULL;
+    QTimer zuptRetryTimer;
 
     QString baseSaveDirectory;
     QString gpsRecordingBinaryLogFilename;
@@ -49,7 +75,7 @@ class gpsManager : public QObject
 
     // Update Frequency:
     // data come in at 200 Hz
-    unsigned char updateLabelsInterval = 10;
+    unsigned char updateLabelsInterval = 20;
     unsigned char updatePlotsInverval = 90;
     unsigned char updateAvionicsWidgetsInterval = 10;
 
@@ -57,14 +83,67 @@ class gpsManager : public QObject
     // Status:
     bool statusGNSSReceptionOk = true; // GNSS Info received on time or way too late
     bool statusGNSSReceptionWarning = false; // GNSS Info received late
-    bool statusUTCok = true; // UTC received on time
+
     bool statusMessageDecodeOk = true; // message decoded ok
-    bool statusGPSConnectionNoErrors = true; // Have not received any errors from the network socket
     bool statusConnectedToGPS = true; // Connected at this time to the GPS unit
     bool statusGPSHeartbeatOk = true; // Have received messages recently
     bool statusGPSMessagesDropped = false; // true if messages being dropped
-    bool statusStickyError = false; // stays true until cleared
+
+    bool statusLinkStickyError = false; // stays true until cleared
+    bool statusTroubleStickyError = false; //
+
     bool statusJustCleared = false; // True if we just cleared errors.
+
+    // Individual "now" errors which are made sticky by the process function:
+
+    // Algorithm Status 1:
+    bool navPhase = true; // warning
+    bool gpsReceived = true; // warning
+    bool gpsValid = true; // Error
+    bool gpsWaiting = false; // warning
+    bool gpsRejected = false; // Error
+    bool altitudeSaturation = false; // Error
+    bool speedSaturation = false; // Error
+    bool interpolationMissed = false; // Error
+
+    // Algorithm Status 2:
+    bool altitudeRejected = false; // Error
+    bool zuptActive = false; // Error
+    bool zuptOther = false; // Error, includes Valid, RotationMode, and RoValid
+
+    // Algorithm Status 3:
+    bool flashWriteError = false; // Error
+    bool flashEraseError = false; // Error
+
+    // INS System Status 1:
+    bool outputAFull = false; // Error
+    bool outputBFull = false; // Error
+
+    // INS System Status 2:
+    bool gpsDetected = true; // warning
+
+    // INS System Status 3:
+    bool systemReady = true; // warning
+
+    // Status Bits from the device:
+    // INS Algorithm Status
+    dword priorAlgorithmStatus1=0;
+    dword priorAlgorithmStatus2=0;
+    dword priorAlgorithmStatus3=0;
+    dword priorAlgorithmStatus4=0;
+
+    // INS System Status
+    dword priorSystemStatus1=0;
+    dword priorSystemStatus2=0;
+    dword priorSystemStatus3=0;
+
+    int consecutiveDecodeErrors = 0;
+
+    gpsQualityKinds gnssQualPrior = gpsQualityInvalid;
+    QString gnssQualStr = "";
+    QString gnssQualShortStr = "";
+    bool gnssAlignmentComplete = false;
+    QString gnssAlignmentPhase = "";
 
     // Record 1 out of every 40 points for 5 Hz updates to plots
     // therefore, for 90 seconds of data, we need 90*5 = 450 point vectors
@@ -77,25 +156,29 @@ class gpsManager : public QObject
     void prepareLEDs(); // initial state
     void prepareLabels(); // initial state
     void prepareGPS(); // thread connections
+    unsigned char getBit(dword d, unsigned char bit);
 
     uint16_t msgsReceivedCount = 0;
 
-    // alt and heading
-    QVector<double> headings;
+    // Heading
+    QVector<double> headingsMagnetic;
+    QVector<double> headingsCourse;
+
+    // Roll and Pitch:
     QVector<double> rolls;
     QVector<double> pitches;
 
-    // position
+    // Position
     QVector<double> lats;
     QVector<double> longs;
     QVector<double> alts;
 
-    // speed
+    // Speed
     QVector<double> nVelos;
     QVector<double> eVelos;
     QVector<double> upVelos;
 
-    // time axis:
+    // Time axis:
     QVector<double> timeAxis;
 
     void updateUIelements();
@@ -114,16 +197,26 @@ class gpsManager : public QObject
 
     void showStatusMessage(QString);
     void processStatus();
+    void genStatusMessages();
+    QMutex messageMutex;
+    QStringList errorMessages;
+    QStringList warningMessages;
 
     utcTime processUTCstamp(uint64_t t);
     utcTime currentTime;
     utcTime validityTime;
 
     void updateLabel(QLabel *label, QString text);
+    void updateLED(QLedLabel *led, QLedLabel::State s);
 
     // UI elements (set to NULL if unused):
-    QLedLabel *gpsOkLED = NULL;
+    QLedLabel *gpsLinkLED = NULL;
+    QLedLabel *gpsTroubleLED = NULL;
+
     QCustomPlot *plotRollPitch = NULL;
+    QCustomPlot *plotHeading = NULL;
+    QCPPlotTitle *titleHeading = NULL;
+
     bool usePlotTitle = false;
     QCPPlotTitle *titleRollPitch = NULL;
     QLabel *gpsLat = NULL;
@@ -138,6 +231,7 @@ class gpsManager : public QObject
     QLabel *gpsRoll = NULL;
     QLabel *gpsPitch = NULL;
     QLabel *gpsQuality = NULL;
+    QLabel *gpsAlignment = NULL;
 
     // Avionics Widgets:
     qfi_ASI *asi;
@@ -146,21 +240,28 @@ class gpsManager : public QObject
     qfi_EHSI *ehsi;
 
 public:
-    gpsManager();
+    gpsManager(startupOptionsType opts);
     ~gpsManager();
 
-    void insertLEDs(QLedLabel *gpsOkLED);
-    void insertPlots(QCustomPlot *gpsRollPitchPlot);
+    void insertLEDs(QLedLabel *gpsLinkLED, QLedLabel *gpsTroubleLED);
+    void insertPlots(QCustomPlot *gpsRollPitchPlot, QCustomPlot *gpsHeadingPlot);
     void insertLabels(QLabel *gpsLat, QLabel *gpsLong, QLabel *gpsAltitude,
                       QLabel *gpsUTCtime, QLabel *gpsUTCdate, QLabel *gpsUTCValidity,
                       QLabel *gpsGroundSpeed,
                       QLabel *gpsHeading, QLabel *gpsRoll, QLabel *gpsPitch,
-                      QLabel *gpsQuality,
+                      QLabel *gpsQuality, QLabel *gpsAlignment,
                       QLabel *gpsRateClimb);
     void insertAvionicsWidgets(qfi_ASI *asi, qfi_VSI *vsi,
                                qfi_EADI *eadi, qfi_EHSI *ehsi);
 
     void prepareElements();
+
+    // no-effort logging elements:
+    double chk_longitude = 0;
+    double chk_latiitude = 0;
+    double chk_altitude = 0;
+    float chk_gndspeed = 0;
+    bool haveData = false;
 
 public slots:
     void initiateGPSConnection(QString host, int port, QString gpsBinaryLogFilename);
@@ -180,6 +281,9 @@ signals:
     void stopSecondaryLog();
     void disconnectFromGPS();
     void getDebugInfo();
+    void statusMessagesSig(QStringList errorMessages,
+                           QStringList warningMessages);
+    void turn_off_ZuPT(QString a7Host, int A7port);
 
 private slots:
     void handleGPSStatusMessage(QString message);
@@ -187,6 +291,7 @@ private slots:
     void handleGPSConnectionError(int error);
     void handleGPSConnectionGood();
     void handleGPSTimeout();
+    void handleZUpTRetryTimer();
 
 
 };

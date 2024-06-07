@@ -1,10 +1,10 @@
 #include "gpsmanager.h"
 
-gpsManager::gpsManager()
+gpsManager::gpsManager(startupOptionsType opts)
 {
     qRegisterMetaType<gpsMessage>();
-    statusStickyError = false;
-
+    statusLinkStickyError = false;
+    options = opts;
     // May override later:
     baseSaveDirectory = QString("/tmp/gps");
     //createLoggingDirectory();
@@ -13,18 +13,33 @@ gpsManager::gpsManager()
 
     prepareVectors(); // size the vectors
     prepareGPS(); // get ready to connect the GPS
-
+    if(options.useSHM) {
+        shmSetup(); // initialize the shared memory segment for GPS data
+    } else {
+        shmValid = false;
+    }
 }
 
 gpsManager::~gpsManager()
 {
-    gpsThread->quit();
-    gpsThread->wait();
-    //delete gpsThread;
+    if(shmValid) {
+        shm->connected = false;
+        shm->statusByte = SHM_STATUS_CLOSED;
+    }
+
+    if(gpsThread != NULL)
+    {
+        gpsThread->quit();
+        gpsThread->wait();
+        //delete gpsThread;
+    }
     //delete gps;
+    if(zuptCommander != NULL) {
+        delete zuptCommander;
+    }
 }
 
-void gpsManager::initiateGPSConnection(QString host = "10.0.0.6", int port=(int)8111, QString gpsBinaryLogFilename = "")
+void gpsManager::initiateGPSConnection(QString host = "192.168.2.101", int port=(int)8112, QString gpsBinaryLogFilename = "")
 {
     if (gpsBinaryLogFilename.isEmpty())
     {
@@ -49,6 +64,65 @@ void gpsManager::initiateGPSDisconnect()
 {
     emit disconnectFromGPS();
     firstMessage = true;
+    if(shmValid)
+        shm->connected = false;
+}
+
+void gpsManager::shmSetup()
+{
+    if(shmValid) {
+        emit gpsStatusMessage("SHM already setup");
+        return;
+    }
+
+    shmValid = false;
+
+    size_t shmLen = sizeof(struct shmGPSDataStruct);
+    shmFd = shm_open("/liveview_gnss", O_RDWR | O_CREAT ,S_IRUSR | S_IWUSR);
+
+    if(shmFd == -1) {
+        emit gpsStatusMessage("Error, could not open GNSS shared memory segment.");
+        shmValid = false;
+        goto cleanup;
+    } else {
+        emit gpsStatusMessage("Opened shared memory segment /liveview_gnss.");
+    }
+
+    if(ftruncate(shmFd, shmLen) == -1) {
+        emit gpsStatusMessage("Error, could not set size of GNSS shared memory segment.");
+        goto cleanup;
+    }
+
+    shm = (shmGPSDataStruct*)mmap(0, shmLen, PROT_WRITE, MAP_SHARED, shmFd, 0);
+    if( (shm==NULL) || (shm==MAP_FAILED)) {
+        emit gpsStatusMessage("Error, could not map GNSS shared memory segment to a local address pointer.");
+        goto cleanup;
+    }
+
+    shm->statusByte = SHM_STATUS_INITALIZING;
+    shm->connected = false;
+    shm->counter = 0;
+    shmCounter = 0;
+    shm->writingMessageNumber = 0;
+    for(int m=0; m < shmGPSMessageBufferSize; m++) {
+        shm->message[m].counter = 0;
+        shm->message[m].validDecode = false;
+    }
+    currentSHMIndex = 0;
+    priorSHMIndex = 0;
+    shmValid = true;
+    shm->statusByte = SHM_STATUS_WAITING;
+    return;
+
+
+    cleanup:
+    if( (shmFd != -1) && (shmFd != 0) ) {
+        emit gpsStatusMessage("Closing shared memory segment.");
+        close(shmFd);
+        shmValid = false;
+        return;
+    }
+    return;
 }
 
 bool gpsManager::createLoggingDirectory()
@@ -83,7 +157,8 @@ void gpsManager::prepareVectors()
     // Resize
     vecSize = 450;
 
-    headings.resize(vecSize);
+    headingsMagnetic.resize(vecSize);
+    headingsCourse.resize(vecSize);
     rolls.resize(vecSize);
     pitches.resize(vecSize);
     lats.resize(vecSize);
@@ -99,8 +174,8 @@ void gpsManager::prepareVectors()
 void gpsManager::prepareLEDs()
 {
     // Initial state
-    if(gpsOkLED != NULL)gpsOkLED->setText("");
-    if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateOkBlue);
+    if(gpsLinkLED != NULL)gpsLinkLED->setText("");
+    if(gpsLinkLED != NULL)gpsLinkLED->setState(QLedLabel::StateOkBlue);
 }
 
 void gpsManager::prepareLabels()
@@ -115,6 +190,9 @@ void gpsManager::prepareGPS()
     firstMessage = true;
     gps = new gpsNetwork();
     gpsThread = new QThread(this);
+    zuptCommander = new zupt();
+    zuptRetryTimer.setInterval(3000);
+    zuptRetryTimer.setSingleShot(true);
 
     gps->moveToThread(gpsThread);
 
@@ -132,6 +210,11 @@ void gpsManager::prepareGPS()
 
     connect(this, SIGNAL(startSecondaryLog(QString)), gps, SLOT(beginSecondaryBinaryLog(QString)));
     connect(this, SIGNAL(stopSecondaryLog()), gps, SLOT(stopSecondaryBinaryLog()));
+
+    connect(zuptCommander, SIGNAL(statusText(QString)), this, SLOT(handleGPSStatusMessage(QString)));
+    connect(zuptCommander, SIGNAL(errorText(QString)), this, SLOT(handleGPSStatusMessage(QString)));
+    connect(this, SIGNAL(turn_off_ZuPT(QString,int)), zuptCommander, SLOT(disableZUpT(QString,int)));
+    connect(&zuptRetryTimer, SIGNAL(timeout()), this, SLOT(handleZUpTRetryTimer()));
 
     gpsThread->setObjectName(name + "gps");
     gpsThread->start();
@@ -153,9 +236,9 @@ void gpsManager::preparePlots()
     if(plotRollPitch != NULL)
     {
         plotRollPitch->addGraph();
-        plotRollPitch->yAxis->setRange(-10, 10); // Lat
-        plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis ); // Lat
-        plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis ); // Long
+        plotRollPitch->yAxis->setRange(-10, 10);
+        plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis );
+        plotRollPitch->addGraph(plotRollPitch->xAxis, plotRollPitch->yAxis );
         setTimeAxis(plotRollPitch->xAxis);
         plotRollPitch->yAxis->setLabel("Degrees");
         if(titleRollPitch==NULL)
@@ -179,6 +262,32 @@ void gpsManager::preparePlots()
         plotRollPitch->legend->setVisible(true);
         setPlotColors(plotRollPitch, true);
     }
+
+    if(plotHeading != NULL)
+    {
+
+
+        plotHeading->addGraph(); // magnetic
+        plotHeading->addGraph(0,0); // course
+        plotHeading->graph(0)->setName("Magnetic");
+        plotHeading->graph(1)->setName("Course");
+        plotHeading->yAxis->setRange(0, 360*1.1); // raw data is 0-360 but we will show it like this.
+        setTimeAxis(plotHeading->xAxis);
+        if(titleHeading == NULL)
+        {
+            titleHeading = new QCPPlotTitle(plotHeading);
+        }
+        setPlotTitle(plotHeading, titleHeading, "Pitch and Roll");
+
+        plotHeading->graph(0)->setPen(QPen(Qt::yellow));
+        plotHeading->graph(1)->setPen(QPen(Qt::red));
+        plotHeading->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignLeft|Qt::AlignTop);
+        setPlotColors(plotHeading, true);
+
+        //plotHeading->legend->setBrush(QColor("#85ffffff")); // 85% opaque white
+        plotHeading->legend->setVisible(true);
+    }
+    updatePlots(); // initial draw
 }
 
 void gpsManager::updateUIelements()
@@ -192,8 +301,15 @@ void gpsManager::updatePlots()
     if(plotRollPitch != NULL)
     {
         this->plotRollPitch->graph(0)->setData(timeAxis, rolls);
-        this->plotRollPitch->graph(1)->setData(timeAxis, pitches); // should be longs
+        this->plotRollPitch->graph(1)->setData(timeAxis, pitches);
         this->plotRollPitch->replot();
+    }
+
+    if(plotHeading != NULL)
+    {
+        this->plotHeading->graph(0)->setData(timeAxis, headingsMagnetic);
+        this->plotHeading->graph(1)->setData(timeAxis, headingsCourse);
+        this->plotHeading->replot();
     }
 }
 
@@ -272,21 +388,23 @@ void gpsManager::showStatusMessage(QString s)
     (void)s;
 }
 
-void gpsManager::insertLEDs(QLedLabel *gpsOk)
+void gpsManager::insertLEDs(QLedLabel *gpsLinkLED, QLedLabel *gpsTroubleLED)
 {
-    this->gpsOkLED = gpsOk;
+    this->gpsLinkLED = gpsLinkLED;
+    this->gpsTroubleLED = gpsTroubleLED;
 }
 
-void gpsManager::insertPlots(QCustomPlot *gpsRollPitchplot)
+void gpsManager::insertPlots(QCustomPlot *gpsRollPitchPlot, QCustomPlot *gpsHeadingPlot)
 {
-    this->plotRollPitch = gpsRollPitchplot;
+    this->plotRollPitch = gpsRollPitchPlot;
+    this->plotHeading = gpsHeadingPlot;
 }
 
 void gpsManager::insertLabels(QLabel *gpsLat, QLabel *gpsLong, QLabel *gpsAltitude,
                               QLabel *gpsUTCtime, QLabel *gpsUTCdate, QLabel *gpsUTCValid,
                               QLabel *gpsGroundSpeed,
                               QLabel *gpsHeading, QLabel *gpsRoll, QLabel *gpsPitch,
-                              QLabel *gpsQuality,
+                              QLabel *gpsQuality, QLabel *gpsAlignment,
                               QLabel *gpsRateClimb)
 {
 
@@ -301,6 +419,7 @@ void gpsManager::insertLabels(QLabel *gpsLat, QLabel *gpsLong, QLabel *gpsAltitu
     this->gpsRoll = gpsRoll;
     this->gpsPitch = gpsPitch;
     this->gpsQuality = gpsQuality;
+    this->gpsAlignment = gpsAlignment;
     this->gpsRateClimb = gpsRateClimb;
 }
 
@@ -321,6 +440,18 @@ void gpsManager::updateLabel(QLabel *label, QString text)
     }
 }
 
+void gpsManager::updateLED(QLedLabel *led, QLedLabel::State s)
+{
+    if(led != NULL) {
+        led->setState(s);
+    }
+}
+
+unsigned char gpsManager::getBit(uint32_t d, unsigned char bit)
+{
+    return((d & ( 1 << bit )) >> bit);
+}
+
 void gpsManager::receiveGPSMessage(gpsMessage m)
 {
     // Entry point for new messages
@@ -330,10 +461,21 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     {
         this->m = m;
         statusMessageDecodeOk = true;
+        consecutiveDecodeErrors = 0;
     } else {
         statusMessageDecodeOk = false;
+        consecutiveDecodeErrors++;
         processStatus();
         return;
+    }
+
+    currentSHMIndex = (priorSHMIndex+1)%shmGPSMessageBufferSize;
+
+    if(shmValid) {
+        shm->writingMessageNumber = currentSHMIndex;
+        shm->counter = shmCounter++;
+        shm->message[currentSHMIndex] = m; // makes a copy
+        shm->statusByte = SHM_STATUS_READY;
     }
 
     msgsReceivedCount++;
@@ -341,7 +483,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     if(firstMessage)
     {
         gnssStatusTime.start();
-        firstMessage = false;
+        haveData = true;
     }
 
     gpsMessageHeartbeat.start();
@@ -362,15 +504,17 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         }
     }
 
-    if(m.numberDropped > 0)
+    if( (m.numberDropped > 0) && (!firstMessage) )
     {
         statusGPSMessagesDropped = true;
     } else {
         statusGPSMessagesDropped = false;
     }
 
-    bool doPlotUpdate = (msgsReceivedCount%updatePlotsInverval)==0;
-    bool doWidgetPaint = (msgsReceivedCount%updateAvionicsWidgetsInterval)==0;
+    //bool doPlotUpdate = (msgsReceivedCount%updatePlotsInverval)==0;
+    //bool doWidgetPaint = (msgsReceivedCount%updateAvionicsWidgetsInterval)==0;
+    bool doPlotUpdate = false; // no more plots
+    bool doWidgetPaint = false; // no more fancy widgets
     bool doLabelUpdate = (msgsReceivedCount%updateLabelsInterval)==0;
 
     if(m.haveUTC)
@@ -395,7 +539,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         if(m.haveAltitudeHeading)
         {
             updateLabel(gpsRoll, QString("%1").arg(m.roll));
-            updateLabel(gpsHeading, QString("%1").arg(m.heading));
+            updateLabel(gpsHeading, QString(" %1").arg(m.heading));
             updateLabel(gpsPitch, QString("%1").arg(m.pitch));
 
         }
@@ -408,19 +552,26 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
                 longitude = m.longitude;
             }
             // Format specifier is number, TOTAL DIGITS (including the dot), float, and the number of decimal places desired (8), and the filler character for any front filling
-            updateLabel(gpsLat, QString("%1").arg(m.latitude, 12, 'f', 8, QChar('0')));
-            updateLabel(gpsLong, QString("%1").arg(longitude, 12, 'f', 8, QChar('0')));
+            // Example: -118.94771 57:
+            updateLabel(gpsLat, QString("%1").arg(m.latitude, 10, 'f', 5, QChar(' ')));
+            updateLabel(gpsLong, QString("%1").arg(longitude, 10, 'f', 5, QChar(' ')));
             // Native altitude is meters
             // Converting to feet by multiplying by 3.28084
-            updateLabel(gpsAltitude, QString("%1 Ft").arg(m.altitude * 3.28084, 6, 'f', 1, QChar('0')));
+            updateLabel(gpsAltitude, QString("%1 ft").arg(m.altitude * 3.28084, 6, 'f', 1, QChar('0')));
+
+            this->chk_latiitude = m.latitude;
+            this->chk_longitude = longitude;
+            this->chk_altitude = m.altitude * 3.28084; // feet
         }
         if(m.haveCourseSpeedGroundData)
         {
             // The native units are meters per second.
-            // the old conversion factor used was 1.94384, which converted to knots,
-            // useful for air speed but not so much ground speed.
-            // Now we convert to MPH using 2.23694
-            updateLabel(gpsGroundSpeed, QString("%1 MPH").arg(m.speedOverGround * 2.23694, 6, 'f', 2, QChar('0')));
+            // To convert to knots, multiply by 1.94384
+            // To convert to MPH, multiply by 2.23694
+            // To convert to KPH, multiply by 3.6
+            // The abbreviation for knot or knots is "kt" or "kts", respectively.
+            updateLabel(gpsGroundSpeed, QString("%1 kts").arg(m.speedOverGround * 1.94384, 6, 'f', 2, QChar('0')));
+            this->chk_gndspeed = m.speedOverGround * 1.94384; // knots
         }
         if(m.haveSpeedData)
         {
@@ -433,12 +584,197 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         }
     }
 
+    if(m.haveINSAlgorithmStatus) {
+        if( (firstMessage) || (priorAlgorithmStatus1 !=m.algorithmStatus1) ) {
+            bool courseAlignment = false;
+            bool fineAlignment = false;
+            if(getBit(m.algorithmStatus1, 1)) {
+                gnssAlignmentPhase = "COURSE";
+                //updateLabel(gpsAlignment, "COURSE");
+                courseAlignment = true;
+                gnssAlignmentComplete = false;
+            }
+            if(getBit(m.algorithmStatus1, 2)) {
+                //updateLabel(gpsAlignment, "FINE");
+                gnssAlignmentPhase = "FINE";
+                fineAlignment = true;
+                gnssAlignmentComplete = false;
+            }
+            if( (!courseAlignment) && (!fineAlignment) ) {
+                    //updateLabel(gpsAlignment, "COMPLETE");
+                    gnssAlignmentPhase = "Done";
+                    gnssAlignmentComplete = true;
+            }
+            if(getBit(m.algorithmStatus1, 0)) {
+                navPhase = true;
+            } else {
+                navPhase = false;
+            }
+            if(getBit(m.algorithmStatus1, 12)) {
+                gpsReceived = true;
+            } else {
+                gpsReceived = false;
+            }
+            if(getBit(m.algorithmStatus1, 13)) {
+                gpsValid = true;
+            } else {
+                gpsValid = false;
+            }
+            if(getBit(m.algorithmStatus1, 14)) {
+                gpsWaiting = true;
+            } else {
+                gpsWaiting = false;
+            }
+            if(getBit(m.algorithmStatus1, 15)) {
+                gpsRejected = true;
+            } else {
+                gpsRejected = false;
+            }
+            if(getBit(m.algorithmStatus1, 28)) {
+                altitudeSaturation = true;
+            } else {
+                altitudeSaturation = false;
+            }
+            if(getBit(m.algorithmStatus1, 29)) {
+                speedSaturation = true;
+            } else {
+                speedSaturation = false;
+            }
+            if(getBit(m.algorithmStatus1, 30)) {
+                interpolationMissed = true;
+            } else {
+                interpolationMissed = false;
+            }
+        }
+        if( (firstMessage) || (priorAlgorithmStatus2 !=m.algorithmStatus2) ) {
+            if(getBit(m.algorithmStatus2, 15)) {
+                altitudeRejected = true;
+            } else {
+                altitudeRejected = false;
+            }
+            if(getBit(m.algorithmStatus2, 16)) {
+                zuptActive = true;
+            } else {
+                zuptActive = false;
+            }
+            if( getBit(m.algorithmStatus2, 17) ||
+                    getBit(m.algorithmStatus2, 18) ||
+                    getBit(m.algorithmStatus2, 19)) {
+                zuptOther = true;
+            } else {
+                zuptOther = false;
+            }
+
+        }
+        if( (firstMessage) || (priorAlgorithmStatus3 !=m.algorithmStatus3) ) {
+            // Currently not very interesting
+        }
+        if( (firstMessage) || (priorAlgorithmStatus4 !=m.algorithmStatus4) ) {
+            if(getBit(m.algorithmStatus4, 28)) {
+                flashWriteError = true;
+            } else {
+                flashWriteError = false;
+            }
+            if(getBit(m.algorithmStatus4, 29)) {
+                flashEraseError = true;
+            } else {
+                flashEraseError = false;
+            }
+        }
+
+        priorAlgorithmStatus1 = m.algorithmStatus1;
+        priorAlgorithmStatus2 = m.algorithmStatus2;
+        priorAlgorithmStatus3 = m.algorithmStatus3;
+        priorAlgorithmStatus4 = m.algorithmStatus4;
+    }
+
+    if(m.haveINSSystemStatus) {
+        if( (firstMessage) || (priorSystemStatus1 != m.systemStatus1) ) {
+            if(getBit(m.systemStatus1, 17)) {
+                outputAFull = true;
+            } else {
+                outputAFull = false;
+            }
+            if(getBit(m.systemStatus1, 18)) {
+                outputBFull = true;
+            } else {
+                outputBFull = false;
+            }
+        }
+        if( (firstMessage) || (priorSystemStatus2 != m.systemStatus2) ) {
+            if(getBit(m.systemStatus2, 2)) {
+                gpsDetected = true;
+            } else {
+                gpsDetected = false;
+            }
+        }
+        if( (firstMessage) || (priorSystemStatus3 != m.systemStatus3) ) {
+            if(getBit(m.systemStatus3, 18)) {
+                systemReady = true;
+            } else {
+                systemReady = false;
+            }
+        }
+
+        priorSystemStatus1 = m.systemStatus1;
+        priorSystemStatus2 = m.systemStatus2;
+        priorSystemStatus3 = m.systemStatus3;
+    }
+
+    if( m.haveGNSSInfo1 && (m.gnss[0].gnssGPSQuality != gnssQualPrior) ){
+        gnssInfo i = m.gnss[0];
+        gpsQualityKinds q = i.gnssGPSQuality;
+        switch(q)
+        {
+        case gpsQualityNatural_10m:
+            gnssQualStr = "Nat 10M";
+            gnssQualShortStr = "[10M]";
+            break;
+        case gpsQualityDifferential_3m:
+            gnssQualStr = "Diff 3M";
+            gnssQualShortStr = "[3M]";
+            break;
+        case gpsQualityMilitary_10m:
+            gnssQualStr = "Mil 10M";
+            gnssQualShortStr = "[10M]";
+            break;
+        case gpsQualityRTK_0p1m:
+            gnssQualStr = "RTK 0.1M";
+            gnssQualShortStr = "[0.1M]";
+            break;
+        case gpsQualityFloatRTK_0p3m:
+            gnssQualStr = "RTK 0.3M";
+            gnssQualShortStr = "[0.3M]";
+            break;
+        case gpsQualityOther:
+        case gpsQualityInvalid:
+        default:
+            gnssQualStr = "INVALID";
+            gnssQualShortStr = "?";
+            gnssAlignmentPhase = "UNKNOWN";
+            break;
+        }
+        gnssQualPrior = q;
+    }
+
+    if(doLabelUpdate) {
+        QString alignmentText;
+        alignmentText.append(gnssAlignmentPhase);
+        if(gnssAlignmentComplete) {
+            alignmentText.append(QString(" %1").arg(gnssQualShortStr));
+        }
+        updateLabel(gpsAlignment, alignmentText);
+    }
+
     if(doPlotUpdate)
     {
         if(m.haveHeadingRollPitchRate)
         {
-            headings.push_front(m.heading);
-            headings.pop_back();
+            headingsMagnetic.push_front(m.heading);
+            headingsMagnetic.pop_back();
+
+            headingsCourse.push_front(m.courseOverGround);
+            headingsCourse.pop_back();
 
             rolls.push_front(m.roll);
             rolls.pop_back();
@@ -522,6 +858,12 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
 
     // Every time, process the status:
     processStatus();
+
+    if(firstMessage)
+    {
+        firstMessage = false;
+    }
+    priorSHMIndex = currentSHMIndex;
 }
 
 void gpsManager::handleStartsecondaryLog(QString filename)
@@ -559,6 +901,11 @@ void gpsManager::handleGPSConnectionError(int error)
                 emit gpsStatusMessage(QString("Error code from GPS connection: %1 (could not connect). Reconnecting in 1 second.").arg(error));
                 break;
             }
+        case 5:
+        {
+            emit gpsStatusMessage(QString("Error code from GPS connection: %1 (connection timeout). Reconnecting in 1 second.").arg(error));
+            break;
+        }
         default:
             {
                 emit gpsStatusMessage(QString("Error code from GPS connection: %1 (unknown). Reconnecting in 1 second.").arg(error));
@@ -567,7 +914,8 @@ void gpsManager::handleGPSConnectionError(int error)
     }
 
     emit gpsConnectionError(error);
-    statusStickyError = true;
+    statusLinkStickyError = true;
+    statusConnectedToGPS = false;
     processStatus();
     gpsReconnectTimer.start();
 }
@@ -583,9 +931,17 @@ void gpsManager::handleGPSReconnectTimer()
 void gpsManager::handleGPSConnectionGood()
 {
     emit gpsStatusMessage(QString("GPS: Connection good"));
-    statusStickyError = false; // Safe to clear when a new connection has been made.
+    statusLinkStickyError = false; // Safe to clear when a new connection has been made.
     statusConnectedToGPS = true;
     hbErrorCount = 0;
+    emit turn_off_ZuPT(host, 8110);
+    zuptRetryTimer.start(); // send again a few seconds later just in case.
+    if(shmValid)
+        shm->connected = true;
+}
+
+void gpsManager::handleZUpTRetryTimer() {
+    emit turn_off_ZuPT(host, 8110);
 }
 
 void gpsManager::handleGPSTimeout()
@@ -625,40 +981,135 @@ void gpsManager::processStatus()
     // Central function to evaluate the status
     // of the GPS
 
-    bool trouble = statusStickyError || !statusGPSHeartbeatOk || !statusUTCok || !statusGNSSReceptionOk;
-    bool warning = statusGNSSReceptionWarning;
+    // Error status is an "OR" of prior error ('sticky') and current error conditions.
+
+    // Link errors and warnings relate to our GPS decode and connection to the unit over TCP/IP.
+    bool gpsLinkError = statusLinkStickyError || !statusGPSHeartbeatOk || !statusConnectedToGPS;
+    bool gpsLinkWarning = statusGPSMessagesDropped;
+
+    if(consecutiveDecodeErrors > 10) {
+        gpsLinkWarning = true;
+    }
+    if(consecutiveDecodeErrors > 100) {
+        gpsLinkError = true;
+    }
+
+    // GPS Trouble errors and warnings relate to status received from the GPS
+    // Trouble: something really is badly wrong
+    // Warning: Not ready yet
+    bool gpsTroubleError = statusTroubleStickyError || !statusGNSSReceptionOk ||
+            !gpsValid || gpsRejected || altitudeSaturation || speedSaturation ||
+            interpolationMissed || altitudeRejected || zuptActive || zuptOther ||
+            flashWriteError || flashEraseError || outputAFull || outputBFull;
+
+    bool gpsTroubleWarning = statusGNSSReceptionWarning || !gpsReceived ||
+            gpsWaiting || !gpsDetected || !systemReady || !navPhase || !statusConnectedToGPS;
 
     // Warnings are not sticky (automatically cleared)
-    if(warning && !trouble)
-    {
-        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateWarning);
-    }
 
-    // Check and see if things are back to normal and could be unflagged:
-    if(!statusGPSHeartbeatOk && !statusUTCok && !statusGNSSReceptionOk && statusStickyError)
-    {
-        // There's a sticky error, but the system is working
-        // TODO: Alert the user, but only once.
-    }
+    // Always show the current state of the above variables, which include the stickyness already:
 
-    // Trouble is sticky (clearing is manually done by the user)
-    if(trouble)
-    {
-        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateError);
-        statusStickyError = true;
+    if(gpsLinkError) {
+        updateLED(gpsLinkLED, QLedLabel::StateError);
+        statusLinkStickyError = true;
+    } else if (gpsLinkWarning) {
+        updateLED(gpsLinkLED, QLedLabel::StateWarning);
     } else {
-        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateOk);
+        updateLED(gpsLinkLED, QLedLabel::StateOk);
     }
-    if(statusJustCleared && !trouble)
-    {
-        if(gpsOkLED != NULL)gpsOkLED->setState(QLedLabel::StateOkBlue);
+
+    if(gpsTroubleError) {
+        updateLED(gpsTroubleLED, QLedLabel::StateError);
+        statusTroubleStickyError = true;
+    } else if (gpsTroubleWarning) {
+        updateLED(gpsTroubleLED, QLedLabel::StateWarning);
+    } else {
+        updateLED(gpsTroubleLED, QLedLabel::StateOk);
+    }
+
+    if(zuptActive && (!zuptRetryTimer.isActive())) {
+        emit gpsStatusMessage("Sending command to disable ZUpT");
+        zuptRetryTimer.start();
+    }
+
+    // Clear errors if we were asked to and if there isn't a new reason to
+    // flag errors...
+    if(statusJustCleared && (!gpsTroubleError) && (!gpsTroubleWarning)) {
+        // Reset
+        updateLED(gpsTroubleLED, QLedLabel::StateOkBlue);
+    }
+    if(statusJustCleared && (!gpsLinkError) && (!gpsLinkWarning)) {
+        // Reset
+        updateLED(gpsLinkLED, QLedLabel::StateOkBlue);
+    }
+
+    genStatusMessages();
+
+    if(statusJustCleared)
         statusJustCleared = false;
+}
+
+void gpsManager::genStatusMessages()
+{
+    QMutexLocker locker(&messageMutex);
+    errorMessages.clear();
+    warningMessages.clear();
+
+    // Warnings:
+    if(!navPhase)
+        warningMessages << "Not NavPhase";
+    if(!gpsReceived)
+        warningMessages << "No GPS Received";
+    if(gpsWaiting)
+        warningMessages << "GPS Waiting";
+    if(!gpsDetected)
+        warningMessages << "GPS NOT Detected";
+    if(!systemReady)
+        warningMessages << "SYS NOT Ready";
+    if(!statusGPSHeartbeatOk)
+        warningMessages << "GPS Msg Cadence";
+    if(statusGNSSReceptionWarning)
+        warningMessages << "Poor Sat RX";
+    if(statusGPSMessagesDropped)
+        warningMessages << "Msg Dropped";
+    if(consecutiveDecodeErrors > 100) {
+        errorMessages << "Many NG Decodes";
+    } else if (consecutiveDecodeErrors > 10) {
+        warningMessages << "NG Decode";
     }
+
+    // Errors:
+    if(!statusConnectedToGPS)
+        errorMessages << "Not Connected";
+    if(!statusGNSSReceptionOk)
+        errorMessages << "No SAT RX";
+    if(!gpsValid)
+        errorMessages << "GPS invalid";
+    if(gpsRejected)
+        errorMessages << "GPS Rejected";
+    if(altitudeRejected)
+        errorMessages << "Alt Reject";
+    if(zuptActive)
+        errorMessages << "ZUpT Active";
+    if(zuptOther)
+        errorMessages << "ZUpT Other";
+    if(flashWriteError)
+        errorMessages << "Flash Write Er";
+    if(flashEraseError)
+        errorMessages << "Flash Erase Er";
+    if(outputAFull)
+        errorMessages << "Out A Full";
+    if(outputBFull)
+        errorMessages << "Out B Full";
+
+    emit statusMessagesSig(errorMessages,
+                           warningMessages);
 }
 
 void gpsManager::clearStickyError()
 {
-    statusStickyError = false;
+    statusLinkStickyError = false;
+    statusTroubleStickyError = false;
     statusJustCleared = true;
     processStatus();
 }

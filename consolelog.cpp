@@ -12,8 +12,9 @@ consoleLog::consoleLog(QWidget *parent) : QWidget(parent)
     this->logSystemConfig();
  }
 
-consoleLog::consoleLog(QString logFileName, QWidget *parent) : QWidget(parent)
+consoleLog::consoleLog(QString logFileName, bool enableFlightMode, QWidget *parent) : QWidget(parent)
 {
+    this->flightMode = enableFlightMode;
     this->logFileName = createFilenameFromDirectory(logFileName);
     this->enableLogToFile = true;
 
@@ -179,8 +180,16 @@ QString consoleLog::createFilenameFromDirectory(QString directoryName)
     makeDirectory(directoryName);
 
     QDateTime now = QDateTime::currentDateTimeUtc();
-    QString dateString = now.toString("yyyy-MM-dd_hhmmss");
-
+    QString dateString;
+    QString namePrefix = "AV3";
+    if(flightMode) {
+        dateString.append(namePrefix);
+        dateString.append(now.toString("yyyyMMdd"));
+        dateString.append("t"); // t = "timezone" in datetime, so we must append it this way.
+        dateString.append(now.toString("hhmmss"));
+    } else {
+        dateString = now.toString("yyyy-MM-dd_hhmmss");
+    }
     filename = directoryName + dateString + "-FlightView.log";
     return filename;
 }
@@ -240,12 +249,16 @@ void consoleLog::logSystemConfig()
     pclose(fp);
 
     handleOwnText(QString("Compiled against Qt version: %1").arg(QT_VERSION_STR));
-    if(QString(GIT_CURRENT_SHA1_SHORT).isEmpty())
-        return;
 
-    handleOwnText(QString("Git short SHA1: %1").arg(GIT_CURRENT_SHA1_SHORT));
-    handleOwnText(QString("Git long SHA1:  %1").arg(GIT_CURRENT_SHA1));
-    handleOwnText(QString("Link to commit: https://github.com/nasa-jpl/LiveViewLegacy/tree/%1").arg(GIT_CURRENT_SHA1_SHORT));
+    if(!QString(GIT_CURRENT_SHA1_SHORT).isEmpty()) {
+        handleOwnText(QString("Git short SHA1: %1").arg(GIT_CURRENT_SHA1_SHORT));
+        handleOwnText(QString("Git long SHA1:  %1").arg(GIT_CURRENT_SHA1));
+        handleOwnText(QString("Link to commit: https://github.com/nasa-jpl/LiveViewLegacy/tree/%1").arg(GIT_CURRENT_SHA1_SHORT));
+    }
+
+    if(!QString(SRC_DIR).isEmpty()) {
+        handleOwnText(QString("Source directory was: %1").arg(SRC_DIR));
+    }
 }
 
 void consoleLog::handleOwnText(QString message)

@@ -15,6 +15,7 @@
 #include "frame_worker.h"
 #include "image_type.h"
 #include "frameview_widget.h"
+#include "startupOptions.h"
 
 /*! \file
  * \brief Widget which displays a line plot of two dimensions of image data.
@@ -35,6 +36,7 @@ class profile_widget : public QWidget
 
     frameWorker *fw;
     QTimer rendertimer;
+    startupOptionsType options;
 
     /* GUI elements */
     QVBoxLayout qvbl; // for others
@@ -70,8 +72,8 @@ class profile_widget : public QWidget
     QCPRange boundedRange_x;
     QCPRange boundedRange_y;
 
-    int x_coord;
-    volatile int y_coord;
+    int x_coord = 1;
+    int y_coord = 1;
     bool allow_callouts = true;
 
 public:
@@ -88,7 +90,7 @@ public:
     bool slider_low_inc = false;
 
     image_t itype;
-    frameview_widget *overlay_img; // public to aid connection through the profile to the controls box
+    frameview_widget *overlay_img = NULL; // public to aid connection through the profile to the controls box
 
 
 public slots:
@@ -109,6 +111,10 @@ public slots:
     void setCallout(QMouseEvent *e);
     void moveCallout(QMouseEvent *e);
     void hideCallout();
+    void setPenWidth(int penWidth);
+
+signals:
+    void haveNewRangeFC(double floor, double ceiling);
 
 private:
     void updateCalloutValue();

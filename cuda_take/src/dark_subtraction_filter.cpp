@@ -16,7 +16,8 @@ void dark_subtraction_filter::start_mask_collection()
     averaged_samples = 0;
 	for(unsigned int i = 0; i < width*height; i++)
 	{
-		mask[i]=0;
+        //mask[i]=0; // This gets initialized with the constructor,
+                     // and from here on, will contain the "last" mask.
         mask_accum[i] = 0;
 	}
 }
@@ -49,6 +50,7 @@ void dark_subtraction_filter::update(uint16_t * pic_in, float * pic_out)
 	{
 		mask_mutex.lock();
 		update_mask_collection(pic_in);
+        update_dark_subtraction(pic_in, pic_out); // use the prior mask if possible, for now.
 		mask_mutex.unlock();
 	}
 }
@@ -94,16 +96,16 @@ uint32_t dark_subtraction_filter::update_mask_collection(uint16_t* pic_in)
     /*! \brief Collect the current image.
      *
      * This section must be locked with the mask_collected variable to prevent serialization errors. */
-	if(!mask_collected)
+    if(!mask_collected)
+    {
+        for(unsigned int i = 0; i<width*height; i++)
         {
-            for(unsigned int i = 0; i<width*height; i++)
-            {
-                //mask[i] = pic_in[i] + mask[i];
-                mask_accum[i] = pic_in[i] + mask_accum[i];
-            }
-            averaged_samples++;
+            //mask[i] = pic_in[i] + mask[i];
+            mask_accum[i] = pic_in[i] + mask_accum[i];
         }
-        return averaged_samples;
+        averaged_samples++;
+    }
+    return averaged_samples;
 }
 
 dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)

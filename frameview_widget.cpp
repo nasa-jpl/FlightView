@@ -26,6 +26,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     useDSF = false;
     havePrefs = false;
     prefs = NULL;
+    options = fw->getStartupOptions();
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     bool ok = false;
@@ -71,8 +72,12 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qcp->setInteraction(QCP::iRangeZoom, true);
     // qcp->axisRect()->setRangeZoom(Qt::Horizontal);
     qcp->axisRect()->setupFullAxesBox(true);
-    qcp->xAxis->setLabel("x");
-    qcp->yAxis->setLabel("y");
+    qcp->xAxis->setLabel("X (Spatial)");
+    if(image_type == WATERFALL) {
+        qcp->yAxis->setLabel("Y (Time)");
+    } else {
+        qcp->yAxis->setLabel("Y (Spectral)");
+    }
     qcp->yAxis->setRangeReversed(true);
     //If this is uncommented, window size reflects focal plane size, otherwise it scales
     //qcp->setBackgroundScaled(Qt::AspectRatioMode);
@@ -114,21 +119,29 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     qcp->rescaleAxes();
     qcp->axisRect()->setBackgroundScaled(false);
 
-
     layout.addWidget(qcp, 0, 0, 8, 8);
 
-
-
-    fpsLabel.setText("FPS");
+    fpsLabel.setText("FPS of Display");
+    wfSelectedRow.setText("ROW NOT SET");
+    QRect fpsGeo = fpsLabel.geometry();
+    fpsGeo.setWidth(25);
+    fpsLabel.setGeometry(fpsGeo);
     layout.addWidget(&fpsLabel, 8, 0, 1, 2);
-    layout.addWidget(&displayCrosshairCheck, 8, 2, 1, 2);
+
+    if (!((image_type == STD_DEV) || (image_type == WATERFALL))) {
+        layout.addWidget(&displayCrosshairCheck, 8, 2, 1, 2);
+    } else if (image_type==WATERFALL) {
+        layout.addWidget(&wfSelectedRow, 8,2,1,2);
+    }
+
     layout.addWidget(&zoomXCheck, 8, 4, 1, 2);
     layout.addWidget(&zoomYCheck, 8, 6, 1, 2);
     this->setLayout(&layout);
 
     displayCrosshairCheck.setText(tr("Display Crosshairs on Frame"));
     displayCrosshairCheck.setChecked(true);
-    if (image_type == STD_DEV) {
+
+    if ( (image_type == STD_DEV) || (image_type == WATERFALL)) {
         displayCrosshairCheck.setEnabled(false);
         displayCrosshairCheck.setChecked(false);
     }
@@ -144,6 +157,9 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
     connect(qcp->yAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(colorMapScrolledY(QCPRange)));
     connect(qcp->xAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(colorMapScrolledX(QCPRange)));
+
+    connect(colorScale, SIGNAL(dataRangeChanged(QCPRange)), this, SLOT(colorScaleRangeChanged(QCPRange)));
+
     connect(&displayCrosshairCheck, SIGNAL(toggled(bool)), fw, SLOT(updateCrossDiplay(bool)));
     connect(&zoomXCheck, SIGNAL(toggled(bool)), this, SLOT(setScrollX(bool)));
     connect(&zoomYCheck, SIGNAL(toggled(bool)), this, SLOT(setScrollY(bool)));
@@ -160,7 +176,11 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
         colorMapData = new QCPColorMapData(frWidth, frHeight, QCPRange(0, frWidth-1), QCPRange(0, frHeight-1));
     }
     colorMap->setData(colorMapData);
-    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    if(options.headless) {
+        sMessage("Frameview display disabled due to headless mode.");
+    } else {
+        rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    }
     sMessage(QString("%1: Finished constructor.").arg(QString(__PRETTY_FUNCTION__)));
     //qDebug() << __PRETTY_FUNCTION__ << ": Finished constructor";
 }
@@ -297,6 +317,9 @@ void frameview_widget::handleNewColorScheme(int scheme, bool useDarkThemeVal)
     case 10:
         colorMap->setGradient(QCPColorGradient::gpGeography);
         break;
+    case 11:
+        colorMap->setGradient((QCPColorGradient::gpRedTop));
+        break;
     default:
         sMessage(QString("color scheme [%1] not recognized.").arg(fw->color_scheme));
         colorMap->setGradient(QCPColorGradient::gpJet);
@@ -335,18 +358,32 @@ void frameview_widget::handleNewFrame()
     if(fw->curFrame == NULL)
         return;
 
-    if((fw->curFrame->image_data_ptr != NULL) && image_type == WATERFALL)
+    if(fw->curFrame->image_data_ptr == NULL)
+        return;
+
+    if(image_type == WATERFALL)
     {
         // Copy waterfall data in, even if hidden:
         int row = fw->crosshair_y;
         if(row < 0)
             return;
 
+        wfSelectedRow.setText(QString("Row: %1").arg(fw->crosshair_y));
+
         float *local_image_ptr = fw->curFrame->dark_subtracted_data;
+        uint16_t* local_image_ptr_uint = fw->curFrame->image_data_ptr;
+
         std::vector <float> line;
-        for(int col = 0; col < frWidth; col++)
-        {
-            line.push_back(local_image_ptr[row * frWidth + col]);
+        if(useDSF) {
+            for(int col = 0; col < frWidth; col++)
+            {
+                line.push_back(local_image_ptr[row * frWidth + col]);
+            }
+        } else {
+            for(int col = 0; col < frWidth; col++)
+            {
+                line.push_back(local_image_ptr_uint[row * frWidth + col]);
+            }
         }
         // There's a better way, but for now this will be ok:
         wfimage.push_front(line); // Append to top
@@ -470,13 +507,13 @@ done_here:
     if (count % 20 == 0 && count != 0) {
         fps = 20.0 / clock.restart() * 1000.0;
         fps_string = QString::number(fps, 'f', 1);
-        fpsLabel.setText(QString("fps of display: %1").arg(fps_string));
+        fpsLabel.setText(QString("FPS of Display: %1").arg(fps_string));
     }
 }
 
 void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
 {
-    /*! \brief Controls the behavior of zooming the plot.
+    /*! \brief Controls the behavior of zooming or panning the frame image.
      * \param newRange Mouse wheel scrolled range.
      * Color Maps must not allow the user to zoom past the dimensions of the frame.
      */
@@ -505,7 +542,7 @@ void frameview_widget::colorMapScrolledY(const QCPRange &newRange)
 }
 void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
 {
-    /*! \brief Controls the behavior of zooming the plot.
+    /*! \brief Controls the behavior of zooming or panning the frame image.
      * \param newRange Mouse wheel scrolled range.
      * Color Maps must not allow the user to zoom past the dimensions of the frame.
      */
@@ -527,6 +564,16 @@ void frameview_widget::colorMapScrolledX(const QCPRange &newRange)
     }
     qcp->xAxis->setRange(boundedRange);
 }
+
+void frameview_widget::colorScaleRangeChanged(const QCPRange &newRange) {
+    // This is called when the color scale itself is scrolled or dragged.
+    // Interaction within QCP is already happening,
+    // so the only thing we need to do is update the local
+    // ceiling and floor values, UI elements, and preferences.
+    //emit statusMessage("Color Scale Range Changed.");
+    emit haveFloorCeilingValuesFromColorScaleChange(newRange.lower, newRange.upper);
+}
+
 void frameview_widget::setScrollX(bool Yenabled)
 {
     scrollYenabled = !Yenabled;
@@ -572,30 +619,30 @@ void frameview_widget::setScrollY(bool Xenabled)
 void frameview_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
-    if(prefs)
-    {
-        switch(image_type)
-        {
-        case(DSF):
-            prefs->dsfCeiling = c;
-            break;
-        case(BASE):
-            if(useDSF)
-            {
-                prefs->dsfCeiling = c;
-            } else {
-                prefs->frameViewCeiling = c;
-            }
-            break;
+//    if(prefs)
+//    {
+//        switch(image_type)
+//        {
+//        case(DSF):
+//            prefs->dsfCeiling = c;
+//            break;
+//        case(BASE):
+//            if(useDSF)
+//            {
+//                prefs->dsfCeiling = c;
+//            } else {
+//                prefs->frameViewCeiling = c;
+//            }
+//            break;
 
-        case(STD_DEV):
-            prefs->stddevCeiling = c;
-            break;
+//        case(STD_DEV):
+//            prefs->stddevCeiling = c;
+//            break;
 
-        default:
-            break;
-        }
-    }
+//        default:
+//            break;
+//        }
+//    }
 
     ceiling = (double)c;
     rescaleRange();
@@ -604,31 +651,31 @@ void frameview_widget::updateCeiling(int c)
 void frameview_widget::updateFloor(int f)
 {
     /*! \brief Change the value  of the floor for this widget to the input parameter and replot the color scale. */   
-    if(prefs)
-    {
-        switch(image_type)
-        {
-        case(DSF):
-            prefs->dsfFloor = f;
-            break;
+//    if(prefs)
+//    {
+//        switch(image_type)
+//        {
+//        case(DSF):
+//            prefs->dsfFloor = f;
+//            break;
 
-        case(BASE):
-            if(useDSF)
-            {
-                prefs->dsfFloor = f;
-            } else {
-                prefs->frameViewFloor = f;
-            }
-            break;
+//        case(BASE):
+//            if(useDSF)
+//            {
+//                prefs->dsfFloor = f;
+//            } else {
+//                prefs->frameViewFloor = f;
+//            }
+//            break;
 
-        case(STD_DEV):
-            prefs->stddevFloor = f;
-            break;
+//        case(STD_DEV):
+//            prefs->stddevFloor = f;
+//            break;
 
-        default:
-            break;
-        }
-    }
+//        default:
+//            break;
+//        }
+//    }
     floor = (double)f;
     rescaleRange();
 }

@@ -77,6 +77,7 @@ public:
     QPushButton stop_dark_collection_button;
     QPushButton showRGBLevelsButton;
     QPushButton load_mask_from_file;
+    QPushButton showSecondWFBtn;
     QPushButton pref_button;
     QString fps;
     float fps_float = 0.0;
@@ -185,6 +186,18 @@ private:
 
     int previousRGBPresetIndex = 0;
 
+    // Individual tab Dark Subtraction settings:
+    bool fpaDSF = false;
+    bool monoWFDSF = false;
+    bool flightDSF = false;
+    bool horizontalMeanDSF = false;
+    bool horizontalCrossDSF = false;
+    bool verticalMeanDSF = false;
+    bool verticalCrossDSF = false;
+    bool verticalOverlayDSF = false;
+    bool playbackDSF = false;
+
+
 signals:
     /*! \brief Passes the message to save raw frames at the backend.
      * \paragraph
@@ -212,8 +225,9 @@ signals:
     /*! \brief Passes the information needed to generate the dark mask and load it into the DSF in the playback_widget. */
     void mask_selected(QString file_name, unsigned int bytes_to_read, long offset);
     void updateRGB(int r, int g, int b);
-    void sendRGBLevels(double r, double g, double b, double gamma);
+    void sendRGBLevels(double r, double g, double b, double gamma, bool reprocess);
     void updateWFLength(int length);
+    void showSecondWF();
     void haveReadPreferences(settingsT prefs);
 
     void setCameraPause(bool isPaused);
@@ -229,6 +243,14 @@ public slots:
     void setRGBWaterfall(int value);
     void getPrefsExternalTrig();
     void setFrameNumber(int number);
+
+    void handleFloorCeilingChangeFromDisplayWidget(double floor, double ceiling);
+
+    // These are intended to be run from ARTIC
+    // in concert with shutter operation.
+    void startTakingDarks();
+    void stopTakingDarks();
+    void stopSavingData();
 
 private slots:
     void increment_slot(bool t);
@@ -266,6 +288,7 @@ private slots:
     /*! @} */
 
     void load_pref_window();
+    void updatePenWidth(int penWidth);
     void transmitChange(int linesToAverage);
     void updateOverlayParams(int dummy);
     void validateOverlayParams(int &lh_start, int &lh_end, int &cent_start, int &cent_end, int &rh_start, int &rh_end);
@@ -277,7 +300,6 @@ private slots:
     void debugThis();
 
 };
-
 Q_DECLARE_METATYPE(enum fileFormat_t)
 
 #endif // CONTROLSBOX_H

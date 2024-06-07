@@ -22,6 +22,9 @@ preferenceWindow::preferenceWindow(frameWorker *fw, QTabWidget *qtw, settingsT p
 
     closeButton = new QPushButton(tr("&Close"));
     saveSettingsBtn = new QPushButton(tr("&Save Settings"));
+    penWidthSpin = new QSpinBox();
+    penWidthSpin->setRange(1,20);
+    penWidthLabel = new QLabel("Pen Width (for plots)");
     //createLogFileTab();
     createRenderingTab();
 
@@ -84,6 +87,10 @@ void preferenceWindow::createRenderingTab()
     paraPixCheck->setToolTip("Enable or Disable 2s compliment filter on input data stream. See console output for initial filter state.");
     paraPixCheck->setChecked(true);
 
+    setDarkStatusInFrameCheck = new QCheckBox("Write Dark Status to Frame Data");
+    setDarkStatusInFrameCheck->setToolTip("Writes the dark collection status to the frame header");
+    setDarkStatusInFrameCheck->setChecked(false);
+
     ignoreFirstCheck = new QCheckBox(tr("Ignore First Row Data"));
     ignoreLastCheck  = new QCheckBox(tr("Ignore Last Row Data"));
     ignoreFirstCheck->setToolTip("Check if first row contains metadata. Only available on certain liveview tabs (profile and FFT)");
@@ -126,6 +133,8 @@ void preferenceWindow::createRenderingTab()
     ColorScalePicker->addItem("Ion");
     ColorScalePicker->addItem("Spectrometer Candy");
     ColorScalePicker->addItem("Geography");
+    ColorScalePicker->addItem("Gray with Red Top");
+
     ColorScalePicker->setToolTip("So many to choose from! Use the scroll wheel while hovering over the combo box");
 
     darkThemeCheck = new QCheckBox("Use dark theme");
@@ -147,13 +156,15 @@ void preferenceWindow::createRenderingTab()
     connect(invert14bitButton, SIGNAL(clicked()), this, SLOT(invertRange()));
     connect(nativeScaleButton, SIGNAL(clicked()), this, SLOT(invertRange()));
     connect(paraPixCheck, SIGNAL(clicked(bool)), this, SLOT(enableParaPixMap(bool)));
+    connect(setDarkStatusInFrameCheck, SIGNAL(clicked(bool)), this, SLOT(dsInFrameSlot(bool)));
     connect(ColorScalePicker, SIGNAL(activated(int)), this, SLOT(setColorScheme(int)));
     connect(darkThemeCheck, SIGNAL(clicked(bool)), this, SLOT(setDarkTheme(bool)));
-
+    connect(penWidthSpin, SIGNAL(valueChanged(int)), this, SLOT(setPenWidth(int)));
 
     QGridLayout *layout = new QGridLayout();
     layout->addWidget(camera_label, 0, 0, 1, 4);
     layout->addWidget(paraPixCheck, 1, 0, 1, 4);
+    layout->addWidget(setDarkStatusInFrameCheck, 1, 2, 1, 2);
     layout->addWidget(dataRangePrompt, 2, 0);
     layout->addWidget(leftBound, 2, 1);
     layout->addWidget(to, 2, 2);
@@ -166,6 +177,9 @@ void preferenceWindow::createRenderingTab()
     layout->addWidget(ColorLabel, 5, 0);
     layout->addWidget(ColorScalePicker, 5,1);
     layout->addWidget(darkThemeCheck, 5, 2);
+
+    layout->addWidget(penWidthLabel, 6,0,1,1);
+    layout->addWidget(penWidthSpin, 6,1,1,1);
 
     renderingTab->setLayout(layout);
     //enableControls(mainWinTab->currentIndex());
@@ -218,13 +232,18 @@ void preferenceWindow::processPreferences()
     paraPixCheck->setChecked(preferences.use2sComp);
     paraPixCheck->clicked(preferences.use2sComp);
 
+    setDarkStatusInFrameCheck->setChecked(preferences.setDarkStatusInFrame);
+    setDarkStatusInFrameCheck->clicked(preferences.setDarkStatusInFrame);
+
     ColorScalePicker->setCurrentIndex(preferences.frameColorScheme);
     ColorScalePicker->activated(preferences.frameColorScheme);
 
     darkThemeCheck->setChecked(preferences.useDarkTheme);
     darkThemeCheck->clicked(preferences.useDarkTheme);
-}
 
+    penWidthSpin->setValue(preferences.plotPenThickness);
+    emit newPenWidth(preferences.plotPenThickness);
+}
 
 void preferenceWindow::invertRange()
 {
@@ -273,6 +292,14 @@ void preferenceWindow::enableParaPixMap(bool checked)
     makeStatusMessage(QString("2s Compliment Filter: %1").arg(checked?"Enabled":"Disabled"));
 }
 
+void preferenceWindow::dsInFrameSlot(bool checked) {
+    // Set dark status pixels in the frame data.
+    // Do not check if geometry is < 159 pixels!
+    fw->to.enableDarkStatusPixelWrite(checked);
+    preferences.setDarkStatusInFrame = checked;
+    makeStatusMessage(QString("Mark frames with dark status: %1").arg(checked?"Enabled":"Disabled"));
+}
+
 void preferenceWindow::setColorScheme(int index)
 {
     //fw->color_scheme = index;
@@ -285,6 +312,11 @@ void preferenceWindow::setDarkTheme(bool useDarkChecked)
 {
     preferences.useDarkTheme = useDarkChecked;
     fw->setColorScheme(preferences.frameColorScheme, preferences.useDarkTheme);
+}
+
+void preferenceWindow::setPenWidth(int penWidth) {
+    preferences.plotPenThickness = penWidth;
+    emit newPenWidth(penWidth);
 }
 
 void preferenceWindow::saveSettingsNow()

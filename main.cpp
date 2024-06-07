@@ -9,6 +9,8 @@
 #include <QTimer>
 
 #include <cstdio>
+#include <stdlib.h>
+
 #include <QDebug>
 
 /* LiveView includes */
@@ -65,7 +67,17 @@ int main(int argc, char *argv[])
     QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps "
                                "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 "
                                "--gpsport 5661 "
-                               "--no-stddev --xiocam")\
+                               "--no-stddev --xiocam --rtpcam "
+                               "--rtpnextgen "
+                               "--rtpheight 480 "
+                               "--rtpwidth 1280 "
+                               "--rtpaddress 1.2.3.4 "
+                               "--rtpinterface eth2 "
+                               "--er2 --headless "
+                               "--wfpreview "
+                               "--wfpreviewcontinuous "
+                               "--wfpreviewlocation /path/to/waterfallpreview/files/ "
+                               )\
             .arg(cmdName);
     QString currentArg;
     startupOptionsType startupOptions;
@@ -73,12 +85,12 @@ int main(int argc, char *argv[])
     startupOptions.flightMode = false;
     startupOptions.disableCamera = false;
     startupOptions.xioCam = false;
+    startupOptions.rtpCam = false;
     startupOptions.disableGPS = false;
     startupOptions.dataLocation = QString("/data");
     startupOptions.gpsIP = QString("10.0.0.6");
     startupOptions.gpsPort = 8111;
     startupOptions.gpsPortSet = true;
-    //startupOptions.xioDirectory = new QString("");
     startupOptions.xioDirectoryArray = (char*)calloc(4096, sizeof(char));
     if(startupOptions.xioDirectoryArray == NULL)
         abort();
@@ -87,6 +99,8 @@ int main(int argc, char *argv[])
 
     bool heightSet = false;
     bool widthSet = false;
+    bool rtpInterfaceSet = false;
+    bool rtpAddressSet = false;
 
     // Basic CLI argument parser:
     for(int c=1; c < argc; c++)
@@ -109,6 +123,12 @@ int main(int argc, char *argv[])
         {
             startupOptions.disableCamera = true;
         }
+        if(currentArg == "--er2") {
+            startupOptions.er2mode = true;
+        }
+        if(currentArg == "--headless") {
+            startupOptions.headless = true;
+        }
         if(currentArg == "--datastoragelocation")
         {
             if(argc > c)
@@ -122,11 +142,121 @@ int main(int argc, char *argv[])
             }
         }
 
+        if(currentArg == "--rtpcam")
+        {
+            startupOptions.rtpCam = true;
+        }
+        if(currentArg == "--rtpnextgen") {
+            startupOptions.rtpNextGen = true;
+        }
+
+        if(currentArg == "--rtprgb") {
+            startupOptions.rtprgb = true;
+        }
+
+        if( (currentArg == "--rtpgray") || (currentArg == "--rtpgrey") ) {
+            startupOptions.rtprgb = false;
+        }
+
+        if(currentArg == "--rtpheight")
+        {
+            if(argc > c)
+            {
+                int rtpheighttemp = 0;
+                bool ok = false;
+                rtpheighttemp = QString(argv[c+1]).toUInt(&ok);
+                if(ok)
+                {
+                    heightSet = true;
+                    startupOptions.rtpHeight = rtpheighttemp;
+                    c++;
+                } else {
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        if(currentArg == "--rtpwidth")
+        {
+            if(argc > c)
+            {
+                int rtpwidthtemp = 0;
+                bool ok = false;
+                rtpwidthtemp = QString(argv[c+1]).toUInt(&ok);
+                if(ok)
+                {
+                    widthSet = true;
+                    startupOptions.rtpWidth = rtpwidthtemp;
+                    c++;
+                } else {
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        if(currentArg == "--rtpinterface")
+        {
+            if(argc > c)
+            {
+                startupOptions.rtpInterface = argv[c+1];
+                rtpInterfaceSet = true;
+                startupOptions.havertpInterface = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        if(currentArg == "--rtpaddress")
+        {
+            if(argc > c)
+            {
+                startupOptions.rtpAddress = argv[c+1];
+                rtpAddressSet = true;
+                startupOptions.havertpAddress = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        if(currentArg == "--rtpport")
+        {
+            if(argc > c)
+            {
+                int rtpPortTemp = 0;
+                bool ok=false;
+                rtpPortTemp = QString(argv[c+1]).toUInt(&ok);
+                if(ok)
+                {
+                    startupOptions.rtpPort = rtpPortTemp;
+                    c++;
+                } else {
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        //
+
         if(currentArg == "--xiocam")
         {
             startupOptions.xioCam = true;
         }
-
 
         if(currentArg == "--xioheight")
         {
@@ -191,7 +321,10 @@ int main(int argc, char *argv[])
                 exit(-1);
             }
         }
-
+        if(currentArg == "--laggy") {
+            startupOptions.laggy = true;
+            std::cout << "WARNING, laggy mode enabled." << std::endl;
+        }
         if(currentArg == "--gpsip")
         {
             // Only IPV4 supported, and no hostnames please, let's not depend upon DNS or resolv in the airplane...
@@ -225,9 +358,38 @@ int main(int argc, char *argv[])
             }
         }
 
-        if(currentArg == "--no-stddev")
+        if( (currentArg == "--no-stddev") || (currentArg == "--no-stdev")
+                || (currentArg == "--nostdev") || (currentArg == "--nostddev") )
         {
             startupOptions.runStdDevCalculation = false;
+        }
+
+        if( (currentArg == "--shm")) {
+            startupOptions.useSHM = true;
+        }
+
+        if( (currentArg == "--no-gpu") || (currentArg == "--nogpu") ) {
+            startupOptions.noGPU = true;
+            startupOptions.runStdDevCalculation = false;
+        }
+
+        if(currentArg == "--wfpreview") {
+            startupOptions.wfPreviewEnabled = true;
+        }
+        if(currentArg == "--wfpreviewcontinuous") {
+            startupOptions.wfPreviewContinuousMode = true;
+            startupOptions.wfPreviewEnabled = true;
+        }
+        if(currentArg == "--wfpreviewlocation") {
+            if(argc > c)
+            {
+                startupOptions.wfPreviewLocation = argv[c+1];
+                startupOptions.wfPreviewlocationset = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
         }
         if(currentArg == "--help" || currentArg == "-h" || currentArg.contains("?"))
         {
@@ -236,8 +398,38 @@ int main(int argc, char *argv[])
         }
     }
 
+    if(startupOptions.rtpCam)
+    {
+        if(!rtpAddressSet)
+            startupOptions.rtpAddress = NULL;
+        if(!rtpInterfaceSet)
+            startupOptions.rtpInterface = NULL;
+
+        std::cout << "Debug output for RTP camera: \n";
+        std::cout << "rtpHeight:    " << startupOptions.rtpHeight << std::endl;
+        std::cout << "rtpWidth:     " << startupOptions.rtpWidth << std::endl;
+        std::cout << "rtpPort:      " << startupOptions.rtpPort << std::endl;
+        if(startupOptions.rtpInterface != NULL)
+            std::cout << "rtpInterface: " << startupOptions.rtpInterface << std::endl;
+
+        if(startupOptions.rtpAddress != NULL)
+            std::cout << "rtpAddress:   " << startupOptions.rtpAddress << std::endl;
+
+        if(startupOptions.rtpNextGen) {
+            std::cout << "Using RTP NextGen code" << std::endl;
+        }
+
+        if(widthSet && heightSet)
+        {
+            startupOptions.heightWidthSet = true;
+        } else {
+            startupOptions.heightWidthSet = false;
+        }
+    }
+
     if(startupOptions.flightMode && !startupOptions.dataLocationSet)
     {
+        system("xmessage \"Error, flight mode requires --datastoragelocation\"");
         std::cerr << "Error, flight mode specified without data storage location." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
@@ -245,6 +437,7 @@ int main(int argc, char *argv[])
 
     if(startupOptions.flightMode && startupOptions.dataLocation.isEmpty())
     {
+        system("xmessage \"Error, flight mode requires --datastoragelocation with valid path set\"");
         std::cerr << "Error, flight mode specified without complete data storage location." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
@@ -253,6 +446,7 @@ int main(int argc, char *argv[])
 
     if(startupOptions.flightMode && !startupOptions.gpsIPSet && !startupOptions.disableGPS)
     {
+        system("xmessage \"Error, flight mode requires --gpsip with GPS ip address specified.\"");
         std::cerr << "Error, flight mode specified without GPS IP address." << std::endl;
         std::cout << helptext.toStdString() << std::endl;
         exit(-1);
@@ -263,10 +457,12 @@ int main(int argc, char *argv[])
         std::cout << "WARNING:, flight mode specified with disabled GPS." << std::endl;
     }
 
-    if(heightSet ^ widthSet)
+    if( startupOptions.rtpCam && ((int)heightSet + (int)widthSet != 2))
     {
         // XOR, only one was set
-        std::cerr << "Error, height and width must both be specified." << std::endl;
+        system("xmessage \"Error, RTP requires both height and width to be specified.\"");
+        std::cerr << "Error, RTP mode requires both height and width to be specified." << std::endl;
+        std::cout << helptext.toStdString() << std::endl;
         exit(-1);
     }
 
@@ -276,17 +472,29 @@ int main(int argc, char *argv[])
     }
 
 
+    if(startupOptions.wfPreviewEnabled && (!startupOptions.wfPreviewlocationset)) {
+        std::cerr << "Warning, waterfall preview option enabled but --wfpreviewlocation was not set." << std::endl;
+    }
+
     /* Step 2: Load the splash screen */
 
+    QString logoPath;
+    if(startupOptions.flightMode)
+    {
+        logoPath = ":images/aviris3-logo.png";
+    } else {
+        logoPath = ":images/aviris-logo-transparent.png";
+    }
 
-    QPixmap logo_pixmap(":images/aviris-logo-transparent.png");
-    QSplashScreen splash(logo_pixmap);
-    if(!startupOptions.xioCam)
+    QPixmap logo_pixmap(logoPath);
+
+    QSplashScreen *splash = new QSplashScreen(logo_pixmap);
+    if(! (startupOptions.xioCam || startupOptions.headless))
     {
         // On some displays, the splash screen covers the setup dialog box
-        splash.show();
-        splash.showMessage(QObject::tr("Loading AVIRIS-Next Generation LiveView. Compiled on " __DATE__ ", " __TIME__ " PDT by " UNAME "@" HOST  ),
-                           Qt::AlignCenter | Qt::AlignBottom, Qt::gray);
+        splash->show();
+        splash->showMessage(QObject::tr(" "),
+                           Qt::WindowStaysOnTopHint | Qt::AlignCenter | Qt::AlignBottom, Qt::black);
     }
 
     /* Step 3: Load the parallel worker object which will act as a "backend" for LiveView */
@@ -301,18 +509,24 @@ int main(int argc, char *argv[])
 
     /* Step 5: Open the main window (GUI/frontend) */
     MainWindow w(&startupOptions, workerThread, fw);
-    //QObject::connect(fw, SIGNAL(sendStatusMessage(QString)), w, SLOT(handleStatusMessage(QString)));
-    w.setGeometry(   QStyle::alignedRect(
-                         Qt::LeftToRight,
-                         Qt::AlignCenter,
-                         w.size(),
-                         a.desktop()->availableGeometry()
-                         ));
+    if(!startupOptions.headless) {
+        w.setGeometry(   QStyle::alignedRect(
+                             Qt::LeftToRight,
+                             Qt::AlignCenter,
+                             w.size(),
+                             QGuiApplication::screens().at(0)->availableGeometry()
+                             ));
+    }
     QPixmap icon_pixmap(":images/icon.png");
     w.setWindowIcon(QIcon(icon_pixmap));
+    if(! (startupOptions.xioCam || startupOptions.headless))
+        splash->raise();
     w.show();
+    if(! (startupOptions.xioCam || startupOptions.headless))
+        splash->raise();
 
-    splash.finish(&w);
+
+    splash->finish(&w);
     /* Step 6: Close out the backend after the frontend is closed */
     int retval = a.exec();
 #ifdef VERBOSE

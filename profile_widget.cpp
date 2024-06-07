@@ -12,6 +12,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     itype = image_type;
     qcp = NULL;
     this->fw = fw;
+    options = fw->getStartupOptions();
     ceiling = fw->base_ceiling;
     floor = 0;
     frHeight = fw->getFrameHeight();
@@ -67,6 +68,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     callout->setSelectedFont(QFont(font().family(), 16));
     callout->setSelectedPen(QPen(Qt::black));
     callout->setSelectedColor(Qt::black);
+    callout->setText("Double click\nto set point.");
     callout->setVisible(false);
     qcp->addLayer("Arrow Layer", qcp->currentLayer(), QCustomPlot::limBelow);
     qcp->setCurrentLayer("Arrow Layer");
@@ -155,11 +157,17 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     connect(showCalloutCheck, SIGNAL(clicked()), this, SLOT(hideCallout()));
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
 
-    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    if(!options.headless) {
+        rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    }
 }
 profile_widget::~profile_widget()
 {
-    delete overlay_img;
+    if(overlay_img)
+    {
+        usleep(1000);
+        delete overlay_img;
+    }
 }
 
 // public functions
@@ -254,13 +262,17 @@ void profile_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
     ceiling = (double)c;
+    this->blockSignals(true);
     rescaleRange();
+    this->blockSignals(false);
 }
 void profile_widget::updateFloor(int f)
 {
     /*! \brief Change the value of the floor for this widget to the input parameter and replot the color scale. */
     floor = (double)f;
+    this->blockSignals(true);
     rescaleRange();
+    this->blockSignals(false);
 }
 void profile_widget::rescaleRange()
 {
@@ -336,7 +348,7 @@ void profile_widget::profileScrolledY(const QCPRange &newRange)
         ceiling = boundedRange.upper;
         qcp->yAxis->setRange(boundedRange);
         boundedRange_y = boundedRange;
-
+        emit haveNewRangeFC(floor, ceiling);
     } else {
         qcp->yAxis->setRange(boundedRange_y);
     }
@@ -394,12 +406,24 @@ void profile_widget::moveCallout(QMouseEvent *e)
     }
 
 }
+
+void profile_widget::setPenWidth(int penWidth) {
+    QPen myPen;
+    for(int i=0; i < qcp->graphCount(); i++) {
+        myPen = qcp->graph(i)->pen();
+        myPen.setWidth(penWidth);
+        qcp->graph(i)->setPen(myPen);
+    }
+}
+
 void profile_widget::hideCallout()
 {
     if (callout->visible() || !allow_callouts) {
         callout->setVisible(false);
         arrow->setVisible(false);
     } else {
+        if( (y.size()-1 < x_coord) || (x_coord <0))
+            return;
         callout->setVisible(true);
         arrow->setVisible(true);
     }
@@ -409,6 +433,8 @@ void profile_widget::hideCallout()
 // private slots
 void profile_widget::updateCalloutValue()
 {
+    if( (y.size()-1 < x_coord) || (x_coord <0))
+        return;
     y_coord = y[x_coord];
     arrow->end->setCoords(x_coord, y_coord);
     callout->setText(QString(" x: %1 \n y: %2 ").arg(x_coord).arg(y_coord));

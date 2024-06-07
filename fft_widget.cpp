@@ -12,6 +12,7 @@ fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
      */
     qcp = NULL;
     this->fw = fw;
+    options = fw->getStartupOptions();
 
     zero_const_box.setText("Set constant FFT term to zero");
     zero_const_box.setChecked(true);
@@ -54,7 +55,10 @@ fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
     this->setLayout(&qgl);
 
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
-    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+
+    if(!options.headless) {
+        rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    }
 }
 
 // public functions
@@ -83,6 +87,9 @@ void fft_widget::handleNewFrame()
      * \author Noah Levy
      * \author Jackie Ryan
      */
+    if(fw->curFrame == NULL)
+        return;
+
     if (!this->isHidden() && fw->curFrame->fftMagnitude != NULL) {
         double nyquist_freq = 50.0;
         switch (fw->to.getFFTtype()) {

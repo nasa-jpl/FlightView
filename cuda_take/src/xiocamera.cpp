@@ -65,7 +65,7 @@ XIOCamera::XIOCamera(int frWidth,
 
     // LOG TEST:
     LOG << "Testing the log.";
-    LOG << "Current log level: " << logginglevel;
+    LOG << "Current log level: " << cuda_logginglevel;
     // Change in cudalog.h
     for(int n=0; n < 10; n++)
     {

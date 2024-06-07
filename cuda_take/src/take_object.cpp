@@ -15,6 +15,7 @@ take_object::take_object(int channel_num, int number_of_buffers,
 {
     statusMessage("Starting take_object with default options.");
     takeOptionsType options;
+    options.theseAreDefault = true;
     options.xioCam = false;
     changeOptions(options);
     initialSetup(channel_num, number_of_buffers,
@@ -24,6 +25,9 @@ take_object::take_object(int channel_num, int number_of_buffers,
 void take_object::initialSetup(int channel_num, int number_of_buffers,
                                int filter_refresh_rate, bool runStdDev)
 {
+    coutbuf = std::cout.rdbuf();
+    std::cout.rdbuf(coutbuf);
+
     closing = false;
     this->channel = channel_num;
     this->numbufs = number_of_buffers;
@@ -61,15 +65,15 @@ void take_object::initialSetup(int channel_num, int number_of_buffers,
 take_object::~take_object()
 {
     closing = true;
+    rtpConsumerRun = false;
+
     while(grabbing)
     {
-        // wait here.
+        // wait here for last frame to complete
         usleep(1000);
     }
     if(pdv_thread_run != 0) {
         pdv_thread_run = 0;
-
-
 
         int dummy;
         if(pdv_p)
@@ -79,7 +83,11 @@ take_object::~take_object()
         }
         if(Camera)
         {
+            LOG << "Deleting camera.";
+            usleep(100000);
             delete Camera;
+            usleep(100000);
+            LOG << "Done deleting camera.";
         }
 
 #ifdef VERBOSE
@@ -120,17 +128,109 @@ void take_object::changeOptions(takeOptionsType optionsIn)
             }
    } else {
         // TODO: Wait safely for a directory, and do not try reading yet.
-        statusMessage("xio directory not set. Use interface to specify directory.");
+        if(optionsIn.xioCam) {
+            statusMessage("xio directory not set. Use interface to specify directory.");
+        }
     }
 
-    statusMessage(std::string("Accepted startup options. Target FPS: ") + std::to_string(options.targetFPS));
-    if(options.xioDirSet)
-    {
-        statusMessage(std::string("XIO directory: ") + *options.xioDirectory);
+    if(!options.theseAreDefault) {
+        statusMessage(std::string("Accepted startup options. Target FPS: ") + std::to_string(options.targetFPS));
+        if(options.xioDirSet && options.xioCam)
+        {
+            statusMessage(std::string("XIO directory: ") + *options.xioDirectory);
+        }
+
+        if(options.rtpCam)
+        {
+            statusMessage("RTP Camera enabled.");
+            statusMessage(std::string("RTP Height: ") + std::to_string(options.rtpHeight));
+            statusMessage(std::string("RTP Width:  ") + std::to_string(options.rtpWidth));
+        } else {
+            statusMessage("RTP Camera disabled.");
+        }
+        if(options.rtpNextGen) {
+            statusMessage("RTP Camera is NextGen model");
+        }
+        if((!options.rtpCam) && (!options.xioCam)) {
+            statusMessage("CameraLink enabled.");
+        }
     }
 
     // Recalculate the frame-to-frame delay:
     deltaT_micros = 1000000.0 / options.targetFPS;
+}
+
+void take_object::shmSetup()
+{
+    statusMessage("Preparing shared memory segment for images.");
+
+    if(shmValid) {
+        // unexpected to be valid already
+        warningMessage("SHM already valid");
+        return;
+    }
+
+    size_t shmLen = sizeof(struct shmSharedDataStruct);
+    shmFd = shm_open("/liveview_image", O_RDWR | O_CREAT ,S_IRUSR | S_IWUSR);
+
+    if(shmFd == -1) {
+        errorMessage("Could not open shared memory segment.");
+        shmValid = false;
+        return;
+    } else {
+        statusMessage("Created shared memory segment /liveview_image");
+    }
+
+    char trunmessage[128];
+    if(ftruncate(shmFd, shmLen) == -1) {
+        sprintf(trunmessage, "Could not truncate shared memory segment to %zu bytes.", shmLen);
+        errorMessage(trunmessage);
+        shmValid = false;
+        goto cleanup;
+    } else {
+        sprintf(trunmessage, "Truncated shared memory segment to %zu bytes.", shmLen);
+        statusMessage(trunmessage);
+    }
+
+    shm = (shmSharedDataStruct*)mmap (0, shmLen, PROT_WRITE, MAP_SHARED, shmFd, 0);
+    if( (shm == NULL) || (shm==MAP_FAILED) ) {
+        errorMessage("Could not map memory shared memory segment to a local variable.");
+        shmValid = false;
+        goto cleanup;
+    }
+
+    shm->statusByte = SHM_STATUS_INITALIZING;
+    shm->recordingDataToFile = false;
+    shm->fps = 0.0;
+    shm->counter = 0;
+    shm->writingFrameNum = 0;
+    shm->bufferSizeFrames = shmFrameBufferSize;
+    shm->frameHeight = this->frHeight;
+    shm->frameWidth = this->frWidth;
+    shm->takingDark = false;
+
+    for(int i=0; i < shmFilenameBufferSize; i++) {
+        shm->lastFilename[i] = '\0';
+    }
+
+    for(int i=0; i < shmFrameBufferSize; i++) {
+        shm->frameTime[i] = 0;
+    }
+
+    for(int f=0; f < shmFrameBufferSize; f++) {
+        for(int p=0; p < shmHeight*shmWidth; p++) {
+            shm->frameBuffer[f][p] = 0;
+        }
+    }
+    shm->statusByte = SHM_STATUS_WAITING;
+    shmValid = true;
+    goto cleanup;
+
+    cleanup:
+    if( (shmFd != -1) && (shmFd != 0) ) {
+        close(shmFd);
+        return;
+    }
 }
 
 void take_object::start()
@@ -148,15 +248,37 @@ void take_object::start()
     {
         if(!options.heightWidthSet)
         {
-            options.xioHeight = 480;
+            options.xioHeight = 481;
             options.xioWidth = 640;
-            warningMessage("Warning: XIO Height and Width not specified. Assuming 640x480 geometry.");
+            warningMessage("Warning: XIO Height and Width not specified. Assuming 640x481 geometry.");
         }
         frWidth = options.xioWidth;
         frHeight = options.xioHeight;
         dataHeight = options.xioHeight;
         size = frWidth * frHeight * sizeof(uint16_t);
-        statusMessage("start() with XIO camera settings");
+        statusMessage("start() running with with XIO camera settings.");
+    } else if (options.rtpCam)
+    {
+        if(!options.heightWidthSet)
+        {
+            options.rtpHeight = 481;
+            options.rtpWidth= 640;
+            warningMessage("Warning: RTP Height and Width not specified. Assuming 640x481 geometry.");
+        }
+        frWidth = options.rtpWidth;
+        frHeight = options.rtpHeight;
+        dataHeight = options.rtpHeight;
+        size = frWidth * frHeight * sizeof(uint16_t);
+        statusMessage("start() running with with RTP camera settings.");
+        std::cout << "Height: " << frHeight << ", width: " << frWidth << std::endl;
+        if(options.rtpAddress != NULL)
+        {
+            std::cout << "rtpAddress: " << options.rtpAddress << std::endl;
+        }
+        if(options.rtpInterface != NULL)
+        {
+            std::cout << "rtpInterface: " << options.rtpInterface << std::endl;
+        }
     } else {
         this->pdv_p = pdv_open_channel(EDT_INTERFACE,0,this->channel);
         if(pdv_p == NULL) {
@@ -204,6 +326,15 @@ void take_object::start()
     meanHeight = frHeight;
     meanWidth = frWidth;
 
+#ifdef USE_SHM
+    // Get the shared memory segment for images ready:
+    if(options.useSHM) {
+        shmSetup();
+    }
+#else
+    statusMessage("Not initializing shared memory segment.");
+#endif
+
 
     numbufs = 16;
     int rtnval = 0;
@@ -248,7 +379,56 @@ void take_object::start()
         statusMessage(info);
 
 
+    } else if (options.rtpNextGen) {
+        statusMessage("Starting RTP NextGen camera in take object.");
+        cam_thread_start_complete = false;
+        statusMessage("Preparing RTP NextGen camera");
+        std::cout.rdbuf(coutbuf); // restore cout
+        prepareRTPNGCamera();
+        std::cout.rdbuf(coutbuf);
+
+        statusMessage("Creating boost thread for RTP NextGen camera streamLoop()");
+        rtpAcquireThread = boost::thread(&take_object::rtpNGStreamLoop, this);
+        rtpAcquireThreadHandler = rtpAcquireThread.native_handle();
+        pthread_setname_np(rtpAcquireThreadHandler, "RTPNG Stream");
+        statusMessage("Created RTP NextGen streamLoop() thread.");
+
+        // At this point, the RTP camera is initialized and now it is running.
+        // Data is being acquired if the stream source is emitting data,
+        // and data is being copied into the guarenteed frame buffer of the RTPCamera.
+
+        // These functions get the data into the rest of take object:
+        rtpConsumerRun = true;
+        statusMessage("Creating RTP NextGen consumer thread to copy data into take_object");
+        rtpCopyThread = boost::thread(&take_object::rtpConsumeFrames, this);
+        rtpCopyThreadHandler = rtpCopyThread.native_handle();
+        pthread_setname_np(rtpCopyThreadHandler, "RTPNG Consume");
+        statusMessage("Created RTP NextGen consumer thread.");
+
+    } else if (options.rtpCam) {
+        statusMessage("Starting RTP camera in take object.");
+        cam_thread_start_complete = false;
+        statusMessage("Preparing RTP camera");
+        prepareRTPCamera();
+
+        statusMessage("Creating boost thread for camera streamLoop()");
+        rtpAcquireThread = boost::thread(&take_object::rtpStreamLoop, this);
+        rtpAcquireThreadHandler = rtpAcquireThread.native_handle();
+        pthread_setname_np(rtpAcquireThreadHandler, "RTP Stream");
+        statusMessage("Created RTP streamLoop() thread.");
+        // At this point, the RTP camera is initialized and now it is running.
+        // Data is being acquired if the stream source is emitting data,
+        // and data is being copied into the guarenteed frame buffer of the RTPCamera.
+
+        rtpConsumerRun = true;
+        statusMessage("Creating RTP consumer thread to copy data into take_object");
+        rtpCopyThread = boost::thread(&take_object::rtpConsumeFrames, this);
+        rtpCopyThreadHandler = rtpCopyThread.native_handle();
+        pthread_setname_np(rtpCopyThreadHandler, "RTP Consume");
+        statusMessage("Created RTP consumer thread.");
+
     } else {
+        statusMessage("Creating CameraLink multibuf.");
         if(pdv_p != NULL)
             rtnval = pdv_multibuf(pdv_p,this->numbufs);
         if(rtnval != 0)
@@ -267,6 +447,7 @@ void take_object::start()
         //usleep(350000);
         while(!cam_thread_start_complete) usleep(1); // Added by Michael Bernas 2016. Used to prevent thread error when starting without a camera
     }
+    statusMessage("Finished creating threads.");
 }
 void take_object::setInversion(bool checked, unsigned int factor)
 {
@@ -283,10 +464,21 @@ void take_object::paraPixRemap(bool checked )
         std::cout << "DISABLED" << std::endl;
     }
 }
+
+void take_object::enableDarkStatusPixelWrite(bool writeValues) {
+    setDarkStatusInFrame = writeValues;
+}
+
 void take_object::startCapturingDSFMask()
 {
     dsfMaskCollected = false;
+
     dsf->start_mask_collection();
+    if(shmValid) {
+        shm->takingDark = true;
+    }
+
+    darkStatusPixelVal = obcStatusDark1;
 }
 void take_object::finishCapturingDSFMask()
 {
@@ -294,12 +486,16 @@ void take_object::finishCapturingDSFMask()
     dsf->finish_mask_collection();
     dsf->mask_mutex.unlock();
     dsfMaskCollected = true;
+    if(shmValid) {
+        shm->takingDark = false;
+    }
+    darkStatusPixelVal = obcStatusScience;
 }
 void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format)
 {
     // Creates a mask from a file containing multiple frames
     // The frames are expected to be the same geometry as the
-    // frame source, and the pixels are expected to be 16-bit int.
+    // frame source, and the pixels are expected to be 16-bit unsigned int.
 
     // This function was largly copied from the main.cpp file of
     // the included "statscli" program found under "utils".
@@ -498,7 +694,10 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 #ifdef VERBOSE
     printf("Begin frame save! @ %s\n", raw_file_name.c_str());
 #endif
-
+    if(shmValid) {
+        strncpy(shm->lastFilename, raw_file_name.c_str(), shmFilenameBufferSize-1);
+        shm->recordingDataToFile = true;
+    }
     saving_thread = boost::thread(&take_object::savingLoop,this,raw_file_name,num_avgs_save,frames_to_save);
 }
 void take_object::stopSavingRaws()
@@ -507,16 +706,14 @@ void take_object::stopSavingRaws()
     save_framenum.store(0,std::memory_order_relaxed);
     save_count.store(0,std::memory_order_relaxed);
     save_num_avgs=1;
+    if(shmValid) {
+        shm->recordingDataToFile = false;
+    }
+
 #ifdef VERBOSE
     printf("Stop Saving Raws!");
 #endif
 }
-/*void take_object::panicSave( std::string raw_file_name )
-{
-    while(!saving_list.empty());
-    boost::thread(&take_object::saveFramesInBuffer,this);
-    boost::thread(&take_object::savingLoop,this,raw_file_name);
-}*/
 unsigned int take_object::getDataHeight()
 {
     return dataHeight;
@@ -570,6 +767,44 @@ void take_object::prepareFileReading()
         statusMessage("XIO Camera started.");
     } else {
         errorMessage("XIO Camera not started");
+    }
+}
+
+void take_object::prepareRTPCamera()
+{
+    // Makes an RTP gstreamer pipeline and related objects
+
+    if(Camera == NULL)
+    {
+        // TODO: add parameters to startup options
+//        Camera = new RTPCamera(frWidth,
+//                               frHeight,
+//                               5004, "lo");
+        Camera = new RTPCamera(options);
+        this->Camera->setCamControlPtr(&this->cameraController);
+        if(Camera == NULL)
+        {
+            errorMessage("RTP Camera could not be created, was NULL.");
+        } else {
+            statusMessage("RTP Camera was made");
+        }
+    } else {
+        errorMessage("RTP Camera should be NULL at start but isn't");
+    }
+}
+
+void take_object::prepareRTPNGCamera() {
+    if(Camera == NULL) {
+        Camera = new rtpnextgen(options);
+        if(Camera == NULL) {
+            errorMessage("RTP NextGen camera was NULL");
+        } else {
+            statusMessage("RTP NextGen camera created.");
+        }
+        this->Camera->setCamControlPtr(&this->cameraController);
+    } else {
+        // re-create camera?
+        errorMessage("RTP NextGen camera was expected to be NULL but was not!");
     }
 }
 
@@ -699,7 +934,7 @@ void take_object::clearAllRingBuffer()
     {
         curFrame = &frame_ring_buffer[f];
         curFrame->reset();
-        memcpy(curFrame->raw_data_ptr,zeroFrame,frWidth*dataHeight);
+        memcpy(curFrame->raw_data_ptr,zeroFrame,frWidth*dataHeight*2);
     }
     statusMessage("Done zero-setting memory in frame_ring_buffer");
 }
@@ -841,10 +1076,10 @@ void take_object::fileImageCopyLoop()
                 curFrame->image_data_ptr = curFrame->raw_data_ptr;
             }
 
-            if(cam_type == CL_6604A)
-                curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
-            else
-                curFrame->image_data_ptr = curFrame->raw_data_ptr;
+//            if(cam_type == CL_6604A)
+//                curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
+//            else
+            curFrame->image_data_ptr = curFrame->raw_data_ptr;
             if(inverted)
             { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
                 for(uint i = 0; i < frHeight*frWidth; i++ )
@@ -963,13 +1198,146 @@ camControlType* take_object::getCamControl()
     return &cameraController;
 }
 
+void take_object::rtpStreamLoop()
+{
+    LOG << "Entering streamLoop";
+    Camera->streamLoop();
+}
+
+void take_object::rtpNGStreamLoop() {
+    LOG << "Entering streamLoop";
+    Camera->streamLoop();
+}
+
+void take_object::rtpConsumeFrames()
+{
+    // This thread copies frames from the RTP Stream Loop
+    // guarenteed buffer into the take object.
+    // The frames are copied using Camera->getFrameWait
+    // which waits for new frames.
+
+    // Initializers just in case:
+    save_framenum = 0;
+    continuousRecording = false;
+
+    mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
+                                       meanStartRow,meanHeight,frWidth,useDSF,\
+                                       whichFFT, lh_start, lh_end,\
+                                       cent_start, cent_end,\
+                                       rh_start, rh_end);
+
+    std::chrono::steady_clock::time_point begintp;
+    std::chrono::steady_clock::time_point finaltp;
+
+    int framecount = 0;
+    int last_framecount __attribute__((unused)) = 0;
+    uint16_t *temp_frame = NULL;
+    int lastFrameNumber = 0;
+    count = 0;
+
+    if(shmValid) {
+        shm->statusByte = SHM_STATUS_READY;
+        shmBufferPosition = 0;
+        shmBufferPositionPrior = 0;
+    }
+
+    while(rtpConsumerRun)
+    {
+        begintp = std::chrono::steady_clock::now();
+        grabbing = true;
+        curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+        curFrame->reset();
+        temp_frame = Camera->getFrameWait(lastFrameNumber, &this->camStatus);
+        memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight*2);
+
+
+        if(pixRemap)
+        {
+            apply_chroma_translate_filter(curFrame->raw_data_ptr);
+            //curFrame->image_data_ptr = curFrame->raw_data_ptr;
+        }
+
+
+        curFrame->image_data_ptr = curFrame->raw_data_ptr;
+        if(inverted)
+        { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
+            for(uint i = 0; i < frHeight*frWidth; i++ )
+                curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
+        }
+
+        if(setDarkStatusInFrame) {
+            curFrame->image_data_ptr[obcStatusPixel] = darkStatusPixelVal;
+        }
+
+        shmBufferPosition = (shmBufferPositionPrior + 1)%shmFrameBufferSize;
+        if(shmValid) {
+            shm->writingFrameNum = shmBufferPosition;
+            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth*2);
+        }
+
+
+        // Calculating the filters for this frame
+        if(!options.noGPU) {
+            if(runStdDev)
+            {
+                sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
+            }
+            dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
+            mf->update(curFrame,count,meanStartCol,meanWidth,\
+                       meanStartRow,meanHeight,frWidth,useDSF,\
+                       whichFFT, lh_start, lh_end,\
+                       cent_start, cent_end,\
+                       rh_start, rh_end);
+
+            mf->start_mean();
+        }
+
+        if((save_framenum > 0) || continuousRecording)
+        {
+            uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
+            memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
+            saving_list.push_front(raw_copy);
+            save_framenum--;
+        }
+
+        framecount = *(curFrame->raw_data_ptr + 160); // The framecount is stored 160 bytes offset from the beginning of the data
+        /*
+        if(CHECK_FOR_MISSED_FRAMES_6604A && cam_type == CL_6604A)
+        {
+            if( (framecount - 1 != last_framecount) && (last_framecount != UINT16_MAX) )
+            {
+                std::cerr << "WARNING: MISSED FRAME " << framecount << std::endl;
+            }
+        }
+        */
+
+        finaltp = std::chrono::steady_clock::now();
+        measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
+        meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
+
+        if(shmValid) {
+            if(measuredDelta_micros_final != 0)
+                shm->fps = 1E6/measuredDelta_micros_final;
+            shm->frameTime[shmBufferPosition] = finaltp.time_since_epoch() / std::chrono::milliseconds(1);
+            shm->counter = count;
+        }
+        shmBufferPositionPrior = shmBufferPosition;
+
+
+        last_framecount = framecount;
+        count++;
+        grabbing = false;
+    }
+    statusMessage("RTP Consumer Loop is done providing frames");
+}
+
 void take_object::pdv_loop() //Producer Thread (pdv_thread)
 {
 	count = 0;
 
     uint16_t framecount = 1;
     uint16_t last_framecount = 0;
-	unsigned char* wait_ptr;
+    unsigned char* wait_ptr = NULL;
 
 
     mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
@@ -981,6 +1349,9 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
     std::chrono::steady_clock::time_point finaltp;
     std::chrono::steady_clock::time_point begintp;
 
+    if(shmValid) {
+        shm->statusByte = SHM_STATUS_READY;
+    }
     while(pdv_thread_run == 1)
     {	
         grabbing = true;
@@ -1014,29 +1385,40 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
         if(pixRemap)
             apply_chroma_translate_filter(curFrame->raw_data_ptr);
-        if(cam_type == CL_6604A)
-            curFrame->image_data_ptr = curFrame->raw_data_ptr + frWidth;
-        else
-            curFrame->image_data_ptr = curFrame->raw_data_ptr;
+
+        curFrame->image_data_ptr = curFrame->raw_data_ptr;
         if(inverted)
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
             for(uint i = 0; i < frHeight*frWidth; i++ )
                 curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
         }
 
-        // Calculating the filters for this frame
-        if(runStdDev)
-        {
-            sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
+        if(setDarkStatusInFrame) {
+            curFrame->image_data_ptr[obcStatusPixel] = darkStatusPixelVal;
         }
-        dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
-        mf->update(curFrame,count,meanStartCol,meanWidth,\
-                   meanStartRow,meanHeight,frWidth,useDSF,\
-                   whichFFT, lh_start, lh_end,\
-                                           cent_start, cent_end,\
-                                           rh_start, rh_end);
 
-        mf->start_mean();
+        shmBufferPosition = (shmBufferPositionPrior + 1)%shmFrameBufferSize;
+        if(shmValid) {
+            shm->writingFrameNum = shmBufferPosition;
+            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth*2);
+        }
+
+        // Calculating the filters for this frame
+        if(!options.noGPU) {
+
+            if(runStdDev)
+            {
+                sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
+            }
+            dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
+            mf->update(curFrame,count,meanStartCol,meanWidth,\
+                       meanStartRow,meanHeight,frWidth,useDSF,\
+                       whichFFT, lh_start, lh_end,\
+                       cent_start, cent_end,\
+                       rh_start, rh_end);
+
+            mf->start_mean();
+        }
 
         if((save_framenum > 0) || continuousRecording)
         {
@@ -1061,6 +1443,15 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         measuredDelta_micros_final = std::chrono::duration_cast<std::chrono::microseconds>(finaltp-begintp).count();
         meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
 
+        if(shmValid) {
+            if(measuredDelta_micros_final != 0)
+                shm->fps = 1E6/measuredDelta_micros_final;
+            shm->frameTime[shmBufferPosition] = finaltp.time_since_epoch() / std::chrono::milliseconds(1);
+            shm->counter = count;
+        }
+        shmBufferPositionPrior = shmBufferPosition;
+
+
         grabbing = false;
         if(closing)
         {
@@ -1070,11 +1461,32 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
     }
 }
 void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
-//Frame Save Thread (saving_thread)
 {
+    // Frame Save Thread (saving_thread)
+
+    // The main loop (pdvLoop, etc) of take_object will place frames into save_list,
+    // and this thread will remove frames in save_list. While the data are being taken,
+    // this thread will not empty the list.
+
+    // This thread ends when the file finished being written to and the buffer is empty.
+
+    std::ostringstream ss;
+    ss << "Starting saveLoop. Thread ID: " << boost::this_thread::get_id();
+
+    statusMessage(ss);
+
+    if(options.debug) {
+        if(num_avgs > 1) {
+            statusMessage("Saving mode: averaging (float)");
+        } else {
+            statusMessage("Saving mode: uint16");
+        }
+    }
+
+
     if(savingData)
     {
-        warningMessage("Saving loop hit but already saving data!");
+        errorMessage("Saving loop hit but already saving data! Not saving this data!");
         return;
     } else {
         savingData = true;
@@ -1082,35 +1494,46 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
     savingMutex.lock();
 
+    // if there is ".raw" already, then the hdr_fname shall be the same thing just without the .raw.
+    // if there is not ".raw" then we just add ".hdr"
+    std::string hdr_fname;
     if(fname.find(".")!=std::string::npos)
     {
-        fname.replace(fname.find("."),std::string::npos,".raw");
+        // The filename has ".", likely ".raw"
+        //fname.replace(fname.find("."),std::string::npos,".raw");
+        hdr_fname = fname.substr(0,fname.size()-3) + "hdr";
     }
     else
     {
-        fname+=".raw";
+        // The filename does not have "."
+        hdr_fname=fname+".hdr";
     }
-    std::string hdr_fname = fname.substr(0,fname.size()-3) + "hdr";
+
     FILE * file_target = fopen(fname.c_str(), "wb");
     int sv_count = 0;
 
-    while(  (save_framenum != 0 || continuousRecording)    ||  !saving_list.empty())
+    while(  (save_framenum != 0) || continuousRecording)
     {
-        if(!saving_list.empty())
+        if(saving_list.size() > 2)
         {
             if(num_avgs == 1)
             {
-                // This is the "normal" behavior.
-                uint16_t * data = saving_list.back();
-                saving_list.pop_back();
-                fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
-                delete[] data;
-                sv_count++;
-                if(sv_count == 1) {
-                    save_count.store(1, std::memory_order_seq_cst);
-                }
-                else {
-                    save_count++;
+                // This is our not-averaging save, where most saves go:
+                if(saving_list.size() > 2) {
+                    // We refuse to take the last item off the list.
+                    // it can wait until we are completely done recording.
+                    // This way the list remains valid in memory.
+                    uint16_t * data = saving_list.back();
+                    saving_list.pop_back();
+                    fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
+                    delete[] data;
+                    sv_count++;
+                    if(sv_count == 1) {
+                        save_count.store(1, std::memory_order_seq_cst);
+                    }
+                    else {
+                        save_count++;
+                    }
                 }
             }
             else if(saving_list.size() >= num_avgs && num_avgs != 1)
@@ -1158,6 +1581,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
             }
             else if(save_framenum == 0 && saving_list.size() < num_avgs)
             {
+                warningMessage("Erasing saving_list");
                 saving_list.erase(saving_list.begin(),saving_list.end());
             }
             else
@@ -1172,15 +1596,55 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
             usleep(250);
         }
     }
-    //We're done!
+
+    // Almost done, let's take care of anything left in the buffer.
+
+    statusMessage("Finished primary saving loop.");
+    char message[128];
+    sprintf(message, "Size of buffer: %ld", saving_list.size());
+    statusMessage(message);
+    if( (num_avgs==1) || (num_avgs==0)) {
+        statusMessage("Finishing write...");
+        while(saving_list.size() > 0) {
+            statusMessage("Writing additional frame");
+            uint16_t * data = saving_list.back();
+            if(saving_list.size() > 0)
+                saving_list.pop_back();
+            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target);
+            sv_count++;
+            delete[] data;
+        }
+        statusMessage("Done with write.");
+    } else {
+        while(saving_list.size() > 0) {
+            //statusMessage("Dropping additional frame at end that does not meet average interval.");
+            uint16_t * data = saving_list.back();
+            if(saving_list.size() > 0)
+                saving_list.pop_back();
+            // Since averaging is typically many frames (>100),
+            // we cannot really average the last two or three frames
+            // in a meaningfull way. Writing the data out will just
+            // confuse people about the scale of the last few frames.
+            //fwrite(data,sizeof(float),frWidth*dataHeight,file_target);
+            delete[] data;
+        }
+    }
+
     fclose(file_target);
-    std::string hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frame mean per grab}\n";
+    std::string hdr_text;
+    if( (num_avgs !=0) && (num_avgs !=1) )
+    {
+        hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frames mean per line}\n";
+    } else {
+        hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file}\n";
+    }
+
     hdr_text= hdr_text + "samples = " + std::to_string(frWidth) +"\n";
-    hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n";
+    hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n"; // save count, ie, number of frames in the file
     hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
     hdr_text+= "header offset = 0\n";
     hdr_text+= "file type = ENVI Standard\n";
-    if(num_avgs != 1)
+    if((num_avgs != 1) && (num_avgs != 0))
     {
         hdr_text+= "data type = 4\n";
     }
@@ -1200,9 +1664,6 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     if(sv_count == 1)
         usleep(500000);
     save_count.store(0, std::memory_order_seq_cst);
-    //std::cout << "save_count: " << std::to_string(save_count) << "\n";
-    //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
-    //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
     statusMessage("Saving complete.");
     savingMutex.unlock();
     savingData = false;
@@ -1210,35 +1671,65 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
 void take_object::errorMessage(const char *message)
 {
-    std::cerr << "take_object: ERROR: " << message << std::endl;
+    if((!options.rtpCam) || (options.rtpNextGen))
+    {
+        std::cerr << "take_object: ERROR: " << message << std::endl;
+    } else {
+        g_critical("take_object: ERROR: %s", message);
+    }
 }
 
 void take_object::warningMessage(const char *message)
 {
-    std::cout << "take_object: WARNING: " << message << std::endl;
+    if((!options.rtpCam) || (options.rtpNextGen))
+    {
+        std::cout << "take_object: WARNING: " << message << std::endl;
+    } else {
+        g_message("take_object: WARNING: %s", message);
+    }
 }
 
 void take_object::statusMessage(const char *message)
 {
-    std::cout << "take_object: STATUS: " << message << std::endl;
+    if((!options.rtpCam) || (options.rtpNextGen)) {
+        std::cout << "take_object: STATUS: " << message << std::endl;
+    } else {
+        g_message("take_object: STATUS: %s", message);
+    }
 }
 
 void take_object::errorMessage(const string message)
 {
-    std::cout << "take_object: ERROR: " << message << std::endl;
+    if((!options.rtpCam) || (options.rtpNextGen)) {
+        std::cerr << "take_object: ERROR: " << message << std::endl;
+    } else {
+        g_error("take_object: ERROR: %s", message.c_str());
+    }
 }
 
 void take_object::warningMessage(const string message)
 {
-    std::cout << "take_object: WARNING: " << message << std::endl;
+    if((!options.rtpCam) || (options.rtpNextGen)) {
+        std::cout << "take_object: WARNING: " << message << std::endl;
+    } else {
+        g_message("take_object: WARNING: %s", message.c_str());
+    }
 }
 
 void take_object::statusMessage(const string message)
 {
-    std::cout << "take_object: STATUS: " << message << std::endl;
+    if((!options.rtpCam) || (options.rtpNextGen)) {
+        std::cout << "take_object: STATUS: " << message << std::endl;
+    } else {
+        g_message("take_object: STATUS: %s", message.c_str());
+    }
 }
 
 void take_object::statusMessage(std::ostringstream &message)
 {
-    std::cout << "take_object: STATUS: " << message.str() << std::endl;
+    if((!options.rtpCam) || (options.rtpNextGen)) {
+        std::cout << "take_object: STATUS: " << message.str() << std::endl;
+    } else {
+        g_message("take_object: STATUS: %s", message.str().c_str());
+    }
 }

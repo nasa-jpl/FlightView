@@ -4,8 +4,8 @@
 Version=1.0
 Type=Application
 Terminal=false
-Icon=/usr/share/pixmaps/liveview_icon.png
-Icon[en_US]=/usr/share/pixmaps/liveview_icon.png
+Icon=/usr/share/pixmaps/liveview.png
+Icon[en_US]=/usr/share/pixmaps/liveview.png
 Name[en_US]=liveview
 Comment[en_US]=Live CameraLink Data Visualization and Analytics using CUDA GPUs
 Exec=/usr/local/bin/liveview

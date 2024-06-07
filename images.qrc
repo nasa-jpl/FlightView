@@ -3,5 +3,6 @@
         <file>icon.png</file>
         <file>aviris-logo-transparent.png</file>
         <file>aviris-ng-logo.png</file>
+        <file>aviris3-logo.png</file>
     </qresource>
 </RCC>

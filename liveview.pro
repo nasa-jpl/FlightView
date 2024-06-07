@@ -1,15 +1,22 @@
-#-------------------------------------------------
+#----------------------------------------------------------
 #
-# Project created by QtCreator 2014-05-28T11:16:33
+# - LiveView  //  FlightView -
 #
-#-------------------------------------------------
+# https://github.com/nasa-jpl/LiveView
+# Copyright 2014-2024 California Institute of Technology.
+# Government Sponsorship(s) Acknowledged.
+#----------------------------------------------------------
 
 QT       += core gui
 QT       += network svg
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += network widgets printsupport
-DEFINES += GIT_CURRENT_SHA1="\\\"$(shell git -C $$PWD rev-parse HEAD)\\\""
-DEFINES += GIT_CURRENT_SHA1_SHORT="\\\"$(shell git -C $$PWD rev-parse --short HEAD)\\\""
+DEFINES += GIT_CURRENT_SHA1="\\\"$(shell git -C \"$$PWD\" rev-parse HEAD)\\\""
+DEFINES += GIT_CURRENT_SHA1_SHORT="\\\"$(shell git -C \"$$PWD\" rev-parse --short HEAD)\\\""
+DEFINES += SRC_DIR="\\\"\'$$PWD\'\\\""
+
+CONFIG+=link_pkgconfig
+PKGCONFIG+=gstreamer-1.0 gstreamer-app-1.0 glib-2.0 gobject-2.0
 
 TARGET = liveview
 TEMPLATE = app
@@ -20,8 +27,11 @@ TEMPLATE = app
 SOURCES += main.cpp\
     consolelog.cpp \
     cuda_take/src/take_object.cpp \
+    cuda_take/src/rtpnextgen.cpp \
     filenamegenerator.cpp \
     flight_widget.cpp \
+    flightindicators.cpp \
+    gpsGUI/zupt.cpp \
     gpsmanager.cpp \
     initialsetup.cpp \
     mainwindow.cpp \
@@ -41,17 +51,22 @@ SOURCES += main.cpp\
     gpsGUI/gpsnetwork.cpp \
     gpsGUI/gpsbinaryreader.cpp \
     gpsGUI/gpsbinarylogger.cpp \
-    waterfall.cpp
+    waterfall.cpp \
+    waterfallviewerwindow.cpp
 
 HEADERS  += mainwindow.h \
     consolelog.h \
     cuda_take/include/fileformats.h \
+    cuda_take/include/rtpnextgen.hpp \
     filenamegenerator.h \
     flight_widget.h \
+    flightindicators.h \
     frameview_widget.h \
     controlsbox.h\
     frame_worker.h \
+    gpsGUI/zupt.h \
     gpsmanager.h \
+    shm_gps.h \
     image_type.h \
     initialsetup.h \
     preferences.h \
@@ -73,9 +88,11 @@ HEADERS  += mainwindow.h \
     gpsGUI/gpsbinarylogger.h \
     startupOptions.h \
     waterfall.h \
-    preferences.h
+    preferences.h \
+    waterfallviewerwindow.h
 
 DISTFILES +=    cuda_take/include/take_object.hpp \
+                aviris3-logo.png \
                 cuda_take/include/chroma_translate_filter.hpp \
                 cuda_take/include/std_dev_filter_device_code.cuh \
                 cuda_take/include/mean_filter.hpp \
@@ -91,7 +108,8 @@ DISTFILES +=    cuda_take/include/take_object.hpp \
                 cuda_take/include/camera_types.h \
                 cuda_take/include/cameramodel.h \
                 cuda_take/include/cudalog.h \
-                cuda_take/include/takeoptions.h
+                cuda_take/include/takeoptions.h \
+                cuda_take/include/rtpcamera.hpp
 
 DISTFILES +=    cuda_take/src/take_object.cpp \
                 cuda_take/src/std_dev_filter_device_code.cu \
@@ -101,7 +119,8 @@ DISTFILES +=    cuda_take/src/take_object.cpp \
                 cuda_take/src/fft.cpp \
                 cuda_take/src/dark_subtraction_filter.cpp \
                 cuda_take/src/chroma_translate_filter.cpp \
-                cuda_take/src/xiocamera.cpp
+                cuda_take/src/xiocamera.cpp \
+                cuda_take/src/rtpcamera.cpp
 
 
 
@@ -130,7 +149,7 @@ DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 # qmake will create this directory automatically:
 DESTDIR = ./lv_release
 # Copy files into DESTDIR for potential releases:
-QMAKE_POST_LINK += cp ../LiveViewLegacy/liveview_icon.png $$DESTDIR;
+QMAKE_POST_LINK += cp ../LiveViewLegacy/liveview.png $$DESTDIR;
 QMAKE_POST_LINK += cp ../LiveViewLegacy/LiveView.desktop $$DESTDIR;
 
 
@@ -146,9 +165,7 @@ QMAKE_POST_LINK += cp ../LiveViewLegacy/LiveView.desktop $$DESTDIR;
 #}
 #LIBS += -L$$PWD/lib/ -l$$QCPLIB
 
-#unix:!macx:!symbian: LIBS += -L$$PWD/../cuda_take/ -lcuda_take -lboost_thread -lcudart -lgomp -lboost_system -lokFrontPanel -ldl # -lGL -lQtOpenGL
-
-unix:!macx:!symbian: LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lboost_filesystem -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl # -lGL -lQtOpenGL
+unix:!macx:!symbian: LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lboost_filesystem -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl -lrt # -lGL -lQtOpenGL
 INCLUDEPATH += $$PWD/cuda_take/include\
 /opt/EDTpdv /usr/local/cuda/include
 DEPENDPATH += $$PWD/cuda_take
@@ -156,5 +173,7 @@ DEPENDPATH += $$PWD/cuda_take
 unix:!macx:!symbian: PRE_TARGETDEPS += $$PWD/cuda_take/libcuda_take.a
 
 FORMS += \
+    flightindicators.ui \
     initialsetup.ui \
-    rgbadjustments.ui
+    rgbadjustments.ui \
+    waterfallviewerwindow.ui

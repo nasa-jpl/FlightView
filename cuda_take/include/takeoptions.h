@@ -7,13 +7,15 @@
 // but it does not require any qt libraries.
 // It is used by take_object and the cuda back-end.
 // Not all attributes are currently used.
-//
-// The attributes are copied inside frame_worker.cpp
-//
+
+// Make sure when updating this file to also update
+// void frameWorker::convertOptions() in frame_worker.cpp
+// as well as the struct in startupOptions.h
 
 struct takeOptionsType
 {
     bool debug = false;
+    bool laggy = false;
     bool flightMode = false;
     bool disableGPS = false;
     bool disableCamera = false;
@@ -30,11 +32,31 @@ struct takeOptionsType
     bool heightWidthSet = false;
     uint16_t xioHeight;
     uint16_t xioWidth;
+
+    const char* rtpInterface = NULL;
+    const char* rtpAddress = NULL;
+    bool havertpAddress = false;
+    bool havertpInterface = false;
+    uint16_t rtpHeight;
+    uint16_t rtpWidth;
+    int rtpPort = 5004;
+    bool rtpCam = false;
+    bool rtprgb = true;
+    bool rtpNextGen = false;
+
+    bool er2mode = false;
+    bool headless = false;
+    bool noGPU = false;
+
+    bool useSHM = false;
+
     uint16_t height;
     uint16_t width;
     float targetFPS = 100.00;
     bool xioDirSet = false;
     std::string *xioDirectory = NULL;
+
+    bool theseAreDefault = false;
 };
 
 

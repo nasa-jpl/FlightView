@@ -24,6 +24,7 @@
 #include "image_type.h"
 #include "qcustomplot.h"
 #include "preferences.h"
+#include "startupOptions.h"
 
 
 /*! \file
@@ -59,6 +60,7 @@ class frameview_widget : public QWidget
      * Contains elements of the GUI specific to a widget */
     QGridLayout layout;
     QLabel fpsLabel;
+    QLabel wfSelectedRow;
     QCheckBox displayCrosshairCheck;
     QCheckBox zoomXCheck;
     QCheckBox zoomYCheck;
@@ -92,6 +94,7 @@ class frameview_widget : public QWidget
     bool useDSF;
     bool havePrefs = false;
     settingsT *prefs;
+    startupOptionsType options;
     void sMessage(QString statusMessageText);
 
 public:
@@ -127,6 +130,7 @@ public slots:
      *  @{ */
     void colorMapScrolledY(const QCPRange &newRange);
     void colorMapScrolledX(const QCPRange &newRange);
+    void colorScaleRangeChanged(const QCPRange &newRange);
     void setScrollX(bool Yenabled);
     void setScrollY(bool Xenabled);
     void updateCeiling(int c);
@@ -138,6 +142,8 @@ public slots:
     /*! @} */
 signals:
     void statusMessage(QString message);
+    void haveFloorCeilingValuesFromColorScaleChange(
+            double floor, double ceiling);
 };
 
 #endif // FRAMEVIEW_WIDGET_H

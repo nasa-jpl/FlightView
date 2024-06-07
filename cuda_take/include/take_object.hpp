@@ -11,6 +11,14 @@
 #include <fstream>
 #include <chrono>
 
+// Shared Memory:
+// Undefine this variable to disable SHM:
+#define USE_SHM
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include "shm_image.h"
+
 //multithreading includes
 #include <atomic>
 #include <boost/shared_array.hpp>
@@ -35,6 +43,8 @@
 #include "safestringset.h"
 #include "takeoptions.h"
 #include "fileformats.h"
+#include "rtpnextgen.hpp"
+#include "rtpcamera.hpp"
 
 //** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
 #define EDT
@@ -59,12 +69,28 @@ static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence
 
 #define meanDeltaSize (20)
 
+#define obcStatusPixel (159)
+#define obcStatusDark1 (2)
+#define obcStatusScience (3)
+#define obcStatusDark2 (4)
+#define obcStatusClosing (8)
+#define obcStatusOpening (9)
+
 class take_object {
     PdvDev * pdv_p = NULL;
     unsigned int channel;
     unsigned int numbufs;
     unsigned int filter_refresh_rate;
 
+    // Shared memory support:
+    int shmFd = 0;
+    bool shmValid = false;
+    unsigned char shmBufferPositionPrior = 0;
+    unsigned char shmBufferPosition = 0;
+    shmSharedDataStruct *shm = NULL;
+    void shmSetup();
+
+    bool setDarkStatusInFrame = false;
 
     bool closing = false;
     bool grabbing = true;
@@ -74,6 +100,11 @@ class take_object {
     boost::thread reading_thread; // this is used for file reading in the XIO camera.
     boost::thread::native_handle_type cam_thread_handler;
     boost::thread::native_handle_type reading_thread_handler;
+
+    boost::thread rtpAcquireThread; // copy from RTP stream into buffer
+    boost::thread rtpCopyThread; // copy from buffer into currFrame
+    boost::thread::native_handle_type rtpAcquireThreadHandler;
+    boost::thread::native_handle_type rtpCopyThreadHandler;
 
     int pdv_thread_run = 0;
     bool cam_thread_start_complete=false; // added by Michael Bernas 2016
@@ -124,6 +155,7 @@ public:
     //Frame filters that affect everything at the raw data level
     void setInversion(bool checked, unsigned int factor);
     void paraPixRemap(bool checked);
+    void enableDarkStatusPixelWrite(bool writeValues);
 
     //DSF mask functions
 	void startCapturingDSFMask();
@@ -132,6 +164,7 @@ public:
     void loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format);
     bool dsfMaskCollected;
     bool useDSF = false;
+    uint16_t darkStatusPixelVal = obcStatusScience;
 
     // Std Dev Filter functions
     void setStdDev_N(int s);
@@ -163,12 +196,26 @@ public:
     FFT_t getFFTtype();
 
 private:
+    // PDV Camera Link:
     void pdv_loop();
+
+    // XIO (files):
     void fileImageCopyLoop();
     void fileImageReadingLoop();
     void prepareFileReading();
+
+    // RTP using gstreamer library:
+    void prepareRTPCamera();
+    void rtpStreamLoop(); // acquire from RTP network source
+    void rtpConsumeFrames(); // copy into take object.
+
+    // RTP using NextGen RTP:
+    void prepareRTPNGCamera();
+    void rtpNGStreamLoop();
+
     CameraModel *Camera = NULL;
     bool fileReadingLoopRun = false;
+    bool rtpConsumerRun = false;
     camControlType cameraController;
     CameraModel::camStatusEnum camStatus;
 
@@ -187,6 +234,7 @@ private:
     bool checkFrame(uint16_t *Frame);
     void clearAllRingBuffer();
 
+    std::streambuf *coutbuf;
     void errorMessage(const char* message);
     void warningMessage(const char* message);
     void statusMessage(const char* message);

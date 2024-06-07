@@ -10,19 +10,27 @@
 #include "mainwindow.h"
 #include "image_type.h"
 
-MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *fw, QWidget *parent)
+MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker *fw, QWidget *parent)
     : QMainWindow(parent)
 {
-    qRegisterMetaType<frame_c*>("frame_c*");
-    //qRegisterMetaType<QVector<double>>("QVector<double>");
-    //qRegisterMetaType<QSharedPointer<QVector<double>>>("QSharedPointer<QVector<double>>");
+    qRegisterMetaType<frame_c*>("frame_c*");    
     const QString name = "lv:";
     this->fw = fw;
-    this->options = options;
+    this->options = optionsIn;
+
+    startDateTime =  QDateTime::currentDateTimeUtc();
+    QString startDate;
+    startDate.append(startDateTime.toString("yyyyMMdd"));
 
     if(options->dataLocationSet)
     {
-        cLog = new consoleLog(options->dataLocation);
+        // Append today's date
+        // This will go in to the consoleLog, gps, and raw data saving functions
+        if(!options->dataLocation.endsWith("/"))
+            options->dataLocation.append("/");
+
+        this->options->dataLocation.append(startDate);
+        cLog = new consoleLog(this->options->dataLocation, options->flightMode);
     } else {
         cLog = new consoleLog();
     }
@@ -61,7 +69,9 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     dsf_widget = NULL;
     waterfall_widget = new frameview_widget(fw, WATERFALL);
 
+    //flight_screen = new flight_widget(fw, *options, this);
     flight_screen = new flight_widget(fw, *options);
+
     connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleGeneralStatusMessage(QString)));
 
     std_dev_widget = new frameview_widget(fw, STD_DEV);
@@ -87,7 +97,7 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     }
 
     /* Add tabs in order */
-    tabWidget->addTab(unfiltered_widget, QString("Live View"));
+    tabWidget->addTab(unfiltered_widget, QString("FPA")); // check commit log here
     //tabWidget->addTab(dsf_widget, QString("Dark Subtraction"));
     tabWidget->addTab(waterfall_widget, QString("Waterfall"));
     tabWidget->addTab(flight_screen, QString("Flight"));
@@ -151,10 +161,36 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     connect(fw, SIGNAL(updateFrameCountDisplay(int)), controlbox, SLOT(setFrameNumber(int)));
     controlbox->fps_label.setStyleSheet("QLabel {color: green;}");
     if(save_server->isListening()) {
-        controlbox->server_ip_label.setText(tr("Server IP: %1").arg(save_server->ipAddress.toString()));
-        controlbox->server_port_label.setText(tr("Server Port: %1").arg(save_server->port));
-        handleMainWindowStatusMessage(QString("Server IP: %1").arg(save_server->ipAddress.toString()));
-        handleMainWindowStatusMessage(QString("Server Port: %1").arg(save_server->port));
+        handleMainWindowStatusMessage(QString("SaveServer IP: %1").arg(save_server->ipAddress.toString()));
+        handleMainWindowStatusMessage(QString("SaveServer Port: %1").arg(save_server->port));
+    }
+
+    if(options->rtpCam) {
+        if(options->rtpNextGen) {
+            handleMainWindowStatusMessage("Camera: RTP NextGen");
+        } else {
+            handleMainWindowStatusMessage("Camera: RTP gstreamer");
+        }
+
+        QString listeningString = "RTP SRC";
+
+        if(options->havertpInterface) {
+            listeningString.append(QString(": %1").arg(options->rtpInterface));
+        }
+        if(options->havertpAddress) {
+            listeningString.append(QString(": %1").arg(options->rtpAddress));
+        }
+
+        controlbox->server_ip_label.setText(listeningString);
+        handleMainWindowStatusMessage(listeningString);
+        controlbox->server_port_label.setText(QString("RTP Port: %1").arg(options->rtpPort));
+        handleMainWindowStatusMessage(QString("RTP Port: %1").arg(options->rtpPort));
+    } else if(options->xioCam){
+        controlbox->server_ip_label.setText("XIO active");
+        handleMainWindowStatusMessage("Camera: XIO (files)");
+    } else {
+        controlbox->server_ip_label.setText("CameraLink active");
+        handleMainWindowStatusMessage("Camera: CameraLink");
     }
 
     connect(controlbox, SIGNAL(debugSignal()), this, SLOT(debugThis()));
@@ -163,6 +199,8 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     connect(controlbox, SIGNAL(stopDataCollection()), flight_screen, SLOT(stopDataCollection()));
     connect(fw, SIGNAL(setColorScheme_signal(int,bool)), flight_screen, SLOT(handleNewColorScheme(int,bool)));
     connect(this, SIGNAL(toggleStdDevCalc(bool)), fw, SLOT(enableStdDevCalculation(bool)));
+    connect(controlbox, SIGNAL(sendRGBLevels(double,double,double,double,bool)), flight_screen, SLOT(setRGBLevels(double,double,double,double,bool)));
+
     controlbox->getPrefsExternalTrig();
     connect(controlbox, &ControlsBox::showConsoleLog,
             [=]() {
@@ -189,6 +227,12 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
     } else {
         handleMainWindowStatusMessage("Flight Mode DISABLED.");
     }
+    if(options->er2mode) {
+        handleMainWindowStatusMessage("ER2 Mode ENABLED.");
+    }
+    if(options->headless) {
+        handleMainWindowStatusMessage("Headless Mode ENABLED.");
+    }
 
     connect(this->controlbox, &ControlsBox::setCameraPause,
             [=](bool paused) {
@@ -202,13 +246,20 @@ MainWindow::MainWindow(startupOptionsType *options, QThread *qth, frameWorker *f
         }
     });
 
-    connect(controlbox, SIGNAL(sendRGBLevels(double,double,double,double)), flight_screen, SLOT(setRGBLevels(double,double,double,double)));
 
     connect(this->controlbox, &ControlsBox::loadDarkFile,
             [=](QString filename, fileFormat_t fileformat) {
             fw->loadDarkFile(filename, fileformat);
     });
 
+    // Control functions needed for ARTIC:
+    connect(save_server, SIGNAL(startTakingDarks()), controlbox, SLOT(startTakingDarks()));
+    connect(save_server, SIGNAL(stopTakingDarks()), controlbox, SLOT(stopTakingDarks()));
+    connect(save_server, SIGNAL(startSavingFlightData()), controlbox, SLOT(save_finite_button_slot()));
+    connect(save_server, SIGNAL(stopSavingData()), controlbox, SLOT(stopSavingData()));
+    //this->setWindowState( (windowState() & ~Qt::WindowMinimized ) | Qt::WindowActive);
+    //this->raise();
+    //this->activateWindow();
     handleMainWindowStatusMessage("Started");
 }
 
@@ -225,7 +276,7 @@ void MainWindow::closeEvent(QCloseEvent *e)
         QList<QWidget*> allWidgets = findChildren<QWidget*>();
         for(int i = 0; i < allWidgets.size(); ++i)
             allWidgets.at(i)->close();
-
+        //e->accept();
         QApplication::exit();
     } else {
         handleMainWindowStatusMessage("User canceled close request.");
@@ -296,6 +347,11 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
      *
      * \author Jackie Ryan
      */
+
+    if(options->headless) {
+        return;
+    }
+
     QWidget* current_tab = tabWidget->widget(tabWidget->currentIndex());
     profile_widget *ppw;
     frameview_widget *fvw;
@@ -429,13 +485,36 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
         removeTab("Histogram View");
     }
 
-    handleMainWindowStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
-    if( (prefs.preferredWindowWidth < 4096 ) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
-    {
-        this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
-    } else {
-        handleMainWindowStatusMessage(QString("Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
+    // One of these two widgets may be the first widget shown,
+    // which will not receive the "tab changed" signal to update
+    // the levels. Thus, we update here:
+
+    if(unfiltered_widget) {
+        unfiltered_widget->updateCeiling(prefs.frameViewCeiling);
+        unfiltered_widget->updateFloor(prefs.frameViewFloor);
     }
+
+    if(flight_screen) {
+        flight_screen->updateCeiling(prefs.flightCeiling);
+        flight_screen->updateFloor(prefs.flightFloor);
+    }
+
+    handleMainWindowStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
+
+    if(options->headless) {
+        this->resize(1558, 1024);
+    } else {
+        if( (prefs.preferredWindowWidth < 4096) && (prefs.preferredWindowHeight < 4096) && (prefs.preferredWindowWidth > 0) && (prefs.preferredWindowHeight > 0))
+        {
+            this->resize(prefs.preferredWindowWidth, prefs.preferredWindowHeight);
+        } else {
+            handleMainWindowStatusMessage(QString("Warning, preferred window size out of range: width %1, height %2").arg(prefs.preferredWindowWidth).arg(prefs.preferredWindowHeight));
+        }
+    }
+
+    // Note: These prefs are not saved correctly currently, so do not restore.
+    // restoreGeometry(prefs.windowGeometry);
+    // restoreState(prefs.windowState);
 }
 
 void MainWindow::removeTab(QString tabTitle)
@@ -459,4 +538,5 @@ void MainWindow::debugThis()
     handleMainWindowStatusMessage("Debug function reached.");
     qDebug() << __PRETTY_FUNCTION__ << ": Debug reached inside MainWindow class.";
     flight_screen->debugThis();
+    fw->debugThis();
 }

@@ -2,9 +2,14 @@
 #define STARTUPOPTIONS_H
 #include <QString>
 
+// Make sure when updating this file to also update
+// void frameWorker::convertOptions() in frame_worker.cpp
+// as well as the struct in takeoptions.h
+
 struct startupOptionsType
 {
     bool debug = false;
+    bool laggy = false;
     bool flightMode = false;
     bool disableGPS = false;
     bool disableCamera = false;
@@ -27,6 +32,27 @@ struct startupOptionsType
     uint16_t width;
     float targetFPS;
 
+    const char* rtpInterface = NULL;
+    const char* rtpAddress = NULL;
+    bool havertpAddress = false;
+    bool havertpInterface = false;
+    uint16_t rtpHeight;
+    uint16_t rtpWidth;
+    int rtpPort = 5004;
+    bool rtpCam = false;
+    bool rtpNextGen = false;
+    bool rtprgb = true;
+
+    bool er2mode = false;
+    bool headless = false;
+    bool noGPU = false;
+
+    bool useSHM = false;
+
+    bool wfPreviewEnabled = false;
+    bool wfPreviewContinuousMode = false;
+    bool wfPreviewlocationset = false;
+    QString wfPreviewLocation = QString("/tmp");
 };
 
 

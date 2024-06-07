@@ -74,7 +74,7 @@ public:
     virtual ~frameWorker();
 
     take_object to;
-    camControlType *camcontrol;
+    camControlType *camcontrol= NULL;
     void setCameraPaused(bool isPaused);
 
     frame_c *curFrame  = NULL;
@@ -82,6 +82,7 @@ public:
 
     float delta;
     quint16 navgs = 1;
+    uint64_t frameCount = 0;
 
     /* Used for frameview widgets */
     bool displayCross = true;
@@ -118,6 +119,7 @@ public:
     bool dsfMaskCollected();
     bool usingDSF();
     void useNewOptions(startupOptionsType newOpts);
+    startupOptionsType getStartupOptions();
 
 signals:
     /*! \brief Calls to update the value of the backend FPS label */
@@ -132,12 +134,6 @@ signals:
     /*! \brief Calls to update the value of the Frames to Save label
      * \param n New number of frames left to save */
     void savingFrameNumChanged(unsigned int n);
-
-    /*! \brief Calls to skip the first row of profile data.
-     * \param skip Whether or not to skip the row. */
-
-    /*! \brief Calls to skip the last row of profile data.
-     * \param skip Whether or not to skip the last row. */
 
     /*! \brief Closes the class event loop and calls to deallocate the workerThread. */
     void finished();
@@ -178,6 +174,7 @@ public slots:
     void enableStdDevCalculation(bool enabled);
     void stop();
     void setColorScheme(int scheme, bool useDarkTheme);
+    void debugThis();
     void sMessage(QString message);
 };
 

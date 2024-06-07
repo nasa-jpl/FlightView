@@ -10,9 +10,13 @@
 
 #include "frame_worker.h"
 
-const quint16 START_SAVING = 2;
-const quint16 STATUS = 3;
-const quint16 STATUS_EXTENDED = 4;
+const quint16 CMD_START_SAVING = 2;
+const quint16 CMD_STATUS = 3;
+const quint16 CMD_STATUS_EXTENDED = 4;
+const quint16 CMD_START_DARKSUB = 5;
+const quint16 CMD_STOP_DARKSUB = 6;
+const quint16 CMD_START_FLIGHT_SAVING = 7;
+const quint16 CMD_STOP_SAVING = 8;
 
 /*! \file
  *  \brief Establishes a server which can accept remote frame saving commands.
@@ -61,13 +65,19 @@ protected:
     void incomingConnection(qintptr socketDescriptor);
 
 signals:
-    void startSavingRemote(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs);
+    void startSavingRemote(const QString &unverifiedName, unsigned int nFrames, unsigned int numAvgs); // not used
+    void startSavingFlightData();
+    void stopSavingData();
+    void startTakingDarks();
+    void stopTakingDarks();
     void sigMessage(QString message);
 
 private slots:
     void readCommand();
     void connected_to_client();
     void new_conn_slot();
+    void handleDisconnect();
+
 
 };
 
