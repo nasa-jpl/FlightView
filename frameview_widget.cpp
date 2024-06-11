@@ -37,6 +37,13 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
         break;
     case DSF:
         //ceiling = 100;
+        peakValueHolder = (float*)calloc(frWidth * frHeight, sizeof(float));
+        peakHoldChk = new QCheckBox();
+        clearPeaksBtn = new QPushButton();
+        peakHoldChk->setText("Peak Hold");
+        clearPeaksBtn->setText("Clear Peaks");
+        connect(peakHoldChk, SIGNAL(toggled(bool)), this, SLOT(setPeakHoldMode(bool)));
+        connect(clearPeaksBtn, SIGNAL(pressed()), this, SLOT(clearPeaks()));
         break;
     case STD_DEV:
         ceiling = 102;
@@ -122,11 +129,17 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     layout.addWidget(qcp, 0, 0, 8, 8);
 
     fpsLabel.setText("FPS of Display");
+
+
     wfSelectedRow.setText("ROW NOT SET");
     QRect fpsGeo = fpsLabel.geometry();
     fpsGeo.setWidth(25);
     fpsLabel.setGeometry(fpsGeo);
     layout.addWidget(&fpsLabel, 8, 0, 1, 2);
+    if(image_type == DSF) {
+        layout.addWidget(peakHoldChk, 9,0,1,1);
+        layout.addWidget(clearPeaksBtn, 9,1,1,1);
+    }
 
     if (!((image_type == STD_DEV) || (image_type == WATERFALL))) {
         layout.addWidget(&displayCrosshairCheck, 8, 2, 1, 2);
@@ -418,6 +431,9 @@ void frameview_widget::handleNewFrame()
             if(useDSF)
             {
                 // DSF
+
+
+
                 for(int col = 0; col < frWidth; col++)
                 {
                     for(int row = 0; row < frHeight; row++)
@@ -429,7 +445,15 @@ void frameview_widget::handleNewFrame()
                             colorMap->data()->setCell(col, row, NAN);
                         } else {
                             // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
-                            colorMap->data()->setCell(col, row, local_image_ptr_float[row * frWidth + col]); // y-axis NOT reversed
+
+                            if(peakHoldMode) {
+                                if(local_image_ptr_float[row * frWidth + col] > peakValueHolder[row * frWidth + col]) {
+                                    peakValueHolder[row * frWidth + col] = local_image_ptr_float[row * frWidth + col];
+                                }
+                                colorMap->data()->setCell(col, row, peakValueHolder[row * frWidth + col]); // y-axis NOT reversed
+                            } else {
+                                colorMap->data()->setCell(col, row, local_image_ptr_float[row * frWidth + col]); // y-axis NOT reversed
+                            }
                         }
                 }
             } else {
@@ -678,6 +702,20 @@ void frameview_widget::updateFloor(int f)
 //    }
     floor = (double)f;
     rescaleRange();
+}
+
+void frameview_widget::clearPeaks() {
+
+    for(int col = 0; col < frWidth; col++)
+    {
+        for(int row = 0; row < frHeight; row++) {
+            peakValueHolder[row * frWidth + col] = 0;
+        }
+    }
+}
+
+void frameview_widget::setPeakHoldMode(bool hold) {
+    this->peakHoldMode = hold;
 }
 
 void frameview_widget::setUseDSF(bool useDSF)

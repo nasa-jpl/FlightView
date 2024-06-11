@@ -8,6 +8,7 @@
 #include <QGridLayout>
 #include <QCheckBox>
 #include <QLabel>
+#include <QPushButton>
 #include <QTimer>
 #include <QPushButton>
 #include <QMutex>
@@ -47,6 +48,9 @@ class frameview_widget : public QWidget
     frameWorker *fw;
     QTimer rendertimer;
 
+    float *peakValueHolder;
+    bool peakHoldMode = false;
+
     /* QCustomPlot elements
      * Contains the necessary QCustomPlot components to create the plots for the widget. */
     QCustomPlot *qcp;
@@ -64,6 +68,9 @@ class frameview_widget : public QWidget
     QCheckBox displayCrosshairCheck;
     QCheckBox zoomXCheck;
     QCheckBox zoomYCheck;
+
+    QCheckBox *peakHoldChk = NULL;
+    QPushButton *clearPeaksBtn = NULL;
 
     /* Plot Rendering elements
      * Contains local copies of the frame geometry and color map range. */
@@ -140,6 +147,11 @@ public slots:
     void rescaleRange();
     void setCrosshairs(QMouseEvent *event);
     /*! @} */
+
+private slots:
+    void clearPeaks();
+    void setPeakHoldMode(bool hold);
+
 signals:
     void statusMessage(QString message);
     void haveFloorCeilingValuesFromColorScaleChange(
