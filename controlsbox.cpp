@@ -167,6 +167,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         }
     }
 
+    pausePlaybackChk.setVisible(false);
+    pausePlaybackChk.setEnabled(false);
+
     //Fifth Row:
     collections_layout->addWidget(overlay_lh_width_label, 5,1,1,1);
     collections_layout->addWidget(overlay_lh_width, 5,2,1,7);
