@@ -309,6 +309,7 @@ void flight_widget::logFPSGPSSlot() {
         fw->basicGPSData.chk_longitude = gps->chk_longitude;
         fw->basicGPSData.chk_altitude = gps->chk_altitude;
         fw->basicGPSData.chk_gndspeed = gps->chk_gndspeed;
+        fw->basicGPSData.fps = fw->delta;
     } else {
         emit statusMessage("GPS check: gps message data not received yet.");
     }

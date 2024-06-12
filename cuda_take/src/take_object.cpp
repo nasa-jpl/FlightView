@@ -1648,17 +1648,18 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
         hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file}\n";
     }
 
-    hdr_text= hdr_text + "samples = " + std::to_string(frWidth) +"\n";
-    hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n"; // save count, ie, number of frames in the file
-    hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
+    hdr_text = hdr_text + "samples = " + std::to_string(frWidth) +"\n";
+    hdr_text = hdr_text + "lines   = " + std::to_string(sv_count) +"\n"; // save count, ie, number of frames in the file
+    hdr_text = hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
 
     if(haveGPSDataPointer) {
         if(basicGPSData->usingGPS) {
             // Note: GPS data may be as much as one minute behind the moment of the end of the recording.
-            hdr_text= hdr_text + "latitude = " + std::to_string(basicGPSData->chk_latiitude) +"\n";
-            hdr_text= hdr_text + "longitude = " + std::to_string(basicGPSData->chk_longitude) +"\n";
-            hdr_text= hdr_text + "altitude = " + std::to_string(basicGPSData->chk_altitude) +"\n";
-            hdr_text= hdr_text + "groundspeed = " + std::to_string(basicGPSData->chk_gndspeed) +"\n";
+            hdr_text = hdr_text + "latitude = " + std::to_string(basicGPSData->chk_latiitude) +"\n";
+            hdr_text = hdr_text + "longitude = " + std::to_string(basicGPSData->chk_longitude) +"\n";
+            hdr_text = hdr_text + "altitude = " + std::to_string(basicGPSData->chk_altitude) +"\n";
+            hdr_text = hdr_text + "groundspeed = " + std::to_string(basicGPSData->chk_gndspeed) +"\n";
+            hdr_text = hdr_text + "FPS = " + std::to_string(basicGPSData->fps) + "\n";
         }
     }
 

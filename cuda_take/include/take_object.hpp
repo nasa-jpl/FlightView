@@ -82,6 +82,7 @@ struct basicGPS_t {
     double chk_latiitude = 0;
     double chk_altitude = 0;
     float chk_gndspeed = 0;
+    float fps = 0;
 };
 
 class take_object {
