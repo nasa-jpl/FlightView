@@ -540,6 +540,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         {
             updateLabel(gpsRoll, QString("%1").arg(m.roll));
             updateLabel(gpsHeading, QString(" %1").arg(m.heading));
+            this->chk_heading = m.heading;
             updateLabel(gpsPitch, QString("%1").arg(m.pitch));
 
         }
@@ -571,6 +572,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             // To convert to KPH, multiply by 3.6
             // The abbreviation for knot or knots is "kt" or "kts", respectively.
             updateLabel(gpsGroundSpeed, QString("%1 kts").arg(m.speedOverGround * 1.94384, 6, 'f', 2, QChar('0')));
+            this->chk_course = m.courseOverGround;
             this->chk_gndspeed = m.speedOverGround * 1.94384; // knots
         }
         if(m.haveSpeedData)

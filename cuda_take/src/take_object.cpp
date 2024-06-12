@@ -1659,6 +1659,8 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
             hdr_text = hdr_text + "longitude = " + std::to_string(basicGPSData->chk_longitude) +"\n";
             hdr_text = hdr_text + "altitude = " + std::to_string(basicGPSData->chk_altitude) +"\n";
             hdr_text = hdr_text + "groundspeed = " + std::to_string(basicGPSData->chk_gndspeed) +"\n";
+            hdr_text = hdr_text + "course = " + std::to_string(basicGPSData->chk_course) +"\n";
+            hdr_text = hdr_text + "heading = " + std::to_string(basicGPSData->chk_heading) +"\n";
             hdr_text = hdr_text + "FPS = " + std::to_string(basicGPSData->fps) + "\n";
         }
     }

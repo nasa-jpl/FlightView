@@ -304,11 +304,17 @@ void flight_widget::logFPSGPSSlot() {
                            .arg(gps->chk_latiitude)
                            .arg(gps->chk_altitude)
                            .arg(gps->chk_gndspeed));
+        emit statusMessage(QString("GPS check: heading: %1, course: %2")
+                           .arg(gps->chk_heading)
+                           .arg(gps->chk_course));
+
         fw->basicGPSData.usingGPS = true;
         fw->basicGPSData.chk_latiitude = gps->chk_latiitude;
         fw->basicGPSData.chk_longitude = gps->chk_longitude;
         fw->basicGPSData.chk_altitude = gps->chk_altitude;
         fw->basicGPSData.chk_gndspeed = gps->chk_gndspeed;
+        fw->basicGPSData.chk_heading = gps->chk_heading;
+        fw->basicGPSData.chk_course = gps->chk_course;
         fw->basicGPSData.fps = fw->delta;
     } else {
         emit statusMessage("GPS check: gps message data not received yet.");
@@ -548,13 +554,14 @@ void flight_widget::startDataCollection(QString secondaryLogFilename)
 
 void flight_widget::stopDataCollection()
 {
-    emit statusMessage(QString("[Flight Widget]: User pressed STOP Recording button"));
+    emit statusMessage(QString("[Flight Widget]: Stopping data collection."));
     fi->doneRecording();
     if(!options.disableGPS)
         emit stopSecondaryLog();
     if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
         waterfall_widget->setRecordWFImage(false);
     }
+    logFPSGPSSlot();
 }
 
 void flight_widget::startGPS(QString gpsHostname, uint16_t gpsPort, QString primaryLogLocation)
