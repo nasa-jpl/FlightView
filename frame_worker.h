@@ -120,6 +120,8 @@ public:
     bool usingDSF();
     void useNewOptions(startupOptionsType newOpts);
     startupOptionsType getStartupOptions();
+    basicGPS_t basicGPSData;
+
 
 signals:
     /*! \brief Calls to update the value of the backend FPS label */

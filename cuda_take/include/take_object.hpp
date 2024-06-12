@@ -76,6 +76,14 @@ static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence
 #define obcStatusClosing (8)
 #define obcStatusOpening (9)
 
+struct basicGPS_t {
+    bool usingGPS = false;
+    double chk_longitude = 0;
+    double chk_latiitude = 0;
+    double chk_altitude = 0;
+    float chk_gndspeed = 0;
+};
+
 class take_object {
     PdvDev * pdv_p = NULL;
     unsigned int channel;
@@ -132,6 +140,9 @@ class take_object {
 	bool saveFrameAvailable;
 	uint16_t * raw_save_ptr;
 
+    basicGPS_t *basicGPSData = NULL;
+    bool haveGPSDataPointer = false;
+
 public:
     take_object(int channel_num = 0, int number_of_buffers = 64,
                 int filter_refresh_rate = 10, bool runStdDev = true);
@@ -142,6 +153,7 @@ public:
                       int filter_refresh_rate = 10, bool runStdDev = true);
     void start();
     void changeOptions(takeOptionsType options);
+    void acceptGPSDataPtr(basicGPS_t *basicGPSDataIn);
     void setReadDirectory(const char* directory);
     camControlType* getCamControl();
     dark_subtraction_filter* dsf;

@@ -598,6 +598,7 @@ void waterfall::computeFPS() {
     // Called every one second for debug reasons:
     float timeElapsed = FPSElapsedTimer.elapsed() / 1000.0;
 #ifdef QT_DEBUG
+#ifdef WF_DEBUG_FPS
     if(timeElapsed != 0) {
         float fps = framesDelivered/timeElapsed;
         QString s;
@@ -605,6 +606,7 @@ void waterfall::computeFPS() {
                 .arg(isSecondary).arg(framesDelivered).arg(timeElapsed).arg(fps);
         statusMessage(s);
     }
+#endif
 #endif
     FPSElapsedTimer.restart();
     framesDelivered = 0;

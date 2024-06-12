@@ -73,19 +73,19 @@ int main(int argc, char *argv[])
     a.setApplicationName("FlightView");
 
     QString cmdName = QString("%1").arg(argv[0]);
-    QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps "
-                               "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 "
-                               "--gpsport 5661 "
-                               "--no-stddev --xiocam --rtpcam "
-                               "--rtpnextgen "
-                               "--rtpheight 480 "
-                               "--rtpwidth 1280 "
-                               "--rtpaddress 1.2.3.4 "
-                               "--rtpinterface eth2 "
-                               "--er2 --headless "
-                               "--wfpreview "
-                               "--wfpreviewcontinuous "
-                               "--wfpreviewlocation /path/to/waterfallpreview/files/ "
+    QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps \n"
+                               "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 \n"
+                               "--gpsport 5661 \n"
+                               "--no-stddev --xiocam --rtpcam \n"
+                               "--rtpnextgen \n"
+                               "--rtpheight 480 \n"
+                               "--rtpwidth 1280 \n"
+                               "--rtpaddress 1.2.3.4 \n"
+                               "--rtpinterface eth2 \n"
+                               "--er2 --headless \n"
+                               "--wfpreview \n"
+                               "--wfpreviewcontinuous \n"
+                               "--wfpreviewlocation /path/to/waterfallpreview/files/ \n"
                                )\
             .arg(cmdName);
     QString currentArg;

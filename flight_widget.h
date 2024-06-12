@@ -157,7 +157,7 @@ public slots:
     void showDebugMessage(QString debugMessage);
 
 private slots:
-    void logFPSSlot();
+    void logFPSGPSSlot();
 
 signals:
     void statusMessage(QString);

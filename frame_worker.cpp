@@ -25,6 +25,7 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     convertOptions();
 
     to.changeOptions(takeOptions);
+    to.acceptGPSDataPtr( &this->basicGPSData );
 
     if(options.xioCam)
     {

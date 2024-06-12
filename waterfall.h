@@ -1,7 +1,9 @@
 #ifndef WATERFALL_H
 #define WATERFALL_H
-
 // This is the RGB Waterfall
+
+// Define this for FPS data logged every second on debug builds
+#undef WF_DEBUG_FPS
 
 #include <deque>
 #include <memory>

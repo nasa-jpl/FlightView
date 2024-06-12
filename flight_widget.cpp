@@ -178,7 +178,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     fpsLoggingTimer->setInterval(60*1000); // once per minute
     fpsLoggingTimer->setSingleShot(false);
     if(options.flightMode) {
-        connect(fpsLoggingTimer, SIGNAL(timeout()), this, SLOT(logFPSSlot()));
+        connect(fpsLoggingTimer, SIGNAL(timeout()), this, SLOT(logFPSGPSSlot()));
         fpsLoggingTimer->start();
     }
 
@@ -294,7 +294,7 @@ void flight_widget::updateFPS()
     }
 }
 
-void flight_widget::logFPSSlot() {
+void flight_widget::logFPSGPSSlot() {
     // Called once per minute during flight mode
     emit statusMessage(QString("Logging FPS: %1, back-end frame count: %2").\
                        arg(fw->delta).arg(fw->frameCount));
@@ -304,6 +304,11 @@ void flight_widget::logFPSSlot() {
                            .arg(gps->chk_latiitude)
                            .arg(gps->chk_altitude)
                            .arg(gps->chk_gndspeed));
+        fw->basicGPSData.usingGPS = true;
+        fw->basicGPSData.chk_latiitude = gps->chk_latiitude;
+        fw->basicGPSData.chk_longitude = gps->chk_longitude;
+        fw->basicGPSData.chk_altitude = gps->chk_altitude;
+        fw->basicGPSData.chk_gndspeed = gps->chk_gndspeed;
     } else {
         emit statusMessage("GPS check: gps message data not received yet.");
     }
@@ -517,7 +522,7 @@ void flight_widget::setCrosshairs(QMouseEvent *event)
 
 void flight_widget::startDataCollection(QString secondaryLogFilename)
 {
-    emit statusMessage(QString("[Flight Widget]: User pressed START Recording button"));
+    emit statusMessage(QString("[Flight Widget]: Starting data recording"));
     // Example filename:
     // /tmp/flighttest/AV320230719t191438_gps
     if(options.flightMode)
@@ -530,8 +535,10 @@ void flight_widget::startDataCollection(QString secondaryLogFilename)
         // Can't rely on these filenames for non-flight recordings.
         fi->updateLastRec();
     }
-    if(!options.disableGPS)
+    if(!options.disableGPS) {
         emit beginSecondaryLog(secondaryLogFilename);
+        this->logFPSGPSSlot(); // log FPS and GPS data
+    }
 
     if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
         waterfall_widget->setRecordWFImage(true);
