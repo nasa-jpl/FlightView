@@ -86,6 +86,7 @@ int main(int argc, char *argv[])
                                "--wfpreview \n"
                                "--wfpreviewcontinuous \n"
                                "--wfpreviewlocation /path/to/waterfallpreview/files/ \n"
+                               "-v --version \n"
                                )\
             .arg(cmdName);
     QString currentArg;
@@ -119,6 +120,17 @@ int main(int argc, char *argv[])
         if(currentArg == "-d" || currentArg == "--debug")
         {
             startupOptions.debug = true;
+        }
+        if(currentArg == "-v" || currentArg == "--version")
+        {
+            printf("%s\n", COMPILE_INFO_STR);
+            printf("%s\n", DATE_COMPILE_STR);
+            printf("%s\n", GIT_BRANCH_STR);
+            printf("%s\n", GIT_CURRENT_SHA1_STR);
+            printf("  Link to commit: https://github.com/nasa-jpl/LiveViewLegacy/tree/" GIT_CURRENT_SHA1_SHORT "\n");
+            printf("%s\n", SRC_DIR_STR);
+            printf("%s\n", COMPILE_INFO_END_STR);
+            exit(0);
         }
         if(currentArg == "-f" || currentArg == "--flight")
         {
