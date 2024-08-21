@@ -58,6 +58,7 @@ void consoleLog::createUI()
     logView.setFocusPolicy(Qt::NoFocus);
     annotateBtn.setFocusPolicy(Qt::NoFocus);
     logView.scroll(0,200);
+    logView.setMaximumBlockCount(100000);
     annotateText.setFocus();
 }
 
