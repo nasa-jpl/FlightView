@@ -597,19 +597,74 @@ waterfall::wfInfo_t waterfall::getSettings() {
 void waterfall::computeFPS() {
     // Called every one second for debug reasons:
     float timeElapsed = FPSElapsedTimer.elapsed() / 1000.0;
+
+    if(timeElapsed != 0) {
+        fps = framesDelivered/timeElapsed;
 #ifdef QT_DEBUG
 #ifdef WF_DEBUG_FPS
-    if(timeElapsed != 0) {
-        float fps = framesDelivered/timeElapsed;
         QString s;
         s = QString("isSecondary: %1, framesDelivered: %2, timeElapsed: %3, FPS: %4")
                 .arg(isSecondary).arg(framesDelivered).arg(timeElapsed).arg(fps);
         statusMessage(s);
+#endif
+#endif
+#ifdef dynamicFPS
+        if(fps < 2)
+            return; // no point or measurement is in error.
+
+        if(isSecondary) {
+            if(fps < TARGET_WF_FRAMERATE_SECONDARY) {
+                fpsUnderEvents++;
+                if(fpsUnderEvents > fpsUEThreshold) {
+                    TARGET_WF_FRAMERATE_SECONDARY = TARGET_WF_FRAMERATE_SECONDARY-1;
+                    if(TARGET_WF_FRAMERATE_SECONDARY > minimumFPS) {
+                        WF_DISPLAY_PERIOD_MSECS_SECONDARY = 1000 / TARGET_WF_FRAMERATE_SECONDARY;
+                        rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS_SECONDARY);
+                        statusMessage(QString("Adjusting FPS down to %1 FPS.").arg(TARGET_WF_FRAMERATE_SECONDARY));
+                    }
+                    fpsUnderEvents = 0;
+                }
+            } else {
+                fpsUnderEvents = 0; //reset, only care about FPS under in a row.
+            }
+        } else {
+            if(fps < TARGET_WF_FRAMERATE) {
+                fpsUnderEvents++;
+                if(fpsUnderEvents > fpsUEThreshold) {
+                    TARGET_WF_FRAMERATE = TARGET_WF_FRAMERATE-1;
+                    if(TARGET_WF_FRAMERATE > minimumFPS) {
+                        WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
+                        rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
+                        statusMessage(QString("Adjusting FPS down to %1 FPS.").arg(TARGET_WF_FRAMERATE));
+                    }
+                    fpsUnderEvents = 0;
+                }
+            } else {
+                fpsUnderEvents = 0; //reset, only care about FPS under in a row.
+            }
+        }
     }
 #endif
-#endif
+
     FPSElapsedTimer.restart();
     framesDelivered = 0;
+}
+
+void waterfall::resetFPS(int desiredFPS) {
+    if(desiredFPS >= (int)minimumFPS) {
+        if(isSecondary) {
+            TARGET_WF_FRAMERATE_SECONDARY = desiredFPS;
+            WF_DISPLAY_PERIOD_MSECS_SECONDARY = 1000 / TARGET_WF_FRAMERATE_SECONDARY;
+            rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS_SECONDARY);
+            statusMessage(QString("Adjusting FPS setpoint to %1 FPS.").arg(TARGET_WF_FRAMERATE_SECONDARY));
+        } else {
+            TARGET_WF_FRAMERATE = desiredFPS;
+            WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
+            rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
+            statusMessage(QString("Adjusting FPS setpoint to %1 FPS.").arg(TARGET_WF_FRAMERATE));
+        }
+        fpsUnderEvents = 0;
+    }
 }
 
 void waterfall::debugThis()

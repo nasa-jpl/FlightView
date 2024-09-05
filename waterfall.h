@@ -5,6 +5,8 @@
 // Define this for FPS data logged every second on debug builds
 #undef WF_DEBUG_FPS
 
+#define dynamicFPS
+
 #include <deque>
 #include <memory>
 #include <atomic>
@@ -46,17 +48,22 @@ class waterfall : public QWidget
     int frWidth;
     startupOptionsType options;
 
-    unsigned int TARGET_WF_FRAMERATE = 29; // FPS
+    unsigned int TARGET_WF_FRAMERATE = 33; // FPS
     int WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
 
     unsigned int TARGET_WF_FRAMERATE_SECONDARY = 24; // FPS
     int WF_DISPLAY_PERIOD_MSECS_SECONDARY = 1000 / TARGET_WF_FRAMERATE_SECONDARY;
+
+    unsigned int minimumFPS = 19; // minimum allowed dynamic FPS
 
     QTimer rendertimer;
 
     QTimer FPSTimer;
     QElapsedTimer FPSElapsedTimer;
     unsigned int framesDelivered = 0;
+    float fps = 0;
+    int fpsUnderEvents = 0;
+    int fpsUEThreshold = 10; // If FPS not met for this many seconds in a row, decrease FPS by one.
 
     void allocateBlankWF();
     void copyPixToLine(float* image, float* dst, int pixPosition);
@@ -158,7 +165,9 @@ public slots:
     void setRecordWFImage(bool recordImageOn);
     void immediatelySaveImage(); // save image right now, no questions asked.
     void setSecondaryWF(bool isSecondary);
+    void resetFPS(int desiredFPS);
     void debugThis();
+
 
 private slots:
     void computeFPS();
