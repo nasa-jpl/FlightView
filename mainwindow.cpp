@@ -200,6 +200,8 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     connect(fw, SIGNAL(setColorScheme_signal(int,bool)), flight_screen, SLOT(handleNewColorScheme(int,bool)));
     connect(this, SIGNAL(toggleStdDevCalc(bool)), fw, SLOT(enableStdDevCalculation(bool)));
     connect(controlbox, SIGNAL(sendRGBLevels(double,double,double,double,bool)), flight_screen, SLOT(setRGBLevels(double,double,double,double,bool)));
+    connect(controlbox, SIGNAL(setWFTargetFPS_primary(int)), flight_screen, SLOT(setWFFPS_primary(int)));
+    connect(controlbox, SIGNAL(setWFTargetFPS_secondary(int)), flight_screen, SLOT(setWFFPS_secondary(int)));
 
     controlbox->getPrefsExternalTrig();
     connect(controlbox, &ControlsBox::showConsoleLog,

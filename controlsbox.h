@@ -228,6 +228,8 @@ signals:
     void sendRGBLevels(double r, double g, double b, double gamma, bool reprocess);
     void updateWFLength(int length);
     void showSecondWF();
+    void setWFTargetFPS_primary(int targetFPS);
+    void setWFTargetFPS_secondary(int targetFPS);
     void haveReadPreferences(settingsT prefs);
 
     void setCameraPause(bool isPaused);

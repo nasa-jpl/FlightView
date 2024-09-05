@@ -54,6 +54,7 @@ class waterfall : public QWidget
     unsigned int TARGET_WF_FRAMERATE_SECONDARY = 24; // FPS
     int WF_DISPLAY_PERIOD_MSECS_SECONDARY = 1000 / TARGET_WF_FRAMERATE_SECONDARY;
 
+    unsigned int initialFPSSetting = TARGET_WF_FRAMERATE;
     unsigned int minimumFPS = 19; // minimum allowed dynamic FPS
 
     QTimer rendertimer;

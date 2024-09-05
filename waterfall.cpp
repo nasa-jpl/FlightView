@@ -56,8 +56,10 @@ void waterfall::setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, s
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
     if(isSecondary) {
         rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS_SECONDARY);
+        initialFPSSetting = TARGET_WF_FRAMERATE_SECONDARY;
     } else {
         rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
+        initialFPSSetting = TARGET_WF_FRAMERATE;
     }
 
     connect(&FPSTimer, SIGNAL(timeout()), this, SLOT(computeFPS()));
@@ -651,7 +653,7 @@ void waterfall::computeFPS() {
 }
 
 void waterfall::resetFPS(int desiredFPS) {
-    if(desiredFPS >= (int)minimumFPS) {
+    if(desiredFPS >= (int)minimumFPS/5) {
         if(isSecondary) {
             TARGET_WF_FRAMERATE_SECONDARY = desiredFPS;
             WF_DISPLAY_PERIOD_MSECS_SECONDARY = 1000 / TARGET_WF_FRAMERATE_SECONDARY;

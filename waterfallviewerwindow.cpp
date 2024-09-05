@@ -78,6 +78,10 @@ void waterfallViewerWindow::changeWFLength(int length) {
     wf->changeWFLength(length);
 }
 
+void waterfallViewerWindow::resetFPS(int targetFPS) {
+    wf->resetFPS(targetFPS);
+}
+
 void waterfallViewerWindow::setSpecOpacity(unsigned char opacity) {
     wf->setSpecOpacity(opacity);
 }

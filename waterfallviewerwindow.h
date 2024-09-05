@@ -33,6 +33,7 @@ public slots:
     void setSpecImage(bool followMe, QImage *specImage);
     void useEntireScreen();
     void debugThis();
+    void resetFPS(int targetFPS);
 
 signals:
     void statusMessageOutSig(QString);

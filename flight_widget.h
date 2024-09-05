@@ -146,6 +146,8 @@ public slots:
     void setShowRGBLines(bool showLines);
     void changeWFLength(int length);
     void showSecondWF();
+    void setWFFPS_primary(int target);
+    void setWFFPS_secondary(int target);
     void rescaleRange();
     void setUseDSF(bool useDSF);
     void hideRGB();

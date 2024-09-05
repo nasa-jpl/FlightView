@@ -138,9 +138,17 @@ void rgbAdjustments::on_closeBtn_clicked()
     this->close();
 }
 
-
 void rgbAdjustments::on_reprocessBtn_clicked()
 {
     emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, true);
 }
 
+void rgbAdjustments::on_setPrimaryFPSBtn_clicked()
+{
+    emit setTargetFPS_primary(ui->primaryFPSSpin->value());
+}
+
+void rgbAdjustments::on_setSecondaryFPSBtn_clicked()
+{
+    emit setTargetFPS_secondary(ui->secondaryFPSSpin->value());
+}

@@ -476,6 +476,16 @@ void flight_widget::changeWFLength(int length)
     //waterfall_widget->changeWFLength(length);
 }
 
+void flight_widget::setWFFPS_primary(int target) {
+    waterfall_widget->resetFPS(target);
+}
+
+void flight_widget::setWFFPS_secondary(int target) {
+    if(secondWF != NULL) {
+        secondWF->resetFPS(target);
+    }
+}
+
 void flight_widget::showSecondWF() {
     if(secondWF == NULL) {
         secondWF = new waterfallViewerWindow();
