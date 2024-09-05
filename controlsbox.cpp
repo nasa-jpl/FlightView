@@ -807,6 +807,10 @@ void ControlsBox::loadSettings()
     prefs.stddevCeiling = settings->value("stddevCeiling", defaultPrefs.stddevCeiling).toInt();
     prefs.stddevFloor = settings->value("stddevFloor", defaultPrefs.stddevFloor).toInt();
 
+    // Histogram:
+    prefs.histCeiling = settings->value("histCeiling", defaultPrefs.histCeiling).toInt();
+    prefs.histFloor = settings->value("histFloor", defaultPrefs.histFloor).toInt();
+
     // Flight:
     prefs.flightDSFCeiling = settings->value("flightDSFCeiling", defaultPrefs.flightDSFCeiling).toInt();
     prefs.flightDSFFloor = settings->value("flightDSFFloor", defaultPrefs.flightDSFFloor).toInt();
@@ -930,8 +934,8 @@ void ControlsBox::updateUIToPrefs()
     }
     if(p_histogram)
     {
-        floor_slider.setValue(prefs.stddevFloor);
-        ceiling_slider.setValue(prefs.stddevCeiling);
+        floor_slider.setValue(prefs.histFloor);
+        ceiling_slider.setValue(prefs.histCeiling);
         return;
     }
 }
@@ -984,6 +988,10 @@ void ControlsBox::saveSettings()
     // STD Dev Tab:
     settings->setValue("stddevCeiling", prefs.stddevCeiling);
     settings->setValue("stddevFloor", prefs.stddevFloor);
+
+    // Histogram Tab:
+    settings->setValue("histCeiling", prefs.histCeiling);
+    settings->setValue("histFloor", prefs.histFloor);
 
     // Flight Tab:
     settings->setValue("flightDSFCeiling", prefs.flightDSFCeiling);
@@ -1165,6 +1173,8 @@ void ControlsBox::setDefaultSettings()
     defaultPrefs.fftFloor = 0;
     defaultPrefs.stddevCeiling = 1000;
     defaultPrefs.stddevFloor = 0;
+    defaultPrefs.histCeiling = 1000;
+    defaultPrefs.histFloor = 0;
     defaultPrefs.preferredWindowWidth = 1280;
     defaultPrefs.preferredWindowHeight = 1024;
 
@@ -1559,13 +1569,10 @@ void ControlsBox::tab_changed_slot(int index)
             ceiling_maximum = p_histogram->slider_max;
             low_increment_cbox.setChecked(p_histogram->slider_low_inc);
             increment_slot(low_increment_cbox.isChecked());
-
-            // TODO: prefs.std...
-            ceiling_edit.setValue(p_histogram->getCeiling());
-            floor_edit.setValue(p_histogram->getFloor());
+            ceiling_slider.setValue(p_histogram->getCeiling());
+            floor_slider.setValue(p_histogram->getFloor());
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateCeiling(int)), Qt::UniqueConnection);
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateFloor(int)), Qt::UniqueConnection);
-
             std_dev_N_slider->setEnabled(true);
             std_dev_N_edit->setEnabled(true);
             use_DSF_cbox.setEnabled(false);
@@ -1787,8 +1794,8 @@ void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
     }
 
     if(p_histogram) {
-        if(isCeiling) prefs.stddevCeiling = val;
-        else prefs.stddevFloor = val;
+        if(isCeiling) prefs.histCeiling = val;
+        else prefs.histFloor = val;
         goto finished;
     }
 
