@@ -463,17 +463,25 @@ void frameview_widget::handleNewFrame()
                 // Not DSF
                 for(int col = 0; col < frWidth; col++)
                 {
-                    for(int row = 0; row < frHeight; row++)
+                    for(int row = 0; row < frHeight; row++) {
                         // this will blank out the part of the frame where the crosshair is pointing so that it is
                         // visible in the display
+
+                        if(peakHoldMode) {
+                            if(local_image_ptr_uint[row * frWidth + col] > peakValueHolder[row * frWidth + col]) {
+                                peakValueHolder[row * frWidth + col] = local_image_ptr_uint[row * frWidth + col];
+                            }
+                            colorMap->data()->setCell(col, row, peakValueHolder[row * frWidth + col]);
+                        }
                         if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
                              || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
                         {
                             colorMap->data()->setCell(col, row, NAN);
-                        } else {
+                        } else if (!peakHoldMode) {
                             // colorMap->data()->setCell(col, row, local_image_ptr_uint[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
                             colorMap->data()->setCell(col, row, local_image_ptr_uint[row * frWidth + col]); // y-axis NOT reversed
                         }
+                    }
                 }
             }
 
