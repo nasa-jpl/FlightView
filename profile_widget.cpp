@@ -193,7 +193,13 @@ void profile_widget::handleNewFrame()
      */
     float *local_image_ptr;
     bool isMeanProfile = itype == VERTICAL_MEAN || itype == HORIZONTAL_MEAN;
-    if (!this->isHidden() &&  fw->curFrame != NULL && ((fw->crosshair_x != -1 && fw->crosshair_y != -1) || isMeanProfile)) {
+
+    if(this->isHidden())
+        return;
+    if(fw->curFrame==NULL)
+        return;
+
+    if ( (fw->crosshair_x != -1 && fw->crosshair_y != -1) || isMeanProfile) {
         allow_callouts = true;
 
         switch (itype)
