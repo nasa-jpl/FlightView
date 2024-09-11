@@ -404,6 +404,9 @@ void frameview_widget::handleNewFrame()
         // crash was when only items 0-420 existed
         // Other items were "not accessable"
         wfimage.resize(wflength); // Cut off anything too small.
+        wfimage.shrink_to_fit();
+        if(this->isHidden())
+            return;
 
         // Display time:
         std::vector <float> rowdata;

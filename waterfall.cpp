@@ -57,6 +57,7 @@ void waterfall::setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, s
     if(isSecondary) {
         rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS_SECONDARY);
         initialFPSSetting = TARGET_WF_FRAMERATE_SECONDARY;
+
     } else {
         rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
         initialFPSSetting = TARGET_WF_FRAMERATE;
@@ -605,8 +606,8 @@ void waterfall::computeFPS() {
 #ifdef QT_DEBUG
 #ifdef WF_DEBUG_FPS
         QString s;
-        s = QString("isSecondary: %1, framesDelivered: %2, timeElapsed: %3, FPS: %4")
-                .arg(isSecondary).arg(framesDelivered).arg(timeElapsed).arg(fps);
+        s = QString("framesDelivered: %2, timeElapsed: %3, FPS: %4")
+                .arg(framesDelivered).arg(timeElapsed).arg(fps);
         statusMessage(s);
 #endif
 #endif
@@ -622,28 +623,75 @@ void waterfall::computeFPS() {
                     if(TARGET_WF_FRAMERATE_SECONDARY > minimumFPS) {
                         WF_DISPLAY_PERIOD_MSECS_SECONDARY = 1000 / TARGET_WF_FRAMERATE_SECONDARY;
                         rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS_SECONDARY);
-                        statusMessage(QString("Adjusting FPS down to %1 FPS.").arg(TARGET_WF_FRAMERATE_SECONDARY));
+                        debugMessage(QString("Adjusting FPS down to %1 FPS.").arg(TARGET_WF_FRAMERATE_SECONDARY));
+                        justMovedUpFPS = false;
                     }
                     fpsUnderEvents = 0;
                 }
             } else {
                 fpsUnderEvents = 0; //reset, only care about FPS under in a row.
+                metFPS = metFPS>1024?1024:metFPS+1; // clamp at 1024
             }
         } else {
-            if(fps < TARGET_WF_FRAMERATE) {
+            if(fps < (TARGET_WF_FRAMERATE*0.90)) {
                 fpsUnderEvents++;
+                debugMessage(QString("Not meeting FPS. Expected > %1, got %2, under events %3")
+                              .arg(TARGET_WF_FRAMERATE*0.90).arg(fps).arg(fpsUnderEvents));
                 if(fpsUnderEvents > fpsUEThreshold) {
-                    TARGET_WF_FRAMERATE = TARGET_WF_FRAMERATE-1;
-                    if(TARGET_WF_FRAMERATE > minimumFPS) {
+                    if(TARGET_WF_FRAMERATE > minimumFPS+1) {
+                        TARGET_WF_FRAMERATE = TARGET_WF_FRAMERATE-1;
                         WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
                         rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
-                        statusMessage(QString("Adjusting FPS down to %1 FPS.").arg(TARGET_WF_FRAMERATE));
+                        debugMessage(QString("Adjusting FPS down to %1 FPS. Minimum allowed is %2, observed is %3.")
+                                      .arg(TARGET_WF_FRAMERATE)
+                                      .arg(minimumFPS).arg(fps));
+                        justMovedDownFPS = true;
+                        if(justMovedUpFPS) {
+                            flipFlopFPSCounter++;
+                            justMovedUpFPS = false;
+                        } else {
+                            flipFlopFPSCounter = 0;
+                        }
                     }
                     fpsUnderEvents = 0;
+                metFPS = 0; // we did not meet the FPS, zero the counter.
                 }
             } else {
                 fpsUnderEvents = 0; //reset, only care about FPS under in a row.
+                if(fps > (((float)TARGET_WF_FRAMERATE)*0.95)) {
+                    // We only count this to haev been met if we were at or better than 90% of the requested frame rate.
+                    metFPS = metFPS>1024?1024:metFPS+1; // clamp at 1024
+                    debugMessage(QString("Meeting 95% FPS. Thresh: %1, got %2, metFPS count: %3")
+                                  .arg(TARGET_WF_FRAMERATE*0.95).arg(fps).arg(metFPS));
+                } else {
+                    metFPS = 0;
+                }
             }
+        }
+    }
+    // TODO: Secondary display
+    // Now, if we did not just decrease the FPS and if we have met the 95% FPS 15 times in a row,
+    // Then we can consider increasing the FPS.
+    if(metFPS > 15) {
+        // we can, potentially, bump up the FPS.
+        if(flipFlopFPSCounter > 10) {
+            // We have flip-flopped ten times, time to lock it in.
+            justMovedUpFPS = false;
+            debugMessage(QString("Detected FPS up/down flipflop, not raising FPS"));
+        } else {
+            // bump it up
+            if(justMovedDownFPS) {
+                flipFlopFPSCounter++;
+                justMovedDownFPS = false;
+            }
+            if(((unsigned int)(fps+1.5)) < maximumFPS) {
+                debugMessage(QString("Increasing FPS to %1, observed framerate is %2")
+                              .arg((int)(fps+1.5))
+                              .arg(fps));
+                resetFPS((int)(fps+1.5));
+            }
+            justMovedUpFPS = true;
+            metFPS = 0;
         }
     }
 #endif
@@ -666,12 +714,26 @@ void waterfall::resetFPS(int desiredFPS) {
             statusMessage(QString("Adjusting FPS setpoint to %1 FPS.").arg(TARGET_WF_FRAMERATE));
         }
         fpsUnderEvents = 0;
+        //metFPS = 0;
     }
 }
 
 void waterfall::debugThis()
 {
     statusMessage("In debugThis function.");
+}
+
+void waterfall::debugMessage(QString m) {
+#ifndef QT_DEBUG
+    return;
+#endif
+    if(isSecondary) {
+        m.prepend(QString("DBG WATERFALL (2): "));
+    } else {
+        m.prepend(QString("DBG WATERFALL: "));
+    }
+    std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
+    emit statusMessageOut(m);
 }
 
 void waterfall::statusMessage(QString m)

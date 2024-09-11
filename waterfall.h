@@ -3,7 +3,7 @@
 // This is the RGB Waterfall
 
 // Define this for FPS data logged every second on debug builds
-#undef WF_DEBUG_FPS
+#define WF_DEBUG_FPS
 
 #define dynamicFPS
 
@@ -56,7 +56,11 @@ class waterfall : public QWidget
 
     unsigned int initialFPSSetting = TARGET_WF_FRAMERATE;
     unsigned int minimumFPS = 19; // minimum allowed dynamic FPS
-
+    unsigned int metFPS = 0;
+    unsigned int maximumFPS = 35;
+    bool justMovedUpFPS = false;
+    bool justMovedDownFPS = false;
+    unsigned int flipFlopFPSCounter = 0;
     QTimer rendertimer;
 
     QTimer FPSTimer;
@@ -72,6 +76,7 @@ class waterfall : public QWidget
 
     int maxWFlength = 1024;
     void statusMessage(QString);
+    void debugMessage(QString);
 
     int wflength; // length of graphics drawn
     int ceiling;
