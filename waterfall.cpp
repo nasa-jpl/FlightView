@@ -206,8 +206,8 @@ void waterfall::paintEvent(QPaintEvent *event)
     //painter.setRenderHint(QPainter::HighQualityAntialiasing); // blocky
     //painter.setRenderHint(QPainter::Antialiasing); // blocky
 
-
-    painter.setWindow(QRect(0, 0, hSize/4.0, 1024));
+    //painter.setWindow(QRect(0, 0, hSize/4.0, 1024));
+    painter.setWindow(QRect(0, 0, hSize, 1024));
 
     // Target: Where the image ultimately goes
     // Source: A rectangle which defines the portion of the specImage
@@ -218,9 +218,11 @@ void waterfall::paintEvent(QPaintEvent *event)
     // For length trimming, adjust the wflength parameter on the source
     // for Left-Right trimming, adjust the first two parameters of source.
 
-    QRectF target(0, 0, hSize/4.0, vSize);
+    //QRectF target(0, 0, hSize/4.0, vSize);
+    QRectF target(0, 0, hSize, vSize);
+
     QRectF source(0.0f, 0.0f, hSize, wflength); // use source geometry to "crop" the waterfall image
-        painter.drawImage(target, *specImage, source);
+    painter.drawImage(target, *specImage, source);
 }
 
 void waterfall::cheapRedraw() {
@@ -638,8 +640,9 @@ void waterfall::computeFPS() {
                 debugMessage(QString("Not meeting FPS. Expected > %1, got %2, under events %3")
                               .arg(TARGET_WF_FRAMERATE*0.90).arg(fps).arg(fpsUnderEvents));
                 if(fpsUnderEvents > fpsUEThreshold) {
-                    if(TARGET_WF_FRAMERATE > minimumFPS+1) {
-                        TARGET_WF_FRAMERATE = TARGET_WF_FRAMERATE-1;
+                    unsigned int newFR = (TARGET_WF_FRAMERATE + fps) / 2;
+                    if(newFR > minimumFPS) {
+                        TARGET_WF_FRAMERATE = newFR;
                         WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
                         rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
                         debugMessage(QString("Adjusting FPS down to %1 FPS. Minimum allowed is %2, observed is %3.")
