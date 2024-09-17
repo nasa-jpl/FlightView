@@ -235,6 +235,7 @@ void waterfall::redraw()
 {
     // Copy the waterfall data into the specImage.
     // To increase speed, we are ignoring the alpha (opacity) value
+    // Called manually by handleNewFrame
 
     QColor c;
     QRgb *line = NULL;
@@ -450,6 +451,14 @@ void waterfall::handleNewFrame()
     }
 }
 
+void waterfall::setGPSStart(gpsMessage m) {
+    this->startGPSMessage = m;
+}
+
+void waterfall::setGPSEnd(gpsMessage m) {
+    this->destGPSMessage = m;
+}
+
 void waterfall::immediatelySaveImage() {
     statusMessage("Immediately saving current waterfall image.");
     saveImage();
@@ -466,6 +475,16 @@ void waterfall::saveImage() {
                       .arg(options.wfPreviewLocation + filename));
         specImage->save(options.wfPreviewLocation + filename,
                        nullptr, jpgQuality);
+#ifdef WF_GPS_TAGGING
+        QString fileLocationFull = options.wfPreviewLocation + filename;
+        bool success = imageTagger(fileLocationFull.toLocal8Bit(),
+                                   startGPSMessage, destGPSMessage, fps,
+                                   r_row, g_row, b_row,
+                                   gammaLevel, floor, ceiling);
+        if(!success) {
+            statusMessage(QString("Warning, could not modify metadata for waterfall image."));
+        }
+#endif
     }
 }
 

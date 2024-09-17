@@ -5,7 +5,11 @@
 // Define this for FPS data logged every second on debug builds
 #define WF_DEBUG_FPS
 
+// Define this for dynamic FPS
 #define dynamicFPS
+
+// Define this for image GPS tagging
+#define WF_GPS_TAGGING
 
 #include <deque>
 #include <memory>
@@ -31,6 +35,7 @@
 #include "frame_worker.h"
 #include "rgbline.h"
 
+#include "imagetagger.h"
 
 
 #define MAX8(x) ((x>255)?255:x)
@@ -120,11 +125,13 @@ class waterfall : public QWidget
     unsigned char opacity;
     QImage *specImage = NULL;
     QImage *priorSpecImage = NULL;
+    gpsMessage startGPSMessage;
+    gpsMessage destGPSMessage;
 
     void redraw();
     bool useDSF;
     bool recordToJPG = false;
-    int jpgQuality = 75;
+    int jpgQuality = 75; // TODO: parameter
     unsigned int frameCount = 0;
     void prepareWfImage();
     void saveImage();
@@ -137,6 +144,8 @@ public:
     explicit waterfall(QWidget *parent = nullptr);
     void setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, startupOptionsType options);
     void process();
+    void setGPSStart(gpsMessage m);
+    void setGPSEnd(gpsMessage m);
     QImage* getImage();
     void setSpecImage(bool followMe, QImage *specImage);
     struct wfInfo_t {

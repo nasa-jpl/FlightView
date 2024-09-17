@@ -53,6 +53,7 @@ struct startupOptionsType
     bool wfPreviewContinuousMode = false;
     bool wfPreviewlocationset = false;
     QString wfPreviewLocation = QString("/tmp");
+    int wfCompQuality = 75;
 };
 
 

@@ -59,6 +59,7 @@ HEADERS  += mainwindow.h \
     consolelog.h \
     cuda_take/include/fileformats.h \
     cuda_take/include/rtpnextgen.hpp \
+    dms.h \
     filenamegenerator.h \
     flight_widget.h \
     flightindicators.h \
@@ -67,6 +68,7 @@ HEADERS  += mainwindow.h \
     frame_worker.h \
     gpsGUI/zupt.h \
     gpsmanager.h \
+    imagetagger.h \
     shm_gps.h \
     image_type.h \
     initialsetup.h \
@@ -141,7 +143,7 @@ RESOURCES += \
 
 QMAKE_CXXFLAGS += -O2 -std=c++11 -march=native -fopenmp -Wno-class-memaccess -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result
 QMAKE_LFLAGS += -fopenmp
-LIBS += -lgsl -lgslcblas
+LIBS += -lgsl -lgslcblas -lexiv2
 
 # Used for build tracking:
 DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"

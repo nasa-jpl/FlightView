@@ -36,7 +36,19 @@ struct utcTime {
     QString UTCValidityStr;
 };
 
+static utcTime processUTCstamp(uint64_t t)
+{
+    utcTime tObj;
+    tObj.hour = t / ((float)1E4)/60.0/60.0;
+    tObj.minute = ( t / ((float)1E4)/60.0 ) - (tObj.hour*60) ;
+    tObj.secondFloat = ( t / ((float)1E4) ) - (tObj.hour*60.0*60.0) - (tObj.minute*60.0);
+    tObj.second = ( t / ((float)1E4) ) - (tObj.hour*60.0*60.0) - (tObj.minute*60.0);
 
+    tObj.UTCValidityStr = QString("%1:%2:%3 UTC").arg(tObj.hour, 2, 10, QChar('0')).arg(tObj.minute, 2, 10, QChar('0')).arg(tObj.secondFloat, 6, 'f', 3, QChar('0'));
+    tObj.UTCstr = QString("%1:%2:%3 UTC").arg(tObj.hour, 2, 10, QChar('0')).arg(tObj.minute, 2, 10, QChar('0')).arg(tObj.second, 2, 10, QChar('0'));
+
+    return tObj;
+}
 
 class gpsManager : public QObject
 {
@@ -47,6 +59,7 @@ class gpsManager : public QObject
     QThread *gpsThread;
     gpsNetwork *gps;
     gpsMessage m;
+    gpsMessage lastPositionMessage;
 
     startupOptionsType options;
 
@@ -255,6 +268,8 @@ public:
                                qfi_EADI *eadi, qfi_EHSI *ehsi);
 
     void prepareElements();
+
+    gpsMessage getLastPositionalMessage();
 
     // no-effort logging elements:
     double chk_longitude = 0;

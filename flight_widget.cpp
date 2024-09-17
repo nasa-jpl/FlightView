@@ -558,6 +558,7 @@ void flight_widget::startDataCollection(QString secondaryLogFilename)
     }
 
     if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
+        waterfall_widget->setGPSStart( this->gps->getLastPositionalMessage() );
         waterfall_widget->setRecordWFImage(true);
     }
 }
@@ -569,6 +570,7 @@ void flight_widget::stopDataCollection()
     if(!options.disableGPS)
         emit stopSecondaryLog();
     if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
+        waterfall_widget->setGPSEnd( this->gps->getLastPositionalMessage() );
         waterfall_widget->setRecordWFImage(false);
     }
     logFPSGPSSlot();

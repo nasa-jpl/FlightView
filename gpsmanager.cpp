@@ -563,6 +563,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             this->chk_latiitude = m.latitude;
             this->chk_longitude = longitude;
             this->chk_altitude = m.altitude * 3.28084; // feet
+            this->lastPositionMessage = m; // keep a copy when there is useful info
         }
         if(m.haveCourseSpeedGroundData)
         {
@@ -866,6 +867,10 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         firstMessage = false;
     }
     priorSHMIndex = currentSHMIndex;
+}
+
+gpsMessage gpsManager::getLastPositionalMessage() {
+    return this->lastPositionMessage;
 }
 
 void gpsManager::handleStartsecondaryLog(QString filename)
