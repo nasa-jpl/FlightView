@@ -3,7 +3,7 @@
 // This file is for things common to
 // the waterfall engine and the waterfall display
 
-#define WF_SPEC_BUF_COUNT 3
+#define WF_SPEC_BUF_COUNT 10
 
 #include <QImage>
 

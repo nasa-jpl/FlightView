@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 
+#include "wfshared.h"
 #include "waterfall.h"
 
 namespace Ui {
@@ -31,6 +32,7 @@ public slots:
     void setRecordWFImage(bool recordImageOn);
     void setSecondaryWF(bool isSecondary);
     void setSpecImage(QImage *specImage);
+    void setSpecImageBuffer(specImageBuff_t *buff);
     void useEntireScreen();
     void debugThis();
     void resetFPS(int targetFPS);

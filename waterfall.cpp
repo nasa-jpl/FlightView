@@ -178,7 +178,7 @@ void waterfall::paintEvent(QPaintEvent *event)
     QRectF source(0.0f, 0.0f, hSize, wflength); // use source geometry to "crop" the waterfall image
 
     // If we are not using the buffer, then we can draw from the specImage, which we might be following.
-    if(buffer) {
+    if(buffer && buffer->isValid) {
         int pos = buffer->lastWrittenImage;
         specImage = buffer->image[pos];
     }

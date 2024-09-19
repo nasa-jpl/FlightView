@@ -34,7 +34,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     switch(image_type) {
     case BASE:
         //ceiling = fw->base_ceiling;
-        break;
+        //break;
     case DSF:
         //ceiling = 100;
         peakValueHolder = (float*)calloc(frWidth * frHeight, sizeof(float));
@@ -136,7 +136,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     fpsGeo.setWidth(25);
     fpsLabel.setGeometry(fpsGeo);
     layout.addWidget(&fpsLabel, 8, 0, 1, 2);
-    if(image_type == DSF) {
+    if( (image_type == DSF) || (image_type==BASE)) {
         layout.addWidget(peakHoldChk, 9,0,1,1);
         layout.addWidget(clearPeaksBtn, 9,1,1,1);
     }

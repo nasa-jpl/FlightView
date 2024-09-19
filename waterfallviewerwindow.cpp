@@ -56,6 +56,10 @@ void waterfallViewerWindow::setSpecImage(QImage *specImage) {
     wf->setSpecImage(specImage);
 }
 
+void waterfallViewerWindow::setSpecImageBuffer(specImageBuff_t *buff) {
+    wf->setSpecImageBuffer(buff);
+}
+
 void waterfallViewerWindow::changeRGB(int r, int g, int b) {
     // Row numbers
     //wf->changeRGB(r,g,b);

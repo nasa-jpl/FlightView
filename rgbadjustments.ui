@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>354</width>
-    <height>569</height>
+    <height>571</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -311,7 +311,7 @@
      <item>
       <widget class="QCheckBox" name="reprocessAutoChk">
        <property name="toolTip">
-        <string>If checked,[ RGB and Gamma changes will cause the entire image to be reprocessed immediately. </string>
+        <string>If checked, RGB and Gamma changes will cause the entire image to be reprocessed immediately. </string>
        </property>
        <property name="text">
         <string>Auto Reprocess</string>

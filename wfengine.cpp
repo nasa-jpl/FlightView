@@ -96,12 +96,12 @@ void wfengine::setup() {
     opacity = 0xff;
     useDSF = false; // default to false since the program can't start up with a DSF mask anyway
 
-    // specImage = new QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
-
     buffer = new specImageBuff_t;
     for(int p=0; p < WF_SPEC_BUF_COUNT; p++) {
         buffer->image[p] = new QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
     }
+    buffer->currentWritingImage = 0;
+    buffer->lastWrittenImage = 0;
     buffer->isValid = true;
 
     statusMessage(QString("Created specImage with height %1 and width %2.").arg(buffer->image[0]->height()).arg(buffer->image[0]->width()));
@@ -183,7 +183,9 @@ void wfengine::prepareWfImage() {
     QString command = "mkdir -p " + options.wfPreviewLocation;
     int sys_rtn = system(command.toLocal8Bit());
     if(sys_rtn) {
-        statusMessage("Error, could not make waterfall preview location directory.");
+        statusMessage("Error, could not make waterfall preview location directory. "
+                      "Check the specified datastoragelocation and waterfallpreviewlocation"
+                      ", as well as location permissions.");
         saveImageReady = false;
         return;
     }
@@ -237,8 +239,7 @@ void wfengine::redraw()
 
     QColor c;
     QRgb *line = NULL;
-    //rgbLine *cl;
-    // new method:
+
     unsigned char *r = NULL;
     unsigned char *g = NULL;
     unsigned char *b = NULL;
@@ -341,11 +342,6 @@ void wfengine::addNewFrame()
     //processLineToRGB(line); // single processor
     processLineToRGB_MP(line); // multi-processor
 
-
-    //QMutexLocker lockwf(&wfInUse);
-
-    //wf.push_front(std::shared_ptr<rgbLine>(line));
-    //wf.resize(maxWFlength);
     currentWFLine = (currentWFLine + 1) % maxWFlength;
     addingFrame.unlock();
 }
@@ -450,7 +446,11 @@ void wfengine::handleNewFrame()
     // We can add other functions that happen per-frame here.
     // But first, we will copy the frame in:
     addNewFrame();
-    if(waitingToReprocess) {
+
+    // We only consider reprocessing every four frames.
+    // This cuts down on the image smear when the user
+    // is dragging a slider.
+    if(waitingToReprocess && (framesDelivered%4)) {
         rescaleWF();
         waitingToReprocess = false;
     }

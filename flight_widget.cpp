@@ -589,7 +589,7 @@ void flight_widget::showSecondWF() {
 
         // Copy the specImage from one waterfall to the other to save on computation
         emit statusMessage("Copying data from primary waterfall to secondary waterfall.");
-        secondWF->setSpecImage(wfcomputer->getImage());
+        secondWF->setSpecImageBuffer(waterfall_widget->getImageBuffer());
 
         // Attempt to move to second display:
         QList<QScreen *>  sl = QApplication::screens();
@@ -600,6 +600,7 @@ void flight_widget::showSecondWF() {
             secondWF->useEntireScreen();
         }
     } else {
+        // Just update the length
         waterfall::wfInfo_t i = waterfall_widget->getSettings();
         secondWF->changeWFLength(i.wflength);
     }
