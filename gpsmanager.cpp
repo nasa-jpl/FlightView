@@ -946,6 +946,7 @@ void gpsManager::handleGPSConnectionGood()
     statusLinkStickyError = false; // Safe to clear when a new connection has been made.
     statusConnectedToGPS = true;
     hbErrorCount = 0;
+    emit gpsStatusMessage(QString("Turning off ZuPT"));
     emit turn_off_ZuPT(host, 8110);
     zuptRetryTimer.start(); // send again a few seconds later just in case.
     if(shmValid)
@@ -953,6 +954,7 @@ void gpsManager::handleGPSConnectionGood()
 }
 
 void gpsManager::handleZUpTRetryTimer() {
+    emit gpsStatusMessage(QString("Turning off ZuPT"));
     emit turn_off_ZuPT(host, 8110);
 }
 

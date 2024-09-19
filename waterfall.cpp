@@ -93,9 +93,35 @@ QImage* waterfall::getImage() {
     return specImage;
 }
 
+specImageBuff_t* waterfall::getImageBuffer() {
+    statusMessage("Returning image buffer from basic waterfall widget.");
+    return buffer;
+}
+
+void waterfall::setSpecImageBuffer(specImageBuff_t *buf) {
+    if(buf) {
+        statusMessage("Switching to external image buffer");
+        if(buf->isValid) {
+            statusMessage(QString("Using external buffer with height %1 and width %2.").arg(buf->image[0]->height()).arg(buf->image[0]->width()));
+        } else {
+            statusMessage("External buffer is not valid yet.");
+        }
+        statusMessage("Pausing render timer");
+        rendertimer.stop();
+
+        this->buffer = buf;
+        statusMessage("Starting render timer.");
+
+        resetFPS(this->TARGET_WF_FRAMERATE);
+        rendertimer.start();
+    } else {
+        statusMessage("Warning, external image buffer is NULL, cannot use");
+    }
+}
+
 void waterfall::setSpecImage(QImage *extSpecImage) {
     if(extSpecImage != NULL) {
-        statusMessage("Switching to extSpecImage");
+        statusMessage("Switching to extSpecImage (not buffer)");
         statusMessage(QString("Using extSpecImage with height %1 and width %2.").arg(extSpecImage->height()).arg(extSpecImage->width()));
 
         statusMessage("Pausing render timer");
@@ -121,7 +147,10 @@ void waterfall::setSpecImage(QImage *extSpecImage) {
 
 void waterfall::paintEvent(QPaintEvent *event)
 {
-    if(specImage == NULL)
+    if(buffer == NULL)
+        return;
+
+    if(!buffer->isValid)
         return;
 
     QPainter painter(this);
@@ -146,9 +175,16 @@ void waterfall::paintEvent(QPaintEvent *event)
 
     //QRectF target(0, 0, hSize/4.0, vSize);
     QRectF target(0, 0, hSize, vSize);
-
     QRectF source(0.0f, 0.0f, hSize, wflength); // use source geometry to "crop" the waterfall image
-    painter.drawImage(target, *specImage, source);
+
+    // If we are not using the buffer, then we can draw from the specImage, which we might be following.
+    if(buffer) {
+        int pos = buffer->lastWrittenImage;
+        specImage = buffer->image[pos];
+    }
+    if(specImage) {
+        painter.drawImage(target, *specImage, source);
+    }
 }
 
 void waterfall::cheapRedraw() {

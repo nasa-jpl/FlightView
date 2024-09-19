@@ -8,7 +8,7 @@ wfengine::wfengine(QWidget *parent) : QObject(parent) {
     // basically don't do much yet.
 #ifdef QT_DEBUG
     std::cerr << "Constructing wfengine. Thread Name: " << this->thread()->objectName().toStdString() << std::endl;
-    std::cerr << "wfengine This pointer: " << Qt::hex << this << std::endl;
+    //std::cerr << "wfengine This pointer: " << Qt::hex << this << std::endl;
 #endif
 }
 
@@ -16,12 +16,25 @@ wfengine::~wfengine() {
 #ifdef QT_DEBUG
     std::cerr << "wfengine destructor called.\n";
     std::cerr << "wfengine Thread Name: " << this->thread()->objectName().toStdString() << std::endl;
-    std::cerr << "wfengine This pointer: " << Qt::hex << this << std::endl;
+    //std::cerr << "wfengine This pointer: " << Qt::hex << this << std::endl;
 #endif
+
+    if(buffer) {
+        std::cerr << "wfengine deleting image buffer.\n";
+        buffer->isValid = false;
+        for(int i=0; i < WF_SPEC_BUF_COUNT; i++) {
+            if(buffer->image[i])
+                delete buffer->image[i];
+        }
+        delete buffer;
+        std::cerr << "wfengine completed deleting image buffer.\n";
+    } else {
+        std::cerr << "wfengine not deleting image buffer.\n";
+    }
 
     if(specImage) {
         std::cerr << "wfengine deleting specImage.\n";
-        delete specImage;
+        //delete specImage;
     } else {
         std::cerr << "wfengine not deleting specImage.\n";
     }
@@ -40,7 +53,7 @@ void wfengine::setup() {
 #ifdef QT_DEBUG
     std::cerr << "wfengine setup called.\n";
     std::cerr << "wfengine Running setup for wfengine. Thread Name: " << this->thread()->objectName().toStdString() << std::endl;
-    std::cerr << "wfengine This pointer: " << Qt::hex << this << std::endl;
+    //std::cerr << "wfengine This pointer: " << Qt::hex << this << std::endl;
 #endif
 
     this->fw = fw;
@@ -48,6 +61,8 @@ void wfengine::setup() {
     frWidth = fw->getFrameWidth();
     this->options = options;
     this->isSecondary = isSecondary;
+    nproc = sysconf(_SC_NPROCESSORS_ONLN);
+    nprocToUse = nproc*0.80; // use 80% of available processors
 
     recordToJPG = options.wfPreviewContinuousMode;
 
@@ -81,8 +96,15 @@ void wfengine::setup() {
     opacity = 0xff;
     useDSF = false; // default to false since the program can't start up with a DSF mask anyway
 
-    specImage = new QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
-    statusMessage(QString("Created specImage with height %1 and width %2.").arg(specImage->height()).arg(specImage->width()));
+    // specImage = new QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
+
+    buffer = new specImageBuff_t;
+    for(int p=0; p < WF_SPEC_BUF_COUNT; p++) {
+        buffer->image[p] = new QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
+    }
+    buffer->isValid = true;
+
+    statusMessage(QString("Created specImage with height %1 and width %2.").arg(buffer->image[0]->height()).arg(buffer->image[0]->width()));
 
     rendertimer = new QTimer();
 
@@ -117,7 +139,8 @@ void wfengine::setup() {
     }
     statusMessage("Finished waterfall setup.");
     emit wfReady(); // now the specImage is available.
-    emit hereIsTheImage(specImage); // send the image out
+    //emit hereIsTheImage(specImage); // send a pointer to the image image out
+    emit hereIsTheImageBuffer(buffer); // send a pointer to the image buffer out
 }
 
 wfengine::wfengine(frameWorker *fw, int vSize, int hSize, startupOptionsType options, QWidget *parent) : QObject(parent)
@@ -178,9 +201,10 @@ void wfengine::process()
 void wfengine::stop() {
 #ifdef QT_DEBUG
     std::cerr << "wfengine stop, Thread Name: " << this->thread()->objectName().toStdString() << std::endl;
-    std::cerr << "wfengine stop, This pointer: " << Qt::hex << this << std::endl;
+    //std::cerr << "wfengine stop, This pointer: " << Qt::hex << this << std::endl;
 #endif
     timeToStop = true;
+    buffer->isValid = false;
     rendertimer->stop();
     FPSTimer->stop();
 }
@@ -193,6 +217,16 @@ QImage* wfengine::getImage() {
         statusMessage("WARNING, waterfall image pointer being returned is NULL!");
     }
     return specImage;
+}
+
+specImageBuff_t* wfengine::getImageBuffer() {
+    // This is how the pointer to the image buffer
+    // is communicated to the widget(s)
+    // drawing the waterfall for display.
+    if(buffer==NULL) {
+        statusMessage("WARNING, waterfall image buffer pointer being returned is NULL!");
+    }
+    return buffer;
 }
 
 void wfengine::redraw()
@@ -212,8 +246,14 @@ void wfengine::redraw()
     int wfpos = currentWFLine-1;
 
     // Row zero of the specImage is the bottom
+
+    int pos = (buffer->lastWrittenImage+1)%WF_SPEC_BUF_COUNT;
+    buffer->currentWritingImage = pos;
     for(int y=maxWFlength; y > 0; y--) {
+
+        specImage = buffer->image[pos];
         line = (QRgb*)specImage->scanLine(y-1);
+
         wfpos = (wfpos+1)%maxWFlength;
         r = wflines[wfpos]->getRed();
         g = wflines[wfpos]->getGreen();
@@ -227,6 +267,7 @@ void wfengine::redraw()
             line[x] = c.rgb();
         }
     }
+    buffer->lastWrittenImage = pos;
 
     framesDelivered++;
 }
@@ -409,6 +450,10 @@ void wfengine::handleNewFrame()
     // We can add other functions that happen per-frame here.
     // But first, we will copy the frame in:
     addNewFrame();
+    if(waitingToReprocess) {
+        rescaleWF();
+        waitingToReprocess = false;
+    }
     this->redraw();
     frameCount++;
 
@@ -501,8 +546,10 @@ void wfengine::setRGBLevels(double r, double g, double b, double gamma, bool rep
     } else {
         useGamma = true;
     }
-    if(reprocess)
-        rescaleWF();
+    if(reprocess) {
+        waitingToReprocess = true;
+        //rescaleWF();
+    }
 }
 void wfengine::setRGBLevelsAndReprocess(double r, double g, double b, double gamma)
 {
@@ -515,7 +562,8 @@ void wfengine::setRGBLevelsAndReprocess(double r, double g, double b, double gam
     } else {
         useGamma = true;
     }
-    rescaleWF();
+    waitingToReprocess = true;
+    //rescaleWF();
 }
 
 void wfengine::setSpecOpacity(unsigned char opacity)
@@ -540,14 +588,22 @@ void wfengine::changeWFLength(int length)
 
 void wfengine::updateCeiling(int c)
 {
+    if(c==ceiling)
+        return;
+
     ceiling = c;
-    rescaleWF();
+    //rescaleWF();
+    waitingToReprocess = true;
 }
 
 void wfengine::updateFloor(int f)
 {
+    if(f==floor)
+        return;
+
     floor = f;
-    rescaleWF();
+    //rescaleWF();
+    waitingToReprocess = true;
 }
 
 void wfengine::setUseDSF(bool useDSF)
@@ -562,11 +618,12 @@ void wfengine::rescaleWF()
     scalingValues.lock();
     QMutexLocker lock(&wfInUse);
 
-#pragma omp parallel for num_threads(24)
+#pragma omp parallel for num_threads(nprocToUse)
     for(int wfrow=0; wfrow < maxWFlength; wfrow++)
     {
-        pthread_setname_np(pthread_self(), "GUIRepro");
+        //pthread_setname_np(pthread_self(), "GUIRepro");
         processLineToRGB( wflines[wfrow] );
+        //processLineToRGB_MP( wflines[wfrow] );
     }
     scalingValues.unlock();
 }

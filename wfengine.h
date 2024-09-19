@@ -15,6 +15,7 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -34,7 +35,7 @@
 #include "startupOptions.h"
 #include "frame_worker.h"
 #include "rgbline.h"
-
+#include "wfshared.h"
 #include "imagetagger.h"
 
 
@@ -59,7 +60,7 @@ class wfengine : public QObject
     unsigned int initialFPSSetting = TARGET_WF_FRAMERATE;
     unsigned int minimumFPS = 19; // minimum allowed dynamic FPS
     unsigned int metFPS = 0;
-    unsigned int maximumFPS = 35;
+    unsigned int maximumFPS = 55;
     bool justMovedUpFPS = false;
     bool justMovedDownFPS = false;
     unsigned int flipFlopFPSCounter = 0;
@@ -72,6 +73,8 @@ class wfengine : public QObject
     float fps = 0;
     int fpsUnderEvents = 0;
     int fpsUEThreshold = 10; // If FPS not met for this many seconds in a row, decrease FPS by one.
+    long nproc = 0;
+    long nprocToUse = 0;
 
     void allocateBlankWF();
     void copyPixToLine(float* image, float* dst, int pixPosition);
@@ -114,6 +117,7 @@ class wfengine : public QObject
     void processLineToRGB_MP(rgbLine* line); // multi-processor version
 
     void rescaleWF();
+    bool waitingToReprocess = false;
     std::mutex scalingValues;
 
     int vSize;
@@ -123,6 +127,7 @@ class wfengine : public QObject
     unsigned char opacity;
     QImage *specImage = NULL;
     QImage *priorSpecImage = NULL;
+    specImageBuff_t *buffer = NULL;
     gpsMessage startGPSMessage;
     gpsMessage destGPSMessage;
 
@@ -144,6 +149,7 @@ public:
     void setParameters(frameWorker *fw, int vSize, int hSize, startupOptionsType options);
     void process();
     QImage* getImage();
+    specImageBuff_t* getImageBuffer();
     void setGPSStart(gpsMessage m);
     void setGPSEnd(gpsMessage m);
     struct wfInfo_t {
@@ -190,7 +196,8 @@ private slots:
 
 signals:
     void statusMessageOut(QString);
-    void hereIsTheImage(QImage*);
+    void  hereIsTheImage(QImage*);
+    void  hereIsTheImageBuffer(specImageBuff_t*);
     void wfReady();
 
 };

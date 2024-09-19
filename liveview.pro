@@ -94,7 +94,8 @@ HEADERS  += mainwindow.h \
     waterfall.h \
     preferences.h \
     waterfallviewerwindow.h \
-    wfengine.h
+    wfengine.h \
+    wfshared.h
 
 DISTFILES +=    cuda_take/include/take_object.hpp \
                 aviris3-logo.png \

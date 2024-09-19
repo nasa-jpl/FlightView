@@ -18,7 +18,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->redSpin->blockSignals(false);
         redLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->greenSlider, &QSlider::valueChanged,
@@ -28,7 +28,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->greenSpin->blockSignals(false);
         greenLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->blueSlider, &QSlider::valueChanged,
@@ -38,7 +38,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->blueSpin->blockSignals(false);
         blueLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->redSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -48,7 +48,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->redSlider->blockSignals(false);
         redLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->greenSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -58,7 +58,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->greenSlider->blockSignals(false);
         greenLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->blueSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -68,7 +68,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->blueSlider->blockSignals(false);
         blueLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->gammaSlider, &QSlider::valueChanged,
@@ -113,7 +113,7 @@ void rgbAdjustments::on_gammaSpin_valueChanged(double newValue)
     ui->gammaSlider->blockSignals(false);
     gammaLevel = newValue;
     if(emitUpdateSignal)
-        emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+        emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
 }
 
 void rgbAdjustments::on_gammaEnableChk_clicked()

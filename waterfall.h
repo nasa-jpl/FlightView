@@ -34,7 +34,7 @@
 #include "startupOptions.h"
 #include "frame_worker.h"
 #include "rgbline.h"
-
+#include "wfshared.h"
 #include "imagetagger.h"
 
 
@@ -118,6 +118,7 @@ class waterfall : public QWidget
     unsigned char opacity;
     QImage *specImage = NULL;
     QImage *priorSpecImage = NULL;
+    specImageBuff_t* buffer = NULL;
     gpsMessage startGPSMessage;
     gpsMessage destGPSMessage;
 
@@ -137,6 +138,7 @@ public:
     void setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, startupOptionsType options);
     void process();
     QImage* getImage();
+    specImageBuff_t* getImageBuffer();
     struct wfInfo_t {
         int wflength = 100;
         int ceiling = 255;
@@ -158,6 +160,7 @@ public slots:
     void paintEvent(QPaintEvent *event);
     void changeWFLength(int length);
     void setSpecImage(QImage *specImage);
+    void setSpecImageBuffer(specImageBuff_t*);
     void setSecondaryWF(bool isSecondary);
     void resetFPS(int desiredFPS);
     void debugThis();

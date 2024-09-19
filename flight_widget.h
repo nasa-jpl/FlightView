@@ -25,6 +25,7 @@ namespace fs = boost::filesystem;
 #include "qledlabel.h"
 #include "flightindicators.h"
 #include "startupOptions.h"
+#include "wfshared.h"
 #include "wfengine.h"
 #include "waterfall.h"
 #include "waterfallviewerwindow.h"

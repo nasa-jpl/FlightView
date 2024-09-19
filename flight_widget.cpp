@@ -7,6 +7,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     qDebug() << "Running flight widget constructor";
     emit statusMessage(QString("Starting flight screen widget"));
     this->setObjectName("Flight Widget");
+    qRegisterMetaType<specImageBuff_t>();
+
     fi = new flightIndicators();
     fiUI_t flightDisplayElements = fi->getElements();
 
@@ -30,7 +32,8 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     connect(wfcompThread, &QThread::finished, wfcomputer, &QObject::deleteLater);
 
-    connect(wfcomputer, SIGNAL(hereIsTheImage(QImage*)), waterfall_widget, SLOT(setSpecImage(QImage*)));
+    //connect(wfcomputer, SIGNAL(hereIsTheImage(QImage*)), waterfall_widget, SLOT(setSpecImage(QImage*)));
+    connect(wfcomputer, SIGNAL(hereIsTheImageBuffer(specImageBuff_t*)), waterfall_widget, SLOT(setSpecImageBuffer(specImageBuff_t*)));
     connect(this, SIGNAL(stopWidgets()), wfcomputer, SLOT(stop()));
     connect(wfcomputer, &wfengine::wfReady,
             [=]() {
@@ -160,7 +163,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     if(options.flightMode && !options.disableGPS)
     {
-        emit statusMessage(QString("Starting liveview in FLIGHT mode."));
+        emit statusMessage(QString("Starting FlightView in FLIGHT mode."));
         // Connecto to GPS immediately and start logging.
         if(options.gpsIPSet && options.gpsPortSet && options.dataLocationSet)
         {
@@ -171,7 +174,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
             emit statusMessage(QString("ERROR, cannot start GPS in flight mode with incomplete GPS settings."));
         }
     } else {
-        emit statusMessage(QString("Starting liveview in LAB mode."));
+        emit statusMessage(QString("Starting FlightView in LAB mode."));
         if(options.gpsIPSet && !options.disableGPS && options.dataLocationSet && (!options.disableGPS))
         {
             emit statusMessage(QString("Starting GPS in LAB mode."));
@@ -242,7 +245,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     lrSplitter.setSizes(lrSS);
     lrSplitter.setStretchFactor(0, 2);
     lrSplitter.setStretchFactor(1, 0); // do not stretch the indicators
-    emit statusMessage(QString("Finished flight constructor."));
+    emit statusMessage(QString("Finished flight system constructor."));
 }
 
 flight_widget::~flight_widget()
@@ -425,7 +428,6 @@ void flight_widget::checkDiskSpace()
             }
         }
     }
-
 }
 
 void flight_widget::processFPSError()
