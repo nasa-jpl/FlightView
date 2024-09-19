@@ -22,6 +22,7 @@ signals:
     void haveRGBLevels(double r, double g, double b, double gamma, bool reprocess);
     void setTargetFPS_primary(int targetFPS);
     void setTargetFPS_secondary(int targetFPS);
+    void setTargetFPS_render(int targetFPS);
 
 
 private slots:
@@ -36,6 +37,8 @@ private slots:
     void on_setPrimaryFPSBtn_clicked();
 
     void on_setSecondaryFPSBtn_clicked();
+
+    void on_setRenderFPSBtn_clicked();
 
 private:
     Ui::rgbAdjustments *ui;

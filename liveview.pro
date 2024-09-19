@@ -53,7 +53,8 @@ SOURCES += main.cpp\
     gpsGUI/gpsbinaryreader.cpp \
     gpsGUI/gpsbinarylogger.cpp \
     waterfall.cpp \
-    waterfallviewerwindow.cpp
+    waterfallviewerwindow.cpp \
+    wfengine.cpp
 
 HEADERS  += mainwindow.h \
     consolelog.h \
@@ -92,7 +93,8 @@ HEADERS  += mainwindow.h \
     startupOptions.h \
     waterfall.h \
     preferences.h \
-    waterfallviewerwindow.h
+    waterfallviewerwindow.h \
+    wfengine.h
 
 DISTFILES +=    cuda_take/include/take_object.hpp \
                 aviris3-logo.png \

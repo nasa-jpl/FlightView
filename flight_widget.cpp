@@ -6,6 +6,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     qDebug() << "Running flight widget constructor";
     emit statusMessage(QString("Starting flight screen widget"));
+    this->setObjectName("Flight Widget");
     fi = new flightIndicators();
     fiUI_t flightDisplayElements = fi->getElements();
 
@@ -20,10 +21,39 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     useAvionicsWidgets = false;
     gpsPlotSplitter = new QSplitter();
 
+    wfcomputer = new wfengine();
+    wfcomputer->setParameters(fw, 1, 1024, options);
+    wfcompThread = new QThread(this);
+    wfcomputer->moveToThread(wfcompThread);
     waterfall_widget = new waterfall(fw, 1, 1024, options, this);
+
+
+    connect(wfcompThread, &QThread::finished, wfcomputer, &QObject::deleteLater);
+
+    connect(wfcomputer, SIGNAL(hereIsTheImage(QImage*)), waterfall_widget, SLOT(setSpecImage(QImage*)));
+    connect(this, SIGNAL(stopWidgets()), wfcomputer, SLOT(stop()));
+    connect(wfcomputer, &wfengine::wfReady,
+            [=]() {
+        showDebugMessage("WF Computer signals specImage is ready. Taking action via signal/slot.");
+        if(waterfall_widget != NULL) {
+            //waterfall_widget->setSpecImage(wfcomputer->getImage());
+            //waterfall_widget->setSecondaryWF(true);
+            //waterfall_widget->resetFPS(33);
+        } else {
+            showDebugMessage("waterfall_widget is null");
+        }
+    });
+
+    connect(this, SIGNAL(setWFFPS_render_sig(int)), wfcomputer, SLOT(resetFPS(int)));
+
     dsf_widget = new frameview_widget(fw, DSF, this);
 
+    connect(wfcomputer, SIGNAL(statusMessageOut(QString)), this, SLOT(showDebugMessage(QString)));
     connect(waterfall_widget, SIGNAL(statusMessageOut(QString)), this, SLOT(showDebugMessage(QString)));
+    connect(wfcompThread, SIGNAL(started()), wfcomputer, SLOT(setup())); // make the timer here!
+    wfcompThread->setObjectName("wfengine thread");
+    wfcompThread->start();
+
     connect(fi, SIGNAL(statusText(QString)), this, SLOT(showDebugMessage(QString)));
 
     gpsMessageCycleTimer = new QTimer(this);
@@ -193,8 +223,11 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(dsf_widget, &frameview_widget::haveFloorCeilingValuesFromColorScaleChange,
             [this](double nfloor, double nceiling) {
         emit updateFloorCeilingFromFrameviewChange(nfloor, nceiling);
-        waterfall_widget->updateFloor(nfloor);
-        waterfall_widget->updateCeiling(nceiling);
+        // EHL TODO: Use signal/slot since this is a thread.
+        emit updateCeilingSignal(nceiling);
+        emit updateFloorSignal(nfloor);
+        //waterfall_widget->updateFloor(nfloor);
+        //waterfall_widget->updateCeiling(nceiling);
     });
 
     QList <int>rhSS;
@@ -214,25 +247,60 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
 flight_widget::~flight_widget()
 {
+#ifdef QT_DEBUG
     qDebug() << "Running flight_widget destructor.";
+    qDebug() << "Flight widget pre-delete children count: " << children().count();
+#endif
 
-//    if(gps != NULL)
-//    {
-//        gps->initiateGPSDisconnect();
-//        usleep(1000);
-//        gps->deleteLater();
-//        usleep(1000);
-//        //delete gps;
-//    }
+    if(waterfall_widget)
+        waterfall_widget->deleteLater();
+
+    if(secondWF)
+        secondWF->deleteLater();
+
+    if(wfcomputer)
+        wfcomputer->deleteLater();
+
+    if(gps)
+        gps->deleteLater();
+
+    waterfall_widget = nullptr;
+    secondWF = nullptr;
+    wfcomputer = nullptr;
+    gps = nullptr;
+
+    if(wfcompThread) {
+        //wfcompThread->wait(); // pause the thread at the next chance
+        wfcompThread->quit(); // Tell the thread event loop to exit
+        while(wfcompThread->isRunning()) {
+#ifdef QT_DEBUG
+            std::cerr << "Waiting for wf comp thread to end...\n";
+#endif
+            usleep(1000);
+        }
+        wfcompThread->deleteLater();
+        wfcompThread=nullptr;
+    }
+}
+
+void flight_widget::setStop() {
+    // Called by MainWindow when we are going to close.
+    emit stopWidgets();
 }
 
 void flight_widget::setupWFConnections()
 {
     connect(this, SIGNAL(changeWFLengthSignal(int)), waterfall_widget, SLOT(changeWFLength(int)));
-    connect(this, SIGNAL(updateCeilingSignal(int)), waterfall_widget, SLOT(updateCeiling(int)));
-    connect(this, SIGNAL(updateFloorSignal(int)), waterfall_widget, SLOT(updateFloor(int)));
-    connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double,bool)), waterfall_widget, SLOT(setRGBLevels(double,double,double,double,bool)));
-    connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), waterfall_widget, SLOT(changeRGB(int,int,int)));
+    //connect(this, SIGNAL(updateCeilingSignal(int)), waterfall_widget, SLOT(updateCeiling(int)));
+    //connect(this, SIGNAL(updateFloorSignal(int)), waterfall_widget, SLOT(updateFloor(int)));
+    //connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double,bool)), waterfall_widget, SLOT(setRGBLevels(double,double,double,double,bool)));
+    //connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), waterfall_widget, SLOT(changeRGB(int,int,int)));
+
+    connect(this, SIGNAL(changeWFLengthSignal(int)), wfcomputer, SLOT(changeWFLength(int)));
+    connect(this, SIGNAL(updateCeilingSignal(int)), wfcomputer, SLOT(updateCeiling(int)));
+    connect(this, SIGNAL(updateFloorSignal(int)), wfcomputer, SLOT(updateFloor(int)));
+    connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double,bool)), wfcomputer, SLOT(setRGBLevels(double,double,double,double,bool)));
+    connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), wfcomputer, SLOT(changeRGB(int,int,int)));
 }
 
 double flight_widget::getCeiling()
@@ -247,9 +315,10 @@ double flight_widget::getFloor()
 
 void flight_widget::setUseDSF(bool useDSF)
 {
-    waterfall_widget->setUseDSF(useDSF);
+    //waterfall_widget->setUseDSF(useDSF);
+    wfcomputer->setUseDSF(useDSF); // EHL TODO: Change to signal/slot
     if(secondWF != NULL) {
-        secondWF->setUseDSF(useDSF);
+        //secondWF->setUseDSF(useDSF);
     }
     dsf_widget->setUseDSF(useDSF);
 }
@@ -476,6 +545,10 @@ void flight_widget::changeWFLength(int length)
     //waterfall_widget->changeWFLength(length);
 }
 
+void flight_widget::setWFFPS_render(int target) {
+    emit setWFFPS_render_sig(target);
+}
+
 void flight_widget::setWFFPS_primary(int target) {
     waterfall_widget->resetFPS(target);
 }
@@ -514,7 +587,7 @@ void flight_widget::showSecondWF() {
 
         // Copy the specImage from one waterfall to the other to save on computation
         emit statusMessage("Copying data from primary waterfall to secondary waterfall.");
-        secondWF->setSpecImage(true, waterfall_widget->getImage());
+        secondWF->setSpecImage(wfcomputer->getImage());
 
         // Attempt to move to second display:
         QList<QScreen *>  sl = QApplication::screens();
@@ -558,8 +631,10 @@ void flight_widget::startDataCollection(QString secondaryLogFilename)
     }
 
     if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
-        waterfall_widget->setGPSStart( this->gps->getLastPositionalMessage() );
-        waterfall_widget->setRecordWFImage(true);
+        wfcomputer->setGPSStart(this->gps->getLastPositionalMessage());
+        wfcomputer->setRecordWFImage(true);
+        //waterfall_widget->setGPSStart( this->gps->getLastPositionalMessage() );
+        //waterfall_widget->setRecordWFImage(true);
     }
 }
 
@@ -570,8 +645,8 @@ void flight_widget::stopDataCollection()
     if(!options.disableGPS)
         emit stopSecondaryLog();
     if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
-        waterfall_widget->setGPSEnd( this->gps->getLastPositionalMessage() );
-        waterfall_widget->setRecordWFImage(false);
+        wfcomputer->setGPSEnd( this->gps->getLastPositionalMessage() );
+        wfcomputer->setRecordWFImage(false);
     }
     logFPSGPSSlot();
 }

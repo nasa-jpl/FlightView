@@ -27,6 +27,11 @@ gpsManager::~gpsManager()
         shm->statusByte = SHM_STATUS_CLOSED;
     }
 
+    if(gps != NULL) {
+        gps->deleteLater();
+        gps=nullptr;
+    }
+
     if(gpsThread != NULL)
     {
         gpsThread->quit();

@@ -30,7 +30,7 @@ public slots:
     void setUseDSF(bool useDSF);
     void setRecordWFImage(bool recordImageOn);
     void setSecondaryWF(bool isSecondary);
-    void setSpecImage(bool followMe, QImage *specImage);
+    void setSpecImage(QImage *specImage);
     void useEntireScreen();
     void debugThis();
     void resetFPS(int targetFPS);

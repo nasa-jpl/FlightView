@@ -1,5 +1,5 @@
-#ifndef WATERFALL_H
-#define WATERFALL_H
+#ifndef WFENGINE_H
+#define WFENGINE_H
 // This is the RGB Waterfall
 
 // Define this for FPS data logged every second on debug builds
@@ -44,7 +44,7 @@
 #define TOP(x,top) ((x>top)?top:x)
 #define BOT(x,bot) ((x<bot)?bot:x)
 
-class waterfall : public QWidget
+class wfengine : public QObject
 {
     Q_OBJECT
 
@@ -53,11 +53,8 @@ class waterfall : public QWidget
     int frWidth;
     startupOptionsType options;
 
-    unsigned int TARGET_WF_FRAMERATE = 33; // FPS
+    unsigned int TARGET_WF_FRAMERATE = 35; // FPS
     int WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
-
-    unsigned int TARGET_WF_FRAMERATE_SECONDARY = 24; // FPS
-    int WF_DISPLAY_PERIOD_MSECS_SECONDARY = 1000 / TARGET_WF_FRAMERATE_SECONDARY;
 
     unsigned int initialFPSSetting = TARGET_WF_FRAMERATE;
     unsigned int minimumFPS = 19; // minimum allowed dynamic FPS
@@ -66,14 +63,19 @@ class waterfall : public QWidget
     bool justMovedUpFPS = false;
     bool justMovedDownFPS = false;
     unsigned int flipFlopFPSCounter = 0;
-    QTimer rendertimer;
+    QTimer *rendertimer = NULL;
+    bool timeToStop = false;
 
-    QTimer FPSTimer;
+    QTimer *FPSTimer = NULL;
     QElapsedTimer FPSElapsedTimer;
     unsigned int framesDelivered = 0;
     float fps = 0;
     int fpsUnderEvents = 0;
     int fpsUEThreshold = 10; // If FPS not met for this many seconds in a row, decrease FPS by one.
+
+    void allocateBlankWF();
+    void copyPixToLine(float* image, float* dst, int pixPosition);
+    void copyPixToLine(uint16_t* image, float* dst, int pixPosition);
 
     int maxWFlength = 1024;
     void statusMessage(QString);
@@ -104,11 +106,14 @@ class waterfall : public QWidget
     bool justStoppedRecording = false;
     QMutex wfInUse;
 
+    unsigned char scaleDataPoint(float dataPt); // to ceiling and floor
 
+    void addNewFrame();
     std::mutex addingFrame;
     void processLineToRGB(rgbLine* line); // float data to scaled RGB values
     void processLineToRGB_MP(rgbLine* line); // multi-processor version
 
+    void rescaleWF();
     std::mutex scalingValues;
 
     int vSize;
@@ -126,17 +131,21 @@ class waterfall : public QWidget
     bool recordToJPG = false;
     int jpgQuality = 75; // TODO: parameter
     unsigned int frameCount = 0;
+    void prepareWfImage();
+    void saveImage();
     bool saveImageReady = false;
     bool isSecondary = false;
     bool followingExternalSpecImage = false;
 
 public:
-    explicit waterfall(frameWorker *fw, int vSize, int hSize, startupOptionsType options, QWidget *parent = nullptr);
-    explicit waterfall(QWidget *parent = nullptr);
-    ~waterfall();
-    void setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, startupOptionsType options);
+    explicit wfengine(frameWorker *fw, int vSize, int hSize, startupOptionsType options, QWidget *parent = nullptr);
+    explicit wfengine(QWidget *parent = nullptr);
+    ~wfengine();
+    void setParameters(frameWorker *fw, int vSize, int hSize, startupOptionsType options);
     void process();
     QImage* getImage();
+    void setGPSStart(gpsMessage m);
+    void setGPSEnd(gpsMessage m);
     struct wfInfo_t {
         int wflength = 100;
         int ceiling = 255;
@@ -155,9 +164,21 @@ public:
     wfInfo_t getSettings();
 
 public slots:
-    void paintEvent(QPaintEvent *event);
+    void setup();
+    void stop();
+    void requestImage();
+    void handleNewFrame();
+    void changeRGB(int r, int g, int b);
+    void setRGBLevels(double r, double g, double b, double gamma, bool reprocess);
+    void setRGBLevelsAndReprocess(double r, double g, double b, double gamma);
+
     void changeWFLength(int length);
-    void setSpecImage(QImage *specImage);
+    void setSpecOpacity(unsigned char opacity);
+    void updateCeiling(int c);
+    void updateFloor(int f);
+    void setUseDSF(bool useDSF);
+    void setRecordWFImage(bool recordImageOn);
+    void immediatelySaveImage(); // save image right now, no questions asked.
     void setSecondaryWF(bool isSecondary);
     void resetFPS(int desiredFPS);
     void debugThis();
@@ -165,13 +186,13 @@ public slots:
 
 private slots:
     void computeFPS();
-    void cheapRedraw(); // follows other waterfall, no calculation
 
 
 signals:
     void statusMessageOut(QString);
+    void hereIsTheImage(QImage*);
     void wfReady();
 
 };
 
-#endif // WATERFALL_H
+#endif // WFENGINE_H

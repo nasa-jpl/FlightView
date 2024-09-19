@@ -230,6 +230,7 @@ signals:
     void showSecondWF();
     void setWFTargetFPS_primary(int targetFPS);
     void setWFTargetFPS_secondary(int targetFPS);
+    void setWFTargetFPS_render(int targetFPS);
     void haveReadPreferences(settingsT prefs);
 
     void setCameraPause(bool isPaused);

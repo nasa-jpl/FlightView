@@ -101,6 +101,10 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
             [=](const int targetFPS) {
         emit setWFTargetFPS_secondary(targetFPS);
     });
+    connect(rgbLevels, &rgbAdjustments::setTargetFPS_render,
+            [=](const int targetFPS) {
+        emit setWFTargetFPS_render(targetFPS);
+    });
 
     /* ====================================================================== */
     // LEFT SIDE BUTTONS (Collections)

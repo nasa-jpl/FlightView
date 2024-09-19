@@ -152,3 +152,9 @@ void rgbAdjustments::on_setSecondaryFPSBtn_clicked()
 {
     emit setTargetFPS_secondary(ui->secondaryFPSSpin->value());
 }
+
+void rgbAdjustments::on_setRenderFPSBtn_clicked()
+{
+    emit setTargetFPS_render(ui->renderFPSSpin->value());
+}
+

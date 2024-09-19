@@ -61,6 +61,7 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
 
 frameWorker::~frameWorker()
 {
+    usleep(10000);
 #ifdef VERBOSE
     qDebug() << "end frameWorker";
 #endif
