@@ -31,6 +31,12 @@
 #include <QElapsedTimer>
 #include <QDateTime>
 
+#if (QT_VERSION < QT_VERSION_CHECK(5,10,0))
+qsrand(QDateTime::currentMSecsSinceEpoch()%UINT_MAX); // Remove this line if it causes trouble
+#else
+#include <QRandomGenerator>
+#endif
+
 #include "settings.h"
 #include "startupOptions.h"
 #include "frame_worker.h"
@@ -44,6 +50,14 @@
 #define MINWF(x,y) ((x<y)?x:y)
 #define TOP(x,top) ((x>top)?top:x)
 #define BOT(x,bot) ((x<bot)?bot:x)
+
+inline uint64_t getRand64() {
+#if (QT_VERSION < QT_VERSION_CHECK(5,10,0))
+        return (uint64_t)qrand();
+#else
+        return (uint64_t)QRandomGenerator::global()->generate64();
+#endif
+}
 
 class wfengine : public QObject
 {
@@ -108,6 +122,7 @@ class wfengine : public QObject
     bool justStartedRecording = false;
     bool justStoppedRecording = false;
     QMutex wfInUse;
+    quint64 recordingID = 0;
 
     unsigned char scaleDataPoint(float dataPt); // to ceiling and floor
 

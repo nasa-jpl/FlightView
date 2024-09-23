@@ -609,7 +609,7 @@ void wfengine::saveImage(int topRow, int botRow) {
         tagResult = imageTagger(fileLocationFull.toLocal8Bit(),
                                    s, topOfFileGPSMessage, fps,
                                    r_row, g_row, b_row,
-                                   gammaLevel, floor, ceiling);
+                                   gammaLevel, floor, ceiling, recordingID);
 
         switch(tagResult) {
         case tagRtnOK:
@@ -651,6 +651,7 @@ void wfengine::setRecordWFImage(bool recordImageOn) {
         startingRow = currentWFLine;
         justStartedRecording = true;
         justStoppedRecording = false;
+        this->recordingID = getRand64();
     }
     if(!recordImageOn) {
         endingRow = currentWFLine;

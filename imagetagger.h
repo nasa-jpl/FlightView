@@ -36,7 +36,7 @@ enum tagRtnType {
 
 static tagRtnType imageTagger(const char* filename, gpsMessage start, gpsMessage dest, float fps,
                         int redRow, int greenRow, int blueRow, double gamma,
-                        int floor, int ceiling) {
+                        int floor, int ceiling, quint64 recordingID) {
     // Check everything out first.
     if(filename==NULL) {
         std::cerr << "Tagger: no filename supplied\n";
@@ -136,6 +136,7 @@ static tagRtnType imageTagger(const char* filename, gpsMessage start, gpsMessage
             exifData["Exif.Image.WhitePoint"] = QString("%1/1 %2/1").arg(floor).arg(ceiling).toStdString();
             exifData["Exif.Image.Software"] = QString("FlightView %1").arg(GIT_CURRENT_SHA1_SHORT).toStdString();
             exifData["Exif.Photo.UserComment"] = "charset=Ascii AVIRIS-III";
+            exifData["Exif.Image.SubjectLocation"] = (uint16_t)recordingID; // May be called "SubjectArea", datatype is "short" aka 16 bit
             image->writeMetadata();
 
         } else {
