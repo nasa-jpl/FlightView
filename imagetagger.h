@@ -24,23 +24,33 @@ static std::string get100Int(double d) {
     return QString("%1/100").arg( (int)(d*100)).toStdString();
 }
 
-static bool imageTagger(const char* filename, gpsMessage start, gpsMessage dest, float fps,
+enum tagRtnType {
+    tagRtnOK,
+    tagRtnFilenameInvalid,
+    tagRtnCantOpenFile,
+    tagRtnStartGPSInvalid,
+    tagRtnDestGPSInvalid,
+    tagRtnGeneralExceptionOccurred,
+    tagRtnUndefined
+};
+
+static tagRtnType imageTagger(const char* filename, gpsMessage start, gpsMessage dest, float fps,
                         int redRow, int greenRow, int blueRow, double gamma,
                         int floor, int ceiling) {
     // Check everything out first.
     if(filename==NULL) {
         std::cerr << "Tagger: no filename supplied\n";
-        return false;
+        return tagRtnFilenameInvalid;
     }
 
     if(!start.validDecode) {
         std::cerr << "Tagger: starting gps is not valid decode.\n";
-        return false;
+        return tagRtnStartGPSInvalid;
     }
 
     if(!dest.validDecode) {
         std::cerr << "Tagger: ending gps is not valid decode.\n";
-        return false;
+        return tagRtnDestGPSInvalid;
     }
 
     try {
@@ -130,7 +140,7 @@ static bool imageTagger(const char* filename, gpsMessage start, gpsMessage dest,
 
         } else {
             std::cerr << "Tagger: cannot open image.\n";
-            return false;
+            return tagRtnCantOpenFile;
         }
     }
 
@@ -139,10 +149,10 @@ static bool imageTagger(const char* filename, gpsMessage start, gpsMessage dest,
 #ifdef QT_DEBUG
         abort(); // crash on purpose if we had an error and it is a debug build.
 #endif
-        return false;
+        return tagRtnGeneralExceptionOccurred;
     }
 
-    return true;
+    return tagRtnOK;
 }
 
 

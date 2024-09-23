@@ -495,8 +495,9 @@ void wfengine::handleNewFrame()
         statusMessage(QString("Reached maxWFlength, marking justReachedEndWF to true. nRowsRecorded+1: %1").arg(nRowsRecorded+1));
 #endif
         justReachedEndWF =true;
+    } else {
+        justReachedEndWF = false; // only note this on THE actual frame
     }
-
 
     // We only consider reprocessing every four frames.
     // This cuts down on the image smear when the user
@@ -587,12 +588,16 @@ void wfengine::saveImage(int topRow, int botRow) {
 #ifdef QT_DEBUG
         statusMessage(QString("Cropped size is: %1 x %2.").arg(cropped.width()).arg(cropped.height()));
 #endif
-        cropped.save(options.wfPreviewLocation + filename,
+        bool savedOK = cropped.save(options.wfPreviewLocation + filename,
                        nullptr, jpgQuality);
+        if(!savedOK) {
+            statusMessage("Error, could not save waterfall preview image.");
+            return;
+        }
 #ifdef WF_GPS_TAGGING
         QString fileLocationFull = options.wfPreviewLocation + filename;
 
-        bool success = false;
+        tagRtnType tagResult = tagRtnUndefined;
         gpsMessage s;
         if(liveGPSMessagePointer != NULL) {
             // "now" is always good for the top of the file.
@@ -601,13 +606,37 @@ void wfengine::saveImage(int topRow, int botRow) {
             s.validDecode = false; // "expired"
         }
 
-        success = imageTagger(fileLocationFull.toLocal8Bit(),
+        tagResult = imageTagger(fileLocationFull.toLocal8Bit(),
                                    s, topOfFileGPSMessage, fps,
                                    r_row, g_row, b_row,
                                    gammaLevel, floor, ceiling);
-        if(!success) {
-            statusMessage(QString("Warning, could not modify metadata for waterfall image."));
+
+        switch(tagResult) {
+        case tagRtnOK:
+#ifdef QT_DEBUG
+            statusMessage(QString("Successful metadata tag on waterfallimage."));
+#endif
+            break;
+        case tagRtnFilenameInvalid:
+            statusMessage(QString("Warning, could not modify metadata for waterfall image. Filename was NULL"));
+            break;
+        case tagRtnCantOpenFile:
+            statusMessage(QString("Warning, could not modify metadata for waterfall image. File could not be opened."));
+            break;
+        case tagRtnDestGPSInvalid:
+            statusMessage(QString("Warning, could not modify metadata for waterfall image. Ending GPS not valid."));
+            break;
+        case tagRtnStartGPSInvalid:
+            statusMessage(QString("Warning, could not modify metadata for waterfall image. Starting GPS not valid."));
+            break;
+        case tagRtnGeneralExceptionOccurred:
+            statusMessage(QString("Warning, could not modify metadata for waterfall image. Generalized exception occurred within exiv2 library."));
+            break;
+        default:
+            statusMessage(QString("Warning, unknown waterfall metadata error."));
+            break;
         }
+
 #endif
     }
 }
