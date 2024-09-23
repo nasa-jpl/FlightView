@@ -878,6 +878,10 @@ gpsMessage gpsManager::getLastPositionalMessage() {
     return this->lastPositionMessage;
 }
 
+gpsMessage* gpsManager::getLastPositionalMessagePointer() {
+    return &this->lastPositionMessage;
+}
+
 void gpsManager::handleStartsecondaryLog(QString filename)
 {
     emit gpsStatusMessage(QString("About to start secondary logging to file %1").arg(filename));

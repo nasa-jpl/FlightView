@@ -43,6 +43,7 @@ class flight_widget : public QWidget
     QThread *wfcompThread = NULL;
     waterfall *waterfall_widget = NULL;
     waterfallViewerWindow *secondWF = NULL;
+    bool waterfallEngineReady = false;
 
     //QThread *wfThread = NULL;
     frameview_widget *dsf_widget;

@@ -2,6 +2,7 @@
 #define IMAGETAGGER_H
 
 #include <string>
+#include <cstdio>
 
 #include <QString>
 #include <QDateTime>
@@ -27,14 +28,20 @@ static bool imageTagger(const char* filename, gpsMessage start, gpsMessage dest,
                         int redRow, int greenRow, int blueRow, double gamma,
                         int floor, int ceiling) {
     // Check everything out first.
-    if(filename==NULL)
+    if(filename==NULL) {
+        std::cerr << "Tagger: no filename supplied\n";
         return false;
+    }
 
-    if(!start.validDecode)
+    if(!start.validDecode) {
+        std::cerr << "Tagger: starting gps is not valid decode.\n";
         return false;
+    }
 
-    if(!dest.validDecode)
+    if(!dest.validDecode) {
+        std::cerr << "Tagger: ending gps is not valid decode.\n";
         return false;
+    }
 
     try {
         auto image = ImageFactory::open(filename);
@@ -122,6 +129,7 @@ static bool imageTagger(const char* filename, gpsMessage start, gpsMessage dest,
             image->writeMetadata();
 
         } else {
+            std::cerr << "Tagger: cannot open image.\n";
             return false;
         }
     }

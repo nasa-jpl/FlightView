@@ -96,6 +96,11 @@ void wfengine::setup() {
     opacity = 0xff;
     useDSF = false; // default to false since the program can't start up with a DSF mask anyway
 
+    // liveGPSMessagePointer = new gpsMessage;
+    if(liveGPSMessagePointer) {
+        statusMessage("Live GPS Message Pointer is not NULL.");
+    }
+
     buffer = new specImageBuff_t;
     for(int p=0; p < WF_SPEC_BUF_COUNT; p++) {
         buffer->image[p] = new QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
@@ -343,6 +348,7 @@ void wfengine::addNewFrame()
     processLineToRGB_MP(line); // multi-processor
 
     currentWFLine = (currentWFLine + 1) % maxWFlength;
+
     addingFrame.unlock();
 }
 
@@ -444,8 +450,53 @@ void wfengine::handleNewFrame()
 {
     // Called via the renderTimer at regular intervals.
     // We can add other functions that happen per-frame here.
+
+    // WARNING: Almost all this is wrong because we need to think carefully
+    // about how the image and the lines are related.
+
     // But first, we will copy the frame in:
+    if(nRowsRecorded==0) {
+        // This is either the first recorded or it is the top of an existing
+        // set of recordings.
+        if(liveGPSMessagePointer && liveGPSMessagePointer->validDecode) {
+            topOfFileGPSMessage = *liveGPSMessagePointer;
+        }
+    }
+
+    if(nRowsRecorded==(maxWFlength-1)) {
+        // last line of the image about to get written
+        if(liveGPSMessagePointer && liveGPSMessagePointer->validDecode) {
+            botOfFileGPSMessage = *liveGPSMessagePointer;
+        }
+    }
+
+    if(justStartedRecording) {
+        startingRow = currentWFLine;
+        nRowsRecorded=0;
+        justStartedRecording = false;
+        justReachedEndWF = false;
+    } else {
+        nRowsRecorded++;
+    }
+
+    if(justStoppedRecording) {
+        // Note: The *image* always has the most current row at the top.
+        // so, whenever we are cropping, we really do want to go to the top.
+        // This means we always crop:
+        // TOP (row zero of the image) to BOT(end of image || how-far-we-went-down)
+        endingRow = currentWFLine;
+    }
+    // Modifies waterfall data AT currentWFLine
+    // Renders a QImage with the *current row* at the top.
     addNewFrame();
+    // then does currentWFLine++ not to exceed 1023, back to zero at max
+    if(nRowsRecorded+1 == maxWFlength) {
+#ifdef QT_DEBUG
+        statusMessage(QString("Reached maxWFlength, marking justReachedEndWF to true. nRowsRecorded+1: %1").arg(nRowsRecorded+1));
+#endif
+        justReachedEndWF =true;
+    }
+
 
     // We only consider reprocessing every four frames.
     // This cuts down on the image smear when the user
@@ -454,48 +505,104 @@ void wfengine::handleNewFrame()
         rescaleWF();
         waitingToReprocess = false;
     }
-    this->redraw();
+    this->redraw(); // re-draw every line of the specImage
     frameCount++;
 
+    // Do we have a working configuration to potentially save images?
     if(saveImageReady) {
-        // Either we are in a recording and it's time to save, or we are just starting, or we are just ending.
-        if(  ((recordingStartLineNumber == (frameCount%maxWFlength)) && recordToJPG) || (justStartedRecording) || (justStoppedRecording)  ) {
-            saveImage();
-            // Clear the flags here
-            justStartedRecording = false;
-            justStoppedRecording = false;
+
+        // Case 0: We are recording continuously and reached the end of the waterfall
+        // continuous = true
+        // justReachedEndWF = true
+        // Modify the condition here
+        if(options.wfPreviewContinuousMode && ((frameCount%maxWFlength)==0)) {
+            // ignore any recorded bounds, just record the entire thing
+            // We are triggered here every 1024 frames
+            statusMessage("Saving WF due to continuous mode and end-of-image reached.");
+            saveImage(0, maxWFlength-1);
+            return;
         }
+
+        // Case 1: We just stopped recording.
+        // recordToJPG = false
+        // justStoppedRecording = true
+        if(justStoppedRecording) {
+            // startingRow is either a row we started on,
+            // or, it is set to zero indicating a fresh waterfall was used.
+            statusMessage("Saving WF due to just stopped recording.");
+            saveImage(0, nRowsRecorded); // top to however many in we are
+            justStoppedRecording = false;
+            nRowsRecorded = 0; // reset
+            return;
+        }
+
+        // Case 2: We are recording, and reached the end of the waterfall
+        //          ...how do we know if we *are* recording
+        // recordToJPG = true
+        // justStoppedRecording = false
+        // justReachedEndWF = true
+        if(recordToJPG && (!justStoppedRecording) && (justReachedEndWF)) {
+            statusMessage("Saving complete WF due to recording and just reached end of waterfall.");
+            saveImage(0, maxWFlength-1); // top to bottom
+            startingRow = 0; // we shall not use the starting row more than once.
+            nRowsRecorded = 0; // reset
+            justReachedEndWF = false;
+            return;
+        }
+
+        // Case 4: It's simply not time to record yet!
     }
 }
 
 void wfengine::setGPSStart(gpsMessage m) {
-    this->startGPSMessage = m;
+    this->startRecordingGPSMessage = m;
 }
 
 void wfengine::setGPSEnd(gpsMessage m) {
-    this->destGPSMessage = m;
+    this->stopRecordingGPSMessage = m;
+}
+
+void wfengine::setGPSPointer(gpsMessage *m) {
+    statusMessage("Setting live GPS message pointer inside wfengine.");
+    this->liveGPSMessagePointer = m;
 }
 
 void wfengine::immediatelySaveImage() {
     statusMessage("Immediately saving current waterfall image.");
-    saveImage();
+    saveImage(0, maxWFlength);
 }
 
-void wfengine::saveImage() {
+void wfengine::saveImage(int topRow, int botRow) {
+    // Note, topRow is almost always zero
     if(options.wfPreviewlocationset && saveImageReady) {
         QString filename = "AV3";
         QDateTime now = QDateTime::currentDateTime();
         QString dayStr = now.toUTC().toString("yyyyMMdd");
         QString timeStr = now.toUTC().toString("hhmmss");
         filename.append(QString("%1t%2-wf.jpg").arg(dayStr).arg(timeStr));
-        statusMessage(QString("Writing waterfall image to filename [%1]")
-                      .arg(options.wfPreviewLocation + filename));
-        specImage->save(options.wfPreviewLocation + filename,
+        statusMessage(QString("Writing waterfall image (row %2 to %3) to filename [%1]")
+                      .arg(options.wfPreviewLocation + filename).arg(topRow).arg(botRow));
+
+        QImage cropped = specImage->copy(0, topRow, specImage->width(), botRow-topRow);
+#ifdef QT_DEBUG
+        statusMessage(QString("Cropped size is: %1 x %2.").arg(cropped.width()).arg(cropped.height()));
+#endif
+        cropped.save(options.wfPreviewLocation + filename,
                        nullptr, jpgQuality);
 #ifdef WF_GPS_TAGGING
         QString fileLocationFull = options.wfPreviewLocation + filename;
-        bool success = imageTagger(fileLocationFull.toLocal8Bit(),
-                                   startGPSMessage, destGPSMessage, fps,
+
+        bool success = false;
+        gpsMessage s;
+        if(liveGPSMessagePointer != NULL) {
+            // "now" is always good for the top of the file.
+            s = *liveGPSMessagePointer; // copy
+        } else {
+            s.validDecode = false; // "expired"
+        }
+
+        success = imageTagger(fileLocationFull.toLocal8Bit(),
+                                   s, topOfFileGPSMessage, fps,
                                    r_row, g_row, b_row,
                                    gammaLevel, floor, ceiling);
         if(!success) {
@@ -512,10 +619,14 @@ void wfengine::setRecordWFImage(bool recordImageOn) {
     recordToJPG = recordImageOn;
     recordingStartLineNumber = (currentWFLine - 1)%maxWFlength;
     if(recordImageOn) {
+        startingRow = currentWFLine;
         justStartedRecording = true;
+        justStoppedRecording = false;
     }
     if(!recordImageOn) {
+        endingRow = currentWFLine;
         justStoppedRecording = true;
+        justStartedRecording = false;
     }
     if(recordToJPG && options.headless) {
         this->useDSF = true;

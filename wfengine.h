@@ -3,10 +3,10 @@
 // This is the RGB Waterfall
 
 // Define this for FPS data logged every second on debug builds
-#define WF_DEBUG_FPS
+// define WF_DEBUG_FPS
 
 // Define this for dynamic FPS
-#define dynamicFPS
+// define dynamicFPS
 
 // Define this for image GPS tagging
 #define WF_GPS_TAGGING
@@ -128,8 +128,15 @@ class wfengine : public QObject
     QImage *specImage = NULL;
     QImage *priorSpecImage = NULL;
     specImageBuff_t *buffer = NULL;
-    gpsMessage startGPSMessage;
-    gpsMessage destGPSMessage;
+    gpsMessage *liveGPSMessagePointer = NULL;
+    int startingRow = 0;
+    int endingRow = 0;
+    int nRowsRecorded = 0;
+    bool justReachedEndWF = false;
+    gpsMessage startRecordingGPSMessage;
+    gpsMessage stopRecordingGPSMessage;
+    gpsMessage topOfFileGPSMessage;
+    gpsMessage botOfFileGPSMessage;
 
     void redraw();
     bool useDSF;
@@ -137,7 +144,7 @@ class wfengine : public QObject
     int jpgQuality = 75; // TODO: parameter
     unsigned int frameCount = 0;
     void prepareWfImage();
-    void saveImage();
+    void saveImage(int top, int bot);
     bool saveImageReady = false;
     bool isSecondary = false;
     bool followingExternalSpecImage = false;
@@ -152,6 +159,7 @@ public:
     specImageBuff_t* getImageBuffer();
     void setGPSStart(gpsMessage m);
     void setGPSEnd(gpsMessage m);
+    void setGPSPointer(gpsMessage *m);
     struct wfInfo_t {
         int wflength = 100;
         int ceiling = 255;

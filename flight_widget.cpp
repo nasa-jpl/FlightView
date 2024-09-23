@@ -38,6 +38,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(wfcomputer, &wfengine::wfReady,
             [=]() {
         showDebugMessage("WF Computer signals specImage is ready. Taking action via signal/slot.");
+        waterfallEngineReady = true;
         if(waterfall_widget != NULL) {
             //waterfall_widget->setSpecImage(wfcomputer->getImage());
             //waterfall_widget->setSecondaryWF(true);
@@ -246,6 +247,17 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     lrSplitter.setStretchFactor(0, 2);
     lrSplitter.setStretchFactor(1, 0); // do not stretch the indicators
     emit statusMessage(QString("Finished flight system constructor."));
+
+    // Note: It is ok to do this before it is ready. Really. Not a big deal.
+    if(waterfallEngineReady) {
+        emit statusMessage("Sending gps pointer to waterfall engine.");
+    } else {
+        emit statusMessage("Sending gps pointer to waterfall engine, even though it is not ready.");
+    }
+    wfcomputer->setGPSPointer(gps->getLastPositionalMessagePointer());
+
+
+
 }
 
 flight_widget::~flight_widget()
@@ -636,8 +648,6 @@ void flight_widget::startDataCollection(QString secondaryLogFilename)
     if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
         wfcomputer->setGPSStart(this->gps->getLastPositionalMessage());
         wfcomputer->setRecordWFImage(true);
-        //waterfall_widget->setGPSStart( this->gps->getLastPositionalMessage() );
-        //waterfall_widget->setRecordWFImage(true);
     }
 }
 

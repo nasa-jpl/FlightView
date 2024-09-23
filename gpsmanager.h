@@ -270,6 +270,8 @@ public:
     void prepareElements();
 
     gpsMessage getLastPositionalMessage();
+    gpsMessage *getLastPositionalMessagePointer();
+
 
     // no-effort logging elements:
     double chk_longitude = 0;
