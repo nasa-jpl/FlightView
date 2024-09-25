@@ -24,6 +24,14 @@ static std::string get100Int(double d) {
     return QString("%1/100").arg( (int)(d*100)).toStdString();
 }
 
+static std::string get1000Int(float f) {
+    return QString("%1/1000").arg( (int)(f*1000)).toStdString();
+}
+
+static std::string get1000Int(double d) {
+    return QString("%1/1000").arg( (int)(d*1000)).toStdString();
+}
+
 enum tagRtnType {
     tagRtnOK,
     tagRtnFilenameInvalid,
@@ -74,20 +82,20 @@ static tagRtnType imageTagger(const char* filename, gpsMessage start, gpsMessage
             if(start.havePosition) {
                 // lat, lon, altitude, alt ref
                 exifData["Exif.GPSInfo.GPSAltitudeRef"] = "0"; // 0 = MSL, 1 = BELOW sea level, for negative?
-                exifData["Exif.GPSInfo.GPSAltitude"] = get100Int(start.altitude); // units are meters
+                exifData["Exif.GPSInfo.GPSAltitude"] = get1000Int(start.altitude); // units are meters
             }
 
             if(start.haveCourseSpeedGroundData) {
                 exifData["Exif.GPSInfo.GPSSpeedRef"] = "N"; // N = knots, M = mph, K = kph
                 exifData["Exif.GPSInfo.GPSSpeed"] = get100Int(start.speedOverGround*1.94384); // convert to knots
                 exifData["Exif.GPSInfo.GPSTrackRef"] = "M"; // T = True North, M = Magnetic North
-                exifData["Exif.GPSInfo.GPSTrack"] = get100Int(start.courseOverGround);
+                exifData["Exif.GPSInfo.GPSTrack"] = get1000Int(start.courseOverGround);
             }
 
             // Image Direction, camera facing direction, but for us,
             // this will be the aircraft pointing direction, 'heading'
             if(start.haveAltitudeHeading) {
-                exifData["Exif.GPSInfo.GPSImgDirection"] = get100Int(start.heading);
+                exifData["Exif.GPSInfo.GPSImgDirection"] = get1000Int(start.heading);
                 exifData["Exif.GPSInfo.GPSImgDirectionRef"] = "M"; // T = True North, M = Magnetic North
             }
 
