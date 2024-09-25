@@ -29,7 +29,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     wfcomputer->moveToThread(wfcompThread);
     waterfall_widget = new waterfall(fw, 1, 1024, options, this);
 
-
     connect(wfcompThread, &QThread::finished, wfcomputer, &QObject::deleteLater);
 
     //connect(wfcomputer, SIGNAL(hereIsTheImage(QImage*)), waterfall_widget, SLOT(setSpecImage(QImage*)));
@@ -483,6 +482,22 @@ void flight_widget::handlePrefs(settingsT prefs)
     this->prefs = prefs;
     havePrefs = true;
     emit statusMessage("[Flight Widget]: Have preferences inside flight_widget.");
+    if(wfcomputer) {
+        emit updateRGBbandSignal(prefs.bandRed[0], prefs.bandGreen[0],
+                prefs.bandBlue[0]);
+        emit setRGBLevelsSignal(prefs.gainRed[0], prefs.gainGreen[0],
+                prefs.gainBlue[0], prefs.gamma[0], true);
+        if(options.headless) {
+            wfcomputer->setUseDSF(true);
+            emit updateCeilingSignal(prefs.flightDSFCeiling);
+            emit updateFloorSignal(prefs.flightDSFFloor);
+        } else {
+            emit updateCeilingSignal(prefs.flightCeiling);
+            emit updateFloorSignal(prefs.flightFloor);
+        }
+    } else {
+        emit statusMessage("Warning, cannot place initial settings in the waterfall engine.");
+    }
 }
 
 void flight_widget::colorMapScrolledX(const QCPRange &newRange)
