@@ -61,7 +61,7 @@ void waterfall::setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, s
     FPSElapsedTimer.start();
     FPSTimer.setInterval(1000);
     FPSTimer.setSingleShot(false);
-
+    FPSTimer.start();
 
     if(options.headless && (!options.wfPreviewEnabled)) {
         statusMessage("Not starting waterfall display update timer for headless mode without waterfall previews.");
@@ -232,7 +232,7 @@ waterfall::wfInfo_t waterfall::getSettings() {
 }
 
 void waterfall::computeFPS() {
-    // Called every one second for debug reasons:
+    // Called every one second
     float timeElapsed = FPSElapsedTimer.elapsed() / 1000.0;
 
     if(timeElapsed != 0) {
@@ -359,12 +359,16 @@ void waterfall::resetFPS(int desiredFPS) {
             TARGET_WF_FRAMERATE_SECONDARY = desiredFPS;
             WF_DISPLAY_PERIOD_MSECS_SECONDARY = 1000 / TARGET_WF_FRAMERATE_SECONDARY;
             rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS_SECONDARY);
-            statusMessage(QString("Adjusting FPS setpoint to %1 FPS.").arg(TARGET_WF_FRAMERATE_SECONDARY));
+            statusMessage(QString("Adjusting FPS setpoint to %1 FPS. Current observed FPS is %2")
+                          .arg(TARGET_WF_FRAMERATE_SECONDARY)
+                          .arg(fps));
         } else {
             TARGET_WF_FRAMERATE = desiredFPS;
             WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
             rendertimer.setInterval(WF_DISPLAY_PERIOD_MSECS);
-            statusMessage(QString("Adjusting FPS setpoint to %1 FPS.").arg(TARGET_WF_FRAMERATE));
+            statusMessage(QString("Adjusting FPS setpoint to %1 FPS. Current observed FPS is %2")
+                          .arg(TARGET_WF_FRAMERATE)
+                          .arg(fps));
         }
         fpsUnderEvents = 0;
         //metFPS = 0;

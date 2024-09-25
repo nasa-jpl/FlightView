@@ -2457,6 +2457,8 @@ void ControlsBox::use_DSF_general(bool checked)
                 ce = prefs.profileHorizCeiling;
                 ce_ds = prefs.profileHorizDSFCeiling;
                 verticalOverlayDSF = checked;
+                // tell vertical overlay of the change
+                p_profile->useDSF(checked);
                 break;
             default:
                 setUI_widgets = false;

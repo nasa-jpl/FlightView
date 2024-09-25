@@ -125,11 +125,10 @@ void wfengine::setup() {
     FPSTimer->setInterval(1000);
     FPSTimer->setSingleShot(false);
 
-
     if(options.headless && (!options.wfPreviewEnabled)) {
         statusMessage("Not starting waterfall display update timer for headless mode without waterfall previews.");
     } else {
-        statusMessage("Starting waterfall");
+        statusMessage("Starting waterfall rendering engine");
         rendertimer->start();
         FPSTimer->start();
     }
@@ -802,7 +801,7 @@ void wfengine::computeFPS() {
         statusMessage(s);
 #endif
 #endif
-#ifdef dynamicFPS
+#ifdef dynamicFPS_engine
         if(fps < 2) {
             statusMessage("FPS Warning. Checking Render Timer now.");
             if(rendertimer->isActive()) {
@@ -889,12 +888,14 @@ void wfengine::computeFPS() {
 }
 
 void wfengine::resetFPS(int desiredFPS) {
-    if(desiredFPS >= (int)minimumFPS/5) {
+    if(desiredFPS >= (int)minimumFPS_setpoint) {
 
             TARGET_WF_FRAMERATE = desiredFPS;
             WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
             rendertimer->setInterval(WF_DISPLAY_PERIOD_MSECS);
-            statusMessage(QString("Adjusting FPS setpoint to %1 FPS.").arg(TARGET_WF_FRAMERATE));
+            statusMessage(QString("Adjusting FPS setpoint to %1 FPS. Last measured FPS is %2")
+                          .arg(TARGET_WF_FRAMERATE)
+                          .arg(fps, 0, 'f', 3));
 
         fpsUnderEvents = 0;
         //metFPS = 0;

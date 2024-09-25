@@ -316,6 +316,9 @@
        <property name="text">
         <string>Auto Reprocess</string>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -336,6 +339,9 @@
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
       <widget class="QPushButton" name="setRenderFPSBtn">
+       <property name="toolTip">
+        <string>Sets the frames per second for the waterfall back-end rendering engine. Downtrack skip is basically instrument FPS divided by rendering FPS</string>
+       </property>
        <property name="text">
         <string>Set Render FPS</string>
        </property>
@@ -344,7 +350,7 @@
      <item>
       <widget class="QSpinBox" name="renderFPSSpin">
        <property name="minimum">
-        <number>10</number>
+        <number>5</number>
        </property>
        <property name="maximum">
         <number>60</number>

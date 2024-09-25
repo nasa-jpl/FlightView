@@ -264,6 +264,21 @@ void profile_widget::handleNewFrame()
     boundedRange_y = qcp->yAxis->range();
     boundedRange_x = qcp->xAxis->range();
 }
+
+void profile_widget::useDSF(bool useDSF) {
+    // Most of the profiles use the back end 'take'
+    // to handle dark subtraction.
+    // Only the vertical overlay needs to know,
+    // and this is so that it can tell the frame view
+    // widget within it to display DSF data or not.
+
+    if (itype == VERT_OVERLAY) {
+        if(overlay_img) {
+            overlay_img->setUseDSF(useDSF);
+        }
+    }
+}
+
 void profile_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */

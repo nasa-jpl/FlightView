@@ -9,6 +9,12 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
 
     this->setWindowTitle("RGB Levels");
 
+#ifdef QT_DEBUG
+    ui->renderFPSSpin->setMaximum(999);
+    ui->primaryFPSSpin->setMaximum(999);
+    ui->secondaryFPSSpin->setMaximum(999);
+#endif
+
     emitUpdateSignal = false;
 
     connect(ui->redSlider, &QSlider::valueChanged,

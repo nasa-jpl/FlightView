@@ -8,9 +8,6 @@
 // Define this for dynamic FPS
 #define dynamicFPS
 
-// Define this for image GPS tagging
-#define WF_GPS_TAGGING
-
 #include <deque>
 #include <memory>
 #include <atomic>

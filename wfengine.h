@@ -6,7 +6,7 @@
 // define WF_DEBUG_FPS
 
 // Define this for dynamic FPS
-// define dynamicFPS
+// define dynamicFPS_engine
 
 // Define this for image GPS tagging
 #define WF_GPS_TAGGING
@@ -44,7 +44,6 @@ qsrand(QDateTime::currentMSecsSinceEpoch()%UINT_MAX); // Remove this line if it 
 #include "wfshared.h"
 #include "imagetagger.h"
 
-
 #define MAX8(x) ((x>255)?255:x)
 #define MAXWF(x,y) ((x>y)?x:y)
 #define MINWF(x,y) ((x<y)?x:y)
@@ -72,9 +71,10 @@ class wfengine : public QObject
     int WF_DISPLAY_PERIOD_MSECS = 1000 / TARGET_WF_FRAMERATE;
 
     unsigned int initialFPSSetting = TARGET_WF_FRAMERATE;
-    unsigned int minimumFPS = 19; // minimum allowed dynamic FPS
+    unsigned int minimumFPS_dynamic = 19; // minimum allowed dynamic FPS
+    unsigned int minimumFPS_setpoint = 5;
     unsigned int metFPS = 0;
-    unsigned int maximumFPS = 55;
+    unsigned int maximumFPS = 75;
     bool justMovedUpFPS = false;
     bool justMovedDownFPS = false;
     unsigned int flipFlopFPSCounter = 0;
