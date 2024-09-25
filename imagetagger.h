@@ -139,7 +139,7 @@ static tagRtnType imageTagger(const char* filename, gpsMessage start, gpsMessage
             }
             if(dest.haveAltitudeHeading) {
                 exifData["Exif.GPSInfo.GPSDestBearingRef"] = "M"; // T = True North, M = Magnetic North
-                exifData["Exif.GPSInfo.GPSDestBearing"] = get100Int(dest.heading);
+                exifData["Exif.GPSInfo.GPSDestBearing"] = get1000Int(dest.heading);
             }
 
             // Floor, Ceiling, RGB Rows, and Gamma:
