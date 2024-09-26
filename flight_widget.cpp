@@ -399,6 +399,7 @@ void flight_widget::logFPSGPSSlot() {
         fw->basicGPSData.chk_heading = gps->chk_heading;
         fw->basicGPSData.chk_course = gps->chk_course;
         fw->basicGPSData.fps = fw->delta;
+        fw->basicGPSData.collectionID = wfcomputer->getCollectionID();
     } else {
         emit statusMessage("GPS check: gps message data not received yet.");
     }

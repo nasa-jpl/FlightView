@@ -122,7 +122,7 @@ class wfengine : public QObject
     bool justStartedRecording = false;
     bool justStoppedRecording = false;
     QMutex wfInUse;
-    quint64 recordingID = 0;
+    uint16_t collectionID = 0;
 
     unsigned char scaleDataPoint(float dataPt); // to ceiling and floor
 
@@ -172,6 +172,7 @@ public:
     void process();
     QImage* getImage();
     specImageBuff_t* getImageBuffer();
+    uint16_t getCollectionID();
     void setGPSStart(gpsMessage m);
     void setGPSEnd(gpsMessage m);
     void setGPSPointer(gpsMessage *m);

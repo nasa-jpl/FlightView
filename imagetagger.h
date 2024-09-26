@@ -44,7 +44,7 @@ enum tagRtnType {
 
 static tagRtnType imageTagger(const char* filename, gpsMessage start, gpsMessage dest, float fps,
                         int redRow, int greenRow, int blueRow, double gamma,
-                        int floor, int ceiling, quint64 recordingID) {
+                        int floor, int ceiling, uint16_t recordingID) {
     // Check everything out first.
     if(filename==NULL) {
         std::cerr << "Tagger: no filename supplied\n";

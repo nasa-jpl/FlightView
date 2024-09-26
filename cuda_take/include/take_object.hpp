@@ -85,6 +85,7 @@ struct basicGPS_t {
     float chk_heading = 0;
     float chk_course = 0;
     float fps = 0;
+    uint16_t collectionID = 0;
 };
 
 class take_object {
