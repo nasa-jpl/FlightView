@@ -664,6 +664,7 @@ void flight_widget::startDataCollection(QString secondaryLogFilename)
     if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
         wfcomputer->setGPSStart(this->gps->getLastPositionalMessage());
         wfcomputer->setRecordWFImage(true);
+        fw->basicGPSData.collectionID = wfcomputer->getCollectionID();
     }
 }
 
