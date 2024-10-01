@@ -239,6 +239,10 @@ uint16_t wfengine::getCollectionID() {
     return collectionID;
 }
 
+void wfengine::setUseRatioMode(bool useRatioEnable) {
+    this->useRatio = useRatioEnable;
+}
+
 void wfengine::redraw()
 {
     // Copy the waterfall data into the specImage.
@@ -348,11 +352,71 @@ void wfengine::addNewFrame()
 
     // process initial RGB values:
     //processLineToRGB(line); // single processor
-    processLineToRGB_MP(line); // multi-processor
+    if(useRatio) {
+        processLineToRGB_Ratio_MP(line); // multi-processor
+    } else {
+        processLineToRGB_MP(line); // multi-processor
+    }
 
     currentWFLine = (currentWFLine + 1) % maxWFlength;
 
     addingFrame.unlock();
+}
+
+void wfengine::processLineToRGB_Ratio(rgbLine* line) {
+    // This function examines the ratio between green and red
+    // and assignes the result to RG and B.
+
+    float result = 0;
+    float reference = 0;
+    float feature = 0;
+    unsigned char pixVal = 0;
+    // refgerence is higher
+    for(int p=0; p < frWidth; p++)
+    {
+
+        reference = line->getr_raw()[p];
+        feature = line->getg_raw()[p];
+        if((reference+feature) > 0) {
+            result = G_MAXUINT16*(reference-feature)/(reference+feature);
+        } else {
+            result = G_MAXUINT16;
+        }
+        pixVal = scaleDataPoint(result); // floor-ceiling and 0-255
+
+        line->getRed()[p] =   (unsigned char)MAX8(pixVal);
+        line->getGreen()[p] = (unsigned char)MAX8(pixVal);
+        line->getBlue()[p] =  (unsigned char)MAX8(pixVal);
+    }
+}
+
+void wfengine::processLineToRGB_Ratio_MP(rgbLine* line) {
+    // This function examines the ratio between green and red
+    // and assignes the result to RG and B.
+    // The result is (read-blue) / (red+blue)
+
+    float result = 0;
+    float reference = 0;
+    float feature = 0;
+    unsigned char pixVal = 0;
+
+#pragma omp parallel for num_threads(4)
+    for(int p=0; p < frWidth; p++)
+    {
+
+        reference = line->getr_raw()[p];
+        feature = line->getg_raw()[p];
+        if(reference+feature > 0) {
+            result = G_MAXUINT16*(reference-feature)/(reference+feature);
+        } else {
+            result = G_MAXUINT16;
+        }
+        pixVal = scaleDataPoint(result); // floor-ceiling and 0-255
+
+        line->getRed()[p] =   (unsigned char)MAX8(pixVal);
+        line->getGreen()[p] = (unsigned char)MAX8(pixVal);
+        line->getBlue()[p] =  (unsigned char)MAX8(pixVal);
+    }
 }
 
 void wfengine::processLineToRGB(rgbLine* line)
@@ -762,12 +826,22 @@ void wfengine::rescaleWF()
     scalingValues.lock();
     QMutexLocker lock(&wfInUse);
 
+    if(useRatio) {
 #pragma omp parallel for num_threads(nprocToUse)
-    for(int wfrow=0; wfrow < maxWFlength; wfrow++)
-    {
-        //pthread_setname_np(pthread_self(), "GUIRepro");
-        processLineToRGB( wflines[wfrow] );
-        //processLineToRGB_MP( wflines[wfrow] );
+        for(int wfrow=0; wfrow < maxWFlength; wfrow++)
+        {
+            //pthread_setname_np(pthread_self(), "GUIRepro");
+            processLineToRGB_Ratio(wflines[wfrow]);
+            //processLineToRGB_MP( wflines[wfrow] );
+        }
+    } else {
+#pragma omp parallel for num_threads(nprocToUse)
+        for(int wfrow=0; wfrow < maxWFlength; wfrow++)
+        {
+            //pthread_setname_np(pthread_self(), "GUIRepro");
+            processLineToRGB( wflines[wfrow] );
+            //processLineToRGB_MP( wflines[wfrow] );
+        }
     }
     scalingValues.unlock();
 }

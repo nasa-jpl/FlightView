@@ -150,6 +150,7 @@ public slots:
     void changeRGB(int r, int g, int b);
     void setRGBLevels(double red, double green, double blue, double gamma, bool reprocess);
     void setShowRGBLines(bool showLines);
+    void setUseRatioSlot(bool useRatio);
     void changeWFLength(int length);
     void showSecondWF();
     void setWFFPS_render(int target);

@@ -300,6 +300,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     show_rgb_lines_cbox.setText("Show RGB Lines");
     show_rgb_lines_cbox.setToolTip("Shows the RGB lines on the flight interface frame view\n at all times if checked. Otherwise just for 30 seconds");
 
+    useRatioCbox.setText("Ratio");
+    useRatioCbox.setToolTip("Visualize the spectral ratio between two bands");
+
     //center:
     overlay_cent_width = new QSlider(this);
     overlay_cent_width->setMinimum(1);
@@ -366,6 +369,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     sliders_layout->addWidget(&low_increment_cbox, 2, 1, 1, 1);
     sliders_layout->addWidget(&use_DSF_cbox, 2, 2, 1, 1);
     sliders_layout->addWidget(&show_rgb_lines_cbox, 2, 3, 1, 1);
+    sliders_layout->addWidget(&useRatioCbox, 2, 4, 1, 1);
 
     //Third Row
     sliders_layout->addWidget(new QLabel("Ceiling:"),3,1,1,1);
@@ -718,7 +722,22 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
             emit updateRGB(bandRed, bandGreen, bandBlue);
     });
 
-
+    connect(&useRatioCbox, &QCheckBox::toggled,
+            [&](bool checked) {
+        if(checked) {
+            red_label.setText("Reference Band");
+            green_label.setText("Feature Band");
+            blue_label.setText("Unused (ratio)");
+            blue_slider.setEnabled(false);
+            blueSpin.setEnabled(false);
+        } else {
+            red_label.setText("Red Band");
+            green_label.setText("Green Band");
+            blue_label.setText("Blue Band");
+            blue_slider.setEnabled(true);
+            blueSpin.setEnabled(true);
+        }
+    });
 
     // Preferences:
     connect(prefWindow, SIGNAL(saveSettings()), this, SLOT(triggerSaveSettings()), Qt::UniqueConnection);
@@ -1240,6 +1259,8 @@ void ControlsBox::tab_changed_slot(int index)
     attempt_pointers(current_tab);
     show_rgb_lines_cbox.setEnabled(false);
     show_rgb_lines_cbox.setVisible(false);
+    useRatioCbox.setEnabled(false);
+    useRatioCbox.setVisible(false);
     showRGBLevelsButton.setEnabled(false);
     showRGBLevelsButton.setVisible(false);
     overlayControls(false);
@@ -1552,6 +1573,7 @@ void ControlsBox::tab_changed_slot(int index)
             connect(fw, SIGNAL(updateFPS()), p_flight, SLOT(updateFPS()), Qt::UniqueConnection);
             connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseDSF(bool)), Qt::UniqueConnection);
             connect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)), Qt::UniqueConnection);
+            connect(&useRatioCbox, SIGNAL(toggled(bool)), p_flight, SLOT(setUseRatioSlot(bool)), Qt::UniqueConnection);
 
             connect(p_flight, SIGNAL(updateFloorCeilingFromFrameviewChange(double,double)),
                     this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)), Qt::UniqueConnection);
@@ -1568,6 +1590,8 @@ void ControlsBox::tab_changed_slot(int index)
             use_DSF_cbox.setEnabled(true);
             show_rgb_lines_cbox.setEnabled(true);
             show_rgb_lines_cbox.setVisible(true);
+            useRatioCbox.setEnabled(true);
+            useRatioCbox.setVisible(true);
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_flight->rescaleRange();
 
@@ -1905,6 +1929,7 @@ void ControlsBox::disconnect_old_tab()
         disconnect(fw, SIGNAL(updateFPS()), p_flight, SLOT(updateFPS()));
         disconnect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseDSF(bool)));
         disconnect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)));
+        disconnect(&useRatioCbox, SIGNAL(toggled(bool)), p_flight, SLOT(setUseRatioSlot(bool)));
 
         disconnect(p_flight, SIGNAL(updateFloorCeilingFromFrameviewChange(double,double)),
                 this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));

@@ -115,6 +115,7 @@ public:
     QCheckBox low_increment_cbox;
     QCheckBox use_DSF_cbox;
     QCheckBox show_rgb_lines_cbox;
+    QCheckBox useRatioCbox;
 
     /* RIGHT SIDE BUTTONS (save) */
     QGridLayout *save_layout;

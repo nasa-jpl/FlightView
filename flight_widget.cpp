@@ -569,6 +569,10 @@ void flight_widget::setShowRGBLines(bool showLines)
     dsf_widget->toggleDrawRGBRow(showLines);
 }
 
+void flight_widget::setUseRatioSlot(bool useRatio) {
+    wfcomputer->setUseRatioMode(useRatio);
+}
+
 void flight_widget::changeWFLength(int length)
 {
     emit changeWFLengthSignal(length);

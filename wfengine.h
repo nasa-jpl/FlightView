@@ -128,6 +128,9 @@ class wfengine : public QObject
 
     void addNewFrame();
     std::mutex addingFrame;
+    void processLineToRGB_Ratio(rgbLine* line); //red to green ratio
+    void processLineToRGB_Ratio_MP(rgbLine* line); //red to green ratio
+
     void processLineToRGB(rgbLine* line); // float data to scaled RGB values
     void processLineToRGB_MP(rgbLine* line); // multi-processor version
 
@@ -155,6 +158,7 @@ class wfengine : public QObject
 
     void redraw();
     bool useDSF;
+    bool useRatio = false;
     bool recordToJPG = false;
     int jpgQuality = 75; // TODO: parameter
     unsigned int frameCount = 0;
@@ -173,6 +177,7 @@ public:
     QImage* getImage();
     specImageBuff_t* getImageBuffer();
     uint16_t getCollectionID();
+    void setUseRatioMode(bool useRatios);
     void setGPSStart(gpsMessage m);
     void setGPSEnd(gpsMessage m);
     void setGPSPointer(gpsMessage *m);
