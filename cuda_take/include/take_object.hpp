@@ -88,6 +88,12 @@ struct basicGPS_t {
     uint16_t collectionID = 0;
 };
 
+union pcv_t {
+    uint16_t* u16;
+    unsigned char* uc;
+    char* c;
+};
+
 class take_object {
     PdvDev * pdv_p = NULL;
     unsigned int channel;
@@ -228,6 +234,9 @@ private:
     // RTP using NextGen RTP:
     void prepareRTPNGCamera();
     void rtpNGStreamLoop();
+
+    // Rotation:
+    void rotate(uint16_t *input, uint16_t *output, int inHeight, int inWidth);
 
     CameraModel *Camera = NULL;
     bool fileReadingLoopRun = false;

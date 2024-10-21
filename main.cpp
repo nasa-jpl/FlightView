@@ -394,6 +394,10 @@ int main(int argc, char *argv[])
             startupOptions.runStdDevCalculation = false;
         }
 
+        if( currentArg == "--rotate") {
+            startupOptions.rotate = true;
+        }
+
         if(currentArg == "--wfpreview") {
             startupOptions.wfPreviewEnabled = true;
         }

@@ -117,6 +117,7 @@ void frameWorker::convertOptions()
     takeOptions.er2mode = options.er2mode;
     takeOptions.headless = options.headless;
     takeOptions.noGPU = options.noGPU;
+    takeOptions.rotate = options.rotate;
     takeOptions.useSHM = options.useSHM;
     takeOptions.flightMode = options.flightMode;
     takeOptions.disableGPS = options.disableGPS;

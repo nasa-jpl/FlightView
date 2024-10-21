@@ -296,9 +296,15 @@ void take_object::start()
         }
         size = pdv_get_dmasize(pdv_p); // this size is only used to determine the camera type
         // actual grabbing of the dimensions
-        frWidth = pdv_get_width(pdv_p);
-        dataHeight = pdv_get_height(pdv_p);
-        frHeight = dataHeight;
+        if(options.rotate) {
+            frWidth = pdv_get_height(pdv_p);
+            dataHeight = pdv_get_width(pdv_p);
+            frHeight = dataHeight;
+        } else {
+            frWidth = pdv_get_width(pdv_p);
+            dataHeight = pdv_get_height(pdv_p);
+            frHeight = dataHeight;
+        }
     }
 
     switch(size) {
@@ -1348,6 +1354,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
     uint16_t last_framecount = 0;
     unsigned char* wait_ptr = NULL;
 
+    pcv_t pointerConverter;
 
     mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
                                        meanStartRow,meanHeight,frWidth,useDSF,\
@@ -1391,7 +1398,14 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
          * Third, we may need to invert the data range if a cable is inverting the magnitudes
          * that arrive from the ADC. This feature is also modified from the preference window.
          */
-        memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
+
+        if(options.rotate) {
+            pointerConverter.uc = wait_ptr;
+            // Note that the height and width are reversed in this call on purpose.
+            this->rotate(pointerConverter.u16, curFrame->raw_data_ptr, frWidth, dataHeight);
+        } else {
+            memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
+        }
         if(pixRemap)
             apply_chroma_translate_filter(curFrame->raw_data_ptr);
 
@@ -1469,6 +1483,27 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         }
     }
 }
+
+void take_object::rotate(uint16_t *input, uint16_t *output, int origHeight, int origWidth) {
+    // Rotate the input into the output.
+
+    // NOTE: output pointer is a static cuda memory allocation and must meet the rotated size!
+    // See constants.h for the max size, which is allocated in frame_c.hpp
+
+    // This is also effectivly a memcpy
+    int p=0;
+    int outPos = 0;
+    int c = 0;
+    // height and width reference the original (input) matrix dims
+
+    for(p = 0; p < origWidth; p++) {
+        for(c=0; c < origHeight*origWidth; c=c+origWidth) {
+            output[outPos] = input[c+p]; outPos++;
+        }
+    }
+}
+
+
 void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
 {
     // Frame Save Thread (saving_thread)
