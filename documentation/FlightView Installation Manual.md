@@ -176,7 +176,7 @@ sudo update-grub
 To initialize the camera link port, the `initcam` program is used with a camera link config file. By default, a large set of camera link config files are provided in `/opt/EDTpdv/camera_config`. These plaintext files may be used as a starting point for building a custom config file.
 
 Here is an example for a 640x481 14-bit camera:
-```json
+```
 camera_class:       "Imaging Spectrometer"
 camera_model:       "Camera Link 14-bit"
 camera_info:        "640x481 HSI"
@@ -190,7 +190,7 @@ MODE_CNTL_NORM:     00
 ```
 
 Here is an example for a 1280x328 16-bit camera:
-```json
+```
 camera_class:       "Imaging Spectrometer"
 camera_model:       "FPA"
 camera_info:        "1280x480 16-bit HSI"
