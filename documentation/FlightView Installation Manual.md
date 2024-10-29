@@ -19,7 +19,7 @@ Part 1: Prerequisites
 ------------------------
 
 <details open>
-<summary>Collapsible</summary>
+    <summary></summary>
 
 ### OS
 
@@ -89,6 +89,8 @@ apt-src build gstreamer1.0-plugins-good
 sudo dpkg --install ./gstreamer1.0*.deb
 ```
 
+</details>
+
 #### SSH Server
 It is **strongly recommended** to install and enable an SSH Server so that, if the graphics don't come up, an SSH connection can be made for diagnostics:
 
@@ -97,6 +99,8 @@ sudo apt-get -y install openssh-server
 sudo systemctl enable openssh-server
 sudo systemctl start openssh-server
 ```
+
+
 
 </details>
 
@@ -241,8 +245,6 @@ To verify the port was successfully initialized, run `/opt/EDTpdv/take`, which a
   * The port was initialized, and the camera returned a frame without timing out. This means the camera link system is ready for use.
 
 *The return value is generally `1` upon error and `0` upon success.*
-
-</details>
 
 </details>
 
