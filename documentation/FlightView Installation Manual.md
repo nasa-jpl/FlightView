@@ -111,7 +111,7 @@ GPU Drivers
         <b>Installing the drivers</b>
     </summary>
 
-The computer bust be using the proprietary Nvidia graphics drivers as well as a matching CUDA driver. Additionally, the CUDA Development Kit must be installed, which includes the nvcc Nvidia CUDA compiler and associated libraries. All these can be installed by using a single download. 
+The computer must be using the proprietary Nvidia graphics drivers as well as a matching CUDA driver. Additionally, the CUDA Development Kit must be installed, which includes the nvcc Nvidia CUDA compiler and associated libraries. All these can be installed by using a single download. 
 
 **Please use CUDA Development Kit version 11.6 or greater for the smoothest installation of FlightView**
 
