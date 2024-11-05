@@ -433,51 +433,48 @@ void frameview_widget::handleNewFrame()
 
             if(useDSF)
             {
-                // DSF
-
-
-
-                for(int col = 0; col < frWidth; col++)
-                {
-                    for(int row = 0; row < frHeight; row++)
-                        // this will blank out the part of the frame where the crosshair is pointing so that it is
-                        // visible in the display
-                        if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
-                             || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
-                        {
-                            colorMap->data()->setCell(col, row, NAN);
-                        } else {
+                if(peakHoldMode) {
+                    // DSF,
+                    // Peak Hold Mode
+                    for(int col = 0; col < frWidth; col++) {
+                        for(int row = 0; row < frHeight; row++) {
                             // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
-
-                            if(peakHoldMode) {
-                                if(local_image_ptr_float[row * frWidth + col] > peakValueHolder[row * frWidth + col]) {
-                                    peakValueHolder[row * frWidth + col] = local_image_ptr_float[row * frWidth + col];
-                                }
-                                colorMap->data()->setCell(col, row, peakValueHolder[row * frWidth + col]); // y-axis NOT reversed
-                            } else {
-                                colorMap->data()->setCell(col, row, local_image_ptr_float[row * frWidth + col]); // y-axis NOT reversed
+                            // Check for higher peak value:
+                            if(local_image_ptr_float[row * frWidth + col] > peakValueHolder[row * frWidth + col]) {
+                                peakValueHolder[row * frWidth + col] = local_image_ptr_float[row * frWidth + col];
                             }
+                            // Draw data from the peak hold array:
+                            colorMap->data()->setCell(col, row, peakValueHolder[row * frWidth + col]); // y-axis NOT reversed
                         }
+                    }
+                } else {
+                    // DSF
+                    // NOT Peak Hold Mode:
+                    for(int col = 0; col < frWidth; col++) {
+                        for(int row = 0; row < frHeight; row++) {
+                            // Draw the image:
+                            // colorMap->data()->setCell(col, row, local_image_ptr[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
+                            colorMap->data()->setCell(col, row, local_image_ptr_float[row * frWidth + col]); // y-axis NOT reversed
+                        }
+                    }
                 }
             } else {
                 // Not DSF
-                for(int col = 0; col < frWidth; col++)
-                {
-                    for(int row = 0; row < frHeight; row++) {
-                        // this will blank out the part of the frame where the crosshair is pointing so that it is
-                        // visible in the display
-
-                        if(peakHoldMode) {
+                if(peakHoldMode) {
+                    for(int col = 0; col < frWidth; col++) {
+                        for(int row = 0; row < frHeight; row++) {
+                            // Check for a potential new peak value:
                             if(local_image_ptr_uint[row * frWidth + col] > peakValueHolder[row * frWidth + col]) {
                                 peakValueHolder[row * frWidth + col] = local_image_ptr_uint[row * frWidth + col];
                             }
+                            // Set the data into the image, from the peakValueHolder array:
                             colorMap->data()->setCell(col, row, peakValueHolder[row * frWidth + col]);
                         }
-                        if( (row == fw->crosshair_y || col == fw->crosshair_x || row == fw->crossStartRow || row == fw->crossHeight \
-                             || col == fw->crossStartCol || col == fw->crossWidth) && fw->displayCross )
-                        {
-                            colorMap->data()->setCell(col, row, NAN);
-                        } else if (!peakHoldMode) {
+                    }
+                } else {
+                    // Not in peak hold mode:
+                    for(int col = 0; col < frWidth; col++) {
+                        for(int row = 0; row < frHeight; row++) {
                             // colorMap->data()->setCell(col, row, local_image_ptr_uint[(frHeight - row - 1) * frWidth + col]); // y-axis reversed
                             colorMap->data()->setCell(col, row, local_image_ptr_uint[row * frWidth + col]); // y-axis NOT reversed
                         }
@@ -485,8 +482,40 @@ void frameview_widget::handleNewFrame()
                 }
             }
 
-            if(drawrgbRow)
-            {
+            if(fw->displayCross) {
+                int row=fw->crosshair_y;
+                if(row < frHeight) {
+                    for(int col = 0; col < frWidth; col++) {
+                        colorMap->data()->setCell(col, row, NAN);
+                    }
+                }
+                int col = fw->crosshair_x;
+                if(col < frWidth) {
+                    for(int row = 0; row < frHeight; row++) {
+                        colorMap->data()->setCell(col, row, NAN);
+                    }
+                }
+                if(isOverlayImage) {
+                    // draw the other ones as well:
+                    row = fw->crossStartRow;
+                    for(int col = 0; col < frWidth; col++) {
+                        colorMap->data()->setCell(col, row, NAN);
+                    }
+                    row = fw->crossHeight;
+                    for(int col = 0; col < frWidth; col++) {
+                        colorMap->data()->setCell(col, row, NAN);
+                    }
+                    col = fw->crossStartCol;
+                    for(int row = 0; row < frHeight; row++) {
+                        colorMap->data()->setCell(col, row, NAN);
+                    }
+                    col = fw->crossWidth;
+                    for(int row = 0; row < frHeight; row++) {
+                        colorMap->data()->setCell(col, row, NAN);
+                    }
+                }
+            }
+            if(drawrgbRow) {
                 int ifloor = (int)this->floor;
                 int iceiling = (int)this->ceiling;
                 int imid = (iceiling - ifloor)/2;
@@ -520,10 +549,10 @@ void frameview_widget::handleNewFrame()
 
                 }
             }
-
             qcp->replot();
             goto done_here;
-        }
+
+        } // end if DSF or BASE
 
         if(image_type == STD_DEV && fw->std_dev_frame != NULL) {
             float * local_image_ptr = fw->std_dev_frame->std_dev_data;
@@ -535,6 +564,7 @@ void frameview_widget::handleNewFrame()
             goto done_here;
         }
     }
+
 
 
 done_here:
@@ -654,30 +684,30 @@ void frameview_widget::setScrollY(bool Xenabled)
 void frameview_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */
-//    if(prefs)
-//    {
-//        switch(image_type)
-//        {
-//        case(DSF):
-//            prefs->dsfCeiling = c;
-//            break;
-//        case(BASE):
-//            if(useDSF)
-//            {
-//                prefs->dsfCeiling = c;
-//            } else {
-//                prefs->frameViewCeiling = c;
-//            }
-//            break;
+    //    if(prefs)
+    //    {
+    //        switch(image_type)
+    //        {
+    //        case(DSF):
+    //            prefs->dsfCeiling = c;
+    //            break;
+    //        case(BASE):
+    //            if(useDSF)
+    //            {
+    //                prefs->dsfCeiling = c;
+    //            } else {
+    //                prefs->frameViewCeiling = c;
+    //            }
+    //            break;
 
-//        case(STD_DEV):
-//            prefs->stddevCeiling = c;
-//            break;
+    //        case(STD_DEV):
+    //            prefs->stddevCeiling = c;
+    //            break;
 
-//        default:
-//            break;
-//        }
-//    }
+    //        default:
+    //            break;
+    //        }
+    //    }
 
     ceiling = (double)c;
     rescaleRange();
@@ -685,32 +715,32 @@ void frameview_widget::updateCeiling(int c)
 
 void frameview_widget::updateFloor(int f)
 {
-    /*! \brief Change the value  of the floor for this widget to the input parameter and replot the color scale. */   
-//    if(prefs)
-//    {
-//        switch(image_type)
-//        {
-//        case(DSF):
-//            prefs->dsfFloor = f;
-//            break;
+    /*! \brief Change the value  of the floor for this widget to the input parameter and replot the color scale. */
+    //    if(prefs)
+    //    {
+    //        switch(image_type)
+    //        {
+    //        case(DSF):
+    //            prefs->dsfFloor = f;
+    //            break;
 
-//        case(BASE):
-//            if(useDSF)
-//            {
-//                prefs->dsfFloor = f;
-//            } else {
-//                prefs->frameViewFloor = f;
-//            }
-//            break;
+    //        case(BASE):
+    //            if(useDSF)
+    //            {
+    //                prefs->dsfFloor = f;
+    //            } else {
+    //                prefs->frameViewFloor = f;
+    //            }
+    //            break;
 
-//        case(STD_DEV):
-//            prefs->stddevFloor = f;
-//            break;
+    //        case(STD_DEV):
+    //            prefs->stddevFloor = f;
+    //            break;
 
-//        default:
-//            break;
-//        }
-//    }
+    //        default:
+    //            break;
+    //        }
+    //    }
     floor = (double)f;
     rescaleRange();
 }
@@ -753,6 +783,10 @@ void frameview_widget::toggleDrawRGBRow(bool draw)
     this->drawrgbRow = draw;
     colorMap->setInterpolate(draw);
     colorMap->setAntialiased(draw);
+}
+
+void frameview_widget::setIsOverlayImage(bool isOverlay) {
+    this->isOverlayImage = isOverlay;
 }
 
 void frameview_widget::showRGB(int r, int g, int b)

@@ -103,7 +103,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     if(itype==VERT_OVERLAY)
     {
         overlay_img = new frameview_widget(fw, DSF, this);
-
+        overlay_img->setIsOverlayImage(true);
         // Grid layout
 
         // Right side plot and check box:
