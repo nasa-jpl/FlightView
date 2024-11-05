@@ -147,7 +147,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
         this->setLayout(&qvbl);
     }
-
+    qcp->setNoAntialiasingOnDrag(true);
 
     connect(reset_zoom_btn, SIGNAL(released()), this, SLOT(defaultZoom())); // disconnect?
     connect(qcp, SIGNAL(mouseMove(QMouseEvent*)), this, SLOT(moveCallout(QMouseEvent*)));
