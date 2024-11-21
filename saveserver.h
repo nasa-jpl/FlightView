@@ -9,6 +9,7 @@
 #include <QMutex>
 
 #include "frame_worker.h"
+#include "flightappstatustypes.h"
 
 const quint16 CMD_START_SAVING = 2;
 const quint16 CMD_STATUS = 3;
@@ -17,6 +18,7 @@ const quint16 CMD_START_DARKSUB = 5;
 const quint16 CMD_STOP_DARKSUB = 6;
 const quint16 CMD_START_FLIGHT_SAVING = 7;
 const quint16 CMD_STOP_SAVING = 8;
+const quint16 CMD_STATUS_FLIGHT = 9;
 
 /*! \file
  *  \brief Establishes a server which can accept remote frame saving commands.
@@ -39,9 +41,18 @@ class saveServer : public QTcpServer
     uint16_t blockSize;
     uint16_t commandType;
 
-    uint16_t framesToSave;
-    QString fname;
-    uint16_t navgs;
+    uint16_t framesToSave = 0;
+    QString fname = "";
+    uint16_t navgs = 0;
+
+    flightAppStatus_t *flightStatus = NULL;
+
+    bool stat_diskOk = true;
+    bool stat_gpsLinkOk = true;
+    bool stat_gpsReady = true;
+    bool stat_cameraOk = true;
+    bool stat_headerOk = false;
+    quint16 stat_framesCaptured = 0;
 
     QMutex readMutex;
     bool signalConnected = false;
@@ -56,7 +67,7 @@ class saveServer : public QTcpServer
     void printHex(QByteArray *b);
 
 public:
-    saveServer(frameWorker *fw, QObject *parent = 0);
+    saveServer(frameWorker *fw, flightAppStatus_t *flightStatus, QObject *parent = 0);
 
     QHostAddress ipAddress;
     int port;
@@ -71,6 +82,11 @@ signals:
     void startTakingDarks();
     void stopTakingDarks();
     void sigMessage(QString message);
+
+//public slots:
+//    void sendFullStatus(bool stat_diskOk, bool stat_gpsLinkOk,
+//                        bool stat_gpsReady, bool stat_cameraOk,
+//                        bool stat_headerOk, quint16 stat_framesCaptured);
 
 private slots:
     void readCommand();

@@ -18,6 +18,7 @@
 #include "startupOptions.h"
 #include "preferences.h"
 #include "consolelog.h"
+#include "flightappstatustypes.h"
 
 // GPS includes:
 
@@ -67,6 +68,8 @@ private:
     consoleLog *cLog;
 
     /*! @} */
+
+    flightAppStatus_t *flightStatus = NULL;
 
     void removeTab(QString tabTitle);
     void closeEvent(QCloseEvent *e);

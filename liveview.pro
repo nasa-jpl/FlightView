@@ -63,6 +63,7 @@ HEADERS  += mainwindow.h \
     dms.h \
     filenamegenerator.h \
     flight_widget.h \
+    flightappstatustypes.h \
     flightindicators.h \
     frameview_widget.h \
     controlsbox.h\

@@ -1,6 +1,6 @@
 #include "flight_widget.h"
 
-flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidget *parent) : QWidget(parent)
+flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, flightAppStatus_t *flightStatus, QWidget *parent) : QWidget(parent)
 {
     //connect(this, SIGNAL(statusMessage(QString)), this, SLOT(showDebugMessage(QString)));
 
@@ -15,6 +15,11 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     if(flightDisplayElements.lastIssueLabel == NULL) {
         qDebug() << "ERROR lastIssueLabel is NULL!!";
     }
+
+    if(flightStatus == NULL) {
+        qDebug() << "ERROR, flightStatus is NULL";
+    }
+    this->flightStatus = flightStatus;
 
     stickyFPSError = false;
     FPSErrorCounter = 0;
@@ -73,7 +78,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     }
 
     startedPrimaryGPSLog = false;
-    gps = new gpsManager(options);
+    gps = new gpsManager(options, flightStatus);
 
     if(useAvionicsWidgets)
     {
@@ -367,12 +372,17 @@ void flight_widget::updateFPS()
         if(fw->delta < 12.8f)
         {
             processFPSError();
+            if(flightStatus) flightStatus->stat_cameraReady = 0;
         } else if (fw->delta < 13.0f) {
             this->cameraLinkLED->setState(QLedLabel::StateWarning);
         } else if ((fw->delta > 13.0f) && !stickyFPSError)
         {
             // to reset the warning, but not the sticky error:
             this->cameraLinkLED->setState(QLedLabel::StateOk);
+            if(flightStatus) flightStatus->stat_cameraReady = 1;
+        } else {
+            // No sticky for the external status:
+            if(flightStatus) flightStatus->stat_cameraReady = 1;
         }
     }
 }
@@ -400,6 +410,7 @@ void flight_widget::logFPSGPSSlot() {
         fw->basicGPSData.chk_course = gps->chk_course;
         fw->basicGPSData.fps = fw->delta;
         fw->basicGPSData.collectionID = wfcomputer->getCollectionID();
+
     } else {
         emit statusMessage("GPS check: gps message data not received yet.");
     }
@@ -430,13 +441,25 @@ void flight_widget::checkDiskSpace()
             {
                 diskLED->setState(QLedLabel::StateError);
                 stickyDiskFull = true;
+                if(flightStatus) {
+                    flightStatus->stat_diskOk = percent;
+                    if(flightStatus->stat_diskOk==1)
+                        flightStatus->stat_diskOk = 0;
+                }
                 //emit statusMessage(QString("[Flight Widget]: ERROR: Disk too full to use at percent %1").arg(percent));
             } else if (percent > prefs.percentDiskWarning)
             {
                 diskLED->setState(QLedLabel::StateWarning);
+                if(flightStatus) {
+                    flightStatus->stat_diskOk = percent;
+                    if(flightStatus->stat_diskOk==1)
+                        flightStatus->stat_diskOk = 0;
+                }
                 //emit statusMessage(QString("[Flight Widget]: Warning: Disk quite full at percent %1").arg(percent));
             } else {
                 diskLED->setState(QLedLabel::StateOk);
+                if(flightStatus)
+                    flightStatus->stat_diskOk = 1;
             }
         }
     }
