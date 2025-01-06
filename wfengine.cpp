@@ -374,10 +374,11 @@ void wfengine::processLineToRGB_Ratio(rgbLine* line) {
     // refgerence is higher
     for(int p=0; p < frWidth; p++)
     {
-
         reference = line->getr_raw()[p];
         feature = line->getg_raw()[p];
         if((reference+feature) > 0) {
+            // consider setting to zero when the numberator is negative.
+            // otherwise the cast places it into an alias'd higher number.
             result = G_MAXUINT16*(reference-feature)/(reference+feature);
         } else {
             result = G_MAXUINT16;
@@ -403,7 +404,6 @@ void wfengine::processLineToRGB_Ratio_MP(rgbLine* line) {
 #pragma omp parallel for num_threads(4)
     for(int p=0; p < frWidth; p++)
     {
-
         reference = line->getr_raw()[p];
         feature = line->getg_raw()[p];
         if(reference+feature > 0) {

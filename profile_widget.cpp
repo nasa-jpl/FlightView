@@ -103,7 +103,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     if(itype==VERT_OVERLAY)
     {
         overlay_img = new frameview_widget(fw, DSF, this);
-
+        overlay_img->setIsOverlayImage(true);
         // Grid layout
 
         // Right side plot and check box:
@@ -147,7 +147,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
         this->setLayout(&qvbl);
     }
-
+    qcp->setNoAntialiasingOnDrag(true);
 
     connect(reset_zoom_btn, SIGNAL(released()), this, SLOT(defaultZoom())); // disconnect?
     connect(qcp, SIGNAL(mouseMove(QMouseEvent*)), this, SLOT(moveCallout(QMouseEvent*)));
@@ -159,6 +159,16 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
     if(!options.headless) {
         rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+        if( (itype==VERTICAL_CROSS) || (itype==VERTICAL_MEAN)
+                || (itype==VERT_OVERLAY) ) {
+            if (frHeight > 1280) {
+                rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS*4);
+            }
+        } else {
+            if (frWidth > 1280) {
+                rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS*4);
+            }
+        }
     }
 }
 profile_widget::~profile_widget()

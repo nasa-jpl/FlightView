@@ -47,6 +47,7 @@ class frameview_widget : public QWidget
 
     frameWorker *fw;
     QTimer rendertimer;
+    QMutex drawMutex;
 
     float *peakValueHolder;
     bool peakHoldMode = false;
@@ -87,6 +88,7 @@ class frameview_widget : public QWidget
     int blueRow = 0;
 
     bool drawrgbRow = false;
+    bool isOverlayImage = false;
 
     bool scrollXenabled = true;
     bool scrollYenabled = true;
@@ -118,6 +120,7 @@ public:
     void toggleDisplayCrosshair();
     void toggleDrawRGBRow(bool draw);
     void showRGB(int r, int g, int b);
+    void setIsOverlayImage(bool isOverlay);
 
     image_t image_type;
     const unsigned int slider_max = (1<<16) * 1.1;

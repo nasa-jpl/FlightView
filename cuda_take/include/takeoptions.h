@@ -46,7 +46,9 @@ struct takeOptionsType
 
     bool er2mode = false;
     bool headless = false;
-    bool noGPU = false;
+    bool noGPU = false; // experimental
+    bool rotate = false;
+    bool remapPixels = false;
 
     bool useSHM = false;
 

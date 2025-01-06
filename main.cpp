@@ -87,6 +87,8 @@ int main(int argc, char *argv[])
                                "--wfpreviewcontinuous \n"
                                "--wfpreviewlocation /path/to/waterfallpreview/files/ \n"
                                "-v --version \n"
+                               "--rotate \n"
+                               "--remap \n"
                                )\
             .arg(cmdName);
     QString currentArg;
@@ -392,6 +394,14 @@ int main(int argc, char *argv[])
         if( (currentArg == "--no-gpu") || (currentArg == "--nogpu") ) {
             startupOptions.noGPU = true;
             startupOptions.runStdDevCalculation = false;
+        }
+
+        if( currentArg == "--rotate") {
+            startupOptions.rotate = true;
+        }
+
+        if( currentArg == "--remap") {
+            startupOptions.remapPixels = true;
         }
 
         if(currentArg == "--wfpreview") {

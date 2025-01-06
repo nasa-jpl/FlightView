@@ -504,6 +504,12 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
 
     handleMainWindowStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
 
+    if(options->rotate) {
+        handleMainWindowStatusMessage("Image rotation: ENABLED");
+    } else {
+        handleMainWindowStatusMessage("Image rotation: DISABLED");
+    }
+
     if(options->headless) {
         this->resize(1558, 1024);
     } else {

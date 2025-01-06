@@ -252,6 +252,33 @@ void take_object::start()
     pthread_setname_np(pthread_self(), "TAKE");
 
     this->pdv_p = NULL;
+    if(!options.noGPU) {
+
+	size_t cudamem[10] = {0};
+	size_t maxMemFound = 0;
+	int bestDevice = 0;
+	for(int i=0; i < getDeviceCount(); i++) {
+		cudaGetDeviceProperties(&cdev, i);
+		cudamem[i] = cdev.totalGlobalMem;
+        printf("Device %d has name %s and memory %ld MiB\n",
+                i, cdev.name, cudamem[i]/1024/1024);
+		if(cudamem[i] > maxMemFound) {
+			maxMemFound = cudamem[i];
+			bestDevice = i;
+		}
+	}
+
+	cudaDevNumber = bestDevice;
+	cudaDeviceNumberStatic = cudaDevNumber;
+
+	printf("TAKE_OBJECT: Setting device number to %d\n", cudaDevNumber);
+	cudaSetDevice(cudaDevNumber);
+	int cudaDevNumCheck = -1;
+	cudaGetDevice(&cudaDevNumCheck);
+	printf("TAKE_OBJECT: Current device is: %d\n", cudaDevNumCheck);
+	cudaGetDeviceProperties(&cdev, cudaDevNumCheck);
+	printf("TAKE_OBJECT: CUDA device name: %s\n", cdev.name);
+    }
 
     if(options.xioCam)
     {
@@ -296,20 +323,26 @@ void take_object::start()
         }
         size = pdv_get_dmasize(pdv_p); // this size is only used to determine the camera type
         // actual grabbing of the dimensions
-        frWidth = pdv_get_width(pdv_p);
-        dataHeight = pdv_get_height(pdv_p);
-        frHeight = dataHeight;
+        if(options.rotate) {
+            frWidth = pdv_get_height(pdv_p);
+            dataHeight = pdv_get_width(pdv_p);
+            frHeight = dataHeight;
+        } else {
+            frWidth = pdv_get_width(pdv_p);
+            dataHeight = pdv_get_height(pdv_p);
+            frHeight = dataHeight;
+        }
     }
 
     switch(size) {
     case 481*640*sizeof(uint16_t): cam_type = CL_6604A; break;
     case 285*640*sizeof(uint16_t): cam_type = CL_6604A; break;
-    case 480*640*sizeof(uint16_t): cam_type = CL_6604B; pixRemap = true; break;
-    default: cam_type = CL_6604B; pixRemap = true; break;
+    case 480*640*sizeof(uint16_t): cam_type = CL_6604B; break;
+    default: cam_type = CL_6604B; break;
     }
 	setup_filter(cam_type);
     setup_filter(frHeight, frWidth);
-	if(pixRemap) {
+    if(twoscomp) {
 		std::cout << "2s compliment filter ENABLED" << std::endl;
 	} else {
 		std::cout << "2s compliment filter DISABLED" << std::endl;
@@ -327,7 +360,7 @@ void take_object::start()
 
     // Initialize the filters
     dsf = new dark_subtraction_filter(frWidth,frHeight);
-    sdvf = new std_dev_filter(frWidth,frHeight);
+    sdvf = new std_dev_filter(frWidth,frHeight, cudaDevNumber);
 
     // Initial dimensions for calculating the mean that can be updated later
     meanStartRow = 0;
@@ -463,11 +496,12 @@ void take_object::setInversion(bool checked, unsigned int factor)
     inverted = checked;
     invFactor = factor;
 }
-void take_object::paraPixRemap(bool checked )
+void take_object::set_twoscomp(bool checked )
 {
-    pixRemap = checked;
+    // This function was, unfortunately, briefly called paraPixRemap
+    twoscomp = checked;
     std::cout << "2s Compliment Filter ";
-    if(pixRemap) {
+    if(twoscomp) {
         std::cout << "ENABLED" << std::endl;
     } else {
         std::cout << "DISABLED" << std::endl;
@@ -613,6 +647,7 @@ void take_object::loadDSFMask(std::string file_name)
         {
             std::cerr << "Error: mask file does not match image size" << std::endl;
             fclose (pFile);
+            delete [] mask_in;
             return;
         }
         rewind(pFile);   // go back to beginning
@@ -623,7 +658,7 @@ void take_object::loadDSFMask(std::string file_name)
 #endif
     }
     dsf->load_mask(mask_in); // memcopy to stack variable
-    delete mask_in;
+    delete [] mask_in;
 }
 void take_object::setStdDev_N(int s)
 {
@@ -1014,7 +1049,7 @@ void take_object::fileImageCopyLoop()
             begintp = std::chrono::steady_clock::now();
 
             grabbing = true;
-            curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+            curFrame = & frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
             curFrame->reset();
 
             if(closing)
@@ -1079,9 +1114,9 @@ void take_object::fileImageCopyLoop()
             // very similar to the EDT frame grabber code.
 
 
-            if(pixRemap)
+            if(twoscomp)
             {
-                apply_chroma_translate_filter(curFrame->raw_data_ptr);
+                apply_2sComp_translate_filter(curFrame->raw_data_ptr);
                 curFrame->image_data_ptr = curFrame->raw_data_ptr;
             }
 
@@ -1260,9 +1295,9 @@ void take_object::rtpConsumeFrames()
         memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight*2);
 
 
-        if(pixRemap)
+        if(twoscomp)
         {
-            apply_chroma_translate_filter(curFrame->raw_data_ptr);
+            apply_2sComp_translate_filter(curFrame->raw_data_ptr);
             //curFrame->image_data_ptr = curFrame->raw_data_ptr;
         }
 
@@ -1348,6 +1383,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
     uint16_t last_framecount = 0;
     unsigned char* wait_ptr = NULL;
 
+    pcv_t pointerConverter;
 
     mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
                                        meanStartRow,meanHeight,frWidth,useDSF,\
@@ -1391,9 +1427,32 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
          * Third, we may need to invert the data range if a cable is inverting the magnitudes
          * that arrive from the ADC. This feature is also modified from the preference window.
          */
-        memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
-        if(pixRemap)
-            apply_chroma_translate_filter(curFrame->raw_data_ptr);
+
+        if(options.rotate) {
+            pointerConverter.uc = wait_ptr;
+            // Note that the height and width are reversed in this call on purpose.
+            this->rotate(pointerConverter.u16, curFrame->raw_data_ptr, frWidth, dataHeight);
+        }
+
+        if(options.remapPixels) {
+            pointerConverter.uc = wait_ptr;
+            // As it stands right now, you cannot rotate and remap,
+            // this is because these steps include memcpy functionality,
+            // and thus the rotated data are already in the raw_data_ptr, meaning,
+            // the only avaliable rotated data are in the same location as the
+            // destination.
+            // The only way to solve this is to either:
+            //   1. Use a temporary memory space for in between data, not ideal, causes extra memcpy
+            //   2. Combine the translation filter with the rotation filter, so that both are done at the same time.
+            apply_teledyne_translation_filter(pointerConverter.u16,curFrame->raw_data_ptr);
+        }
+
+        if( (!options.remapPixels) && (!options.rotate) ) {
+            memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
+        }
+
+        if(twoscomp)
+            apply_2sComp_translate_filter(curFrame->raw_data_ptr);
 
         curFrame->image_data_ptr = curFrame->raw_data_ptr;
         if(inverted)
@@ -1468,7 +1527,40 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             break;
         }
     }
+    if(mf)
+        delete mf;
 }
+
+void take_object::rotate(uint16_t *input, uint16_t *output, int origHeight, int origWidth) {
+    // Rotate the input into the output.
+
+    // NOTE: output pointer is a static cuda memory allocation and must meet the rotated size!
+    // See constants.h for the max size, which is allocated in frame_c.hpp
+
+    // This is also effectivly a memcpy
+    int p=0;
+    int outPos = 0;
+    int c = 0;
+    // height and width reference the original (input) matrix dims
+
+#pragma omp parallel for num_threads(8)
+    for(p = 0; p < origWidth; p++) {
+        outPos = origHeight*p;
+        for(c=0; c < origHeight*origWidth; c=c+origWidth) {
+            output[outPos+(c/origWidth)] = input[c+p];
+        }
+    }
+
+    // Single thread method, which may be slightly faster for single thread only:
+    //    for(p = 0; p < origWidth; p++) {
+    //        for(c=0; c < origHeight*origWidth; c=c+origWidth) {
+    //            output[outPos] = input[c+p]; outPos++;
+    //        }
+    //    }
+
+}
+
+
 void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
 {
     // Frame Save Thread (saving_thread)
