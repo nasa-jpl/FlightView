@@ -792,7 +792,7 @@ void frameview_widget::toggleDrawRGBRow(bool draw)
 
 void frameview_widget::setIsOverlayImage(bool isOverlay) {
     this->isOverlayImage = isOverlay;
-    if(fw->frWidth > 1280) {
+    if(fw->getFrameWidth() > 1280) {
         rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS*1.30); // lower FPS due to more things being drawn
     } else {
         rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
