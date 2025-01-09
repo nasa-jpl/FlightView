@@ -25,6 +25,7 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     convertOptions();
 
     to.changeOptions(takeOptions);
+    to.acceptGPSDataPtr( &this->basicGPSData );
 
     if(options.xioCam)
     {
@@ -60,6 +61,7 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
 
 frameWorker::~frameWorker()
 {
+    usleep(10000);
 #ifdef VERBOSE
     qDebug() << "end frameWorker";
 #endif
@@ -115,6 +117,8 @@ void frameWorker::convertOptions()
     takeOptions.er2mode = options.er2mode;
     takeOptions.headless = options.headless;
     takeOptions.noGPU = options.noGPU;
+    takeOptions.rotate = options.rotate;
+    takeOptions.remapPixels = options.remapPixels;
     takeOptions.useSHM = options.useSHM;
     takeOptions.flightMode = options.flightMode;
     takeOptions.disableGPS = options.disableGPS;

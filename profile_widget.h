@@ -97,6 +97,7 @@ public slots:
     /*! \addtogroup renderfunc
      * @{ */
     void handleNewFrame();
+    void useDSF(bool useDSF);
     /*! @} */
 
     /*! \addtogroup plotfunc

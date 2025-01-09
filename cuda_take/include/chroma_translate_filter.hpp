@@ -30,6 +30,7 @@ static unsigned int MAX_VAL;
 
 void setup_filter(camera_t camera_type);
 void setup_filter(unsigned int frHeight, unsigned int frWidth);
-uint16_t * apply_chroma_translate_filter(uint16_t * picture);
+uint16_t * apply_2sComp_translate_filter(uint16_t * picture);
+void apply_teledyne_translation_filter(uint16_t * source, uint16_t *dest);
 
 #endif /* CHROMA_TRANSLATE_FILTER_H_ */

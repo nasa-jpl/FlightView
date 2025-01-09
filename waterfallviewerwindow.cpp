@@ -52,21 +52,25 @@ void waterfallViewerWindow::setSecondaryWF(bool isSecondary) {
     wf->setSecondaryWF(isSecondary);
 }
 
-void waterfallViewerWindow::setSpecImage(bool followMe, QImage *specImage) {
-    wf->setSpecImage(followMe, specImage);
+void waterfallViewerWindow::setSpecImage(QImage *specImage) {
+    wf->setSpecImage(specImage);
+}
+
+void waterfallViewerWindow::setSpecImageBuffer(specImageBuff_t *buff) {
+    wf->setSpecImageBuffer(buff);
 }
 
 void waterfallViewerWindow::changeRGB(int r, int g, int b) {
     // Row numbers
-    wf->changeRGB(r,g,b);
+    //wf->changeRGB(r,g,b);
 }
 
 void waterfallViewerWindow::setRGBLevels(double r, double g, double b, double gamma, bool reprocess) {
-    wf->setRGBLevels(r,g,b,gamma,reprocess);
+    //wf->setRGBLevels(r,g,b,gamma,reprocess);
 }
 
 void waterfallViewerWindow::setRGBLevelsAndReprocess(double r, double g, double b, double gamma) {
-    wf->setRGBLevelsAndReprocess(r,g,b,gamma);
+    //wf->setRGBLevelsAndReprocess(r,g,b,gamma);
 }
 
 void waterfallViewerWindow::changeWFLength(int length) {
@@ -78,24 +82,28 @@ void waterfallViewerWindow::changeWFLength(int length) {
     wf->changeWFLength(length);
 }
 
+void waterfallViewerWindow::resetFPS(int targetFPS) {
+    wf->resetFPS(targetFPS);
+}
+
 void waterfallViewerWindow::setSpecOpacity(unsigned char opacity) {
-    wf->setSpecOpacity(opacity);
+    //wf->setSpecOpacity(opacity);
 }
 
 void waterfallViewerWindow::updateCeiling(int c) {
-    wf->updateCeiling(c);
+    //wf->updateCeiling(c);
 }
 
 void waterfallViewerWindow::updateFloor(int f) {
-    wf->updateFloor(f);
+    //wf->updateFloor(f);
 }
 
 void waterfallViewerWindow::setUseDSF(bool useDSF) {
-    wf->setUseDSF(useDSF);
+    //wf->setUseDSF(useDSF);
 }
 
 void waterfallViewerWindow::setRecordWFImage(bool recordImageOn) {
-    wf->setRecordWFImage(recordImageOn);
+    //wf->setRecordWFImage(recordImageOn);
 }
 
 void waterfallViewerWindow::debugThis() {

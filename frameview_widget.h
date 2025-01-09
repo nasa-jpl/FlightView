@@ -8,6 +8,7 @@
 #include <QGridLayout>
 #include <QCheckBox>
 #include <QLabel>
+#include <QPushButton>
 #include <QTimer>
 #include <QPushButton>
 #include <QMutex>
@@ -46,6 +47,10 @@ class frameview_widget : public QWidget
 
     frameWorker *fw;
     QTimer rendertimer;
+    QMutex drawMutex;
+
+    float *peakValueHolder;
+    bool peakHoldMode = false;
 
     /* QCustomPlot elements
      * Contains the necessary QCustomPlot components to create the plots for the widget. */
@@ -65,6 +70,9 @@ class frameview_widget : public QWidget
     QCheckBox zoomXCheck;
     QCheckBox zoomYCheck;
 
+    QCheckBox *peakHoldChk = NULL;
+    QPushButton *clearPeaksBtn = NULL;
+
     /* Plot Rendering elements
      * Contains local copies of the frame geometry and color map range. */
     int frHeight, frWidth;
@@ -80,6 +88,7 @@ class frameview_widget : public QWidget
     int blueRow = 0;
 
     bool drawrgbRow = false;
+    bool isOverlayImage = false;
 
     bool scrollXenabled = true;
     bool scrollYenabled = true;
@@ -111,6 +120,7 @@ public:
     void toggleDisplayCrosshair();
     void toggleDrawRGBRow(bool draw);
     void showRGB(int r, int g, int b);
+    void setIsOverlayImage(bool isOverlay);
 
     image_t image_type;
     const unsigned int slider_max = (1<<16) * 1.1;
@@ -140,6 +150,11 @@ public slots:
     void rescaleRange();
     void setCrosshairs(QMouseEvent *event);
     /*! @} */
+
+private slots:
+    void clearPeaks();
+    void setPeakHoldMode(bool hold);
+
 signals:
     void statusMessage(QString message);
     void haveFloorCeilingValuesFromColorScaleChange(

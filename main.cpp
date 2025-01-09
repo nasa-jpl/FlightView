@@ -73,19 +73,22 @@ int main(int argc, char *argv[])
     a.setApplicationName("FlightView");
 
     QString cmdName = QString("%1").arg(argv[0]);
-    QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps "
-                               "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 "
-                               "--gpsport 5661 "
-                               "--no-stddev --xiocam --rtpcam "
-                               "--rtpnextgen "
-                               "--rtpheight 480 "
-                               "--rtpwidth 1280 "
-                               "--rtpaddress 1.2.3.4 "
-                               "--rtpinterface eth2 "
-                               "--er2 --headless "
-                               "--wfpreview "
-                               "--wfpreviewcontinuous "
-                               "--wfpreviewlocation /path/to/waterfallpreview/files/ "
+    QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps \n"
+                               "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 \n"
+                               "--gpsport 5661 \n"
+                               "--no-stddev --xiocam --rtpcam \n"
+                               "--rtpnextgen \n"
+                               "--rtpheight 480 \n"
+                               "--rtpwidth 1280 \n"
+                               "--rtpaddress 1.2.3.4 \n"
+                               "--rtpinterface eth2 \n"
+                               "--er2 --headless \n"
+                               "--wfpreview \n"
+                               "--wfpreviewcontinuous \n"
+                               "--wfpreviewlocation /path/to/waterfallpreview/files/ \n"
+                               "-v --version \n"
+                               "--rotate \n"
+                               "--remap \n"
                                )\
             .arg(cmdName);
     QString currentArg;
@@ -119,6 +122,17 @@ int main(int argc, char *argv[])
         if(currentArg == "-d" || currentArg == "--debug")
         {
             startupOptions.debug = true;
+        }
+        if(currentArg == "-v" || currentArg == "--version")
+        {
+            printf("%s\n", COMPILE_INFO_STR);
+            printf("%s\n", DATE_COMPILE_STR);
+            printf("%s\n", GIT_BRANCH_STR);
+            printf("%s\n", GIT_CURRENT_SHA1_STR);
+            printf("  Link to commit: https://github.com/nasa-jpl/LiveViewLegacy/tree/" GIT_CURRENT_SHA1_SHORT "\n");
+            printf("%s\n", SRC_DIR_STR);
+            printf("%s\n", COMPILE_INFO_END_STR);
+            exit(0);
         }
         if(currentArg == "-f" || currentArg == "--flight")
         {
@@ -380,6 +394,14 @@ int main(int argc, char *argv[])
         if( (currentArg == "--no-gpu") || (currentArg == "--nogpu") ) {
             startupOptions.noGPU = true;
             startupOptions.runStdDevCalculation = false;
+        }
+
+        if( currentArg == "--rotate") {
+            startupOptions.rotate = true;
+        }
+
+        if( currentArg == "--remap") {
+            startupOptions.remapPixels = true;
         }
 
         if(currentArg == "--wfpreview") {

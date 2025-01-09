@@ -45,7 +45,9 @@ struct startupOptionsType
 
     bool er2mode = false;
     bool headless = false;
-    bool noGPU = false;
+    bool noGPU = false; // experimental
+    bool rotate = false;
+    bool remapPixels = false;
 
     bool useSHM = false;
 
@@ -53,6 +55,7 @@ struct startupOptionsType
     bool wfPreviewContinuousMode = false;
     bool wfPreviewlocationset = false;
     QString wfPreviewLocation = QString("/tmp");
+    int wfCompQuality = 75;
 };
 
 

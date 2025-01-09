@@ -21,9 +21,9 @@ LIBS += -lgsl -lgslcblas
 
 DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
 
-QMAKE_CXXFLAGS += -fopenmp -march=native -O3 -Wno-unused-but-set-variable
+QMAKE_CXXFLAGS += -fopenmp -march=native -O3 -mtune=native -Wno-unused-but-set-variable
 QMAKE_LFLAGS += -fopenmp
-QMAKE_CXXFLAGS_RELEASE += -fopenmp -march=native -O3
+QMAKE_CXXFLAGS_RELEASE += -fopenmp -march=native -O3 -mtune=native
 
 HEADERS += \
     main.h \

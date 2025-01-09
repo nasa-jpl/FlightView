@@ -7,7 +7,7 @@
 
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
 
-std_dev_filter::std_dev_filter(int nWidth, int nHeight)
+std_dev_filter::std_dev_filter(int nWidth, int nHeight, int cudaDeviceNumber)
 {
     /*! \brief Allocate memory and specify device.
      * \param nWidth The frame width. This is specified initially and cannot be changed during operation.
@@ -19,9 +19,16 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight)
      *
      * Finally, the memory for the histogram is specified to copied from the device to the host asynchronously as frames come in.
      */
-    HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
+//	int STD_DEV_DEVICE_NUM = cudaDeviceNumberStatic; 
+  //  HANDLE_ERROR(cudaSetDevice(cudaDeviceNumberStatic));
 
-    printf("[std_dev_filter]: CUDA device number: %d\n", STD_DEV_DEVICE_NUM);
+    //printf("[std_dev_filter]: desired CUDA device number: %d, total device count: %d\n",
+//		    STD_DEV_DEVICE_NUM, getDeviceCount());
+	this->cudaDeviceNumber = cudaDeviceNumber;
+	this->STD_DEV_DEVICE_NUM = cudaDeviceNumber;
+    int cudaDevNumberChecker = -1;
+    cudaGetDevice(&cudaDevNumberChecker);
+    printf("STD_DEV_FILTER: CUDA device actually being used: %d\n", cudaDevNumberChecker);
 
     // It seems like values above 21 simply do not work.
     for(int d=21; d > 1; d--)

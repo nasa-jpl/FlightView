@@ -30,6 +30,8 @@
 #include <gsl/gsl_statistics.h>
 //#include <boost/atomic.hpp>
 
+static int cudaDeviceNumberStatic = 0;
+
 //custom includes
 #include "frame_c.hpp"
 #include "std_dev_filter.hpp"
@@ -63,6 +65,7 @@
 #define UNAME "unknown person"
 #endif
 
+
 using std::string;
 
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence or absence of the "WARNING: MISSED FRAME X" line
@@ -75,6 +78,24 @@ static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence
 #define obcStatusDark2 (4)
 #define obcStatusClosing (8)
 #define obcStatusOpening (9)
+
+struct basicGPS_t {
+    bool usingGPS = false;
+    double chk_longitude = 0;
+    double chk_latiitude = 0;
+    double chk_altitude = 0;
+    float chk_gndspeed = 0;
+    float chk_heading = 0;
+    float chk_course = 0;
+    float fps = 0;
+    uint16_t collectionID = 0;
+};
+
+union pcv_t {
+    uint16_t* u16;
+    unsigned char* uc;
+    char* c;
+};
 
 class take_object {
     PdvDev * pdv_p = NULL;
@@ -91,6 +112,10 @@ class take_object {
     void shmSetup();
 
     bool setDarkStatusInFrame = false;
+	
+    cudaDeviceProp cdev;
+    int cudaDevNumber = -1;
+    size_t cudaTotalGlobalMem = -1;
 
     bool closing = false;
     bool grabbing = true;
@@ -132,6 +157,9 @@ class take_object {
 	bool saveFrameAvailable;
 	uint16_t * raw_save_ptr;
 
+    basicGPS_t *basicGPSData = NULL;
+    bool haveGPSDataPointer = false;
+
 public:
     take_object(int channel_num = 0, int number_of_buffers = 64,
                 int filter_refresh_rate = 10, bool runStdDev = true);
@@ -142,6 +170,7 @@ public:
                       int filter_refresh_rate = 10, bool runStdDev = true);
     void start();
     void changeOptions(takeOptionsType options);
+    void acceptGPSDataPtr(basicGPS_t *basicGPSDataIn);
     void setReadDirectory(const char* directory);
     camControlType* getCamControl();
     dark_subtraction_filter* dsf;
@@ -154,7 +183,7 @@ public:
 
     //Frame filters that affect everything at the raw data level
     void setInversion(bool checked, unsigned int factor);
-    void paraPixRemap(bool checked);
+    void set_twoscomp(bool checked);
     void enableDarkStatusPixelWrite(bool writeValues);
 
     //DSF mask functions
@@ -213,6 +242,9 @@ private:
     void prepareRTPNGCamera();
     void rtpNGStreamLoop();
 
+    // Rotation:
+    void rotate(uint16_t *input, uint16_t *output, int inHeight, int inWidth);
+
     CameraModel *Camera = NULL;
     bool fileReadingLoopRun = false;
     bool rtpConsumerRun = false;
@@ -246,7 +278,7 @@ private:
     // variables needed by the Raw Filters
     unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
     bool inverted = false;
-    bool pixRemap = false; // Enable Parallel Pixel Mapping (Chroma Translate filter)
+    bool twoscomp = false; // Enable Parallel Pixel Mapping (Chroma Translate filter)
     bool continuousRecording = false; // flag to enable continuous recording
     FFT_t whichFFT;
 };

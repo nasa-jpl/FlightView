@@ -287,7 +287,7 @@ void preferenceWindow::ignoreLastRow(bool checked)
 void preferenceWindow::enableParaPixMap(bool checked)
 {
     /*! \brief Enables or Diables the Parallel Pixel Mapping based on the check box in the Rendering Tab */
-    fw->to.paraPixRemap(checked);
+    fw->to.set_twoscomp(checked);
     preferences.use2sComp = checked;
     makeStatusMessage(QString("2s Compliment Filter: %1").arg(checked?"Enabled":"Disabled"));
 }

@@ -87,10 +87,10 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     connect(waterfall_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
     connect(std_dev_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
     connect(save_server, SIGNAL(sigMessage(QString)), this, SLOT(handleGeneralStatusMessage(QString)));
-
+    raw_play_widget = NULL;
     if(!options->flightMode)
     {
-        raw_play_widget = new playback_widget(fw);
+        //raw_play_widget = new playback_widget(fw);
         setWindowTitle("Ground Mode");
     } else {
         setWindowTitle("Flight Mode");
@@ -111,7 +111,7 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     tabWidget->addTab(fft_mean_widget, QString("FFT Profile"));
     if(!options->flightMode)
     {
-        tabWidget->addTab(raw_play_widget, QString("Playback View"));
+        //tabWidget->addTab(raw_play_widget, QString("Playback View"));
     } else {
         raw_play_widget = NULL;
     }
@@ -147,8 +147,8 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
         }
     }
 
-    connect(fw, SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame()));
-    connect(fw, SIGNAL(newFrameAvailable()), flight_screen, SLOT(handleNewFrame()));
+    // connect(fw, SIGNAL(newFrameAvailable()), unfiltered_widget, SLOT(handleNewFrame())); // should not be needed with render timers running.
+    // connect(fw, SIGNAL(newFrameAvailable()), flight_screen, SLOT(handleNewFrame())); // depreciated
     connect(controlbox, SIGNAL(startDSFMaskCollection()), fw,SLOT(startCapturingDSFMask()));
     connect(controlbox, SIGNAL(stopDSFMaskCollection()), fw, SLOT(finishCapturingDSFMask()));
     connect(controlbox, SIGNAL(startSavingFinite(unsigned int, QString, unsigned int)), fw, SLOT(startSavingRawData(unsigned int, QString, unsigned int)));
@@ -200,6 +200,9 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     connect(fw, SIGNAL(setColorScheme_signal(int,bool)), flight_screen, SLOT(handleNewColorScheme(int,bool)));
     connect(this, SIGNAL(toggleStdDevCalc(bool)), fw, SLOT(enableStdDevCalculation(bool)));
     connect(controlbox, SIGNAL(sendRGBLevels(double,double,double,double,bool)), flight_screen, SLOT(setRGBLevels(double,double,double,double,bool)));
+    connect(controlbox, SIGNAL(setWFTargetFPS_render(int)), flight_screen, SLOT(setWFFPS_render(int)));
+    connect(controlbox, SIGNAL(setWFTargetFPS_primary(int)), flight_screen, SLOT(setWFFPS_primary(int)));
+    connect(controlbox, SIGNAL(setWFTargetFPS_secondary(int)), flight_screen, SLOT(setWFFPS_secondary(int)));
 
     controlbox->getPrefsExternalTrig();
     connect(controlbox, &ControlsBox::showConsoleLog,
@@ -271,7 +274,7 @@ void MainWindow::closeEvent(QCloseEvent *e)
     if(reply==QMessageBox::Ok)
     {
         handleMainWindowStatusMessage("User confirmed quit.");
-
+        flight_screen->setStop();
         cLog->close();
         QList<QWidget*> allWidgets = findChildren<QWidget*>();
         for(int i = 0; i < allWidgets.size(); ++i)
@@ -352,39 +355,42 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
         return;
     }
 
+    // This function is somewhat unsafe and needs to be rewritten.
+    return;
+
     QWidget* current_tab = tabWidget->widget(tabWidget->currentIndex());
     profile_widget *ppw;
     frameview_widget *fvw;
     if (!c->modifiers()) {
         if (current_tab == raw_play_widget) {
             if (c->key() == Qt::Key_Space || c->key() == Qt::Key_Return) {
-                raw_play_widget->playPause();
+                //raw_play_widget->playPause();
                 c->accept();
                 return;
             }
             if (c->key() == Qt::Key_A)
             {
-                raw_play_widget->moveBackward();
+                //raw_play_widget->moveBackward();
                 c->accept();
                 return;
             }
             if (c->key() == Qt::Key_D) {
-                raw_play_widget->moveForward();
+                //raw_play_widget->moveForward();
                 c->accept();
                 return;
             }
             if (c->key() == Qt::Key_S) {
-                raw_play_widget->stop();
+                //raw_play_widget->stop();
                 c->accept();
                 return;
             }
             if (c->key() == Qt::Key_R) {
-                raw_play_widget->fastRewind();
+                //raw_play_widget->fastRewind();
                 c->accept();
                 return;
             }
             if (c->key() == Qt::Key_F) {
-                raw_play_widget->fastForward();
+                //raw_play_widget->fastForward();
                 c->accept();
                 return;
             }
@@ -452,13 +458,10 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
 
 void MainWindow::handlePreferenceRead(settingsT prefs)
 {
-    QString title;
     if(options->flightMode)
     {
         if(prefs.hideFFT)
             removeTab("FFT Profile");
-        if(prefs.hidePlayback)
-            removeTab("Playback");
         if(prefs.hideVerticalOverlay)
             removeTab("Vertical Overlay");
         if(prefs.hideVertMeanProfile)
@@ -500,6 +503,12 @@ void MainWindow::handlePreferenceRead(settingsT prefs)
     }
 
     handleMainWindowStatusMessage(QString("2s compliment setting: %1").arg(prefs.use2sComp?"Enabled":"Disabled"));
+
+    if(options->rotate) {
+        handleMainWindowStatusMessage("Image rotation: ENABLED");
+    } else {
+        handleMainWindowStatusMessage("Image rotation: DISABLED");
+    }
 
     if(options->headless) {
         this->resize(1558, 1024);

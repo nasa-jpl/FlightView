@@ -22,8 +22,66 @@ void setup_filter(unsigned int h, unsigned int w)
     std::cout << "  Completed setup_filter(h,w) with height: " << frHeight << ", width: " << frWidth << std::endl;
 }
 
-uint16_t* apply_chroma_translate_filter(uint16_t *picture_in)
+void apply_teledyne_translation_filter(uint16_t *source, uint16_t *dest) {
+    unsigned int row, col;
+    //unsigned int div, mod;
+    unsigned int destCol = 0;
+    const unsigned int tapWidth = 512;
+
+    for(row = 0; row < frHeight; row++)
+    {
+#pragma omp parallel for num_threads(4)
+        for(col = 0; col< frWidth; col++)
+        {
+            destCol = ((col%4)*tapWidth) + (col/4);
+            dest[destCol + row*frWidth] = source[col + row*frWidth ];
+        }
+    }
+}
+
+void apply_teledyne_translation_filter_and_rotate(uint16_t *input, uint16_t* output,
+                                                  int origHeight, int origWidth) {
+
+    // TODO: Complete this function
+    // DO NOT USE AT THIS TIME
+    abort();
+    int p=0;
+    int outPos = 0;
+    int c = 0;
+    unsigned int destCol = 0;
+    const unsigned int tapWidth = 512;
+    // height and width reference the original (input) matrix dims
+
+#pragma omp parallel for num_threads(8)
+    for(p = 0; p < origWidth; p++) {
+        outPos = origHeight*p;
+        for(c=0; c < origHeight*origWidth; c=c+origWidth) {
+            // Remap:
+           // destCol = ((col%4)*tapWidth) + (col/4);
+           // dest[destCol + row*frWidth] = source[col + row*frWidth ];
+
+            // Rotate:
+            output[outPos+(c/origWidth)] = input[c+p]; // rotate only
+
+
+        }
+    }
+
+    // Single thread method, which may be slightly faster for single thread only:
+    for(p = 0; p < origWidth; p++) {
+        for(c=0; c < origHeight*origWidth; c=c+origWidth) {
+            output[outPos] = input[c+p]; outPos++; // rotated
+
+           // destCol = ((col%4)*tapWidth) + (col/4);
+           // dest[destCol + row*frWidth] = source[col + row*frWidth ];
+        }
+    }
+
+}
+
+uint16_t* apply_2sComp_translate_filter(uint16_t *picture_in)
 {
+    // There are no current instruments which need this function.
     unsigned int row, col;
     //unsigned int div, mod;
     for(row = 0; row < frHeight; row++)

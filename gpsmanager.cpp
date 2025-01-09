@@ -27,6 +27,11 @@ gpsManager::~gpsManager()
         shm->statusByte = SHM_STATUS_CLOSED;
     }
 
+    if(gps != NULL) {
+        gps->deleteLater();
+        gps=nullptr;
+    }
+
     if(gpsThread != NULL)
     {
         gpsThread->quit();
@@ -540,6 +545,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         {
             updateLabel(gpsRoll, QString("%1").arg(m.roll));
             updateLabel(gpsHeading, QString(" %1").arg(m.heading));
+            this->chk_heading = m.heading;
             updateLabel(gpsPitch, QString("%1").arg(m.pitch));
 
         }
@@ -562,6 +568,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             this->chk_latiitude = m.latitude;
             this->chk_longitude = longitude;
             this->chk_altitude = m.altitude * 3.28084; // feet
+            this->lastPositionMessage = m; // keep a copy when there is useful info
         }
         if(m.haveCourseSpeedGroundData)
         {
@@ -571,6 +578,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             // To convert to KPH, multiply by 3.6
             // The abbreviation for knot or knots is "kt" or "kts", respectively.
             updateLabel(gpsGroundSpeed, QString("%1 kts").arg(m.speedOverGround * 1.94384, 6, 'f', 2, QChar('0')));
+            this->chk_course = m.courseOverGround;
             this->chk_gndspeed = m.speedOverGround * 1.94384; // knots
         }
         if(m.haveSpeedData)
@@ -866,6 +874,14 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     priorSHMIndex = currentSHMIndex;
 }
 
+gpsMessage gpsManager::getLastPositionalMessage() {
+    return this->lastPositionMessage;
+}
+
+gpsMessage* gpsManager::getLastPositionalMessagePointer() {
+    return &this->lastPositionMessage;
+}
+
 void gpsManager::handleStartsecondaryLog(QString filename)
 {
     emit gpsStatusMessage(QString("About to start secondary logging to file %1").arg(filename));
@@ -934,6 +950,7 @@ void gpsManager::handleGPSConnectionGood()
     statusLinkStickyError = false; // Safe to clear when a new connection has been made.
     statusConnectedToGPS = true;
     hbErrorCount = 0;
+    emit gpsStatusMessage(QString("Turning off ZuPT"));
     emit turn_off_ZuPT(host, 8110);
     zuptRetryTimer.start(); // send again a few seconds later just in case.
     if(shmValid)
@@ -941,6 +958,7 @@ void gpsManager::handleGPSConnectionGood()
 }
 
 void gpsManager::handleZUpTRetryTimer() {
+    emit gpsStatusMessage(QString("Turning off ZuPT"));
     emit turn_off_ZuPT(host, 8110);
 }
 
