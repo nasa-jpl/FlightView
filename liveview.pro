@@ -3,7 +3,7 @@
 # - LiveView  //  FlightView -
 #
 # https://github.com/nasa-jpl/LiveView
-# Copyright 2014-2024 California Institute of Technology.
+# Copyright 2014-2025 California Institute of Technology.
 # Government Sponsorship(s) Acknowledged.
 #----------------------------------------------------------
 
