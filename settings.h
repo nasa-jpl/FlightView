@@ -14,7 +14,8 @@
 static const unsigned int FRAME_SKIP_FACTOR = 10; //This means only every frame modulo 10 will be redrawn, this has to do with the slowness of qcustomplot, a lower value will increase the frame rate. A value of 0 will make it attempt to draw every single frame
 
 // Used to drive the render timer in each display module:
-static const unsigned int TARGET_FRAMERATE = 20; // 33 FPS. Set this to an obtainable number in order to not slam the CPU
+// static const unsigned int TARGET_FRAMERATE = 20; // 20 FPS. Set this to an obtainable number in order to not slam the CPU
+static const unsigned int TARGET_FRAMERATE = 30; // 33 FPS. Set this to an obtainable number in order to not slam the CPU
 static const unsigned int FRAME_DISPLAY_PERIOD_MSECS = 1000 / TARGET_FRAMERATE;
 
 //#define FRAME_SKIP_FACTOR 10

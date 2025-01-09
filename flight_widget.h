@@ -30,6 +30,7 @@ namespace fs = boost::filesystem;
 #include "waterfall.h"
 #include "waterfallviewerwindow.h"
 #include "preferences.h"
+#include "flightappstatustypes.h"
 
 #include "qfi/qfi_EADI.h"
 
@@ -38,7 +39,7 @@ class flight_widget : public QWidget
     Q_OBJECT
 
     frameWorker *fw;
-
+    flightAppStatus_t *flightStatus = NULL;
     wfengine *wfcomputer = NULL;
     QThread *wfcompThread = NULL;
     waterfall *waterfall_widget = NULL;
@@ -113,7 +114,7 @@ class flight_widget : public QWidget
 
 
 public:
-    explicit flight_widget(frameWorker *fw, startupOptionsType options, QWidget *parent = nullptr);
+    explicit flight_widget(frameWorker *fw, startupOptionsType options, flightAppStatus_t *flightStatus, QWidget *parent = nullptr);
     ~flight_widget();
     const unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;

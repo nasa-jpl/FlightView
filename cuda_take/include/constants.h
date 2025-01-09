@@ -8,6 +8,7 @@
  * depending on system requirements, the memory allocation sizes may need to be adjusted.
  */
 
+// adjust MAX_WIDTH and MAX_HEIGHT to accomidate the frame
 const static unsigned int MAX_WIDTH = 2560;
 const static unsigned int MAX_HEIGHT = 512;
 const static unsigned int TAP_WIDTH = 160;

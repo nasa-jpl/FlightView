@@ -571,6 +571,7 @@ void frameview_widget::handleNewFrame()
 
     return;
 
+
 done_here:
     count++;
     if (count % 20 == 0 && count != 0) {
@@ -791,7 +792,11 @@ void frameview_widget::toggleDrawRGBRow(bool draw)
 
 void frameview_widget::setIsOverlayImage(bool isOverlay) {
     this->isOverlayImage = isOverlay;
-    rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS*1.25); // lower FPS due to more things being drawn
+    if(fw->frWidth > 1280) {
+        rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS*1.30); // lower FPS due to more things being drawn
+    } else {
+        rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+    }
 }
 
 void frameview_widget::showRGB(int r, int g, int b)

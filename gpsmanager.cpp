@@ -1,10 +1,11 @@
 #include "gpsmanager.h"
 
-gpsManager::gpsManager(startupOptionsType opts)
+gpsManager::gpsManager(startupOptionsType opts, flightAppStatus_t *flightStatus)
 {
     qRegisterMetaType<gpsMessage>();
     statusLinkStickyError = false;
     options = opts;
+    this->flightStatus = flightStatus;
     // May override later:
     baseSaveDirectory = QString("/tmp/gps");
     //createLoggingDirectory();
@@ -932,6 +933,7 @@ void gpsManager::handleGPSConnectionError(int error)
     emit gpsConnectionError(error);
     statusLinkStickyError = true;
     statusConnectedToGPS = false;
+    if (flightStatus) flightStatus->stat_gpsLinkOk = false;
     processStatus();
     gpsReconnectTimer.start();
 }
@@ -949,6 +951,7 @@ void gpsManager::handleGPSConnectionGood()
     emit gpsStatusMessage(QString("GPS: Connection good"));
     statusLinkStickyError = false; // Safe to clear when a new connection has been made.
     statusConnectedToGPS = true;
+    if (flightStatus)flightStatus->stat_gpsLinkOk = true;
     hbErrorCount = 0;
     emit gpsStatusMessage(QString("Turning off ZuPT"));
     emit turn_off_ZuPT(host, 8110);
@@ -1020,6 +1023,11 @@ void gpsManager::processStatus()
             interpolationMissed || altitudeRejected || zuptActive || zuptOther ||
             flashWriteError || flashEraseError || outputAFull || outputBFull;
 
+    bool direct_gpsTroubleError = !statusGNSSReceptionOk ||
+            !gpsValid || gpsRejected || altitudeSaturation || speedSaturation ||
+            interpolationMissed || altitudeRejected || zuptActive || zuptOther ||
+            flashWriteError || flashEraseError || outputAFull || outputBFull;
+
     bool gpsTroubleWarning = statusGNSSReceptionWarning || !gpsReceived ||
             gpsWaiting || !gpsDetected || !systemReady || !navPhase || !statusConnectedToGPS;
 
@@ -1027,22 +1035,49 @@ void gpsManager::processStatus()
 
     // Always show the current state of the above variables, which include the stickyness already:
 
+    // For the flightStatus, we need non-sticky errors always.
+    if(!statusGPSHeartbeatOk || !statusConnectedToGPS) {
+        if (flightStatus) {
+            flightStatus->stat_gpsLinkOk = false;
+            flightStatus->stat_gpsReady = false;
+        }
+    } else {
+        if (flightStatus)flightStatus->stat_gpsLinkOk = true;
+    }
+
     if(gpsLinkError) {
         updateLED(gpsLinkLED, QLedLabel::StateError);
         statusLinkStickyError = true;
     } else if (gpsLinkWarning) {
         updateLED(gpsLinkLED, QLedLabel::StateWarning);
+        if (flightStatus) flightStatus->stat_gpsLinkOk = 2;
     } else {
         updateLED(gpsLinkLED, QLedLabel::StateOk);
+        if (flightStatus) flightStatus->stat_gpsLinkOk = true;
+    }
+
+    if(direct_gpsTroubleError) {
+        if (flightStatus) flightStatus->stat_gpsReady = false;
+    } else {
+        if (flightStatus) flightStatus->stat_gpsReady = true;
     }
 
     if(gpsTroubleError) {
         updateLED(gpsTroubleLED, QLedLabel::StateError);
-        statusTroubleStickyError = true;
     } else if (gpsTroubleWarning) {
         updateLED(gpsTroubleLED, QLedLabel::StateWarning);
+        if (flightStatus) flightStatus->stat_gpsReady = 2;
     } else {
         updateLED(gpsTroubleLED, QLedLabel::StateOk);
+        if (flightStatus) flightStatus->stat_gpsReady = true;
+    }
+
+    if(flightStatus && (!flightStatus->stat_gpsLinkOk))
+        flightStatus->stat_gpsReady = false;
+
+    if((!haveData) && flightStatus) {
+        flightStatus->stat_gpsReady = false;
+        flightStatus->stat_gpsLinkOk = 2;
     }
 
     if(zuptActive && (!zuptRetryTimer.isActive())) {

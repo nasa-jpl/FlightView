@@ -59,8 +59,9 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
 
     /* Create tabs */
     tabWidget = new QTabWidget;
-
-    save_server = new saveServer(fw);
+    flightStatus = new flightAppStatus_t;
+    flightStatus->stat_headerOk = true; // not used at this time
+    save_server = new saveServer(fw, flightStatus);
 
     /*! \note Care should be taken to ensure that tabbed widgets are ordered by the value of their image_type enum
      * signals/slots (currentChanged) make use of this relation */
@@ -70,7 +71,7 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     waterfall_widget = new frameview_widget(fw, WATERFALL);
 
     //flight_screen = new flight_widget(fw, *options, this);
-    flight_screen = new flight_widget(fw, *options);
+    flight_screen = new flight_widget(fw, *options, flightStatus);
 
     connect(flight_screen, SIGNAL(statusMessage(QString)), this, SLOT(handleGeneralStatusMessage(QString)));
 

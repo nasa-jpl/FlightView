@@ -26,6 +26,7 @@
 #include "gpsGUI/zupt.h"
 
 #include "startupOptions.h"
+#include "flightappstatustypes.h"
 
 struct utcTime {
     int hour;
@@ -62,6 +63,7 @@ class gpsManager : public QObject
     gpsMessage lastPositionMessage;
 
     startupOptionsType options;
+    flightAppStatus_t *flightStatus = NULL;
 
     fileNameGenerator filenamegen;
 
@@ -253,7 +255,7 @@ class gpsManager : public QObject
     qfi_EHSI *ehsi;
 
 public:
-    gpsManager(startupOptionsType opts);
+    gpsManager(startupOptionsType opts, flightAppStatus_t *flightStatus);
     ~gpsManager();
 
     void insertLEDs(QLedLabel *gpsLinkLED, QLedLabel *gpsTroubleLED);
