@@ -295,6 +295,9 @@ void frameWorker::captureFrames()
 
 void frameWorker::loadDarkFile(QString filename, fileFormat_t format)
 {
+    to.loadDSFMask_entry(filename.toStdString(), format);
+    return;
+    // todo: remove these
     if(format == fmt_float32)
     {
         to.loadDSFMask(filename.toStdString());

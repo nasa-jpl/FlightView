@@ -2047,6 +2047,10 @@ void ControlsBox::stopSavingData()
     stop_continous_button_slot();
 }
 
+void ControlsBox::toggleDSFUsage(bool makeuseofDSF) {
+    this->use_DSF_cbox.setChecked(makeuseofDSF);
+}
+
 void ControlsBox::startTakingDarks()
 {
     // TODO change to do darks

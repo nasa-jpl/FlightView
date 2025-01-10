@@ -14,6 +14,8 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     : QMainWindow(parent)
 {
     qRegisterMetaType<frame_c*>("frame_c*");    
+    qRegisterMetaType<fileFormat_t>();
+
     const QString name = "lv:";
     this->fw = fw;
     this->options = optionsIn;
@@ -264,6 +266,26 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     //this->setWindowState( (windowState() & ~Qt::WindowMinimized ) | Qt::WindowActive);
     //this->raise();
     //this->activateWindow();
+
+    darkRefLoadTimer = new QTimer();
+    connect(this, SIGNAL(loadDarkMask(QString,fileFormat_t)),
+            fw, SLOT(loadDarkFile(QString,fileFormat_t)));
+
+    if(options->darkRefFileSet) {
+        if(!options->darkReferenceFileLocation.isEmpty()) {
+            handleMainWindowStatusMessage("Planning to load dark reference file in five seconds.");
+            darkRefLoadTimer->setInterval(5000); // 5 seconds after load
+            connect(this->darkRefLoadTimer, &QTimer::timeout,
+                    [=]() {
+                handleMainWindowStatusMessage(QString("Loading uint16 dark reference file %1 (all frames)")
+                                              .arg(options->darkReferenceFileLocation));
+                emit loadDarkMask(options->darkReferenceFileLocation, fmt_uint16);
+                controlbox->toggleDSFUsage(true);
+            });
+            darkRefLoadTimer->setSingleShot(true);
+            darkRefLoadTimer->start();
+        }
+    }
     handleMainWindowStatusMessage("Started");
 }
 

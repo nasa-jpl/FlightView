@@ -89,6 +89,7 @@ int main(int argc, char *argv[])
                                "-v --version \n"
                                "--rotate \n"
                                "--remap \n"
+                               "--darkreffile /path/to/dark_file.raw (uint16 frames)\n"
                                )\
             .arg(cmdName);
     QString currentArg;
@@ -158,6 +159,17 @@ int main(int argc, char *argv[])
             {
                 startupOptions.dataLocation = argv[c+1];
                 startupOptions.dataLocationSet = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if( (currentArg == "--darkreffile") || (currentArg == "--darkreferencefile") ) {
+            if(argc > c)
+            {
+                startupOptions.darkReferenceFileLocation = argv[c+1];
+                startupOptions.darkRefFileSet = true;
                 c++;
             } else {
                 std::cout << helptext.toStdString() << std::endl;

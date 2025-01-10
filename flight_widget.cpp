@@ -259,9 +259,6 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, flight
         emit statusMessage("Sending gps pointer to waterfall engine, even though it is not ready.");
     }
     wfcomputer->setGPSPointer(gps->getLastPositionalMessagePointer());
-
-
-
 }
 
 flight_widget::~flight_widget()

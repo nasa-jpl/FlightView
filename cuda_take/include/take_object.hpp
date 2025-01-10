@@ -121,6 +121,8 @@ class take_object {
     bool grabbing = true;
     bool runStdDev = true;
 
+    bool readingDSFFile = false;
+
     boost::thread cam_thread; // this thread controls the data collection
     boost::thread reading_thread; // this is used for file reading in the XIO camera.
     boost::thread::native_handle_type cam_thread_handler;
@@ -130,6 +132,9 @@ class take_object {
     boost::thread rtpCopyThread; // copy from buffer into currFrame
     boost::thread::native_handle_type rtpAcquireThreadHandler;
     boost::thread::native_handle_type rtpCopyThreadHandler;
+
+    boost::thread mask_thread;
+    boost::thread::native_handle_type mask_thread_handler;
 
     int pdv_thread_run = 0;
     bool cam_thread_start_complete=false; // added by Michael Bernas 2016
@@ -152,10 +157,10 @@ class take_object {
 
     //frame saving variables
     boost::thread saving_thread; // this thread handles the frame saving, as saving frames should not cause data collection to suspend
-	//unsigned int save_count;
+    //unsigned int save_count;
     bool do_raw_save;
-	bool saveFrameAvailable;
-	uint16_t * raw_save_ptr;
+    bool saveFrameAvailable;
+    uint16_t * raw_save_ptr;
 
     basicGPS_t *basicGPSData = NULL;
     bool haveGPSDataPointer = false;
@@ -189,8 +194,10 @@ public:
     //DSF mask functions
 	void startCapturingDSFMask();
 	void finishCapturingDSFMask();
+    void loadDSFMask_entry(std::string filename_s, fileFormat_t fmt);
 	void loadDSFMask(std::string file_name);
     void loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format);
+
     bool dsfMaskCollected;
     bool useDSF = false;
     uint16_t darkStatusPixelVal = obcStatusScience;

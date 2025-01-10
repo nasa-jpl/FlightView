@@ -255,6 +255,7 @@ public slots:
     void startTakingDarks();
     void stopTakingDarks();
     void stopSavingData();
+    void toggleDSFUsage(bool makeuseofDSF);
 
 private slots:
     void increment_slot(bool t);

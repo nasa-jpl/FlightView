@@ -534,6 +534,7 @@ void take_object::finishCapturingDSFMask()
     }
     darkStatusPixelVal = obcStatusScience;
 }
+
 void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format)
 {
     // Creates a mask from a file containing multiple frames
@@ -543,6 +544,10 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     // This function was largly copied from the main.cpp file of
     // the included "statscli" program found under "utils".
 
+    if(readingDSFFile)
+        return;
+
+    readingDSFFile = true;
     std::ostringstream message;
 
     float * mean_frame = NULL;
@@ -560,6 +565,7 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     {
         message << "Error, could not load DSF file " << file_name;
         statusMessage(message);
+        readingDSFFile = false;
         return;
     }
 
@@ -571,6 +577,7 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     if(frames == NULL)
     {
         errorMessage("Did not successfully allocate frames for dark subtraction file");
+        readingDSFFile = false;
         abort();
     }
 
@@ -589,18 +596,20 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     if(input_array == NULL)
     {
         errorMessage("Did not successfully allocate input_array for dark subtraction file");
+        readingDSFFile = false;
         abort();
     }
 
     if(format == fmt_uint16_2s)
     {
         // Convert the data first:
+#pragma omp parallel for num_threads(8)
         for(unsigned int nth_element = 0; nth_element < frame_size_numel * nframes; nth_element++)
         {
             input_array[nth_element] = (unsigned int)( frames[nth_element] ^ (1<<15) );
         }
         // Process:
-        #pragma omp parallel for
+#pragma omp parallel for num_threads(8)
         for(unsigned int nth_frame_el = 0; nth_frame_el < frame_size_numel; nth_frame_el++)
         {
             // iterate over each pixel in a frame
@@ -609,12 +618,13 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     } else {
         // Convert uint16_t to unsigned int for GSL:
         // TODO: consider loading it in this way
+#pragma omp parallel for num_threads(8)
         for(unsigned int nth_element = 0; nth_element < frame_size_numel * nframes; nth_element++)
         {
             input_array[nth_element] = (unsigned int)frames[nth_element];
         }
         // Process:
-        #pragma omp parallel for
+#pragma omp parallel for num_threads(8)
         for(unsigned int nth_frame_el = 0; nth_frame_el < frame_size_numel; nth_frame_el++)
         {
             // iterate over each pixel in a frame
@@ -629,10 +639,47 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
         free(frames);
     if(mean_frame)
         free(mean_frame);
+    statusMessage("Completed DSF load from uint16 type.");
+    readingDSFFile = false;
+}
+
+void take_object::loadDSFMask_entry(std::string filename_s, fileFormat_t fmt) {
+    // TODO: Mutex or even lockout
+    if(readingDSFFile) {
+        // This flag is set and cleared within the load/average functions.
+        errorMessage("Already reading DSF mask. Cannot load concurrently.");
+        return;
+    }
+    switch(fmt) {
+    case fmt_uint16:
+        statusMessage("Loading uing16_t DSF mask");
+        mask_thread = boost::thread( boost::bind(&take_object::loadDSFMaskFromFramesU16, this, filename_s, fmt));
+        break;
+    case fmt_uint16_2s:
+        statusMessage("Loading uing16_t with 2s compliment DSF mask");
+        mask_thread = boost::thread( boost::bind(&take_object::loadDSFMaskFromFramesU16, this, filename_s, fmt));
+        break;
+    case fmt_float32:
+        statusMessage("Loading float32 DSF mask");
+        return;
+        mask_thread = boost::thread(&take_object::loadDSFMask, this, filename_s);
+        break;
+    default:
+        errorMessage("Unable to load DSF mask from file, format is unknown.");
+        return;
+        break;
+    }
+    statusMessage("Mask thread started.");
+    //mask_thread_handler = mask_thread.native_handle();
+    //pthread_setname_np(mask_thread_handler, "MASK");
 }
 
 void take_object::loadDSFMask(std::string file_name)
 {
+    if(readingDSFFile)
+        return;
+
+    readingDSFFile = true;
     // Loads a file containing a single 32-bit float frame.
     float *mask_in = new float[frWidth*frHeight];
     FILE *pFile;
@@ -648,6 +695,7 @@ void take_object::loadDSFMask(std::string file_name)
             std::cerr << "Error: mask file does not match image size" << std::endl;
             fclose (pFile);
             delete [] mask_in;
+            readingDSFFile = false;
             return;
         }
         rewind(pFile);   // go back to beginning
@@ -659,6 +707,8 @@ void take_object::loadDSFMask(std::string file_name)
     }
     dsf->load_mask(mask_in); // memcopy to stack variable
     delete [] mask_in;
+    statusMessage("Completed DSF load from float32 type.");
+    readingDSFFile = false;
 }
 void take_object::setStdDev_N(int s)
 {

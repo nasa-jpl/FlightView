@@ -8,5 +8,4 @@ enum fileFormat_t {
     fmt_unknown = 3
 };
 
-
 #endif // FILEFORMATS_H
