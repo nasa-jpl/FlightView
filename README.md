@@ -12,8 +12,6 @@ This version of LiveView uses NVIDIA's CUDA toolkit for real-time processing, wh
 ## Overview
 *LiveView* (aka *FlightView*) is graphical program which displays real-time data from imaging spectrometers. Liveview supports high data rate (in excess of 3 gigabits/sec) acquisition over Ethernet (typically 10G fiber optic) with the RTP protocol, as well as over CameraLink (EDT cards are supported). 
 
-The branch [**FlightView**](https://github.com/nasa-jpl/LiveViewLegacy/tree/flightview) is AVIRIS-III's flight data acquisition system, and includes an second RGB waterfall which can be shown on a dedicated display. 
-
 Standard deviation is computed in real-time using the GPU via CUDA. 
 
 Plots are implemented using the [QCustomPlot](http://www.qcustomplot.com) library, which generates live color maps, bar graphs, and line graphs within the Qt C++ environment.
@@ -45,7 +43,7 @@ Please see the documentation folder for the latest detailed directions.
 - Fast, modern, multi-core CPU. 
 - NVIDIA Graphics Card with 512MB VRAM, i.e, GTX 560 (adjust the size of GPU_BUFFER_SIZE in constants.h of cuda_take and make a clean compile to change this setting)
 - Linux OS such as Debian, Ubuntu, or Mint
-- Proprietary NVIDIA CUDA-capable driver version 10.1 or greqater (>=12.1 preferred). 
+- Proprietary NVIDIA CUDA-capable driver version 10.1 or greater (>=12.1 preferred). 
 
 ## Contact Us!
 
