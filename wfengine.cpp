@@ -158,6 +158,7 @@ void wfengine::prepareWfImage() {
     // Examine WF path
     if(!options.wfPreviewlocationset) {
         if(options.dataLocationSet) {
+            // NOTE: The dataStoreLocation *already* has the "day string" tacked on
             options.wfPreviewLocation = options.dataLocation;
             statusMessage("Saving waterfall image to datastoragelocation");
             borrowedFilePath = true;
@@ -174,22 +175,25 @@ void wfengine::prepareWfImage() {
         options.wfPreviewLocation.append("/");
     // Add "day" stamp to name
     QDateTime t = QDateTime::currentDateTime();
-    QString dayStr = t.toUTC().toString("yyyyMMdd/");
+    QString dayStr __attribute__((unused)) = t.toUTC().toString("yyyyMMdd/");
 
     if(!borrowedFilePath) {
-        statusMessage("Appending day to waterfall preview location");
-        options.wfPreviewLocation.append(dayStr);
+        statusMessage("Not appending yyyyMMdd to waterfall preview location");
+        //options.wfPreviewLocation.append(dayStr);
     }
 
-    options.wfPreviewLocation.append("wf/");
+    if(borrowedFilePath) {
+        statusMessage("Appending 'wf/' to waterfall preview location");
+        options.wfPreviewLocation.append("wf/");
+    }
 
     // mkdir
     QString command = "mkdir -p " + options.wfPreviewLocation;
     int sys_rtn = system(command.toLocal8Bit());
     if(sys_rtn) {
-        statusMessage("Error, could not make waterfall preview location directory. "
+        statusMessage(QString("Error, could not make waterfall preview location directory. "
                       "Check the specified datastoragelocation and waterfallpreviewlocation"
-                      ", as well as location permissions.");
+                      ", as well as location permissions. Specified location was: [%1]").arg(options.wfPreviewLocation));
         saveImageReady = false;
         return;
     }
