@@ -51,8 +51,8 @@ void wfengine::setParameters(frameWorker *fw, int vSize, int hSize, startupOptio
 
 void wfengine::setup() {
 #ifdef QT_DEBUG
-    std::cerr << "wfengine setup called.\n";
-    std::cerr << "wfengine Running setup for wfengine. Thread Name: " << this->thread()->objectName().toStdString() << std::endl;
+    //std::cerr << "wfengine setup called.\n";
+    //std::cerr << "wfengine Running setup for wfengine. Thread Name: " << this->thread()->objectName().toStdString() << std::endl;
     //std::cerr << "wfengine This pointer: " << Qt::hex << this << std::endl;
 #endif
 

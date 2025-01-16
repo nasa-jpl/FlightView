@@ -58,6 +58,10 @@ struct startupOptionsType
     bool wfPreviewlocationset = false;
     QString wfPreviewLocation = QString("/tmp");
     int wfCompQuality = 75;
+
+    bool UDPLogging = false;
+    QString UDPLogHost = QString("");
+    unsigned int UDPLogPort = 10175;
 };
 
 

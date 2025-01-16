@@ -35,6 +35,7 @@ SOURCES += main.cpp\
     gpsGUI/zupt.cpp \
     gpsmanager.cpp \
     initialsetup.cpp \
+    linebuffer.cpp \
     mainwindow.cpp \
     frameview_widget.cpp \
     controlsbox.cpp \
@@ -52,6 +53,7 @@ SOURCES += main.cpp\
     gpsGUI/gpsnetwork.cpp \
     gpsGUI/gpsbinaryreader.cpp \
     gpsGUI/gpsbinarylogger.cpp \
+    udpbinarylogger.cpp \
     waterfall.cpp \
     waterfallviewerwindow.cpp \
     wfengine.cpp
@@ -71,6 +73,7 @@ HEADERS  += mainwindow.h \
     gpsGUI/zupt.h \
     gpsmanager.h \
     imagetagger.h \
+    linebuffer.h \
     shm_gps.h \
     image_type.h \
     initialsetup.h \
@@ -92,6 +95,7 @@ HEADERS  += mainwindow.h \
     gpsGUI/gpsbinaryreader.h \
     gpsGUI/gpsbinarylogger.h \
     startupOptions.h \
+    udpbinarylogger.h \
     waterfall.h \
     preferences.h \
     waterfallviewerwindow.h \

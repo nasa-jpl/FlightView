@@ -286,8 +286,12 @@ int main(int argc, char* argv[]) {
         return errno;
     }
     // CARBO Air: 
-    uint16_t height = 512;
-    uint16_t width = 2048;
+    // uint16_t height = 512;
+    // uint16_t width = 2048;
+
+    // AVIRIS-III: 
+    uint16_t height = 328;
+    uint16_t width = 1280;
 
     size_t fileLen = 0;
     printf("Loading file [%s]...\n", argv[argc-1]);
@@ -323,9 +327,9 @@ int main(int argc, char* argv[]) {
     
     // Filling server information 
     servaddr.sin_family    = AF_INET; // IPv4 
-    servaddr.sin_addr.s_addr = INADDR_ANY; // traffic seen on "lo" interface only
+    //servaddr.sin_addr.s_addr = INADDR_ANY; // traffic seen on "lo" interface only
     // servaddr.sin_addr.s_addr = inet_addr("0.0.0.0");  // no traffic seen
-    //servaddr.sin_addr.s_addr = inet_addr("10.10.10.1"); // traffic on both sides seen, good for fiber RTP testing
+    servaddr.sin_addr.s_addr = inet_addr("10.10.10.1"); // traffic on both sides seen, good for fiber RTP testing
     //servaddr.sin_addr.s_addr = inet_addr("10.10.10.0"); // no traffic seen
     servaddr.sin_port = htons(PORT); 
        

@@ -32,9 +32,9 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
             options->dataLocation.append("/");
 
         this->options->dataLocation.append(startDate);
-        cLog = new consoleLog(this->options->dataLocation, options->flightMode);
+        cLog = new consoleLog(*options, this->options->dataLocation, options->flightMode);
     } else {
-        cLog = new consoleLog();
+        cLog = new consoleLog(*options);
     }
 
     if(options->flightMode)

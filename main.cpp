@@ -392,6 +392,40 @@ int main(int argc, char *argv[])
                 }
             }
         }
+        if( (currentArg == "--udploghost") || (currentArg == "--udplogginghost")) {
+            if(argc > c) {
+                // Only IPV4 supported, and no hostnames please, let's not depend upon DNS or resolv in the airplane...
+                if((argc > c) && QString(argv[c+1]).contains(QRegularExpression("(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})")))
+                {
+                    startupOptions.UDPLogHost = argv[c+1];
+                    startupOptions.UDPLogging = true;
+                    c++;
+                } else {
+                    std::cerr << "Invalid UDP Logging IP address set. Only IPV4 addresses are acceptable." << std::endl;
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            }
+        }
+
+        if( (currentArg == "--udplogport") || (currentArg == "--udploggingport") )
+        {
+            if(argc > c)
+            {
+                int portTemp=0;
+                bool ok = false;
+                portTemp = QString(argv[c+1]).toInt(&ok);
+                if(ok)
+                {
+                    startupOptions.UDPLogPort = portTemp;
+                    c++;
+                } else {
+                    std::cerr << "Invalid UDP Logging Port set." << std::endl;
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            }
+        }
 
         if( (currentArg == "--no-stddev") || (currentArg == "--no-stdev")
                 || (currentArg == "--nostdev") || (currentArg == "--nostddev") )

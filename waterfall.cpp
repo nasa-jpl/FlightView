@@ -239,10 +239,12 @@ void waterfall::computeFPS() {
         fps = framesDelivered/timeElapsed;
 #ifdef QT_DEBUG
 #ifdef WF_DEBUG_FPS
+        /*
         QString s;
         s = QString("framesDelivered: %2, timeElapsed: %3, FPS: %4")
                 .arg(framesDelivered).arg(timeElapsed).arg(fps);
         statusMessage(s);
+        */
 #endif
 #endif
 #ifdef dynamicFPS
@@ -276,8 +278,10 @@ void waterfall::computeFPS() {
                 fpsUnderEvents = 0; //reset, only care about FPS under in a row.
                 if(fps > (((float)TARGET_WF_FRAMERATE_SECONDARY)*0.95)) {
                     metFPS = metFPS>1024?1024:metFPS+1; // clamp at 1024
+                    /*
                     debugMessage(QString("Meeting 95% FPS. Thresh: %1, got %2, metFPS count: %3")
                                  .arg(TARGET_WF_FRAMERATE_SECONDARY*0.95).arg(fps).arg(metFPS));
+                                 */
                 } else {
                     metFPS = 0;
                 }
@@ -313,8 +317,10 @@ void waterfall::computeFPS() {
                 if(fps > (((float)TARGET_WF_FRAMERATE)*0.95)) {
                     // We only count this to haev been met if we were at or better than 90% of the requested frame rate.
                     metFPS = metFPS>1024?1024:metFPS+1; // clamp at 1024
+                    /*
                     debugMessage(QString("Meeting 95% FPS. Thresh: %1, got %2, metFPS count: %3")
                                  .arg(TARGET_WF_FRAMERATE*0.95).arg(fps).arg(metFPS));
+                    */
                 } else {
                     metFPS = 0;
                 }

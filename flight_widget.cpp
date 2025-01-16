@@ -213,7 +213,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, flight
     diskCheckerTimer->start();
 
     fpsLoggingTimer = new QTimer();
-    fpsLoggingTimer->setInterval(60*1000); // once per minute
+    fpsLoggingTimer->setInterval(10*1000); // every 10 seconds
     fpsLoggingTimer->setSingleShot(false);
     if(options.flightMode) {
         connect(fpsLoggingTimer, SIGNAL(timeout()), this, SLOT(logFPSGPSSlot()));
