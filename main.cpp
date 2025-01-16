@@ -90,6 +90,8 @@ int main(int argc, char *argv[])
                                "--rotate \n"
                                "--remap \n"
                                "--darkreffile /path/to/dark_file.raw (uint16 frames)\n"
+                               "--udplogginghost 1.2.3.4\n"
+                               "--udploggingport 10175\n"
                                )\
             .arg(cmdName);
     QString currentArg;
