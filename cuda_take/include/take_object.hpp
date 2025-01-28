@@ -136,6 +136,10 @@ class take_object {
     boost::thread mask_thread;
     boost::thread::native_handle_type mask_thread_handler;
 
+    boost::thread mask_liveMean_thread;
+    boost::thread::native_handle_type mask_liveMean_thread_handler;
+
+
     int pdv_thread_run = 0;
     bool cam_thread_start_complete=false; // added by Michael Bernas 2016
 

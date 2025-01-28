@@ -7,12 +7,15 @@
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
 //Kernel code, this runs on the GPU (device)
 
-#define VERBOSE
+// define VERBOSE
 
 void dark_subtraction_filter::start_mask_collection()
 {
     /*! \brief Initializes the mask array to 0 and sends a signal to begin collecting image data */
-	mask_collected = false;
+    if(mean_inProgress) {
+        return;
+    }
+    mask_collected = false;
     averaged_samples = 0;
 	for(unsigned int i = 0; i < width*height; i++)
 	{
@@ -21,18 +24,33 @@ void dark_subtraction_filter::start_mask_collection()
         mask_accum[i] = 0;
 	}
 }
+
 void dark_subtraction_filter::finish_mask_collection()
 {
     /*! \brief Averages each pixel value in the mask and sends a signal to begin dark subtracting images. */
+    // Average each accumulated pixel value, and copy this to the mask.
+#ifdef VERBOSE
+    std::cout << "mask averaging starting, samples: " << averaged_samples << std::endl;
+#endif
+    if(mean_inProgress) {
+        std::cerr << "ERROR, mask averaging is already in progress! Mutex fail!" << std::endl;
+        return;
+    }
+    pthread_setname_np(pthread_self(), "MASKMEAN");
+
+    mean_inProgress = true;
 	for(unsigned int i = 0; i < width*height; i++)
 	{
-        // mask[i] /= averaged_samples;
+        // for debugging only, add delay here to simulate additional load
+        // and make it possible to catch the thread:
+        // usleep(10);
         mask[i] = mask_accum[i] / averaged_samples;
         
 	}
+    mean_inProgress = false;
 	mask_collected = true;
 #ifdef VERBOSE
-	std::cout << "mask collected: " << std::endl;
+    std::cout << "mask averaging completed, samples: " << averaged_samples << std::endl;
 #endif
 }
 void dark_subtraction_filter::update(uint16_t * pic_in, float * pic_out)
@@ -44,13 +62,16 @@ void dark_subtraction_filter::update(uint16_t * pic_in, float * pic_out)
      */
 	if(mask_collected)
 	{
-		update_dark_subtraction(pic_in, pic_out);
+        // A dark mask has already been collected
+        // and we are not collecting one at the moment.
+        // So, just use the mask.
+        update_dark_subtraction(pic_in, pic_out); // use the mask. pic_out = pic_in - mask;
 	}
 	else
 	{
 		mask_mutex.lock();
-		update_mask_collection(pic_in);
-        update_dark_subtraction(pic_in, pic_out); // use the prior mask if possible, for now.
+        update_mask_collection(pic_in); // accumulate on the mask_accum (mask_accum += pic_in)
+        update_dark_subtraction(pic_in, pic_out); // use the prior mask for now (mask)
 		mask_mutex.unlock();
 	}
 }
@@ -96,6 +117,12 @@ uint32_t dark_subtraction_filter::update_mask_collection(uint16_t* pic_in)
     /*! \brief Collect the current image.
      *
      * This section must be locked with the mask_collected variable to prevent serialization errors. */
+
+    // Do not add more frames to the accum if
+    // processing is happening at the moment.
+    if(mean_inProgress)
+        return averaged_samples;
+
     if(!mask_collected)
     {
         for(unsigned int i = 0; i<width*height; i++)

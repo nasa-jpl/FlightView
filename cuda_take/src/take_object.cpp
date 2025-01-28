@@ -525,14 +525,24 @@ void take_object::startCapturingDSFMask()
 }
 void take_object::finishCapturingDSFMask()
 {
+    //statusMessage("Entering finishCapturingDSFMask()");
     dsf->mask_mutex.lock();
-    dsf->finish_mask_collection();
+
+    // launch the thread to take the average:
+#ifdef VERBOSE
+    std::cout << "Launching thread to compute mean." << std::endl;
+#endif
+    mask_liveMean_thread = boost::thread( boost::bind(&dark_subtraction_filter::finish_mask_collection, dsf));
+    mask_liveMean_thread_handler = mask_liveMean_thread.native_handle();
+    pthread_setname_np(mask_liveMean_thread_handler, "MASKMEAN");
+
     dsf->mask_mutex.unlock();
     dsfMaskCollected = true;
     if(shmValid) {
         shm->takingDark = false;
     }
     darkStatusPixelVal = obcStatusScience;
+    //statusMessage("Exiting finishCapturingDSFMask()");
 }
 
 void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format)
