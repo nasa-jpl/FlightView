@@ -676,7 +676,11 @@ void wfengine::saveImage(int topRow, int botRow) {
         } else {
             s.validDecode = false; // "expired"
         }
-
+#ifdef QT_DEBUG
+        fprintf(stderr, "s.long: %f, live.long: %f, top.long: %f, bot.long: %f\n"
+                , s.longitude, liveGPSMessagePointer->longitude,
+                topOfFileGPSMessage.longitude, botOfFileGPSMessage.longitude);
+#endif
         tagResult = imageTagger(fileLocationFull.toLocal8Bit(),
                                    s, topOfFileGPSMessage, fps,
                                    r_row, g_row, b_row,

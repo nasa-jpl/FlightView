@@ -112,16 +112,16 @@ static tagRtnType imageTagger(const char* filename, gpsMessage start, gpsMessage
 
             // Start of image
             if(start.havePosition) {
-                DMS::combDMS_t cLat = DMS::DegreesMinutesSecondsLat(start.latitude);
+                DMS::combDMS_t cLatStart = DMS::DegreesMinutesSecondsLat(start.latitude);
                 if(start.longitude > 180)
-                    start.longitude = -360+dest.longitude;
+                    start.longitude = -360+start.longitude;
 
-                DMS::combDMS_t cLong = DMS::DegreesMinutesSecondsLon(start.longitude);
-                exifData["Exif.GPSInfo.GPSLatitude"] = cLat.s;
-                exifData["Exif.GPSInfo.GPSLatitudeRef"] = std::string(1, cLat.c);
+                DMS::combDMS_t cLongStart = DMS::DegreesMinutesSecondsLon(start.longitude);
+                exifData["Exif.GPSInfo.GPSLatitude"] = cLatStart.s;
+                exifData["Exif.GPSInfo.GPSLatitudeRef"] = std::string(1, cLatStart.c);
 
-                exifData["Exif.GPSInfo.GPSLongitude"] = cLong.s;
-                exifData["Exif.GPSInfo.GPSLongitudeRef"] = std::string(1, cLong.c);
+                exifData["Exif.GPSInfo.GPSLongitude"] = cLongStart.s;
+                exifData["Exif.GPSInfo.GPSLongitudeRef"] = std::string(1, cLongStart.c);
             }
 
             // End of image

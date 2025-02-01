@@ -64,7 +64,7 @@ static const char *DEG_SIM = "\u00B0";
 // 
 inline std::string DegreesMinutesSeconds(double ang)
 {
-    int num_dec_places = 3;
+    int num_dec_places = 6; // was 3
     bool neg(false) ;
     if (ang < 0.0)
     {
@@ -114,8 +114,9 @@ inline std::string DegreesMinutesSeconds(double ang)
     oss.width(num_dec_places + 3) ;
     //oss.precision(num_dec_places) ; // int
 
-    oss << (int)(sec*1000)
-        << "/1000" ;
+    // These were 1000 but have been increased to 100000.
+    oss << (int)(sec*100000)
+        << "/100000" ;
 
     return oss.str() ;
 }
