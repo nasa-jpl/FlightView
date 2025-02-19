@@ -16,7 +16,7 @@ histogram_widget::histogram_widget(frameWorker *fw, QWidget *parent) :
 
     histogram = new QCPBars(qcp->xAxis, qcp->yAxis);
     qcp->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
-    qcp->addPlottable(histogram);
+    //qcp->addPlottable(histogram);
 
     double penWidth = .064; //This value was derived to make the bars look the best in the 2-4 range
     histogram->setWidth(penWidth);
@@ -37,7 +37,7 @@ histogram_widget::histogram_widget(frameWorker *fw, QWidget *parent) :
     histogram->keyAxis()->setRangeUpper(histo_bins[histo_bins.size()-1]);
     histogram->keyAxis()->setRangeLower(1);
     histogram->keyAxis()->setScaleType(QCPAxis::stLogarithmic);
-    histogram->keyAxis()->setScaleLogBase(2);
+    //histogram->keyAxis()->setScaleLogBase(2); // QCPAxisTickerLog::setLogBase(); // EHL TODO
     histogram->valueAxis()->setRange(QCPRange(0, ceiling));
     connect(histogram->keyAxis(), SIGNAL(rangeChanged(QCPRange)), this, SLOT(histogramScrolledX(QCPRange)));
     connect(histogram->valueAxis(), SIGNAL(rangeChanged(QCPRange)), this, SLOT(histogramScrolledY(QCPRange)));

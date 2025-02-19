@@ -249,7 +249,7 @@ void gpsManager::preparePlots()
         plotRollPitch->yAxis->setLabel("Degrees");
         if(titleRollPitch==NULL)
         {
-            titleRollPitch = new QCPPlotTitle(plotRollPitch);
+            titleRollPitch = new QCPTextElement(plotRollPitch);
         }
         setPlotTitle(plotRollPitch, titleRollPitch, "Pitch and Roll");
         if(usePlotTitle)
@@ -281,7 +281,7 @@ void gpsManager::preparePlots()
         setTimeAxis(plotHeading->xAxis);
         if(titleHeading == NULL)
         {
-            titleHeading = new QCPPlotTitle(plotHeading);
+            titleHeading = new QCPTextElement(plotHeading);
         }
         setPlotTitle(plotHeading, titleHeading, "Pitch and Roll");
 
@@ -328,14 +328,14 @@ void gpsManager::setTimeAxis(QCPAxis *x)
     }
 }
 
-void gpsManager::setPlotTitle(QCustomPlot *p, QCPPlotTitle *t, QString title)
+void gpsManager::setPlotTitle(QCustomPlot *p, QCPTextElement *t, QString title)
 {
     // Does not seem to quite work, oh well. Fix as you go.
     if(p!=NULL)
     {
         if(t==NULL)
         {
-            t = new QCPPlotTitle(p);
+            t = new QCPTextElement(p);
         }
         t->setText(title);
     }

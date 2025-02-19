@@ -225,7 +225,7 @@ playback_widget::playback_widget(frameWorker *fw, QWidget *parent) :
 
     colorMap = new QCPColorMap(qcp->xAxis, qcp->yAxis);
     colorMapData = NULL;
-    qcp->addPlottable(colorMap);
+    // qcp->addPlottable(colorMap);
 
     colorScale = new QCPColorScale(qcp);
     qcp->plotLayout()->addElement(0, 1, colorScale); // add it to the right of the main axis rect

@@ -9,9 +9,9 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <qcustomplot.h>
 
 /* Live View includes */
-#include "qcustomplot.h"
 #include "frame_worker.h"
 #include "image_type.h"
 #include "frameview_widget.h"
@@ -54,7 +54,7 @@ class profile_widget : public QWidget
 
     /* Plot elements */
     QCustomPlot *qcp;
-    QCPPlotTitle *plotTitle;
+    QCPTextElement *plotTitle;
 
 
     /* Frame rendering elements */

@@ -11,11 +11,11 @@
 #include <QSpinBox>
 #include <QTimer>
 #include <QWidget>
+#include <qcustomplot.h>
 
 /* Live View / cuda_take includes */
 #include "dark_subtraction_filter.hpp"
 #include "frame_worker.h"
-#include "qcustomplot.h"
 
 enum err_code {SUCCESS, NO_LOAD, NO_DATA, NO_FILE, READ_FAIL, NO_MASK};
 

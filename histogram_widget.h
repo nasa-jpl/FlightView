@@ -5,9 +5,9 @@
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QTimer>
+#include <qcustomplot.h>
 
 /* Live View includes */
-#include "qcustomplot.h"
 #include "frame_worker.h"
 #include "image_type.h"
 #include "std_dev_filter.hpp"

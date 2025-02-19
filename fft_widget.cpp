@@ -40,7 +40,7 @@ fft_widget::fft_widget(frameWorker *fw, QWidget *parent) :
     qcp->xAxis->setLabel("Frequency (Hz)");
     qcp->yAxis->setLabel("Magnitude");
     fft_bars = new QCPBars(qcp->xAxis, qcp->yAxis);
-    qcp->addPlottable(fft_bars);
+    // qcp->addPlottable(fft_bars);
     fft_bars->setName("Magnitude of FFT average pixel value");
 
     freq_bins = QVector<double>(FFT_INPUT_LENGTH / 2);

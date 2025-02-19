@@ -5,7 +5,7 @@
 #include <QLabel>
 #include <QMutex>
 #include <QMutexLocker>
-#include "qcustomplot.h"
+#include <qcustomplot.h>
 
 #include "filenamegenerator.h"
 
@@ -200,7 +200,7 @@ class gpsManager : public QObject
     void preparePlots();
     void updatePlots();
     void setTimeAxis(QCPAxis *x);
-    void setPlotTitle(QCustomPlot *p, QCPPlotTitle *t, QString title);
+    void setPlotTitle(QCustomPlot *p, QCPTextElement *t, QString title);
 
     void setPlotColors(QCustomPlot *p, bool dark);
 
@@ -230,10 +230,10 @@ class gpsManager : public QObject
 
     QCustomPlot *plotRollPitch = NULL;
     QCustomPlot *plotHeading = NULL;
-    QCPPlotTitle *titleHeading = NULL;
+    QCPTextElement *titleHeading = NULL;
 
     bool usePlotTitle = false;
-    QCPPlotTitle *titleRollPitch = NULL;
+    QCPTextElement *titleRollPitch = NULL;
     QLabel *gpsLat = NULL;
     QLabel *gpsLong = NULL;
     QLabel *gpsAltitude = NULL;

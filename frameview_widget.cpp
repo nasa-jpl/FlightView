@@ -13,7 +13,6 @@
 
 /* Live View includes */
 #include "frameview_widget.h"
-#include "qcustomplot.h"
 #include "settings.h"
 
 frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget *parent)
@@ -92,7 +91,7 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     colorMap = new QCPColorMap(qcp->xAxis,qcp->yAxis);
     colorMapData = NULL;
 
-    qcp->addPlottable(colorMap);
+    //qcp->addPlottable(colorMap);
 
     colorScale = new QCPColorScale(qcp);
     ok = qcp->plotLayout()->addElement(0, 1, colorScale); // add it to the right of the main axis rect
@@ -295,6 +294,8 @@ void frameview_widget::useDarkTheme(bool useDark)
 
 void frameview_widget::handleNewColorScheme(int scheme, bool useDarkThemeVal)
 {
+    QCPColorGradient g;
+
     switch(scheme)
     {
     case 0:
@@ -331,7 +332,12 @@ void frameview_widget::handleNewColorScheme(int scheme, bool useDarkThemeVal)
         colorMap->setGradient(QCPColorGradient::gpGeography);
         break;
     case 11:
-        colorMap->setGradient((QCPColorGradient::gpRedTop));
+        // TODO: Insert custom gradient
+        g.setColorInterpolation(QCPColorGradient::ciRGB);
+        g.setColorStopAt(0, Qt::black);
+        g.setColorStopAt(0.95, Qt::white);
+        g.setColorStopAt(1.00, Qt::red);
+        colorMap->setGradient(g);
         break;
     default:
         sMessage(QString("color scheme [%1] not recognized.").arg(fw->color_scheme));

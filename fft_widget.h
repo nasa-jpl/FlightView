@@ -9,9 +9,9 @@
 #include <QRadioButton>
 #include <QSpinBox>
 #include <QTimer>
+#include <qcustomplot.h>
 
 /* Live View includes */
-#include "qcustomplot.h"
 #include "frame_worker.h"
 #include "startupOptions.h"
 

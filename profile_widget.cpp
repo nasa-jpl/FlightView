@@ -26,7 +26,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     qcp->setNotAntialiasedElement(QCP::aeAll);
 
     qcp->plotLayout()->insertRow(0);
-    plotTitle = new QCPPlotTitle(qcp);
+    plotTitle = new QCPTextElement(qcp);
     qcp->plotLayout()->addElement(0, 0, plotTitle);
     qcp->addGraph();
 
@@ -58,7 +58,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     qcp->addLayer("Box Layer", qcp->currentLayer());
     qcp->setCurrentLayer("Box Layer");
     callout = new QCPItemText(qcp);
-    qcp->addItem(callout);
+    //qcp->addItem(callout);
     callout->position->setCoords(xAxisMax / 2, ceiling - 1000);
     callout->setFont(QFont(font().family(), 16));
     callout->setPen(QPen(Qt::black));
@@ -73,7 +73,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     qcp->addLayer("Arrow Layer", qcp->currentLayer(), QCustomPlot::limBelow);
     qcp->setCurrentLayer("Arrow Layer");
     arrow = new QCPItemLine(qcp);
-    qcp->addItem(arrow);
+    //qcp->addItem(arrow);
     arrow->start->setParentAnchor(callout->bottom);
     arrow->setHead(QCPLineEnding::esSpikeArrow);
     arrow->setSelectable(false);
@@ -268,7 +268,8 @@ void profile_widget::handleNewFrame()
     } else {
         plotTitle->setText("No Crosshair designated");
         allow_callouts = false;
-        qcp->graph(0)->clearData();
+        qcp->graph(0)->data()->clear();
+        //qcp->graph(0)->clearData();
         qcp->replot();
     }
     boundedRange_y = qcp->yAxis->range();
@@ -431,7 +432,8 @@ void profile_widget::moveCallout(QMouseEvent *e)
 {
     // Note, e->posF() was used for previous QT Library versions.
     if ((callout->selectTest(e->pos(), true) < (0.99 * qcp->selectionTolerance())) && (e->buttons() & Qt::LeftButton)) {
-        callout->position->setPixelPoint(e->pos());
+        //callout->position->setPixelPoint(e->pos());
+        callout->position->setPixelPosition(e->pos());
     } else {
         return;
     }

@@ -40,7 +40,6 @@ SOURCES += main.cpp\
     frameview_widget.cpp \
     controlsbox.cpp \
     frame_worker.cpp \
-    qcustomplot.cpp \
     histogram_widget.cpp \
     fft_widget.cpp \
     profile_widget.cpp \
@@ -78,7 +77,6 @@ HEADERS  += mainwindow.h \
     image_type.h \
     initialsetup.h \
     preferences.h \
-    qcustomplot.h \
     histogram_widget.h \
     fft_widget.h \
     frame_c_meta.h \
@@ -167,14 +165,14 @@ QMAKE_POST_LINK += cp \"$$PWD/LiveView.desktop\" $$DESTDIR;
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff
 # Tell the qcustomplot header that it will be used as library:
 # Link with debug version of qcustomplot if compiling in debug mode, else with release library:
-#CONFIG(debug, release|debug) {
-#  win32:QCPLIB = qcustomplotd1
-#  else: QCPLIB = qcustomplotd
-#} else {
-#  win32:QCPLIB = qcustomplot1
-#  else: QCPLIB = qcustomplot
-#}
-#LIBS += -L$$PWD/lib/ -l$$QCPLIB
+CONFIG(debug, release|debug) {
+  win32:QCPLIB = qcustomplotd1
+  else: QCPLIB = qcustomplotd
+} else {
+  win32:QCPLIB = qcustomplot1
+  else: QCPLIB = qcustomplot
+}
+LIBS += -L$$PWD/lib/ -l$$QCPLIB
 
 unix:!macx:!symbian: LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lboost_filesystem -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl -lrt # -lGL -lQtOpenGL
 INCLUDEPATH += $$PWD/cuda_take/include\

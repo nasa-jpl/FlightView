@@ -12,10 +12,10 @@
 #include <stdlib.h>
 
 #include <QDebug>
+#include <qcustomplot.h>
 
 /* LiveView includes */
 #include "mainwindow.h"
-#include "qcustomplot.h"
 #include "frame_worker.h"
 #include "startupOptions.h"
 

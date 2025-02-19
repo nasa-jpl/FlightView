@@ -14,6 +14,7 @@
 #include <QMutex>
 #include <vector>
 #include <deque>
+#include <qcustomplot.h>
 
 
 /* standard includes */
@@ -23,7 +24,6 @@
 #include "frame_c_meta.h"
 #include "frame_worker.h"
 #include "image_type.h"
-#include "qcustomplot.h"
 #include "preferences.h"
 #include "startupOptions.h"
 
