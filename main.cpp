@@ -83,6 +83,7 @@ int main(int argc, char *argv[])
                                "--rtpaddress 1.2.3.4 \n"
                                "--rtpinterface eth2 \n"
                                "--er2 --headless \n"
+                               "--instrumentprefix AV3\n"
                                "--wfpreview \n"
                                "--wfpreviewcontinuous \n"
                                "--wfpreviewlocation /path/to/waterfallpreview/files/ \n"
@@ -155,6 +156,18 @@ int main(int argc, char *argv[])
         if(currentArg == "--headless") {
             startupOptions.headless = true;
         }
+        if(currentArg == "--instrumentprefix") {
+            if(argc > c)
+            {
+                startupOptions.instrumentPrefix = argv[c+1];
+                startupOptions.haveInstrumentPrefix = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
         if(currentArg == "--datastoragelocation")
         {
             if(argc > c)

@@ -108,6 +108,16 @@ void frameWorker::convertOptions()
     } else {
         abort();
     }
+    if(options.haveInstrumentPrefix) {
+        safeStringSetC(takeOptions.instrumentPrefix, options.instrumentPrefix.toStdString());
+        if(takeOptions.instrumentPrefix==NULL) {
+            sMessage("ERROR, instrumentPrefix not copied successfully.");
+            takeOptions.haveInstrumentPrefix = false;
+        } else {
+            takeOptions.haveInstrumentPrefix = true;
+            sMessage("Instrument prefix set to " + options.instrumentPrefix);
+        }
+    }
 
     takeOptions.height = takeOptions.xioHeight;
     takeOptions.width = takeOptions.xioWidth;
@@ -279,6 +289,10 @@ void frameWorker::captureFrames()
                     emit updateFPS();
                 }
                 lastTime = clock.elapsed();
+                if(to.haveMessage) {
+                    emit toMessageOut(to.messagePasser);
+                    to.haveMessage =false;
+                }
             }
         } else {
             // This happens when the program is drawing the screen faster than the
@@ -553,9 +567,21 @@ void frameWorker::debugThis()
     sMessage(QString("Take object frame count: %1").arg(to.count));
 }
 
+void frameWorker::toMessageOut(QString message) {
+    message.prepend("[take_object]: ");
+    emit sendStatusMessage(message);
+}
+
 void frameWorker::sMessage(QString message)
 {
     message.prepend("[frameWorker]: ");
     std::cout << message.toLocal8Bit().toStdString() << std::endl;
+    emit sendStatusMessage(message);
+}
+
+void frameWorker::sMessageQuiet(QString message)
+{
+    message.prepend("[frameWorker]: ");
+    //std::cout << message.toLocal8Bit().toStdString() << std::endl;
     emit sendStatusMessage(message);
 }

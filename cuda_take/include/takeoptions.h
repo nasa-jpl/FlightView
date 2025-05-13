@@ -49,6 +49,8 @@ struct takeOptionsType
     bool noGPU = false; // experimental
     bool rotate = false;
     bool remapPixels = false;
+    char* instrumentPrefix = NULL;
+    bool haveInstrumentPrefix = false;
 
     bool useSHM = false;
 

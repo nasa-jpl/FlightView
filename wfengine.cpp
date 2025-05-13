@@ -647,7 +647,12 @@ void wfengine::immediatelySaveImage() {
 void wfengine::saveImage(int topRow, int botRow) {
     // Note, topRow is almost always zero
     if(options.wfPreviewlocationset && saveImageReady) {
-        QString filename = "AV3";
+        QString filename;
+        if(options.haveInstrumentPrefix) {
+            filename = options.instrumentPrefix;
+        } else {
+            filename = "AVIRIS";
+        }
         QDateTime now = QDateTime::currentDateTime();
         QString dayStr = now.toUTC().toString("yyyyMMdd");
         QString timeStr = now.toUTC().toString("hhmmss");
@@ -684,7 +689,7 @@ void wfengine::saveImage(int topRow, int botRow) {
         tagResult = imageTagger(fileLocationFull.toLocal8Bit(),
                                    s, topOfFileGPSMessage, fps,
                                    r_row, g_row, b_row,
-                                   gammaLevel, floor, ceiling, collectionID);
+                                   gammaLevel, floor, ceiling, collectionID, options.instrumentPrefix);
 
         switch(tagResult) {
         case tagRtnOK:

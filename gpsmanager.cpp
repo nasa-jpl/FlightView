@@ -47,6 +47,9 @@ gpsManager::~gpsManager()
 
 void gpsManager::initiateGPSConnection(QString host = "192.168.2.101", int port=(int)8112, QString gpsBinaryLogFilename = "")
 {
+    if(options.haveInstrumentPrefix) {
+        filenamegen.setPrefix(options.instrumentPrefix);
+    }
     if (gpsBinaryLogFilename.isEmpty())
     {
         createLoggingDirectory();

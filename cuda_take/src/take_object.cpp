@@ -786,11 +786,22 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 #ifdef VERBOSE
     printf("ssr called\n");
 #endif
+    bool notEmpty = false;
+    int saving_list_notEmpty_counter = 0;
     while(!saving_list.empty())
     {
 #ifdef VERBOSE
         printf("Waiting for empty saving list...\n");
 #endif
+        notEmpty = true;
+        saving_list_notEmpty_counter++;
+        usleep(1000);
+    }
+    if(notEmpty) {
+        char msgb[160] = {'\0'};
+        sprintf(msgb, "saving_list was not empty, indicates likely concurrent recording request. counter: %d",
+                saving_list_notEmpty_counter);
+        warningMessage(msgb);
     }
     save_framenum.store(frames_to_save,std::memory_order_seq_cst);
     save_count.store(0, std::memory_order_seq_cst);
@@ -1853,6 +1864,8 @@ void take_object::errorMessage(const char *message)
     } else {
         g_critical("take_object: ERROR: %s", message);
     }
+    strncpy(this->messagePasser, message, takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::warningMessage(const char *message)
@@ -1863,6 +1876,8 @@ void take_object::warningMessage(const char *message)
     } else {
         g_message("take_object: WARNING: %s", message);
     }
+    strncpy(this->messagePasser, message, takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::statusMessage(const char *message)
@@ -1872,6 +1887,8 @@ void take_object::statusMessage(const char *message)
     } else {
         g_message("take_object: STATUS: %s", message);
     }
+    strncpy(this->messagePasser, message, takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::errorMessage(const string message)
@@ -1881,6 +1898,8 @@ void take_object::errorMessage(const string message)
     } else {
         g_error("take_object: ERROR: %s", message.c_str());
     }
+    strncpy(this->messagePasser, message.c_str(), takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::warningMessage(const string message)
@@ -1890,6 +1909,8 @@ void take_object::warningMessage(const string message)
     } else {
         g_message("take_object: WARNING: %s", message.c_str());
     }
+    strncpy(this->messagePasser, message.c_str(), takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::statusMessage(const string message)
@@ -1899,6 +1920,8 @@ void take_object::statusMessage(const string message)
     } else {
         g_message("take_object: STATUS: %s", message.c_str());
     }
+    strncpy(this->messagePasser, message.c_str(), takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::statusMessage(std::ostringstream &message)
@@ -1908,4 +1931,6 @@ void take_object::statusMessage(std::ostringstream &message)
     } else {
         g_message("take_object: STATUS: %s", message.str().c_str());
     }
+    strncpy(this->messagePasser, message.str().c_str(), takeMessageSize-1);
+    haveMessage=true;
 }

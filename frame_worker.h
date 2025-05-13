@@ -177,7 +177,9 @@ public slots:
     void stop();
     void setColorScheme(int scheme, bool useDarkTheme);
     void debugThis();
-    void sMessage(QString message);
+    void sMessage(QString message); // includes stdout
+    void sMessageQuiet(QString message); // no stdout
+    void toMessageOut(QString message); // append [take_object]:
 };
 
 

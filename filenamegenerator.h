@@ -13,6 +13,7 @@ public:
     void setFlightFormat(bool useFlightFormat, QString flightNamePrefix);
     void setMainDirectory(QString basedir);
     void setFilenameExtension(QString extension);
+    void setPrefix(QString prefix);
     void generate(); // call this for new time stamp
     QString getNewFullFilename(QString basedir, QString extension); // auto new filename
     QString getNewFullFilename(QString basedir, QString prefix, QString postfix, QString extension); // auto new filename
@@ -32,7 +33,7 @@ private:
     QString extension;
 
     bool flightFormat = true;
-    QString namePrefix = "AV3";
+    QString namePrefix = "UNSET";
 };
 
 #endif // FILENAMEGENERATOR_H

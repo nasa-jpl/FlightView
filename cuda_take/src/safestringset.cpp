@@ -10,6 +10,15 @@ void safeStringSet(std::string dst, std::string source)
     dst.assign(source);
 }
 
+void safeStringSetC(char *dst, std::string source)
+{
+    if(dst == NULL)
+    {
+        dst = (char*)calloc(1024, 1);
+    }
+    strncpy(dst, source.c_str(), 1023);
+}
+
 void safeStringSet(std::string *dst, std::string source)
 {
     if(dst == NULL)

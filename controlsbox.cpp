@@ -2084,7 +2084,11 @@ void ControlsBox::save_finite_button_slot()
     if(options.flightMode)
     {
         // Generate filenames:
-        fnamegen.setFlightFormat(true, "AV3");
+        if(options.haveInstrumentPrefix) {
+            fnamegen.setFlightFormat(true, options.instrumentPrefix);
+        } else {
+            fnamegen.setFlightFormat(true, "AVIRIS");
+        }
         fnamegen.generate(); // new timestamp
         QString rawDataFilename = fnamegen.getFullFilename("", "_raw", "");
         QString gpsLogFilename = fnamegen.getFullFilename("", "_gps", "");

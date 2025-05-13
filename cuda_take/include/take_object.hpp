@@ -48,6 +48,8 @@ static int cudaDeviceNumberStatic = 0;
 #include "rtpnextgen.hpp"
 #include "rtpcamera.hpp"
 
+#define takeMessageSize (1024)
+
 //** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
 #define EDT
 
@@ -234,6 +236,8 @@ public:
     bool std_dev_ready();
     std::vector<float> * getHistogramBins();
     FFT_t getFFTtype();
+    bool haveMessage = false;
+    char messagePasser[takeMessageSize] = {'\0'};
 
 private:
     // PDV Camera Link:

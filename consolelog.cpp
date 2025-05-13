@@ -238,7 +238,12 @@ QString consoleLog::createFilenameFromDirectory(QString directoryName)
 
     QDateTime now = QDateTime::currentDateTimeUtc();
     QString dateString;
-    QString namePrefix = "AV3";
+    QString namePrefix;
+    if(options.haveInstrumentPrefix) {
+        namePrefix= options.instrumentPrefix;
+    } else {
+        namePrefix = "AVIRIS";
+    }
     if(flightMode) {
         dateString.append(namePrefix);
         dateString.append(now.toString("yyyyMMdd"));
@@ -316,6 +321,11 @@ void consoleLog::logSystemConfig()
 
     if(!QString(SRC_DIR).isEmpty()) {
         handleOwnText(QString("Source directory was: %1").arg(SRC_DIR));
+    }
+    if(options.haveInstrumentPrefix) {
+        handleOwnText(QString("Instrument preset name: %1").arg(options.instrumentPrefix));
+    } else {
+        handleOwnText(QString("Instrument preset name not set"));
     }
 #ifdef QT_DEBUG
     handleOwnText(QString("Compiled as a DEBUG version"));
