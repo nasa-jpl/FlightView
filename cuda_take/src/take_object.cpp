@@ -799,9 +799,16 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
     }
     if(notEmpty) {
         char msgb[160] = {'\0'};
-        sprintf(msgb, "saving_list was not empty, indicates likely concurrent recording request. counter: %d",
+        sprintf(msgb, "saving_list was not empty, indicates likely concurrent recording request. counter: %d. Forcing a 5 second pause.",
                 saving_list_notEmpty_counter);
         warningMessage(msgb);
+        // At this point, saving_list IS empty.
+        // However, the file has not been confirmed to be closed and the
+        // headers may not have been written yet.
+        usleep( (1E6)/4 ); // pause a quarter second
+        while(savingData) {
+            usleep(1E3); // additional 1ms pause while waiting for savingData to complete
+        }
     }
     save_framenum.store(frames_to_save,std::memory_order_seq_cst);
     save_count.store(0, std::memory_order_seq_cst);
@@ -1848,8 +1855,8 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     hdr_target << hdr_text;
     hdr_target.close();
     // What does this usleep do? --EHL
-    if(sv_count == 1)
-        usleep(500000);
+    //if(sv_count == 1)
+    //    usleep(500000);
     save_count.store(0, std::memory_order_seq_cst);
     statusMessage("Saving complete.");
     savingMutex.unlock();
