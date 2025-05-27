@@ -10,13 +10,14 @@ void safeStringSet(std::string dst, std::string source)
     dst.assign(source);
 }
 
-void safeStringSetC(char *dst, std::string source)
+void safeStringSetC(char **dst, std::string source)
 {
-    if(dst == NULL)
+    if(*dst == NULL)
     {
-        dst = (char*)calloc(1024, 1);
+        *dst = (char*)calloc(1024, 1);
     }
-    strncpy(dst, source.c_str(), 1023);
+    strncpy(*dst, source.c_str(), 1023);
+    (*dst)[1023] = '\0'; // Ensure null-termination
 }
 
 void safeStringSet(std::string *dst, std::string source)

@@ -109,7 +109,7 @@ void frameWorker::convertOptions()
         abort();
     }
     if(options.haveInstrumentPrefix) {
-        safeStringSetC(takeOptions.instrumentPrefix, options.instrumentPrefix.toStdString());
+        safeStringSetC(&takeOptions.instrumentPrefix, options.instrumentPrefix.toStdString());
         if(takeOptions.instrumentPrefix==NULL) {
             sMessage("ERROR, instrumentPrefix not copied successfully.");
             takeOptions.haveInstrumentPrefix = false;

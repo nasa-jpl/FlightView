@@ -9,7 +9,7 @@ void safeStringSet(std::string dst, std::string source);
 void safeStringSet(std::string *dst, std::string source);
 void safeStringSet(std::string *dst, std::string *source);
 void safeStringSet(std::string *dst, const char* source);
-void safeStringSetC(char *dst, std::string source);
+void safeStringSetC(char **dst, std::string source);
 void safeStringDelete(std::string *p);
 
 #endif // SAFESTRINGSET_H
