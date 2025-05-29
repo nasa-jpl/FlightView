@@ -381,6 +381,7 @@ void flight_widget::updateFPS()
             // No sticky for the external status:
             if(flightStatus) flightStatus->stat_cameraReady = 1;
         }
+        //if(flightStatus) flightStatus->continuousRecording = this->isRecording;
     }
 }
 

@@ -7,6 +7,7 @@
 #include <QSharedPointer>
 #include <QThread>
 #include <QTime>
+#include <QElapsedTimer>
 #include <QVector>
 
 /* standard include */

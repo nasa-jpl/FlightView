@@ -234,7 +234,7 @@ void frameWorker::captureFrames()
      * \author Noah Levy
      */
     unsigned long count = 0;
-    QTime clock;
+    QElapsedTimer clock;
     clock.start();
     int restart = 0;
     lastTime = clock.elapsed();
@@ -263,8 +263,8 @@ void frameWorker::captureFrames()
             if (curFrame->has_valid_std_dev == 1) {
                 std_dev_processing_frame = curFrame;
             }
-            save_num = to.save_framenum.load(std::memory_order_relaxed);
-            save_ct = to.save_count.load(std::memory_order_relaxed);
+            save_num = to.save_framenum.load(std::memory_order_seq_cst);
+            save_ct = to.save_count.load(std::memory_order_seq_cst);
             if(save_ct != last_savect) {
                 emit savingFrameNumChanged(save_ct*to.save_num_avgs);
 				//std::cout << "----\nsave_framenum: " << std::to_string(save_num) << "\n";
@@ -349,6 +349,8 @@ void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName
 void frameWorker::stopSavingRawData()
 {
     /*! \brief Calls to stop saving frames in cuda_take. */
+    sMessage("told to stopSavingRawData, telling takeObject.");
+
     to.stopSavingRaws();
 }
 

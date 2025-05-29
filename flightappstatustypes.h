@@ -12,6 +12,7 @@ struct flightAppStatus_t {
     uint16_t stat_cameraReady = 1;
     uint16_t stat_headerOk = 1;
     uint16_t stat_framesCaptured = 1;
+    bool continuousRecording = false;
     int fps = 100;
 };
 

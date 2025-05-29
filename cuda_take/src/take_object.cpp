@@ -53,8 +53,8 @@ void take_object::initialSetup(int channel_num, int number_of_buffers,
     //For the frame saving
     this->do_raw_save = false;
     savingData = false;
-    continuousRecording = false;
-    save_framenum = 0;
+    continuousRecording.store(false, std::memory_order_seq_cst);
+    save_framenum.store(0, std::memory_order_seq_cst);
     save_count=0;
     save_num_avgs=1;
     saving_list.clear();
@@ -776,9 +776,9 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 {
     if(frames_to_save==0)
     {
-        continuousRecording = true;
+        continuousRecording.store(true, std::memory_order_seq_cst);
     } else {
-        continuousRecording = false;
+        continuousRecording.store(false, std::memory_order_seq_cst);
     }
     
     save_framenum.store(0, std::memory_order_seq_cst);
@@ -824,9 +824,10 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 }
 void take_object::stopSavingRaws()
 {
-    continuousRecording = false;
-    save_framenum.store(0,std::memory_order_relaxed);
-    save_count.store(0,std::memory_order_relaxed);
+    statusMessage("in stopSavingRaws()");
+    continuousRecording.store(false, std::memory_order_seq_cst);
+    save_framenum.store(0,std::memory_order_seq_cst);
+    save_count.store(0,std::memory_order_seq_cst);
     save_num_avgs=1;
     if(shmValid) {
         shm->recordingDataToFile = false;
@@ -1223,7 +1224,7 @@ void take_object::fileImageCopyLoop()
 
             mf->start_mean();
 
-            if((save_framenum > 0) || continuousRecording)
+            if((save_framenum > 0) || continuousRecording.load(std::memory_order_seq_cst))
             {
                 uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
                 memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
@@ -1414,7 +1415,7 @@ void take_object::rtpConsumeFrames()
             mf->start_mean();
         }
 
-        if((save_framenum > 0) || continuousRecording)
+        if((save_framenum > 0) || continuousRecording.load(std::memory_order_seq_cst))
         {
             uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
             memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
@@ -1566,7 +1567,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             mf->start_mean();
         }
 
-        if((save_framenum > 0) || continuousRecording)
+        if((save_framenum > 0) || continuousRecording.load(std::memory_order_seq_cst))
         {
             uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
             memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
@@ -1691,7 +1692,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     FILE * file_target = fopen(fname.c_str(), "wb");
     int sv_count = 0;
 
-    while(  (save_framenum != 0) || continuousRecording)
+    while(  (save_framenum != 0) || continuousRecording.load(std::memory_order_seq_cst))
     {
         if(saving_list.size() > 2)
         {
