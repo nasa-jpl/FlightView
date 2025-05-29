@@ -1415,7 +1415,7 @@ void take_object::rtpConsumeFrames()
             mf->start_mean();
         }
 
-        if((save_framenum > 0) || continuousRecording.load(std::memory_order_seq_cst))
+        if((save_framenum.load(std::memory_order_seq_cst) > 0) || continuousRecording.load(std::memory_order_seq_cst))
         {
             uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
             memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
@@ -1823,7 +1823,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     hdr_text = hdr_text + "lines   = " + std::to_string(sv_count) +"\n"; // save count, ie, number of frames in the file
     hdr_text = hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
 
-    if(haveGPSDataPointer) {
+    if(haveGPSDataPointer && (basicGPSData!= NULL)) {
         if(basicGPSData->usingGPS) {
             // Note: GPS data may be as much as one minute behind the moment of the end of the recording.
             hdr_text = hdr_text + "latitude = " + std::to_string(basicGPSData->chk_latiitude) +"\n";

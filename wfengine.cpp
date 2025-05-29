@@ -660,7 +660,7 @@ void wfengine::saveImage(int topRow, int botRow) {
         statusMessage(QString("Writing waterfall image (row %2 to %3) to filename [%1]")
                       .arg(options.wfPreviewLocation + filename).arg(topRow).arg(botRow));
 
-        QImage cropped = specImage->copy(0, topRow, specImage->width(), botRow-topRow);
+        QImage cropped = specImage->copy(0, topRow, specImage->width(), botRow-topRow+1);
 #ifdef QT_DEBUG
         statusMessage(QString("Cropped size is: %1 x %2.").arg(cropped.width()).arg(cropped.height()));
 #endif
