@@ -9,6 +9,7 @@
 #define DARK_SUBTRACTION_FILTER_CUH_
 
 #include <stdint.h>
+#include <unistd.h>
 #include <mutex>
 
 #include "edtinc.h"
@@ -50,6 +51,7 @@ public:
     std::mutex mask_mutex;
 private:
 	bool mask_collected;
+    bool mean_inProgress = false;
 	//boost::shared_array<float> picture_out;
 	unsigned int width;
 	unsigned int height;

@@ -93,6 +93,18 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         }
     });
 
+    connect(rgbLevels, &rgbAdjustments::setTargetFPS_primary,
+            [=](const int targetFPS) {
+        emit setWFTargetFPS_primary(targetFPS);
+    });
+    connect(rgbLevels, &rgbAdjustments::setTargetFPS_secondary,
+            [=](const int targetFPS) {
+        emit setWFTargetFPS_secondary(targetFPS);
+    });
+    connect(rgbLevels, &rgbAdjustments::setTargetFPS_render,
+            [=](const int targetFPS) {
+        emit setWFTargetFPS_render(targetFPS);
+    });
 
     /* ====================================================================== */
     // LEFT SIDE BUTTONS (Collections)
@@ -166,6 +178,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
             collections_layout->addWidget(&showXioSetupBtn, 4, 3, 1, 1);
         }
     }
+
+    pausePlaybackChk.setVisible(false);
+    pausePlaybackChk.setEnabled(false);
 
     //Fifth Row:
     collections_layout->addWidget(overlay_lh_width_label, 5,1,1,1);
@@ -285,6 +300,9 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     show_rgb_lines_cbox.setText("Show RGB Lines");
     show_rgb_lines_cbox.setToolTip("Shows the RGB lines on the flight interface frame view\n at all times if checked. Otherwise just for 30 seconds");
 
+    useRatioCbox.setText("Ratio");
+    useRatioCbox.setToolTip("Visualize the spectral ratio between two bands");
+
     //center:
     overlay_cent_width = new QSlider(this);
     overlay_cent_width->setMinimum(1);
@@ -351,6 +369,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     sliders_layout->addWidget(&low_increment_cbox, 2, 1, 1, 1);
     sliders_layout->addWidget(&use_DSF_cbox, 2, 2, 1, 1);
     sliders_layout->addWidget(&show_rgb_lines_cbox, 2, 3, 1, 1);
+    sliders_layout->addWidget(&useRatioCbox, 2, 4, 1, 1);
 
     //Third Row
     sliders_layout->addWidget(new QLabel("Ceiling:"),3,1,1,1);
@@ -536,22 +555,24 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     connect(fw, SIGNAL(updateFPS()), this, SLOT(update_backend_delta()));
 
-    connect(std_dev_N_edit, SIGNAL(valueChanged(int)), std_dev_N_slider, SLOT(setValue(int)));
-    connect(std_dev_N_slider, SIGNAL(valueChanged(int)), std_dev_N_edit, SLOT(setValue(int)));
-    connect(line_average_edit, SIGNAL(valueChanged(int)), lines_slider, SLOT(setValue(int)));
-    connect(lines_slider, SIGNAL(valueChanged(int)), line_average_edit, SLOT(setValue(int)));
-    connect(lines_slider, SIGNAL(valueChanged(int)), this, SLOT(transmitChange(int)));
+    connect(std_dev_N_edit, SIGNAL(valueChanged(int)), std_dev_N_slider, SLOT(setValue(int)), Qt::UniqueConnection);
+    connect(std_dev_N_slider, SIGNAL(valueChanged(int)), std_dev_N_edit, SLOT(setValue(int)), Qt::UniqueConnection);
+    connect(line_average_edit, SIGNAL(valueChanged(int)), lines_slider, SLOT(setValue(int)), Qt::UniqueConnection);
+    connect(lines_slider, SIGNAL(valueChanged(int)), line_average_edit, SLOT(setValue(int)), Qt::UniqueConnection);
+    connect(lines_slider, SIGNAL(valueChanged(int)), this, SLOT(transmitChange(int)), Qt::UniqueConnection);
 
-    connect(&ceiling_edit, (void(QSpinBox::*)(int))&QSpinBox::valueChanged,
-            [&](int value) {
+    connect(&ceiling_edit, (&QSpinBox::editingFinished),
+            [=]() {
         //this->ceiling_slider.blockSignals(true);
+        int value = ceiling_edit.value();
         this->ceiling_slider.setValue(value);
         //this->ceiling_slider.blockSignals(false);
     });
 
-    connect(&floor_edit, (void(QSpinBox::*)(int))&QSpinBox::valueChanged,
-            [&](int value) {
+    connect(&floor_edit, (&QSpinBox::editingFinished),
+            [=]() {
         //this->floor_slider.blockSignals(true);
+        int value = floor_edit.value();
         this->floor_slider.setValue(value);
         //this->floor_slider.blockSignals(false);
     });
@@ -571,71 +592,34 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     });
 
 
-    connect(&floor_slider, SIGNAL(valueChanged(int)), this, SLOT(updateFloor(int)));
-    connect(&floor_edit, SIGNAL(valueChanged(int)), this, SLOT(updateFloor(int)));
+    connect(&floor_slider, SIGNAL(valueChanged(int)), this, SLOT(updateFloor(int)), Qt::UniqueConnection);
+    connect(&floor_edit, SIGNAL(valueChanged(int)), this, SLOT(updateFloor(int)), Qt::UniqueConnection);
 
-    connect(&ceiling_slider, SIGNAL(valueChanged(int)), this, SLOT(updateCeiling(int)));
-    connect(&ceiling_edit, SIGNAL(valueChanged(int)), this, SLOT(updateCeiling(int)));
+    connect(&ceiling_slider, SIGNAL(valueChanged(int)), this, SLOT(updateCeiling(int)), Qt::UniqueConnection);
+    connect(&ceiling_edit, SIGNAL(valueChanged(int)), this, SLOT(updateCeiling(int)), Qt::UniqueConnection);
 
-
-//    connect(&ceiling_slider, &QSlider::valueChanged,
-//            [&](int value) {
-//            if(use_DSF_cbox.isChecked())
-//            {
-//                prefs.dsfCeiling = value;
-//            } else {
-//                prefs.frameViewCeiling = value;
-//            }
-
-//    });
-
-//    connect(&floor_slider, &QSlider::valueChanged,
-//            [&](int value) {
-//            if(use_DSF_cbox.isChecked())
-//            {
-//                prefs.dsfFloor = value;
-//            } else {
-//                prefs.frameViewFloor = value;
-//            }
-
-//    });
-
-//    connect(&use_DSF_cbox, &QCheckBox::toggled,
-//            [&](bool toggled) {
-//            if(toggled)
-//            {
-//                // DSF
-//                floor_slider.setValue(prefs.dsfFloor);
-//                ceiling_slider.setValue(prefs.dsfCeiling);
-//            } else {
-//                // Raw (no subtraction)
-//                floor_slider.setValue(prefs.frameViewFloor);
-//                ceiling_slider.setValue(prefs.frameViewCeiling);
-//            }
-//    });
-
-    connect(&use_DSF_cbox, SIGNAL(toggled(bool)), this, SLOT(use_DSF_general(bool)));
+    connect(&use_DSF_cbox, SIGNAL(toggled(bool)), this, SLOT(use_DSF_general(bool)), Qt::UniqueConnection);
     //connect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)));
-    connect(&low_increment_cbox, SIGNAL(toggled(bool)), this, SLOT(increment_slot(bool)));
-    connect(&save_finite_button, SIGNAL(clicked()), this, SLOT(save_finite_button_slot()));
-    connect(&stop_saving_frames_button, SIGNAL(clicked()), this, SLOT(stop_continous_button_slot()));
-    connect(&select_save_location, SIGNAL(clicked()), this, SLOT(show_save_dialog()));
-    connect(&debugButton, SIGNAL(clicked()), this, SLOT(debugThis()));
+    connect(&low_increment_cbox, SIGNAL(toggled(bool)), this, SLOT(increment_slot(bool)), Qt::UniqueConnection);
+    connect(&save_finite_button, SIGNAL(clicked()), this, SLOT(save_finite_button_slot()), Qt::UniqueConnection);
+    connect(&stop_saving_frames_button, SIGNAL(clicked()), this, SLOT(stop_continous_button_slot()), Qt::UniqueConnection);
+    connect(&select_save_location, SIGNAL(clicked()), this, SLOT(show_save_dialog()), Qt::UniqueConnection);
+    connect(&debugButton, SIGNAL(clicked()), this, SLOT(debugThis()), Qt::UniqueConnection);
 
     // Overlay:
-    connect(overlay_lh_width_spin, SIGNAL(valueChanged(int)), overlay_lh_width, SLOT(setValue(int)));
-    connect(overlay_lh_width, SIGNAL(valueChanged(int)), overlay_lh_width_spin, SLOT(setValue(int)));
+    connect(overlay_lh_width_spin, SIGNAL(valueChanged(int)), overlay_lh_width, SLOT(setValue(int)), Qt::UniqueConnection);
+    connect(overlay_lh_width, SIGNAL(valueChanged(int)), overlay_lh_width_spin, SLOT(setValue(int)), Qt::UniqueConnection);
 
-    connect(overlay_cent_width_spin, SIGNAL(valueChanged(int)), overlay_cent_width, SLOT(setValue(int)));
-    connect(overlay_cent_width, SIGNAL(valueChanged(int)), overlay_cent_width_spin, SLOT(setValue(int)));
+    connect(overlay_cent_width_spin, SIGNAL(valueChanged(int)), overlay_cent_width, SLOT(setValue(int)), Qt::UniqueConnection);
+    connect(overlay_cent_width, SIGNAL(valueChanged(int)), overlay_cent_width_spin, SLOT(setValue(int)), Qt::UniqueConnection);
 
-    connect(overlay_rh_width_spin, SIGNAL(valueChanged(int)), overlay_rh_width, SLOT(setValue(int)));
-    connect(overlay_rh_width, SIGNAL(valueChanged(int)), overlay_rh_width_spin, SLOT(setValue(int)));
+    connect(overlay_rh_width_spin, SIGNAL(valueChanged(int)), overlay_rh_width, SLOT(setValue(int)), Qt::UniqueConnection);
+    connect(overlay_rh_width, SIGNAL(valueChanged(int)), overlay_rh_width_spin, SLOT(setValue(int)), Qt::UniqueConnection);
 
     // Waterfall:
-    connect(&red_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)));
-    connect(&green_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)));
-    connect(&blue_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)));
+    connect(&red_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)), Qt::UniqueConnection);
+    connect(&green_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)), Qt::UniqueConnection);
+    connect(&blue_slider, SIGNAL(valueChanged(int)), this, SLOT(setRGBWaterfall(int)), Qt::UniqueConnection);
 
     connect(&red_slider, &QSlider::sliderMoved,
             [&](int value) {
@@ -738,11 +722,26 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
             emit updateRGB(bandRed, bandGreen, bandBlue);
     });
 
-
+    connect(&useRatioCbox, &QCheckBox::toggled,
+            [&](bool checked) {
+        if(checked) {
+            red_label.setText("Reference Band");
+            green_label.setText("Feature Band");
+            blue_label.setText("Unused (ratio)");
+            blue_slider.setEnabled(false);
+            blueSpin.setEnabled(false);
+        } else {
+            red_label.setText("Red Band");
+            green_label.setText("Green Band");
+            blue_label.setText("Blue Band");
+            blue_slider.setEnabled(true);
+            blueSpin.setEnabled(true);
+        }
+    });
 
     // Preferences:
-    connect(prefWindow, SIGNAL(saveSettings()), this, SLOT(triggerSaveSettings()));
-    connect(prefWindow, SIGNAL(newPenWidth(int)), this, SLOT(updatePenWidth(int)));
+    connect(prefWindow, SIGNAL(saveSettings()), this, SLOT(triggerSaveSettings()), Qt::UniqueConnection);
+    connect(prefWindow, SIGNAL(newPenWidth(int)), this, SLOT(updatePenWidth(int)), Qt::UniqueConnection);
 
     rgbPresetCombo.setCurrentIndex(0);
     bandRed = prefs.bandRed[0];
@@ -838,6 +837,10 @@ void ControlsBox::loadSettings()
     // STD DEV:
     prefs.stddevCeiling = settings->value("stddevCeiling", defaultPrefs.stddevCeiling).toInt();
     prefs.stddevFloor = settings->value("stddevFloor", defaultPrefs.stddevFloor).toInt();
+
+    // Histogram:
+    prefs.histCeiling = settings->value("histCeiling", defaultPrefs.histCeiling).toInt();
+    prefs.histFloor = settings->value("histFloor", defaultPrefs.histFloor).toInt();
 
     // Flight:
     prefs.flightDSFCeiling = settings->value("flightDSFCeiling", defaultPrefs.flightDSFCeiling).toInt();
@@ -962,8 +965,8 @@ void ControlsBox::updateUIToPrefs()
     }
     if(p_histogram)
     {
-        floor_slider.setValue(prefs.stddevFloor);
-        ceiling_slider.setValue(prefs.stddevCeiling);
+        floor_slider.setValue(prefs.histFloor);
+        ceiling_slider.setValue(prefs.histCeiling);
         return;
     }
 }
@@ -1016,6 +1019,10 @@ void ControlsBox::saveSettings()
     // STD Dev Tab:
     settings->setValue("stddevCeiling", prefs.stddevCeiling);
     settings->setValue("stddevFloor", prefs.stddevFloor);
+
+    // Histogram Tab:
+    settings->setValue("histCeiling", prefs.histCeiling);
+    settings->setValue("histFloor", prefs.histFloor);
 
     // Flight Tab:
     settings->setValue("flightDSFCeiling", prefs.flightDSFCeiling);
@@ -1197,6 +1204,8 @@ void ControlsBox::setDefaultSettings()
     defaultPrefs.fftFloor = 0;
     defaultPrefs.stddevCeiling = 1000;
     defaultPrefs.stddevFloor = 0;
+    defaultPrefs.histCeiling = 1000;
+    defaultPrefs.histFloor = 0;
     defaultPrefs.preferredWindowWidth = 1280;
     defaultPrefs.preferredWindowHeight = 1024;
 
@@ -1245,12 +1254,13 @@ void ControlsBox::tab_changed_slot(int index)
      * \author Jackie Ryan
      */
 
-    bool see_it = false;
     current_tab = qtw->widget(index);
     disconnect_old_tab();
     attempt_pointers(current_tab);
     show_rgb_lines_cbox.setEnabled(false);
     show_rgb_lines_cbox.setVisible(false);
+    useRatioCbox.setEnabled(false);
+    useRatioCbox.setVisible(false);
     showRGBLevelsButton.setEnabled(false);
     showRGBLevelsButton.setVisible(false);
     overlayControls(false);
@@ -1281,9 +1291,9 @@ void ControlsBox::tab_changed_slot(int index)
         low_increment_cbox.setChecked(p_profile->slider_low_inc);
         increment_slot(low_increment_cbox.isChecked());
 
-        connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateCeiling(int)));
-        connect(&floor_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateFloor(int)));
-        connect(p_profile, SIGNAL(haveNewRangeFC(double,double)), this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));
+        connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateCeiling(int)), Qt::UniqueConnection);
+        connect(&floor_slider, SIGNAL(valueChanged(int)), p_profile, SLOT(updateFloor(int)), Qt::UniqueConnection);
+        connect(p_profile, SIGNAL(haveNewRangeFC(double,double)), this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)), Qt::UniqueConnection);
 
         int fl=0;
         int ce=0;
@@ -1383,12 +1393,12 @@ void ControlsBox::tab_changed_slot(int index)
 
             lines_slider->setEnabled(true);
 
-            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)));
-            connect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)));
+            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateCeiling(int)), Qt::UniqueConnection);
+            connect(&floor_slider, SIGNAL(valueChanged(int)), p_profile->overlay_img, SLOT(updateFloor(int)), Qt::UniqueConnection);
 
-            connect(overlay_lh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
-            connect(overlay_cent_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
-            connect(overlay_rh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)));
+            connect(overlay_lh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)), Qt::UniqueConnection);
+            connect(overlay_cent_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)), Qt::UniqueConnection);
+            connect(overlay_rh_width, SIGNAL(valueChanged(int)), this, SLOT(updateOverlayParams(int)), Qt::UniqueConnection);
 
         } else {
             overlayControls(false);
@@ -1413,8 +1423,8 @@ void ControlsBox::tab_changed_slot(int index)
         ceiling_edit.setValue(p_fft->getCeiling());
         floor_edit.setValue(p_fft->getFloor());
 
-        connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_fft, SLOT(updateCeiling(int)));
-        connect(&floor_slider, SIGNAL(valueChanged(int)), p_fft, SLOT(updateFloor(int)));
+        connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_fft, SLOT(updateCeiling(int)), Qt::UniqueConnection);
+        connect(&floor_slider, SIGNAL(valueChanged(int)), p_fft, SLOT(updateFloor(int)), Qt::UniqueConnection);
 
         p_fft->updateFFT();
         p_fft->updateCeiling(prefs.fftCeiling);
@@ -1431,8 +1441,8 @@ void ControlsBox::tab_changed_slot(int index)
             lines_slider->setEnabled(false);
             line_average_edit->setEnabled(false);
         }
-        connect(p_fft->vCrossButton, SIGNAL(toggled(bool)), this, SLOT(fft_slider_enable(bool)));
-        connect(p_fft->vCrossButton, SIGNAL(toggled(bool)), this, SLOT(fft_slider_enable(bool)));
+        connect(p_fft->vCrossButton, SIGNAL(toggled(bool)), this, SLOT(fft_slider_enable(bool)), Qt::UniqueConnection);
+        connect(p_fft->vCrossButton, SIGNAL(toggled(bool)), this, SLOT(fft_slider_enable(bool)), Qt::UniqueConnection);
         display_lines_slider();
         p_fft->rescaleRange();
         waterfallControls(false);
@@ -1446,7 +1456,7 @@ void ControlsBox::tab_changed_slot(int index)
             ceiling_edit.blockSignals(true);
             low_increment_cbox.setChecked(p_frameview->slider_low_inc);
             increment_slot(low_increment_cbox.isChecked());
-            connect(p_frameview, SIGNAL(haveFloorCeilingValuesFromColorScaleChange(double,double)), this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));
+            connect(p_frameview, SIGNAL(haveFloorCeilingValuesFromColorScaleChange(double,double)), this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)), Qt::UniqueConnection);
 
             switch(p_frameview->image_type) {
             case STD_DEV:
@@ -1514,9 +1524,9 @@ void ControlsBox::tab_changed_slot(int index)
                 break;
             }
 
-            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateCeiling(int)));
-            connect(&floor_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateFloor(int)));
-            connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_frameview, SLOT(setUseDSF(bool)));
+            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateCeiling(int)), Qt::UniqueConnection);
+            connect(&floor_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateFloor(int)), Qt::UniqueConnection);
+            connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_frameview, SLOT(setUseDSF(bool)), Qt::UniqueConnection);
 
             use_DSF_cbox.setChecked(fw->usingDSF());
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
@@ -1555,17 +1565,18 @@ void ControlsBox::tab_changed_slot(int index)
 
             waterfallControls(true);
 
-            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateCeiling(int)));
-            connect(&floor_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateFloor(int)));
-            connect(this, SIGNAL(updateRGB(int,int,int)), p_flight, SLOT(changeRGB(int,int,int)));
-            connect(&wflength_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(changeWFLength(int)));
-            connect(&showSecondWFBtn, SIGNAL(pressed()), p_flight, SLOT(showSecondWF()));
-            connect(fw, SIGNAL(updateFPS()), p_flight, SLOT(updateFPS()));
-            connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseDSF(bool)));
-            connect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)));
+            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateCeiling(int)), Qt::UniqueConnection);
+            connect(&floor_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(updateFloor(int)), Qt::UniqueConnection);
+            connect(this, SIGNAL(updateRGB(int,int,int)), p_flight, SLOT(changeRGB(int,int,int)), Qt::UniqueConnection);
+            connect(&wflength_slider, SIGNAL(valueChanged(int)), p_flight, SLOT(changeWFLength(int)), Qt::UniqueConnection);
+            connect(&showSecondWFBtn, SIGNAL(pressed()), p_flight, SLOT(showSecondWF()), Qt::UniqueConnection);
+            connect(fw, SIGNAL(updateFPS()), p_flight, SLOT(updateFPS()), Qt::UniqueConnection);
+            connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseDSF(bool)), Qt::UniqueConnection);
+            connect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)), Qt::UniqueConnection);
+            connect(&useRatioCbox, SIGNAL(toggled(bool)), p_flight, SLOT(setUseRatioSlot(bool)), Qt::UniqueConnection);
 
             connect(p_flight, SIGNAL(updateFloorCeilingFromFrameviewChange(double,double)),
-                    this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));
+                    this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)), Qt::UniqueConnection);
 
             std_dev_n_label->hide();
             std_dev_N_slider->setEnabled(false);
@@ -1579,6 +1590,8 @@ void ControlsBox::tab_changed_slot(int index)
             use_DSF_cbox.setEnabled(true);
             show_rgb_lines_cbox.setEnabled(true);
             show_rgb_lines_cbox.setVisible(true);
+            useRatioCbox.setEnabled(true);
+            useRatioCbox.setVisible(true);
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
             p_flight->rescaleRange();
 
@@ -1592,13 +1605,10 @@ void ControlsBox::tab_changed_slot(int index)
             ceiling_maximum = p_histogram->slider_max;
             low_increment_cbox.setChecked(p_histogram->slider_low_inc);
             increment_slot(low_increment_cbox.isChecked());
-
-            // TODO: prefs.std...
-            ceiling_edit.setValue(p_histogram->getCeiling());
-            floor_edit.setValue(p_histogram->getFloor());
-            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateCeiling(int)));
-            connect(&floor_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateFloor(int)));
-
+            ceiling_slider.setValue(p_histogram->getCeiling());
+            floor_slider.setValue(p_histogram->getFloor());
+            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateCeiling(int)), Qt::UniqueConnection);
+            connect(&floor_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateFloor(int)), Qt::UniqueConnection);
             std_dev_N_slider->setEnabled(true);
             std_dev_N_edit->setEnabled(true);
             use_DSF_cbox.setEnabled(false);
@@ -1611,12 +1621,12 @@ void ControlsBox::tab_changed_slot(int index)
             this->increment_slot(low_increment_cbox.isChecked());
             ceiling_edit.setValue(p_playback->getCeiling());
             floor_edit.setValue(p_playback->getFloor());
-            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_playback, SLOT(updateCeiling(int)));
-            connect(&floor_slider, SIGNAL(valueChanged(int)), p_playback, SLOT(updateFloor(int)));
+            connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_playback, SLOT(updateCeiling(int)), Qt::UniqueConnection);
+            connect(&floor_slider, SIGNAL(valueChanged(int)), p_playback, SLOT(updateFloor(int)), Qt::UniqueConnection);
             std_dev_N_slider->setEnabled(false);
             std_dev_N_edit->setEnabled(false);
             load_mask_from_file.setEnabled(true);
-            connect(this, SIGNAL(mask_selected(QString, unsigned int, long)), p_playback, SLOT(loadDSF(QString, unsigned int, long)));
+            connect(this, SIGNAL(mask_selected(QString, unsigned int, long)), p_playback, SLOT(loadDSF(QString, unsigned int, long)), Qt::UniqueConnection);
             use_DSF_cbox.setEnabled(true);
             use_DSF_cbox.setChecked(p_playback->usingDSF());
             p_playback->rescaleRange();
@@ -1820,8 +1830,8 @@ void ControlsBox::setLevelToPrefs(bool isCeiling, int val)
     }
 
     if(p_histogram) {
-        if(isCeiling) prefs.stddevCeiling = val;
-        else prefs.stddevFloor = val;
+        if(isCeiling) prefs.histCeiling = val;
+        else prefs.histFloor = val;
         goto finished;
     }
 
@@ -1919,6 +1929,7 @@ void ControlsBox::disconnect_old_tab()
         disconnect(fw, SIGNAL(updateFPS()), p_flight, SLOT(updateFPS()));
         disconnect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseDSF(bool)));
         disconnect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)));
+        disconnect(&useRatioCbox, SIGNAL(toggled(bool)), p_flight, SLOT(setUseRatioSlot(bool)));
 
         disconnect(p_flight, SIGNAL(updateFloorCeilingFromFrameviewChange(double,double)),
                 this, SLOT(handleFloorCeilingChangeFromDisplayWidget(double,double)));
@@ -2036,6 +2047,10 @@ void ControlsBox::stopSavingData()
     stop_continous_button_slot();
 }
 
+void ControlsBox::toggleDSFUsage(bool makeuseofDSF) {
+    this->use_DSF_cbox.setChecked(makeuseofDSF);
+}
+
 void ControlsBox::startTakingDarks()
 {
     // TODO change to do darks
@@ -2069,7 +2084,11 @@ void ControlsBox::save_finite_button_slot()
     if(options.flightMode)
     {
         // Generate filenames:
-        fnamegen.setFlightFormat(true, "AV3");
+        if(options.haveInstrumentPrefix) {
+            fnamegen.setFlightFormat(true, options.instrumentPrefix);
+        } else {
+            fnamegen.setFlightFormat(true, "AVIRIS");
+        }
         fnamegen.generate(); // new timestamp
         QString rawDataFilename = fnamegen.getFullFilename("", "_raw", "");
         QString gpsLogFilename = fnamegen.getFullFilename("", "_gps", "");
@@ -2471,6 +2490,8 @@ void ControlsBox::use_DSF_general(bool checked)
                 ce = prefs.profileHorizCeiling;
                 ce_ds = prefs.profileHorizDSFCeiling;
                 verticalOverlayDSF = checked;
+                // tell vertical overlay of the change
+                p_profile->useDSF(checked);
                 break;
             default:
                 setUI_widgets = false;

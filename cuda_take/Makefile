@@ -84,9 +84,9 @@ CONLYFLAGS += $(CFLAGS)
 CFLAGS += -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 
 #CFLAGS += -Xcompiler="-pthread"
 CPPFLAGS = $(CFLAGS)
-CPPFLAGS += -g -O3 -std=c++11 -fopenmp -Wall -Werror -Wno-error=cpp -Wno-unused-function -Wno-unused-variable -Wno-unused-result -Wno-mismatched-new-delete #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
+CPPFLAGS += -g -O3 -march=native -mtune=native -std=c++11 -fopenmp -Wall -Werror -Wno-error=cpp -Wno-unused-function -Wno-unused-variable -Wno-unused-result -Wno-mismatched-new-delete #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
 CPPFLAGS += -fPIC
-CPPFLAGS += -lgsl -lgslcblas
+CPPFLAGS += -lgsl -lgslcblas -lgomp
 
 #CPPFLAGS += -isystem /usr/include/x86_64-linux-gnu/qt5 -isystem /usr/include/x86_64-linux-gnu/qt5/QtCore -DQT_NO_VERSION_TAGGING
 #CPPFLAGS += -DQT_CORE_LIB -lQt5Core -lQt5Widgets

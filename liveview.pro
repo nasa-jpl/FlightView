@@ -3,7 +3,7 @@
 # - LiveView  //  FlightView -
 #
 # https://github.com/nasa-jpl/LiveView
-# Copyright 2014-2024 California Institute of Technology.
+# Copyright 2014-2025 California Institute of Technology.
 # Government Sponsorship(s) Acknowledged.
 #----------------------------------------------------------
 
@@ -35,6 +35,7 @@ SOURCES += main.cpp\
     gpsGUI/zupt.cpp \
     gpsmanager.cpp \
     initialsetup.cpp \
+    linebuffer.cpp \
     mainwindow.cpp \
     frameview_widget.cpp \
     controlsbox.cpp \
@@ -52,21 +53,27 @@ SOURCES += main.cpp\
     gpsGUI/gpsnetwork.cpp \
     gpsGUI/gpsbinaryreader.cpp \
     gpsGUI/gpsbinarylogger.cpp \
+    udpbinarylogger.cpp \
     waterfall.cpp \
-    waterfallviewerwindow.cpp
+    waterfallviewerwindow.cpp \
+    wfengine.cpp
 
 HEADERS  += mainwindow.h \
     consolelog.h \
     cuda_take/include/fileformats.h \
     cuda_take/include/rtpnextgen.hpp \
+    dms.h \
     filenamegenerator.h \
     flight_widget.h \
+    flightappstatustypes.h \
     flightindicators.h \
     frameview_widget.h \
     controlsbox.h\
     frame_worker.h \
     gpsGUI/zupt.h \
     gpsmanager.h \
+    imagetagger.h \
+    linebuffer.h \
     shm_gps.h \
     image_type.h \
     initialsetup.h \
@@ -88,9 +95,12 @@ HEADERS  += mainwindow.h \
     gpsGUI/gpsbinaryreader.h \
     gpsGUI/gpsbinarylogger.h \
     startupOptions.h \
+    udpbinarylogger.h \
     waterfall.h \
     preferences.h \
-    waterfallviewerwindow.h
+    waterfallviewerwindow.h \
+    wfengine.h \
+    wfshared.h
 
 DISTFILES +=    cuda_take/include/take_object.hpp \
                 aviris3-logo.png \
@@ -139,9 +149,9 @@ OTHER_FILES += \
 RESOURCES += \
     images.qrc
 
-QMAKE_CXXFLAGS += -O2 -std=c++11 -march=native -fopenmp -Wno-class-memaccess -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result
+QMAKE_CXXFLAGS += -O3 -std=c++11 -march=native -mtune=native -fopenmp -Wno-class-memaccess -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result
 QMAKE_LFLAGS += -fopenmp
-LIBS += -lgsl -lgslcblas
+LIBS += -lgsl -lgslcblas -lexiv2
 
 # Used for build tracking:
 DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"

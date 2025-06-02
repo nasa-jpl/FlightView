@@ -16,6 +16,8 @@ struct startupOptionsType
     bool runStdDevCalculation = true;
     bool dataLocationSet = false;
     QString dataLocation = QString("/data");
+    bool darkRefFileSet = false;
+    QString darkReferenceFileLocation = QString("/empty.raw");
     bool gpsIPSet = false;
     QString gpsIP = QString("10.0.0.6");
     bool gpsPortSet = false;
@@ -45,7 +47,11 @@ struct startupOptionsType
 
     bool er2mode = false;
     bool headless = false;
-    bool noGPU = false;
+    bool noGPU = false; // experimental
+    bool rotate = false;
+    bool remapPixels = false;
+    QString instrumentPrefix = QString("UNSET");
+    bool haveInstrumentPrefix = false;
 
     bool useSHM = false;
 
@@ -53,6 +59,11 @@ struct startupOptionsType
     bool wfPreviewContinuousMode = false;
     bool wfPreviewlocationset = false;
     QString wfPreviewLocation = QString("/tmp");
+    int wfCompQuality = 75;
+
+    bool UDPLogging = false;
+    QString UDPLogHost = QString("");
+    unsigned int UDPLogPort = 10175;
 };
 
 

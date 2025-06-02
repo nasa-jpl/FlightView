@@ -115,6 +115,7 @@ public:
     QCheckBox low_increment_cbox;
     QCheckBox use_DSF_cbox;
     QCheckBox show_rgb_lines_cbox;
+    QCheckBox useRatioCbox;
 
     /* RIGHT SIDE BUTTONS (save) */
     QGridLayout *save_layout;
@@ -228,6 +229,9 @@ signals:
     void sendRGBLevels(double r, double g, double b, double gamma, bool reprocess);
     void updateWFLength(int length);
     void showSecondWF();
+    void setWFTargetFPS_primary(int targetFPS);
+    void setWFTargetFPS_secondary(int targetFPS);
+    void setWFTargetFPS_render(int targetFPS);
     void haveReadPreferences(settingsT prefs);
 
     void setCameraPause(bool isPaused);
@@ -251,6 +255,7 @@ public slots:
     void startTakingDarks();
     void stopTakingDarks();
     void stopSavingData();
+    void toggleDSFUsage(bool makeuseofDSF);
 
 private slots:
     void increment_slot(bool t);

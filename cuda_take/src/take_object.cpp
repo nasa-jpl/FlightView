@@ -53,8 +53,8 @@ void take_object::initialSetup(int channel_num, int number_of_buffers,
     //For the frame saving
     this->do_raw_save = false;
     savingData = false;
-    continuousRecording = false;
-    save_framenum = 0;
+    continuousRecording.store(false, std::memory_order_seq_cst);
+    save_framenum.store(0, std::memory_order_seq_cst);
     save_count=0;
     save_num_avgs=1;
     saving_list.clear();
@@ -160,6 +160,15 @@ void take_object::changeOptions(takeOptionsType optionsIn)
     deltaT_micros = 1000000.0 / options.targetFPS;
 }
 
+void take_object::acceptGPSDataPtr(basicGPS_t *basicGPSDataIn) {
+    if(basicGPSDataIn != NULL) {
+        this->basicGPSData = basicGPSDataIn;
+        this->haveGPSDataPointer = true;
+    } else {
+        this->haveGPSDataPointer = false;
+    }
+}
+
 void take_object::shmSetup()
 {
     statusMessage("Preparing shared memory segment for images.");
@@ -243,6 +252,33 @@ void take_object::start()
     pthread_setname_np(pthread_self(), "TAKE");
 
     this->pdv_p = NULL;
+    if(!options.noGPU) {
+
+	size_t cudamem[10] = {0};
+	size_t maxMemFound = 0;
+	int bestDevice = 0;
+	for(int i=0; i < getDeviceCount(); i++) {
+		cudaGetDeviceProperties(&cdev, i);
+		cudamem[i] = cdev.totalGlobalMem;
+        printf("Device %d has name %s and memory %ld MiB\n",
+                i, cdev.name, cudamem[i]/1024/1024);
+		if(cudamem[i] > maxMemFound) {
+			maxMemFound = cudamem[i];
+			bestDevice = i;
+		}
+	}
+
+	cudaDevNumber = bestDevice;
+	cudaDeviceNumberStatic = cudaDevNumber;
+
+	printf("TAKE_OBJECT: Setting device number to %d\n", cudaDevNumber);
+	cudaSetDevice(cudaDevNumber);
+	int cudaDevNumCheck = -1;
+	cudaGetDevice(&cudaDevNumCheck);
+	printf("TAKE_OBJECT: Current device is: %d\n", cudaDevNumCheck);
+	cudaGetDeviceProperties(&cdev, cudaDevNumCheck);
+	printf("TAKE_OBJECT: CUDA device name: %s\n", cdev.name);
+    }
 
     if(options.xioCam)
     {
@@ -287,20 +323,26 @@ void take_object::start()
         }
         size = pdv_get_dmasize(pdv_p); // this size is only used to determine the camera type
         // actual grabbing of the dimensions
-        frWidth = pdv_get_width(pdv_p);
-        dataHeight = pdv_get_height(pdv_p);
-        frHeight = dataHeight;
+        if(options.rotate) {
+            frWidth = pdv_get_height(pdv_p);
+            dataHeight = pdv_get_width(pdv_p);
+            frHeight = dataHeight;
+        } else {
+            frWidth = pdv_get_width(pdv_p);
+            dataHeight = pdv_get_height(pdv_p);
+            frHeight = dataHeight;
+        }
     }
 
     switch(size) {
     case 481*640*sizeof(uint16_t): cam_type = CL_6604A; break;
     case 285*640*sizeof(uint16_t): cam_type = CL_6604A; break;
-    case 480*640*sizeof(uint16_t): cam_type = CL_6604B; pixRemap = true; break;
-    default: cam_type = CL_6604B; pixRemap = true; break;
+    case 480*640*sizeof(uint16_t): cam_type = CL_6604B; break;
+    default: cam_type = CL_6604B; break;
     }
 	setup_filter(cam_type);
     setup_filter(frHeight, frWidth);
-	if(pixRemap) {
+    if(twoscomp) {
 		std::cout << "2s compliment filter ENABLED" << std::endl;
 	} else {
 		std::cout << "2s compliment filter DISABLED" << std::endl;
@@ -318,7 +360,7 @@ void take_object::start()
 
     // Initialize the filters
     dsf = new dark_subtraction_filter(frWidth,frHeight);
-    sdvf = new std_dev_filter(frWidth,frHeight);
+    sdvf = new std_dev_filter(frWidth,frHeight, cudaDevNumber);
 
     // Initial dimensions for calculating the mean that can be updated later
     meanStartRow = 0;
@@ -454,11 +496,12 @@ void take_object::setInversion(bool checked, unsigned int factor)
     inverted = checked;
     invFactor = factor;
 }
-void take_object::paraPixRemap(bool checked )
+void take_object::set_twoscomp(bool checked )
 {
-    pixRemap = checked;
+    // This function was, unfortunately, briefly called paraPixRemap
+    twoscomp = checked;
     std::cout << "2s Compliment Filter ";
-    if(pixRemap) {
+    if(twoscomp) {
         std::cout << "ENABLED" << std::endl;
     } else {
         std::cout << "DISABLED" << std::endl;
@@ -482,15 +525,26 @@ void take_object::startCapturingDSFMask()
 }
 void take_object::finishCapturingDSFMask()
 {
+    //statusMessage("Entering finishCapturingDSFMask()");
     dsf->mask_mutex.lock();
-    dsf->finish_mask_collection();
+
+    // launch the thread to take the average:
+#ifdef VERBOSE
+    std::cout << "Launching thread to compute mean." << std::endl;
+#endif
+    mask_liveMean_thread = boost::thread( boost::bind(&dark_subtraction_filter::finish_mask_collection, dsf));
+    mask_liveMean_thread_handler = mask_liveMean_thread.native_handle();
+    pthread_setname_np(mask_liveMean_thread_handler, "MASKMEAN");
+
     dsf->mask_mutex.unlock();
     dsfMaskCollected = true;
     if(shmValid) {
         shm->takingDark = false;
     }
     darkStatusPixelVal = obcStatusScience;
+    //statusMessage("Exiting finishCapturingDSFMask()");
 }
+
 void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format)
 {
     // Creates a mask from a file containing multiple frames
@@ -500,6 +554,10 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     // This function was largly copied from the main.cpp file of
     // the included "statscli" program found under "utils".
 
+    if(readingDSFFile)
+        return;
+
+    readingDSFFile = true;
     std::ostringstream message;
 
     float * mean_frame = NULL;
@@ -517,6 +575,7 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     {
         message << "Error, could not load DSF file " << file_name;
         statusMessage(message);
+        readingDSFFile = false;
         return;
     }
 
@@ -528,6 +587,7 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     if(frames == NULL)
     {
         errorMessage("Did not successfully allocate frames for dark subtraction file");
+        readingDSFFile = false;
         abort();
     }
 
@@ -546,18 +606,20 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     if(input_array == NULL)
     {
         errorMessage("Did not successfully allocate input_array for dark subtraction file");
+        readingDSFFile = false;
         abort();
     }
 
     if(format == fmt_uint16_2s)
     {
         // Convert the data first:
+#pragma omp parallel for num_threads(8)
         for(unsigned int nth_element = 0; nth_element < frame_size_numel * nframes; nth_element++)
         {
             input_array[nth_element] = (unsigned int)( frames[nth_element] ^ (1<<15) );
         }
         // Process:
-        #pragma omp parallel for
+#pragma omp parallel for num_threads(8)
         for(unsigned int nth_frame_el = 0; nth_frame_el < frame_size_numel; nth_frame_el++)
         {
             // iterate over each pixel in a frame
@@ -566,12 +628,13 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     } else {
         // Convert uint16_t to unsigned int for GSL:
         // TODO: consider loading it in this way
+#pragma omp parallel for num_threads(8)
         for(unsigned int nth_element = 0; nth_element < frame_size_numel * nframes; nth_element++)
         {
             input_array[nth_element] = (unsigned int)frames[nth_element];
         }
         // Process:
-        #pragma omp parallel for
+#pragma omp parallel for num_threads(8)
         for(unsigned int nth_frame_el = 0; nth_frame_el < frame_size_numel; nth_frame_el++)
         {
             // iterate over each pixel in a frame
@@ -586,10 +649,47 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
         free(frames);
     if(mean_frame)
         free(mean_frame);
+    statusMessage("Completed DSF load from uint16 type.");
+    readingDSFFile = false;
+}
+
+void take_object::loadDSFMask_entry(std::string filename_s, fileFormat_t fmt) {
+    // TODO: Mutex or even lockout
+    if(readingDSFFile) {
+        // This flag is set and cleared within the load/average functions.
+        errorMessage("Already reading DSF mask. Cannot load concurrently.");
+        return;
+    }
+    switch(fmt) {
+    case fmt_uint16:
+        statusMessage("Loading uing16_t DSF mask");
+        mask_thread = boost::thread( boost::bind(&take_object::loadDSFMaskFromFramesU16, this, filename_s, fmt));
+        break;
+    case fmt_uint16_2s:
+        statusMessage("Loading uing16_t with 2s compliment DSF mask");
+        mask_thread = boost::thread( boost::bind(&take_object::loadDSFMaskFromFramesU16, this, filename_s, fmt));
+        break;
+    case fmt_float32:
+        statusMessage("Loading float32 DSF mask");
+        return;
+        mask_thread = boost::thread(&take_object::loadDSFMask, this, filename_s);
+        break;
+    default:
+        errorMessage("Unable to load DSF mask from file, format is unknown.");
+        return;
+        break;
+    }
+    statusMessage("Mask thread started.");
+    //mask_thread_handler = mask_thread.native_handle();
+    //pthread_setname_np(mask_thread_handler, "MASK");
 }
 
 void take_object::loadDSFMask(std::string file_name)
 {
+    if(readingDSFFile)
+        return;
+
+    readingDSFFile = true;
     // Loads a file containing a single 32-bit float frame.
     float *mask_in = new float[frWidth*frHeight];
     FILE *pFile;
@@ -604,6 +704,8 @@ void take_object::loadDSFMask(std::string file_name)
         {
             std::cerr << "Error: mask file does not match image size" << std::endl;
             fclose (pFile);
+            delete [] mask_in;
+            readingDSFFile = false;
             return;
         }
         rewind(pFile);   // go back to beginning
@@ -614,7 +716,9 @@ void take_object::loadDSFMask(std::string file_name)
 #endif
     }
     dsf->load_mask(mask_in); // memcopy to stack variable
-    delete mask_in;
+    delete [] mask_in;
+    statusMessage("Completed DSF load from float32 type.");
+    readingDSFFile = false;
 }
 void take_object::setStdDev_N(int s)
 {
@@ -672,9 +776,9 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 {
     if(frames_to_save==0)
     {
-        continuousRecording = true;
+        continuousRecording.store(true, std::memory_order_seq_cst);
     } else {
-        continuousRecording = false;
+        continuousRecording.store(false, std::memory_order_seq_cst);
     }
     
     save_framenum.store(0, std::memory_order_seq_cst);
@@ -682,11 +786,29 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 #ifdef VERBOSE
     printf("ssr called\n");
 #endif
+    bool notEmpty = false;
+    int saving_list_notEmpty_counter = 0;
     while(!saving_list.empty())
     {
 #ifdef VERBOSE
         printf("Waiting for empty saving list...\n");
 #endif
+        notEmpty = true;
+        saving_list_notEmpty_counter++;
+        usleep(1000);
+    }
+    if(notEmpty) {
+        char msgb[160] = {'\0'};
+        sprintf(msgb, "saving_list was not empty, indicates likely concurrent recording request. counter: %d. Forcing a 5 second pause.",
+                saving_list_notEmpty_counter);
+        warningMessage(msgb);
+        // At this point, saving_list IS empty.
+        // However, the file has not been confirmed to be closed and the
+        // headers may not have been written yet.
+        usleep( (1E6)/4 ); // pause a quarter second
+        while(savingData) {
+            usleep(1E3); // additional 1ms pause while waiting for savingData to complete
+        }
     }
     save_framenum.store(frames_to_save,std::memory_order_seq_cst);
     save_count.store(0, std::memory_order_seq_cst);
@@ -702,9 +824,10 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 }
 void take_object::stopSavingRaws()
 {
-    continuousRecording = false;
-    save_framenum.store(0,std::memory_order_relaxed);
-    save_count.store(0,std::memory_order_relaxed);
+    statusMessage("in stopSavingRaws()");
+    continuousRecording.store(false, std::memory_order_seq_cst);
+    save_framenum.store(0,std::memory_order_seq_cst);
+    save_count.store(0,std::memory_order_seq_cst);
     save_num_avgs=1;
     if(shmValid) {
         shm->recordingDataToFile = false;
@@ -1005,7 +1128,7 @@ void take_object::fileImageCopyLoop()
             begintp = std::chrono::steady_clock::now();
 
             grabbing = true;
-            curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
+            curFrame = & frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
             curFrame->reset();
 
             if(closing)
@@ -1070,9 +1193,9 @@ void take_object::fileImageCopyLoop()
             // very similar to the EDT frame grabber code.
 
 
-            if(pixRemap)
+            if(twoscomp)
             {
-                apply_chroma_translate_filter(curFrame->raw_data_ptr);
+                apply_2sComp_translate_filter(curFrame->raw_data_ptr);
                 curFrame->image_data_ptr = curFrame->raw_data_ptr;
             }
 
@@ -1101,7 +1224,7 @@ void take_object::fileImageCopyLoop()
 
             mf->start_mean();
 
-            if((save_framenum > 0) || continuousRecording)
+            if((save_framenum > 0) || continuousRecording.load(std::memory_order_seq_cst))
             {
                 uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
                 memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
@@ -1251,9 +1374,9 @@ void take_object::rtpConsumeFrames()
         memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight*2);
 
 
-        if(pixRemap)
+        if(twoscomp)
         {
-            apply_chroma_translate_filter(curFrame->raw_data_ptr);
+            apply_2sComp_translate_filter(curFrame->raw_data_ptr);
             //curFrame->image_data_ptr = curFrame->raw_data_ptr;
         }
 
@@ -1292,7 +1415,7 @@ void take_object::rtpConsumeFrames()
             mf->start_mean();
         }
 
-        if((save_framenum > 0) || continuousRecording)
+        if((save_framenum.load(std::memory_order_seq_cst) > 0) || continuousRecording.load(std::memory_order_seq_cst))
         {
             uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
             memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
@@ -1339,6 +1462,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
     uint16_t last_framecount = 0;
     unsigned char* wait_ptr = NULL;
 
+    pcv_t pointerConverter;
 
     mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
                                        meanStartRow,meanHeight,frWidth,useDSF,\
@@ -1382,9 +1506,32 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
          * Third, we may need to invert the data range if a cable is inverting the magnitudes
          * that arrive from the ADC. This feature is also modified from the preference window.
          */
-        memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
-        if(pixRemap)
-            apply_chroma_translate_filter(curFrame->raw_data_ptr);
+
+        if(options.rotate) {
+            pointerConverter.uc = wait_ptr;
+            // Note that the height and width are reversed in this call on purpose.
+            this->rotate(pointerConverter.u16, curFrame->raw_data_ptr, frWidth, dataHeight);
+        }
+
+        if(options.remapPixels) {
+            pointerConverter.uc = wait_ptr;
+            // As it stands right now, you cannot rotate and remap,
+            // this is because these steps include memcpy functionality,
+            // and thus the rotated data are already in the raw_data_ptr, meaning,
+            // the only avaliable rotated data are in the same location as the
+            // destination.
+            // The only way to solve this is to either:
+            //   1. Use a temporary memory space for in between data, not ideal, causes extra memcpy
+            //   2. Combine the translation filter with the rotation filter, so that both are done at the same time.
+            apply_teledyne_translation_filter(pointerConverter.u16,curFrame->raw_data_ptr);
+        }
+
+        if( (!options.remapPixels) && (!options.rotate) ) {
+            memcpy(curFrame->raw_data_ptr,wait_ptr,frWidth*dataHeight*sizeof(uint16_t));
+        }
+
+        if(twoscomp)
+            apply_2sComp_translate_filter(curFrame->raw_data_ptr);
 
         curFrame->image_data_ptr = curFrame->raw_data_ptr;
         if(inverted)
@@ -1420,7 +1567,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             mf->start_mean();
         }
 
-        if((save_framenum > 0) || continuousRecording)
+        if((save_framenum > 0) || continuousRecording.load(std::memory_order_seq_cst))
         {
             uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
             memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
@@ -1459,7 +1606,40 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             break;
         }
     }
+    if(mf)
+        delete mf;
 }
+
+void take_object::rotate(uint16_t *input, uint16_t *output, int origHeight, int origWidth) {
+    // Rotate the input into the output.
+
+    // NOTE: output pointer is a static cuda memory allocation and must meet the rotated size!
+    // See constants.h for the max size, which is allocated in frame_c.hpp
+
+    // This is also effectivly a memcpy
+    int p=0;
+    int outPos = 0;
+    int c = 0;
+    // height and width reference the original (input) matrix dims
+
+#pragma omp parallel for num_threads(8)
+    for(p = 0; p < origWidth; p++) {
+        outPos = origHeight*p;
+        for(c=0; c < origHeight*origWidth; c=c+origWidth) {
+            output[outPos+(c/origWidth)] = input[c+p];
+        }
+    }
+
+    // Single thread method, which may be slightly faster for single thread only:
+    //    for(p = 0; p < origWidth; p++) {
+    //        for(c=0; c < origHeight*origWidth; c=c+origWidth) {
+    //            output[outPos] = input[c+p]; outPos++;
+    //        }
+    //    }
+
+}
+
+
 void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
 {
     // Frame Save Thread (saving_thread)
@@ -1512,7 +1692,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     FILE * file_target = fopen(fname.c_str(), "wb");
     int sv_count = 0;
 
-    while(  (save_framenum != 0) || continuousRecording)
+    while(  (save_framenum != 0) || continuousRecording.load(std::memory_order_seq_cst))
     {
         if(saving_list.size() > 2)
         {
@@ -1634,14 +1814,29 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     std::string hdr_text;
     if( (num_avgs !=0) && (num_avgs !=1) )
     {
-        hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file, " + std::to_string(num_avgs) + " frames mean per line}\n";
+        hdr_text = "ENVI\ndescription = {FlightView raw export file, " + std::to_string(num_avgs) + " frames mean per line}\n";
     } else {
-        hdr_text = "ENVI\ndescription = {LIVEVIEW raw export file}\n";
+        hdr_text = "ENVI\ndescription = {FlightView raw export file}\n";
     }
 
-    hdr_text= hdr_text + "samples = " + std::to_string(frWidth) +"\n";
-    hdr_text= hdr_text + "lines   = " + std::to_string(sv_count) +"\n"; // save count, ie, number of frames in the file
-    hdr_text= hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
+    hdr_text = hdr_text + "samples = " + std::to_string(frWidth) +"\n";
+    hdr_text = hdr_text + "lines   = " + std::to_string(sv_count) +"\n"; // save count, ie, number of frames in the file
+    hdr_text = hdr_text + "bands   = " + std::to_string(dataHeight) +"\n";
+
+    if(haveGPSDataPointer && (basicGPSData!= NULL)) {
+        if(basicGPSData->usingGPS) {
+            // Note: GPS data may be as much as one minute behind the moment of the end of the recording.
+            hdr_text = hdr_text + "latitude = " + std::to_string(basicGPSData->chk_latiitude) +"\n";
+            hdr_text = hdr_text + "longitude = " + std::to_string(basicGPSData->chk_longitude) +"\n";
+            hdr_text = hdr_text + "altitude = " + std::to_string(basicGPSData->chk_altitude) +"\n";
+            hdr_text = hdr_text + "groundspeed = " + std::to_string(basicGPSData->chk_gndspeed) +"\n";
+            hdr_text = hdr_text + "course = " + std::to_string(basicGPSData->chk_course) +"\n";
+            hdr_text = hdr_text + "heading = " + std::to_string(basicGPSData->chk_heading) +"\n";
+            hdr_text = hdr_text + "FPS = " + std::to_string(basicGPSData->fps) + "\n";
+            hdr_text = hdr_text + "CollectionID = " + std::to_string(basicGPSData->collectionID) + "\n";
+        }
+    }
+
     hdr_text+= "header offset = 0\n";
     hdr_text+= "file type = ENVI Standard\n";
     if((num_avgs != 1) && (num_avgs != 0))
@@ -1661,8 +1856,8 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     hdr_target << hdr_text;
     hdr_target.close();
     // What does this usleep do? --EHL
-    if(sv_count == 1)
-        usleep(500000);
+    //if(sv_count == 1)
+    //    usleep(500000);
     save_count.store(0, std::memory_order_seq_cst);
     statusMessage("Saving complete.");
     savingMutex.unlock();
@@ -1677,6 +1872,8 @@ void take_object::errorMessage(const char *message)
     } else {
         g_critical("take_object: ERROR: %s", message);
     }
+    strncpy(this->messagePasser, message, takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::warningMessage(const char *message)
@@ -1687,6 +1884,8 @@ void take_object::warningMessage(const char *message)
     } else {
         g_message("take_object: WARNING: %s", message);
     }
+    strncpy(this->messagePasser, message, takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::statusMessage(const char *message)
@@ -1696,6 +1895,8 @@ void take_object::statusMessage(const char *message)
     } else {
         g_message("take_object: STATUS: %s", message);
     }
+    strncpy(this->messagePasser, message, takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::errorMessage(const string message)
@@ -1705,6 +1906,8 @@ void take_object::errorMessage(const string message)
     } else {
         g_error("take_object: ERROR: %s", message.c_str());
     }
+    strncpy(this->messagePasser, message.c_str(), takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::warningMessage(const string message)
@@ -1714,6 +1917,8 @@ void take_object::warningMessage(const string message)
     } else {
         g_message("take_object: WARNING: %s", message.c_str());
     }
+    strncpy(this->messagePasser, message.c_str(), takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::statusMessage(const string message)
@@ -1723,6 +1928,8 @@ void take_object::statusMessage(const string message)
     } else {
         g_message("take_object: STATUS: %s", message.c_str());
     }
+    strncpy(this->messagePasser, message.c_str(), takeMessageSize-1);
+    haveMessage=true;
 }
 
 void take_object::statusMessage(std::ostringstream &message)
@@ -1732,4 +1939,6 @@ void take_object::statusMessage(std::ostringstream &message)
     } else {
         g_message("take_object: STATUS: %s", message.str().c_str());
     }
+    strncpy(this->messagePasser, message.str().c_str(), takeMessageSize-1);
+    haveMessage=true;
 }

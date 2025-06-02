@@ -25,6 +25,7 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     convertOptions();
 
     to.changeOptions(takeOptions);
+    to.acceptGPSDataPtr( &this->basicGPSData );
 
     if(options.xioCam)
     {
@@ -60,6 +61,7 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
 
 frameWorker::~frameWorker()
 {
+    usleep(10000);
 #ifdef VERBOSE
     qDebug() << "end frameWorker";
 #endif
@@ -106,6 +108,16 @@ void frameWorker::convertOptions()
     } else {
         abort();
     }
+    if(options.haveInstrumentPrefix) {
+        safeStringSetC(&takeOptions.instrumentPrefix, options.instrumentPrefix.toStdString());
+        if(takeOptions.instrumentPrefix==NULL) {
+            sMessage("ERROR, instrumentPrefix not copied successfully.");
+            takeOptions.haveInstrumentPrefix = false;
+        } else {
+            takeOptions.haveInstrumentPrefix = true;
+            sMessage("Instrument prefix set to " + options.instrumentPrefix);
+        }
+    }
 
     takeOptions.height = takeOptions.xioHeight;
     takeOptions.width = takeOptions.xioWidth;
@@ -115,6 +127,8 @@ void frameWorker::convertOptions()
     takeOptions.er2mode = options.er2mode;
     takeOptions.headless = options.headless;
     takeOptions.noGPU = options.noGPU;
+    takeOptions.rotate = options.rotate;
+    takeOptions.remapPixels = options.remapPixels;
     takeOptions.useSHM = options.useSHM;
     takeOptions.flightMode = options.flightMode;
     takeOptions.disableGPS = options.disableGPS;
@@ -220,7 +234,7 @@ void frameWorker::captureFrames()
      * \author Noah Levy
      */
     unsigned long count = 0;
-    QTime clock;
+    QElapsedTimer clock;
     clock.start();
     int restart = 0;
     lastTime = clock.elapsed();
@@ -249,8 +263,8 @@ void frameWorker::captureFrames()
             if (curFrame->has_valid_std_dev == 1) {
                 std_dev_processing_frame = curFrame;
             }
-            save_num = to.save_framenum.load(std::memory_order_relaxed);
-            save_ct = to.save_count.load(std::memory_order_relaxed);
+            save_num = to.save_framenum.load(std::memory_order_seq_cst);
+            save_ct = to.save_count.load(std::memory_order_seq_cst);
             if(save_ct != last_savect) {
                 emit savingFrameNumChanged(save_ct*to.save_num_avgs);
 				//std::cout << "----\nsave_framenum: " << std::to_string(save_num) << "\n";
@@ -275,6 +289,10 @@ void frameWorker::captureFrames()
                     emit updateFPS();
                 }
                 lastTime = clock.elapsed();
+                if(to.haveMessage) {
+                    emit toMessageOut(to.messagePasser);
+                    to.haveMessage =false;
+                }
             }
         } else {
             // This happens when the program is drawing the screen faster than the
@@ -291,6 +309,9 @@ void frameWorker::captureFrames()
 
 void frameWorker::loadDarkFile(QString filename, fileFormat_t format)
 {
+    to.loadDSFMask_entry(filename.toStdString(), format);
+    return;
+    // todo: remove these
     if(format == fmt_float32)
     {
         to.loadDSFMask(filename.toStdString());
@@ -328,6 +349,8 @@ void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName
 void frameWorker::stopSavingRawData()
 {
     /*! \brief Calls to stop saving frames in cuda_take. */
+    sMessage("told to stopSavingRawData, telling takeObject.");
+
     to.stopSavingRaws();
 }
 
@@ -546,9 +569,21 @@ void frameWorker::debugThis()
     sMessage(QString("Take object frame count: %1").arg(to.count));
 }
 
+void frameWorker::toMessageOut(QString message) {
+    message.prepend("[take_object]: ");
+    emit sendStatusMessage(message);
+}
+
 void frameWorker::sMessage(QString message)
 {
     message.prepend("[frameWorker]: ");
     std::cout << message.toLocal8Bit().toStdString() << std::endl;
+    emit sendStatusMessage(message);
+}
+
+void frameWorker::sMessageQuiet(QString message)
+{
+    message.prepend("[frameWorker]: ");
+    //std::cout << message.toLocal8Bit().toStdString() << std::endl;
     emit sendStatusMessage(message);
 }

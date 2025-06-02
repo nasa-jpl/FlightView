@@ -29,13 +29,13 @@
  * the kernel on the deivce, and copies the results back to the host after the kernel completes.
  */
 
-static const int STD_DEV_DEVICE_NUM = (1 % getDeviceCount());
+// static const int STD_DEV_DEVICE_NUM = (1 % getDeviceCount());
 static const bool DEBUG = false;
 
 class std_dev_filter
 {
 public:
-	std_dev_filter(int nWidth, int nHeight);
+	std_dev_filter(int nWidth, int nHeight, int cudaDeviceNumber);
 	virtual ~std_dev_filter();
 
 	void update_GPU_buffer(frame_c *, unsigned int);
@@ -47,6 +47,8 @@ public:
 	cudaStream_t std_dev_stream;
 private:
     std_dev_filter() {} //Private default constructor
+    	int STD_DEV_DEVICE_NUM = 0;
+	int cudaDeviceNumber = 0;
 	std::vector <float> shb;
 	unsigned int width;
 	unsigned int height;

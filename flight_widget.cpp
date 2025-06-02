@@ -1,17 +1,25 @@
 #include "flight_widget.h"
 
-flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidget *parent) : QWidget(parent)
+flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, flightAppStatus_t *flightStatus, QWidget *parent) : QWidget(parent)
 {
     //connect(this, SIGNAL(statusMessage(QString)), this, SLOT(showDebugMessage(QString)));
 
     qDebug() << "Running flight widget constructor";
     emit statusMessage(QString("Starting flight screen widget"));
+    this->setObjectName("Flight Widget");
+    qRegisterMetaType<specImageBuff_t>();
+
     fi = new flightIndicators();
     fiUI_t flightDisplayElements = fi->getElements();
 
     if(flightDisplayElements.lastIssueLabel == NULL) {
         qDebug() << "ERROR lastIssueLabel is NULL!!";
     }
+
+    if(flightStatus == NULL) {
+        qDebug() << "ERROR, flightStatus is NULL";
+    }
+    this->flightStatus = flightStatus;
 
     stickyFPSError = false;
     FPSErrorCounter = 0;
@@ -20,10 +28,40 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     useAvionicsWidgets = false;
     gpsPlotSplitter = new QSplitter();
 
+    wfcomputer = new wfengine();
+    wfcomputer->setParameters(fw, 1, 1024, options);
+    wfcompThread = new QThread(this);
+    wfcomputer->moveToThread(wfcompThread);
     waterfall_widget = new waterfall(fw, 1, 1024, options, this);
+
+    connect(wfcompThread, &QThread::finished, wfcomputer, &QObject::deleteLater);
+
+    //connect(wfcomputer, SIGNAL(hereIsTheImage(QImage*)), waterfall_widget, SLOT(setSpecImage(QImage*)));
+    connect(wfcomputer, SIGNAL(hereIsTheImageBuffer(specImageBuff_t*)), waterfall_widget, SLOT(setSpecImageBuffer(specImageBuff_t*)));
+    connect(this, SIGNAL(stopWidgets()), wfcomputer, SLOT(stop()));
+    connect(wfcomputer, &wfengine::wfReady,
+            [=]() {
+        showDebugMessage("WF Computer signals specImage is ready. Taking action via signal/slot.");
+        waterfallEngineReady = true;
+        if(waterfall_widget != NULL) {
+            //waterfall_widget->setSpecImage(wfcomputer->getImage());
+            //waterfall_widget->setSecondaryWF(true);
+            //waterfall_widget->resetFPS(33);
+        } else {
+            showDebugMessage("waterfall_widget is null");
+        }
+    });
+
+    connect(this, SIGNAL(setWFFPS_render_sig(int)), wfcomputer, SLOT(resetFPS(int)));
+
     dsf_widget = new frameview_widget(fw, DSF, this);
 
+    connect(wfcomputer, SIGNAL(statusMessageOut(QString)), this, SLOT(showDebugMessage(QString)));
     connect(waterfall_widget, SIGNAL(statusMessageOut(QString)), this, SLOT(showDebugMessage(QString)));
+    connect(wfcompThread, SIGNAL(started()), wfcomputer, SLOT(setup())); // make the timer here!
+    wfcompThread->setObjectName("wfengine thread");
+    wfcompThread->start();
+
     connect(fi, SIGNAL(statusText(QString)), this, SLOT(showDebugMessage(QString)));
 
     gpsMessageCycleTimer = new QTimer(this);
@@ -40,7 +78,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     }
 
     startedPrimaryGPSLog = false;
-    gps = new gpsManager(options);
+    gps = new gpsManager(options, flightStatus);
 
     if(useAvionicsWidgets)
     {
@@ -130,7 +168,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
 
     if(options.flightMode && !options.disableGPS)
     {
-        emit statusMessage(QString("Starting liveview in FLIGHT mode."));
+        emit statusMessage(QString("Starting FlightView in FLIGHT mode."));
         // Connecto to GPS immediately and start logging.
         if(options.gpsIPSet && options.gpsPortSet && options.dataLocationSet)
         {
@@ -141,7 +179,7 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
             emit statusMessage(QString("ERROR, cannot start GPS in flight mode with incomplete GPS settings."));
         }
     } else {
-        emit statusMessage(QString("Starting liveview in LAB mode."));
+        emit statusMessage(QString("Starting FlightView in LAB mode."));
         if(options.gpsIPSet && !options.disableGPS && options.dataLocationSet && (!options.disableGPS))
         {
             emit statusMessage(QString("Starting GPS in LAB mode."));
@@ -175,10 +213,10 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     diskCheckerTimer->start();
 
     fpsLoggingTimer = new QTimer();
-    fpsLoggingTimer->setInterval(60*1000); // once per minute
+    fpsLoggingTimer->setInterval(10*1000); // every 10 seconds
     fpsLoggingTimer->setSingleShot(false);
     if(options.flightMode) {
-        connect(fpsLoggingTimer, SIGNAL(timeout()), this, SLOT(logFPSSlot()));
+        connect(fpsLoggingTimer, SIGNAL(timeout()), this, SLOT(logFPSGPSSlot()));
         fpsLoggingTimer->start();
     }
 
@@ -193,8 +231,11 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     connect(dsf_widget, &frameview_widget::haveFloorCeilingValuesFromColorScaleChange,
             [this](double nfloor, double nceiling) {
         emit updateFloorCeilingFromFrameviewChange(nfloor, nceiling);
-        waterfall_widget->updateFloor(nfloor);
-        waterfall_widget->updateCeiling(nceiling);
+        // EHL TODO: Use signal/slot since this is a thread.
+        emit updateCeilingSignal(nceiling);
+        emit updateFloorSignal(nfloor);
+        //waterfall_widget->updateFloor(nfloor);
+        //waterfall_widget->updateCeiling(nceiling);
     });
 
     QList <int>rhSS;
@@ -209,30 +250,73 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, QWidge
     lrSplitter.setSizes(lrSS);
     lrSplitter.setStretchFactor(0, 2);
     lrSplitter.setStretchFactor(1, 0); // do not stretch the indicators
-    emit statusMessage(QString("Finished flight constructor."));
+    emit statusMessage(QString("Finished flight system constructor."));
+
+    // Note: It is ok to do this before it is ready. Really. Not a big deal.
+    if(waterfallEngineReady) {
+        emit statusMessage("Sending gps pointer to waterfall engine.");
+    } else {
+        emit statusMessage("Sending gps pointer to waterfall engine, even though it is not ready.");
+    }
+    wfcomputer->setGPSPointer(gps->getLastPositionalMessagePointer());
 }
 
 flight_widget::~flight_widget()
 {
+#ifdef QT_DEBUG
     qDebug() << "Running flight_widget destructor.";
+    qDebug() << "Flight widget pre-delete children count: " << children().count();
+#endif
 
-//    if(gps != NULL)
-//    {
-//        gps->initiateGPSDisconnect();
-//        usleep(1000);
-//        gps->deleteLater();
-//        usleep(1000);
-//        //delete gps;
-//    }
+    if(waterfall_widget)
+        waterfall_widget->deleteLater();
+
+    if(secondWF)
+        secondWF->deleteLater();
+
+    if(wfcomputer)
+        wfcomputer->deleteLater();
+
+    if(gps)
+        gps->deleteLater();
+
+    waterfall_widget = nullptr;
+    secondWF = nullptr;
+    wfcomputer = nullptr;
+    gps = nullptr;
+
+    if(wfcompThread) {
+        //wfcompThread->wait(); // pause the thread at the next chance
+        wfcompThread->quit(); // Tell the thread event loop to exit
+        while(wfcompThread->isRunning()) {
+#ifdef QT_DEBUG
+            std::cerr << "Waiting for wf comp thread to end...\n";
+#endif
+            usleep(1000);
+        }
+        wfcompThread->deleteLater();
+        wfcompThread=nullptr;
+    }
+}
+
+void flight_widget::setStop() {
+    // Called by MainWindow when we are going to close.
+    emit stopWidgets();
 }
 
 void flight_widget::setupWFConnections()
 {
     connect(this, SIGNAL(changeWFLengthSignal(int)), waterfall_widget, SLOT(changeWFLength(int)));
-    connect(this, SIGNAL(updateCeilingSignal(int)), waterfall_widget, SLOT(updateCeiling(int)));
-    connect(this, SIGNAL(updateFloorSignal(int)), waterfall_widget, SLOT(updateFloor(int)));
-    connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double,bool)), waterfall_widget, SLOT(setRGBLevels(double,double,double,double,bool)));
-    connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), waterfall_widget, SLOT(changeRGB(int,int,int)));
+    //connect(this, SIGNAL(updateCeilingSignal(int)), waterfall_widget, SLOT(updateCeiling(int)));
+    //connect(this, SIGNAL(updateFloorSignal(int)), waterfall_widget, SLOT(updateFloor(int)));
+    //connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double,bool)), waterfall_widget, SLOT(setRGBLevels(double,double,double,double,bool)));
+    //connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), waterfall_widget, SLOT(changeRGB(int,int,int)));
+
+    connect(this, SIGNAL(changeWFLengthSignal(int)), wfcomputer, SLOT(changeWFLength(int)));
+    connect(this, SIGNAL(updateCeilingSignal(int)), wfcomputer, SLOT(updateCeiling(int)));
+    connect(this, SIGNAL(updateFloorSignal(int)), wfcomputer, SLOT(updateFloor(int)));
+    connect(this, SIGNAL(setRGBLevelsSignal(double,double,double,double,bool)), wfcomputer, SLOT(setRGBLevels(double,double,double,double,bool)));
+    connect(this, SIGNAL(updateRGBbandSignal(int,int,int)), wfcomputer, SLOT(changeRGB(int,int,int)));
 }
 
 double flight_widget::getCeiling()
@@ -247,9 +331,10 @@ double flight_widget::getFloor()
 
 void flight_widget::setUseDSF(bool useDSF)
 {
-    waterfall_widget->setUseDSF(useDSF);
+    //waterfall_widget->setUseDSF(useDSF);
+    wfcomputer->setUseDSF(useDSF); // EHL TODO: Change to signal/slot
     if(secondWF != NULL) {
-        secondWF->setUseDSF(useDSF);
+        //secondWF->setUseDSF(useDSF);
     }
     dsf_widget->setUseDSF(useDSF);
 }
@@ -284,17 +369,23 @@ void flight_widget::updateFPS()
         if(fw->delta < 12.8f)
         {
             processFPSError();
+            if(flightStatus) flightStatus->stat_cameraReady = 0;
         } else if (fw->delta < 13.0f) {
             this->cameraLinkLED->setState(QLedLabel::StateWarning);
         } else if ((fw->delta > 13.0f) && !stickyFPSError)
         {
             // to reset the warning, but not the sticky error:
             this->cameraLinkLED->setState(QLedLabel::StateOk);
+            if(flightStatus) flightStatus->stat_cameraReady = 1;
+        } else {
+            // No sticky for the external status:
+            if(flightStatus) flightStatus->stat_cameraReady = 1;
         }
+        //if(flightStatus) flightStatus->continuousRecording = this->isRecording;
     }
 }
 
-void flight_widget::logFPSSlot() {
+void flight_widget::logFPSGPSSlot() {
     // Called once per minute during flight mode
     emit statusMessage(QString("Logging FPS: %1, back-end frame count: %2").\
                        arg(fw->delta).arg(fw->frameCount));
@@ -304,6 +395,20 @@ void flight_widget::logFPSSlot() {
                            .arg(gps->chk_latiitude)
                            .arg(gps->chk_altitude)
                            .arg(gps->chk_gndspeed));
+        emit statusMessage(QString("GPS check: heading: %1, course: %2")
+                           .arg(gps->chk_heading)
+                           .arg(gps->chk_course));
+
+        fw->basicGPSData.usingGPS = true;
+        fw->basicGPSData.chk_latiitude = gps->chk_latiitude;
+        fw->basicGPSData.chk_longitude = gps->chk_longitude;
+        fw->basicGPSData.chk_altitude = gps->chk_altitude;
+        fw->basicGPSData.chk_gndspeed = gps->chk_gndspeed;
+        fw->basicGPSData.chk_heading = gps->chk_heading;
+        fw->basicGPSData.chk_course = gps->chk_course;
+        fw->basicGPSData.fps = fw->delta;
+        fw->basicGPSData.collectionID = wfcomputer->getCollectionID();
+
     } else {
         emit statusMessage("GPS check: gps message data not received yet.");
     }
@@ -334,17 +439,28 @@ void flight_widget::checkDiskSpace()
             {
                 diskLED->setState(QLedLabel::StateError);
                 stickyDiskFull = true;
+                if(flightStatus) {
+                    flightStatus->stat_diskOk = percent;
+                    if(flightStatus->stat_diskOk==1)
+                        flightStatus->stat_diskOk = 0;
+                }
                 //emit statusMessage(QString("[Flight Widget]: ERROR: Disk too full to use at percent %1").arg(percent));
             } else if (percent > prefs.percentDiskWarning)
             {
                 diskLED->setState(QLedLabel::StateWarning);
+                if(flightStatus) {
+                    flightStatus->stat_diskOk = percent;
+                    if(flightStatus->stat_diskOk==1)
+                        flightStatus->stat_diskOk = 0;
+                }
                 //emit statusMessage(QString("[Flight Widget]: Warning: Disk quite full at percent %1").arg(percent));
             } else {
                 diskLED->setState(QLedLabel::StateOk);
+                if(flightStatus)
+                    flightStatus->stat_diskOk = 1;
             }
         }
     }
-
 }
 
 void flight_widget::processFPSError()
@@ -388,6 +504,22 @@ void flight_widget::handlePrefs(settingsT prefs)
     this->prefs = prefs;
     havePrefs = true;
     emit statusMessage("[Flight Widget]: Have preferences inside flight_widget.");
+    if(wfcomputer) {
+        emit updateRGBbandSignal(prefs.bandRed[0], prefs.bandGreen[0],
+                prefs.bandBlue[0]);
+        emit setRGBLevelsSignal(prefs.gainRed[0], prefs.gainGreen[0],
+                prefs.gainBlue[0], prefs.gamma[0], true);
+        if(options.headless) {
+            wfcomputer->setUseDSF(true);
+            emit updateCeilingSignal(prefs.flightDSFCeiling);
+            emit updateFloorSignal(prefs.flightDSFFloor);
+        } else {
+            emit updateCeilingSignal(prefs.flightCeiling);
+            emit updateFloorSignal(prefs.flightFloor);
+        }
+    } else {
+        emit statusMessage("Warning, cannot place initial settings in the waterfall engine.");
+    }
 }
 
 void flight_widget::colorMapScrolledX(const QCPRange &newRange)
@@ -458,10 +590,28 @@ void flight_widget::setShowRGBLines(bool showLines)
     dsf_widget->toggleDrawRGBRow(showLines);
 }
 
+void flight_widget::setUseRatioSlot(bool useRatio) {
+    wfcomputer->setUseRatioMode(useRatio);
+}
+
 void flight_widget::changeWFLength(int length)
 {
     emit changeWFLengthSignal(length);
     //waterfall_widget->changeWFLength(length);
+}
+
+void flight_widget::setWFFPS_render(int target) {
+    emit setWFFPS_render_sig(target);
+}
+
+void flight_widget::setWFFPS_primary(int target) {
+    waterfall_widget->resetFPS(target);
+}
+
+void flight_widget::setWFFPS_secondary(int target) {
+    if(secondWF != NULL) {
+        secondWF->resetFPS(target);
+    }
 }
 
 void flight_widget::showSecondWF() {
@@ -492,7 +642,7 @@ void flight_widget::showSecondWF() {
 
         // Copy the specImage from one waterfall to the other to save on computation
         emit statusMessage("Copying data from primary waterfall to secondary waterfall.");
-        secondWF->setSpecImage(true, waterfall_widget->getImage());
+        secondWF->setSpecImageBuffer(waterfall_widget->getImageBuffer());
 
         // Attempt to move to second display:
         QList<QScreen *>  sl = QApplication::screens();
@@ -503,6 +653,7 @@ void flight_widget::showSecondWF() {
             secondWF->useEntireScreen();
         }
     } else {
+        // Just update the length
         waterfall::wfInfo_t i = waterfall_widget->getSettings();
         secondWF->changeWFLength(i.wflength);
     }
@@ -517,7 +668,7 @@ void flight_widget::setCrosshairs(QMouseEvent *event)
 
 void flight_widget::startDataCollection(QString secondaryLogFilename)
 {
-    emit statusMessage(QString("[Flight Widget]: User pressed START Recording button"));
+    emit statusMessage(QString("[Flight Widget]: Starting data recording"));
     // Example filename:
     // /tmp/flighttest/AV320230719t191438_gps
     if(options.flightMode)
@@ -530,23 +681,29 @@ void flight_widget::startDataCollection(QString secondaryLogFilename)
         // Can't rely on these filenames for non-flight recordings.
         fi->updateLastRec();
     }
-    if(!options.disableGPS)
+    if(!options.disableGPS) {
         emit beginSecondaryLog(secondaryLogFilename);
+        this->logFPSGPSSlot(); // log FPS and GPS data
+    }
 
     if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
-        waterfall_widget->setRecordWFImage(true);
+        wfcomputer->setGPSStart(this->gps->getLastPositionalMessage());
+        wfcomputer->setRecordWFImage(true);
+        fw->basicGPSData.collectionID = wfcomputer->getCollectionID();
     }
 }
 
 void flight_widget::stopDataCollection()
 {
-    emit statusMessage(QString("[Flight Widget]: User pressed STOP Recording button"));
+    emit statusMessage(QString("[Flight Widget]: Stopping data collection."));
     fi->doneRecording();
     if(!options.disableGPS)
         emit stopSecondaryLog();
     if(options.wfPreviewEnabled && !options.wfPreviewContinuousMode) {
-        waterfall_widget->setRecordWFImage(false);
+        wfcomputer->setGPSEnd( this->gps->getLastPositionalMessage() );
+        wfcomputer->setRecordWFImage(false);
     }
+    logFPSGPSSlot();
 }
 
 void flight_widget::startGPS(QString gpsHostname, uint16_t gpsPort, QString primaryLogLocation)

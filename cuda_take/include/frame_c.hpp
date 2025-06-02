@@ -12,6 +12,7 @@
 #ifndef FRAME_C_HPP_
 #define FRAME_C_HPP_
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
+#define MAXCUDA(x,y) ((x>y)?x:y)
 
 #define USE_PINNED_MEMORY
 
@@ -38,10 +39,10 @@ struct frame_c{
         uint16_t * image_data_ptr;
 
         float dark_subtracted_data[MAX_SIZE];
-        float vertical_mean_profile[MAX_HEIGHT]; //These can use regular C++ allocation because they do not have to deal w/cuda
-        float vertical_mean_profile_lh[MAX_HEIGHT];
-        float vertical_mean_profile_rh[MAX_HEIGHT];
-        float horizontal_mean_profile[MAX_WIDTH];
+        float vertical_mean_profile[MAXCUDA(MAX_HEIGHT, MAX_WIDTH)]; //These can use regular C++ allocation because they do not have to deal w/cuda
+        float vertical_mean_profile_lh[MAXCUDA(MAX_HEIGHT, MAX_WIDTH)];
+        float vertical_mean_profile_rh[MAXCUDA(MAX_HEIGHT, MAX_WIDTH)];
+        float horizontal_mean_profile[MAXCUDA(MAX_WIDTH, MAX_HEIGHT)];
         float fftMagnitude[FFT_INPUT_LENGTH/2];
         std::atomic_int_least8_t async_filtering_done;
         std::atomic_int_least8_t has_valid_std_dev; //1 indicates doing std. dev, 2 indicates done with std. dev

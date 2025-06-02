@@ -1,32 +1,55 @@
 #include "consolelog.h"
 
-consoleLog::consoleLog(QWidget *parent) : QWidget(parent)
+consoleLog::consoleLog(startupOptionsType options, QWidget *parent) : QWidget(parent)
 {
+    this->options = options;
     this->logFileName = "";
     this->enableLogToFile = false;
+    // enableUDPLogging = options.UDPLogging;
 
+    buffer = new lineBuffer(512);
     this->createUI();
     this->makeConnections();
     insertText(QString("[ConsoleLog]: Warning: Not logging text to a file."));
+    insertText(QString("[ConsoleLog]: Note: Not logging text to UDP"));
 
     this->logSystemConfig();
  }
 
-consoleLog::consoleLog(QString logFileName, bool enableFlightMode, QWidget *parent) : QWidget(parent)
+consoleLog::consoleLog(startupOptionsType options, QString logFileName, bool enableFlightMode, QWidget *parent) : QWidget(parent)
 {
+    this->options = options;
     this->flightMode = enableFlightMode;
     this->logFileName = createFilenameFromDirectory(logFileName);
     this->enableLogToFile = true;
-
+    enableUDPLogging = options.UDPLogging;
+    buffer = new lineBuffer(1024); // the argument is the number of lines held in the buffer
+    if(enableUDPLogging) {
+        udp = new udpbinarylogger(buffer, options.UDPLogHost.toStdString().c_str(), options.UDPLogPort, true);
+    }
     this->createUI();
     this->makeConnections();
 
     openFile(this->logFileName);
+    if(enableUDPLogging) {
+        // spawn the udp binary logger thread
+        insertText(QString("[ConsoleLog]: Note: Logging data to UDP host %1:%2")
+                   .arg(options.UDPLogHost).arg(options.UDPLogPort));
+        udpThreadRunning = true;
+        udpThread = std::thread([this]() {
+            this->udp->startNow();
+            udpThreadRunning = false;
+        });
+    } else {
+        insertText(QString("[ConsoleLog]: Note: Not logging text to UDP"));
+    }
     this->logSystemConfig();
 }
 
 consoleLog::~consoleLog()
 {
+    udp->closeDown();
+    udpThread.join();
     this->destroyUI();
     this->closeFile();
 }
@@ -58,6 +81,7 @@ void consoleLog::createUI()
     logView.setFocusPolicy(Qt::NoFocus);
     annotateBtn.setFocusPolicy(Qt::NoFocus);
     logView.scroll(0,200);
+    logView.setMaximumBlockCount(100000);
     annotateText.setFocus();
 }
 
@@ -151,11 +175,44 @@ void consoleLog::insertText(QString text)
     insertTextNoTagging(createTimeStamp() + text);
 }
 
+void consoleLog::logToUDPBuffer(QString text) {
+    if(!enableUDPLogging)
+        return;
+
+    bool bufOk = false;
+    if(!text.endsWith("\n"))
+        text.append("\n");
+
+    // The buffer does a proper memcpy, it is ok to destroy the source after the call.
+    bufOk = buffer->writeLine(text.toStdString().c_str(), text.length());
+    if(!bufOk) {
+        // We can't really "log" this error without a feedback problem.
+        logView.appendPlainText(QString("ERROR, UDP Line Buffer is full! Buffer Line Size: %1")
+                                .arg(buffer->getBufferNumLines()));
+
+        std::cerr << "ERROR, UDP message buffer is full!! "
+                     "Available buffer space: " << buffer->unusedBufferLines() << ", Max lines: " << buffer->getBufferNumLines() << std::endl;
+    }
+
+#ifdef QT_DEBUG
+    // Just so we can debug and monitor on debug builds:
+    volatile int bufSizeUsed = buffer->availableLinesToRead();
+    volatile int bufSizeTotal = buffer->getBufferNumLines();
+    volatile int percentUsed = 100*bufSizeUsed/bufSizeTotal;
+    if(percentUsed > 50) {
+        logView.appendPlainText(QString("Warning, UDP line buffer is %1 percent used.")
+                                .arg(percentUsed));
+    }
+#endif
+
+}
+
 void consoleLog::insertTextNoTagging(QString text)
 {
     logView.appendPlainText(text);
     if(enableLogToFile)
         writeToFile(text);
+    logToUDPBuffer(text);
 }
 
 QString consoleLog::createTimeStamp()
@@ -181,7 +238,12 @@ QString consoleLog::createFilenameFromDirectory(QString directoryName)
 
     QDateTime now = QDateTime::currentDateTimeUtc();
     QString dateString;
-    QString namePrefix = "AV3";
+    QString namePrefix;
+    if(options.haveInstrumentPrefix) {
+        namePrefix= options.instrumentPrefix;
+    } else {
+        namePrefix = "AVIRIS";
+    }
     if(flightMode) {
         dateString.append(namePrefix);
         dateString.append(now.toString("yyyyMMdd"));
@@ -259,6 +321,11 @@ void consoleLog::logSystemConfig()
 
     if(!QString(SRC_DIR).isEmpty()) {
         handleOwnText(QString("Source directory was: %1").arg(SRC_DIR));
+    }
+    if(options.haveInstrumentPrefix) {
+        handleOwnText(QString("Instrument preset name: %1").arg(options.instrumentPrefix));
+    } else {
+        handleOwnText(QString("Instrument preset name not set"));
     }
 #ifdef QT_DEBUG
     handleOwnText(QString("Compiled as a DEBUG version"));

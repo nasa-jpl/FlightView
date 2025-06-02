@@ -7,6 +7,7 @@
 #include <QSharedPointer>
 #include <QThread>
 #include <QTime>
+#include <QElapsedTimer>
 #include <QVector>
 
 /* standard include */
@@ -120,6 +121,8 @@ public:
     bool usingDSF();
     void useNewOptions(startupOptionsType newOpts);
     startupOptionsType getStartupOptions();
+    basicGPS_t basicGPSData;
+
 
 signals:
     /*! \brief Calls to update the value of the backend FPS label */
@@ -175,7 +178,9 @@ public slots:
     void stop();
     void setColorScheme(int scheme, bool useDarkTheme);
     void debugThis();
-    void sMessage(QString message);
+    void sMessage(QString message); // includes stdout
+    void sMessageQuiet(QString message); // no stdout
+    void toMessageOut(QString message); // append [take_object]:
 };
 
 

@@ -30,6 +30,8 @@
 #include <gsl/gsl_statistics.h>
 //#include <boost/atomic.hpp>
 
+static int cudaDeviceNumberStatic = 0;
+
 //custom includes
 #include "frame_c.hpp"
 #include "std_dev_filter.hpp"
@@ -45,6 +47,8 @@
 #include "fileformats.h"
 #include "rtpnextgen.hpp"
 #include "rtpcamera.hpp"
+
+#define takeMessageSize (1024)
 
 //** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
 #define EDT
@@ -63,6 +67,7 @@
 #define UNAME "unknown person"
 #endif
 
+
 using std::string;
 
 static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence or absence of the "WARNING: MISSED FRAME X" line
@@ -75,6 +80,24 @@ static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence
 #define obcStatusDark2 (4)
 #define obcStatusClosing (8)
 #define obcStatusOpening (9)
+
+struct basicGPS_t {
+    bool usingGPS = false;
+    double chk_longitude = 0;
+    double chk_latiitude = 0;
+    double chk_altitude = 0;
+    float chk_gndspeed = 0;
+    float chk_heading = 0;
+    float chk_course = 0;
+    float fps = 0;
+    uint16_t collectionID = 0;
+};
+
+union pcv_t {
+    uint16_t* u16;
+    unsigned char* uc;
+    char* c;
+};
 
 class take_object {
     PdvDev * pdv_p = NULL;
@@ -91,10 +114,16 @@ class take_object {
     void shmSetup();
 
     bool setDarkStatusInFrame = false;
+	
+    cudaDeviceProp cdev;
+    int cudaDevNumber = -1;
+    size_t cudaTotalGlobalMem = -1;
 
     bool closing = false;
     bool grabbing = true;
     bool runStdDev = true;
+
+    bool readingDSFFile = false;
 
     boost::thread cam_thread; // this thread controls the data collection
     boost::thread reading_thread; // this is used for file reading in the XIO camera.
@@ -105,6 +134,13 @@ class take_object {
     boost::thread rtpCopyThread; // copy from buffer into currFrame
     boost::thread::native_handle_type rtpAcquireThreadHandler;
     boost::thread::native_handle_type rtpCopyThreadHandler;
+
+    boost::thread mask_thread;
+    boost::thread::native_handle_type mask_thread_handler;
+
+    boost::thread mask_liveMean_thread;
+    boost::thread::native_handle_type mask_liveMean_thread_handler;
+
 
     int pdv_thread_run = 0;
     bool cam_thread_start_complete=false; // added by Michael Bernas 2016
@@ -127,10 +163,13 @@ class take_object {
 
     //frame saving variables
     boost::thread saving_thread; // this thread handles the frame saving, as saving frames should not cause data collection to suspend
-	//unsigned int save_count;
+    //unsigned int save_count;
     bool do_raw_save;
-	bool saveFrameAvailable;
-	uint16_t * raw_save_ptr;
+    bool saveFrameAvailable;
+    uint16_t * raw_save_ptr;
+
+    basicGPS_t *basicGPSData = NULL;
+    bool haveGPSDataPointer = false;
 
 public:
     take_object(int channel_num = 0, int number_of_buffers = 64,
@@ -142,6 +181,7 @@ public:
                       int filter_refresh_rate = 10, bool runStdDev = true);
     void start();
     void changeOptions(takeOptionsType options);
+    void acceptGPSDataPtr(basicGPS_t *basicGPSDataIn);
     void setReadDirectory(const char* directory);
     camControlType* getCamControl();
     dark_subtraction_filter* dsf;
@@ -154,14 +194,16 @@ public:
 
     //Frame filters that affect everything at the raw data level
     void setInversion(bool checked, unsigned int factor);
-    void paraPixRemap(bool checked);
+    void set_twoscomp(bool checked);
     void enableDarkStatusPixelWrite(bool writeValues);
 
     //DSF mask functions
 	void startCapturingDSFMask();
 	void finishCapturingDSFMask();
+    void loadDSFMask_entry(std::string filename_s, fileFormat_t fmt);
 	void loadDSFMask(std::string file_name);
     void loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format);
+
     bool dsfMaskCollected;
     bool useDSF = false;
     uint16_t darkStatusPixelVal = obcStatusScience;
@@ -194,6 +236,8 @@ public:
     bool std_dev_ready();
     std::vector<float> * getHistogramBins();
     FFT_t getFFTtype();
+    bool haveMessage = false;
+    char messagePasser[takeMessageSize] = {'\0'};
 
 private:
     // PDV Camera Link:
@@ -212,6 +256,9 @@ private:
     // RTP using NextGen RTP:
     void prepareRTPNGCamera();
     void rtpNGStreamLoop();
+
+    // Rotation:
+    void rotate(uint16_t *input, uint16_t *output, int inHeight, int inWidth);
 
     CameraModel *Camera = NULL;
     bool fileReadingLoopRun = false;
@@ -246,8 +293,8 @@ private:
     // variables needed by the Raw Filters
     unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
     bool inverted = false;
-    bool pixRemap = false; // Enable Parallel Pixel Mapping (Chroma Translate filter)
-    bool continuousRecording = false; // flag to enable continuous recording
+    bool twoscomp = false; // Enable Parallel Pixel Mapping (Chroma Translate filter)
+    std::atomic<bool> continuousRecording{false}; // flag to enable continuous recording
     FFT_t whichFFT;
 };
 

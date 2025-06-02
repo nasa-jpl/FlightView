@@ -9,6 +9,12 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
 
     this->setWindowTitle("RGB Levels");
 
+#ifdef QT_DEBUG
+    ui->renderFPSSpin->setMaximum(999);
+    ui->primaryFPSSpin->setMaximum(999);
+    ui->secondaryFPSSpin->setMaximum(999);
+#endif
+
     emitUpdateSignal = false;
 
     connect(ui->redSlider, &QSlider::valueChanged,
@@ -18,7 +24,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->redSpin->blockSignals(false);
         redLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->greenSlider, &QSlider::valueChanged,
@@ -28,7 +34,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->greenSpin->blockSignals(false);
         greenLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->blueSlider, &QSlider::valueChanged,
@@ -38,7 +44,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->blueSpin->blockSignals(false);
         blueLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->redSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -48,7 +54,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->redSlider->blockSignals(false);
         redLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->greenSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -58,7 +64,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->greenSlider->blockSignals(false);
         greenLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->blueSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -68,7 +74,7 @@ rgbAdjustments::rgbAdjustments(QWidget *parent) :
         ui->blueSlider->blockSignals(false);
         blueLevel = newValue / 100.0;
         if(emitUpdateSignal)
-            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+            emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
     });
 
     connect(ui->gammaSlider, &QSlider::valueChanged,
@@ -113,7 +119,7 @@ void rgbAdjustments::on_gammaSpin_valueChanged(double newValue)
     ui->gammaSlider->blockSignals(false);
     gammaLevel = newValue;
     if(emitUpdateSignal)
-        emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, false);
+        emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, ui->reprocessAutoChk->isChecked());
 }
 
 void rgbAdjustments::on_gammaEnableChk_clicked()
@@ -138,9 +144,23 @@ void rgbAdjustments::on_closeBtn_clicked()
     this->close();
 }
 
-
 void rgbAdjustments::on_reprocessBtn_clicked()
 {
     emit haveRGBLevels(redLevel, greenLevel, blueLevel, gammaLevel, true);
+}
+
+void rgbAdjustments::on_setPrimaryFPSBtn_clicked()
+{
+    emit setTargetFPS_primary(ui->primaryFPSSpin->value());
+}
+
+void rgbAdjustments::on_setSecondaryFPSBtn_clicked()
+{
+    emit setTargetFPS_secondary(ui->secondaryFPSSpin->value());
+}
+
+void rgbAdjustments::on_setRenderFPSBtn_clicked()
+{
+    emit setTargetFPS_render(ui->renderFPSSpin->value());
 }
 

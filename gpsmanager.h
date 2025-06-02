@@ -26,6 +26,7 @@
 #include "gpsGUI/zupt.h"
 
 #include "startupOptions.h"
+#include "flightappstatustypes.h"
 
 struct utcTime {
     int hour;
@@ -36,7 +37,19 @@ struct utcTime {
     QString UTCValidityStr;
 };
 
+static utcTime processUTCstamp(uint64_t t)
+{
+    utcTime tObj;
+    tObj.hour = t / ((float)1E4)/60.0/60.0;
+    tObj.minute = ( t / ((float)1E4)/60.0 ) - (tObj.hour*60) ;
+    tObj.secondFloat = ( t / ((float)1E4) ) - (tObj.hour*60.0*60.0) - (tObj.minute*60.0);
+    tObj.second = ( t / ((float)1E4) ) - (tObj.hour*60.0*60.0) - (tObj.minute*60.0);
 
+    tObj.UTCValidityStr = QString("%1:%2:%3 UTC").arg(tObj.hour, 2, 10, QChar('0')).arg(tObj.minute, 2, 10, QChar('0')).arg(tObj.secondFloat, 6, 'f', 3, QChar('0'));
+    tObj.UTCstr = QString("%1:%2:%3 UTC").arg(tObj.hour, 2, 10, QChar('0')).arg(tObj.minute, 2, 10, QChar('0')).arg(tObj.second, 2, 10, QChar('0'));
+
+    return tObj;
+}
 
 class gpsManager : public QObject
 {
@@ -47,8 +60,10 @@ class gpsManager : public QObject
     QThread *gpsThread;
     gpsNetwork *gps;
     gpsMessage m;
+    gpsMessage lastPositionMessage;
 
     startupOptionsType options;
+    flightAppStatus_t *flightStatus = NULL;
 
     fileNameGenerator filenamegen;
 
@@ -240,7 +255,7 @@ class gpsManager : public QObject
     qfi_EHSI *ehsi;
 
 public:
-    gpsManager(startupOptionsType opts);
+    gpsManager(startupOptionsType opts, flightAppStatus_t *flightStatus);
     ~gpsManager();
 
     void insertLEDs(QLedLabel *gpsLinkLED, QLedLabel *gpsTroubleLED);
@@ -256,11 +271,17 @@ public:
 
     void prepareElements();
 
+    gpsMessage getLastPositionalMessage();
+    gpsMessage *getLastPositionalMessagePointer();
+
+
     // no-effort logging elements:
     double chk_longitude = 0;
     double chk_latiitude = 0;
     double chk_altitude = 0;
     float chk_gndspeed = 0;
+    float chk_course = 0;
+    float chk_heading = 0;
     bool haveData = false;
 
 public slots:

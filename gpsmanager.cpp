@@ -1,10 +1,11 @@
 #include "gpsmanager.h"
 
-gpsManager::gpsManager(startupOptionsType opts)
+gpsManager::gpsManager(startupOptionsType opts, flightAppStatus_t *flightStatus)
 {
     qRegisterMetaType<gpsMessage>();
     statusLinkStickyError = false;
     options = opts;
+    this->flightStatus = flightStatus;
     // May override later:
     baseSaveDirectory = QString("/tmp/gps");
     //createLoggingDirectory();
@@ -27,6 +28,11 @@ gpsManager::~gpsManager()
         shm->statusByte = SHM_STATUS_CLOSED;
     }
 
+    if(gps != NULL) {
+        gps->deleteLater();
+        gps=nullptr;
+    }
+
     if(gpsThread != NULL)
     {
         gpsThread->quit();
@@ -41,6 +47,9 @@ gpsManager::~gpsManager()
 
 void gpsManager::initiateGPSConnection(QString host = "192.168.2.101", int port=(int)8112, QString gpsBinaryLogFilename = "")
 {
+    if(options.haveInstrumentPrefix) {
+        filenamegen.setPrefix(options.instrumentPrefix);
+    }
     if (gpsBinaryLogFilename.isEmpty())
     {
         createLoggingDirectory();
@@ -540,6 +549,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
         {
             updateLabel(gpsRoll, QString("%1").arg(m.roll));
             updateLabel(gpsHeading, QString(" %1").arg(m.heading));
+            this->chk_heading = m.heading;
             updateLabel(gpsPitch, QString("%1").arg(m.pitch));
 
         }
@@ -562,6 +572,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             this->chk_latiitude = m.latitude;
             this->chk_longitude = longitude;
             this->chk_altitude = m.altitude * 3.28084; // feet
+            this->lastPositionMessage = m; // keep a copy when there is useful info
         }
         if(m.haveCourseSpeedGroundData)
         {
@@ -571,6 +582,7 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
             // To convert to KPH, multiply by 3.6
             // The abbreviation for knot or knots is "kt" or "kts", respectively.
             updateLabel(gpsGroundSpeed, QString("%1 kts").arg(m.speedOverGround * 1.94384, 6, 'f', 2, QChar('0')));
+            this->chk_course = m.courseOverGround;
             this->chk_gndspeed = m.speedOverGround * 1.94384; // knots
         }
         if(m.haveSpeedData)
@@ -866,6 +878,14 @@ void gpsManager::receiveGPSMessage(gpsMessage m)
     priorSHMIndex = currentSHMIndex;
 }
 
+gpsMessage gpsManager::getLastPositionalMessage() {
+    return this->lastPositionMessage;
+}
+
+gpsMessage* gpsManager::getLastPositionalMessagePointer() {
+    return &this->lastPositionMessage;
+}
+
 void gpsManager::handleStartsecondaryLog(QString filename)
 {
     emit gpsStatusMessage(QString("About to start secondary logging to file %1").arg(filename));
@@ -916,6 +936,7 @@ void gpsManager::handleGPSConnectionError(int error)
     emit gpsConnectionError(error);
     statusLinkStickyError = true;
     statusConnectedToGPS = false;
+    if (flightStatus) flightStatus->stat_gpsLinkOk = false;
     processStatus();
     gpsReconnectTimer.start();
 }
@@ -933,7 +954,9 @@ void gpsManager::handleGPSConnectionGood()
     emit gpsStatusMessage(QString("GPS: Connection good"));
     statusLinkStickyError = false; // Safe to clear when a new connection has been made.
     statusConnectedToGPS = true;
+    if (flightStatus)flightStatus->stat_gpsLinkOk = true;
     hbErrorCount = 0;
+    emit gpsStatusMessage(QString("Turning off ZuPT"));
     emit turn_off_ZuPT(host, 8110);
     zuptRetryTimer.start(); // send again a few seconds later just in case.
     if(shmValid)
@@ -941,6 +964,7 @@ void gpsManager::handleGPSConnectionGood()
 }
 
 void gpsManager::handleZUpTRetryTimer() {
+    emit gpsStatusMessage(QString("Turning off ZuPT"));
     emit turn_off_ZuPT(host, 8110);
 }
 
@@ -1002,6 +1026,11 @@ void gpsManager::processStatus()
             interpolationMissed || altitudeRejected || zuptActive || zuptOther ||
             flashWriteError || flashEraseError || outputAFull || outputBFull;
 
+    bool direct_gpsTroubleError = !statusGNSSReceptionOk ||
+            !gpsValid || gpsRejected || altitudeSaturation || speedSaturation ||
+            interpolationMissed || altitudeRejected || zuptActive || zuptOther ||
+            flashWriteError || flashEraseError || outputAFull || outputBFull;
+
     bool gpsTroubleWarning = statusGNSSReceptionWarning || !gpsReceived ||
             gpsWaiting || !gpsDetected || !systemReady || !navPhase || !statusConnectedToGPS;
 
@@ -1009,22 +1038,49 @@ void gpsManager::processStatus()
 
     // Always show the current state of the above variables, which include the stickyness already:
 
+    // For the flightStatus, we need non-sticky errors always.
+    if(!statusGPSHeartbeatOk || !statusConnectedToGPS) {
+        if (flightStatus) {
+            flightStatus->stat_gpsLinkOk = false;
+            flightStatus->stat_gpsReady = false;
+        }
+    } else {
+        if (flightStatus)flightStatus->stat_gpsLinkOk = true;
+    }
+
     if(gpsLinkError) {
         updateLED(gpsLinkLED, QLedLabel::StateError);
         statusLinkStickyError = true;
     } else if (gpsLinkWarning) {
         updateLED(gpsLinkLED, QLedLabel::StateWarning);
+        if (flightStatus) flightStatus->stat_gpsLinkOk = 2;
     } else {
         updateLED(gpsLinkLED, QLedLabel::StateOk);
+        if (flightStatus) flightStatus->stat_gpsLinkOk = true;
+    }
+
+    if(direct_gpsTroubleError) {
+        if (flightStatus) flightStatus->stat_gpsReady = false;
+    } else {
+        if (flightStatus) flightStatus->stat_gpsReady = true;
     }
 
     if(gpsTroubleError) {
         updateLED(gpsTroubleLED, QLedLabel::StateError);
-        statusTroubleStickyError = true;
     } else if (gpsTroubleWarning) {
         updateLED(gpsTroubleLED, QLedLabel::StateWarning);
+        if (flightStatus) flightStatus->stat_gpsReady = 2;
     } else {
         updateLED(gpsTroubleLED, QLedLabel::StateOk);
+        if (flightStatus) flightStatus->stat_gpsReady = true;
+    }
+
+    if(flightStatus && (!flightStatus->stat_gpsLinkOk))
+        flightStatus->stat_gpsReady = false;
+
+    if((!haveData) && flightStatus) {
+        flightStatus->stat_gpsReady = false;
+        flightStatus->stat_gpsLinkOk = 2;
     }
 
     if(zuptActive && (!zuptRetryTimer.isActive())) {

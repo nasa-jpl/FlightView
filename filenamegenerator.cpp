@@ -17,6 +17,10 @@ void fileNameGenerator::setFlightFormat(bool useFlightFormat, QString flightName
     }
 }
 
+void fileNameGenerator::setPrefix(QString prefix) {
+    this->namePrefix = prefix;
+}
+
 void fileNameGenerator::setMainDirectory(QString basedir)
 {
     this->directory = basedir;

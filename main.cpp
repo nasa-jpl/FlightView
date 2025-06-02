@@ -73,19 +73,26 @@ int main(int argc, char *argv[])
     a.setApplicationName("FlightView");
 
     QString cmdName = QString("%1").arg(argv[0]);
-    QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps "
-                               "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 "
-                               "--gpsport 5661 "
-                               "--no-stddev --xiocam --rtpcam "
-                               "--rtpnextgen "
-                               "--rtpheight 480 "
-                               "--rtpwidth 1280 "
-                               "--rtpaddress 1.2.3.4 "
-                               "--rtpinterface eth2 "
-                               "--er2 --headless "
-                               "--wfpreview "
-                               "--wfpreviewcontinuous "
-                               "--wfpreviewlocation /path/to/waterfallpreview/files/ "
+    QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps \n"
+                               "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 \n"
+                               "--gpsport 5661 \n"
+                               "--no-stddev --xiocam --rtpcam \n"
+                               "--rtpnextgen \n"
+                               "--rtpheight 480 \n"
+                               "--rtpwidth 1280 \n"
+                               "--rtpaddress 1.2.3.4 \n"
+                               "--rtpinterface eth2 \n"
+                               "--er2 --headless \n"
+                               "--instrumentprefix AV3\n"
+                               "--wfpreview \n"
+                               "--wfpreviewcontinuous \n"
+                               "--wfpreviewlocation /path/to/waterfallpreview/files/ \n"
+                               "-v --version \n"
+                               "--rotate \n"
+                               "--remap \n"
+                               "--darkreffile /path/to/dark_file.raw (uint16 frames)\n"
+                               "--udplogginghost 1.2.3.4\n"
+                               "--udploggingport 10175\n"
                                )\
             .arg(cmdName);
     QString currentArg;
@@ -120,6 +127,17 @@ int main(int argc, char *argv[])
         {
             startupOptions.debug = true;
         }
+        if(currentArg == "-v" || currentArg == "--version")
+        {
+            printf("%s\n", COMPILE_INFO_STR);
+            printf("%s\n", DATE_COMPILE_STR);
+            printf("%s\n", GIT_BRANCH_STR);
+            printf("%s\n", GIT_CURRENT_SHA1_STR);
+            printf("  Link to commit: https://github.com/nasa-jpl/LiveViewLegacy/tree/" GIT_CURRENT_SHA1_SHORT "\n");
+            printf("%s\n", SRC_DIR_STR);
+            printf("%s\n", COMPILE_INFO_END_STR);
+            exit(0);
+        }
         if(currentArg == "-f" || currentArg == "--flight")
         {
             startupOptions.flightMode = true;
@@ -138,12 +156,35 @@ int main(int argc, char *argv[])
         if(currentArg == "--headless") {
             startupOptions.headless = true;
         }
+        if(currentArg == "--instrumentprefix") {
+            if(argc > c)
+            {
+                startupOptions.instrumentPrefix = argv[c+1];
+                startupOptions.haveInstrumentPrefix = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
         if(currentArg == "--datastoragelocation")
         {
             if(argc > c)
             {
                 startupOptions.dataLocation = argv[c+1];
                 startupOptions.dataLocationSet = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if( (currentArg == "--darkreffile") || (currentArg == "--darkreferencefile") ) {
+            if(argc > c)
+            {
+                startupOptions.darkReferenceFileLocation = argv[c+1];
+                startupOptions.darkRefFileSet = true;
                 c++;
             } else {
                 std::cout << helptext.toStdString() << std::endl;
@@ -366,6 +407,40 @@ int main(int argc, char *argv[])
                 }
             }
         }
+        if( (currentArg == "--udploghost") || (currentArg == "--udplogginghost")) {
+            if(argc > c) {
+                // Only IPV4 supported, and no hostnames please, let's not depend upon DNS or resolv in the airplane...
+                if((argc > c) && QString(argv[c+1]).contains(QRegularExpression("(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})")))
+                {
+                    startupOptions.UDPLogHost = argv[c+1];
+                    startupOptions.UDPLogging = true;
+                    c++;
+                } else {
+                    std::cerr << "Invalid UDP Logging IP address set. Only IPV4 addresses are acceptable." << std::endl;
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            }
+        }
+
+        if( (currentArg == "--udplogport") || (currentArg == "--udploggingport") )
+        {
+            if(argc > c)
+            {
+                int portTemp=0;
+                bool ok = false;
+                portTemp = QString(argv[c+1]).toInt(&ok);
+                if(ok)
+                {
+                    startupOptions.UDPLogPort = portTemp;
+                    c++;
+                } else {
+                    std::cerr << "Invalid UDP Logging Port set." << std::endl;
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            }
+        }
 
         if( (currentArg == "--no-stddev") || (currentArg == "--no-stdev")
                 || (currentArg == "--nostdev") || (currentArg == "--nostddev") )
@@ -380,6 +455,14 @@ int main(int argc, char *argv[])
         if( (currentArg == "--no-gpu") || (currentArg == "--nogpu") ) {
             startupOptions.noGPU = true;
             startupOptions.runStdDevCalculation = false;
+        }
+
+        if( currentArg == "--rotate") {
+            startupOptions.rotate = true;
+        }
+
+        if( currentArg == "--remap") {
+            startupOptions.remapPixels = true;
         }
 
         if(currentArg == "--wfpreview") {

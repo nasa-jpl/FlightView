@@ -103,7 +103,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     if(itype==VERT_OVERLAY)
     {
         overlay_img = new frameview_widget(fw, DSF, this);
-
+        overlay_img->setIsOverlayImage(true);
         // Grid layout
 
         // Right side plot and check box:
@@ -147,7 +147,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
         this->setLayout(&qvbl);
     }
-
+    qcp->setNoAntialiasingOnDrag(true);
 
     connect(reset_zoom_btn, SIGNAL(released()), this, SLOT(defaultZoom())); // disconnect?
     connect(qcp, SIGNAL(mouseMove(QMouseEvent*)), this, SLOT(moveCallout(QMouseEvent*)));
@@ -159,6 +159,16 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
     if(!options.headless) {
         rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
+        if( (itype==VERTICAL_CROSS) || (itype==VERTICAL_MEAN)
+                || (itype==VERT_OVERLAY) ) {
+            if (frHeight > 1280) {
+                rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS*4);
+            }
+        } else {
+            if (frWidth > 1280) {
+                rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS*4);
+            }
+        }
     }
 }
 profile_widget::~profile_widget()
@@ -193,7 +203,13 @@ void profile_widget::handleNewFrame()
      */
     float *local_image_ptr;
     bool isMeanProfile = itype == VERTICAL_MEAN || itype == HORIZONTAL_MEAN;
-    if (!this->isHidden() &&  fw->curFrame != NULL && ((fw->crosshair_x != -1 && fw->crosshair_y != -1) || isMeanProfile)) {
+
+    if(this->isHidden())
+        return;
+    if(fw->curFrame==NULL)
+        return;
+
+    if ( (fw->crosshair_x != -1 && fw->crosshair_y != -1) || isMeanProfile) {
         allow_callouts = true;
 
         switch (itype)
@@ -258,6 +274,21 @@ void profile_widget::handleNewFrame()
     boundedRange_y = qcp->yAxis->range();
     boundedRange_x = qcp->xAxis->range();
 }
+
+void profile_widget::useDSF(bool useDSF) {
+    // Most of the profiles use the back end 'take'
+    // to handle dark subtraction.
+    // Only the vertical overlay needs to know,
+    // and this is so that it can tell the frame view
+    // widget within it to display DSF data or not.
+
+    if (itype == VERT_OVERLAY) {
+        if(overlay_img) {
+            overlay_img->setUseDSF(useDSF);
+        }
+    }
+}
+
 void profile_widget::updateCeiling(int c)
 {
     /*! \brief Change the value of the ceiling for this widget to the input parameter and replot the color scale. */

@@ -25,9 +25,12 @@ namespace fs = boost::filesystem;
 #include "qledlabel.h"
 #include "flightindicators.h"
 #include "startupOptions.h"
+#include "wfshared.h"
+#include "wfengine.h"
 #include "waterfall.h"
 #include "waterfallviewerwindow.h"
 #include "preferences.h"
+#include "flightappstatustypes.h"
 
 #include "qfi/qfi_EADI.h"
 
@@ -36,9 +39,12 @@ class flight_widget : public QWidget
     Q_OBJECT
 
     frameWorker *fw;
-
-    waterfall *waterfall_widget;
+    flightAppStatus_t *flightStatus = NULL;
+    wfengine *wfcomputer = NULL;
+    QThread *wfcompThread = NULL;
+    waterfall *waterfall_widget = NULL;
     waterfallViewerWindow *secondWF = NULL;
+    bool waterfallEngineReady = false;
 
     //QThread *wfThread = NULL;
     frameview_widget *dsf_widget;
@@ -108,7 +114,7 @@ class flight_widget : public QWidget
 
 
 public:
-    explicit flight_widget(frameWorker *fw, startupOptionsType options, QWidget *parent = nullptr);
+    explicit flight_widget(frameWorker *fw, startupOptionsType options, flightAppStatus_t *flightStatus, QWidget *parent = nullptr);
     ~flight_widget();
     const unsigned int slider_max = (1<<16) * 1.1;
     bool slider_low_inc = false;
@@ -124,6 +130,7 @@ public slots:
     void startGPS(QString gpsHostname, uint16_t gpsPort, QString primaryLogLocation); // connect to GPS and start primary log
 
     // Notify:
+    void setStop(); // call before delete
     void startDataCollection(QString secondaryLogFilename);
     void stopDataCollection();
 
@@ -144,8 +151,12 @@ public slots:
     void changeRGB(int r, int g, int b);
     void setRGBLevels(double red, double green, double blue, double gamma, bool reprocess);
     void setShowRGBLines(bool showLines);
+    void setUseRatioSlot(bool useRatio);
     void changeWFLength(int length);
     void showSecondWF();
+    void setWFFPS_render(int target);
+    void setWFFPS_primary(int target);
+    void setWFFPS_secondary(int target);
     void rescaleRange();
     void setUseDSF(bool useDSF);
     void hideRGB();
@@ -157,7 +168,7 @@ public slots:
     void showDebugMessage(QString debugMessage);
 
 private slots:
-    void logFPSSlot();
+    void logFPSGPSSlot();
 
 signals:
     void statusMessage(QString);
@@ -165,14 +176,15 @@ signals:
     void connectToGPS(QString host, int port);
     void beginSecondaryLog(QString filename);
     void stopSecondaryLog();
+    void stopWidgets();
     void sendDiskSpaceAvailable(quint64 sizeTotal, quint64 available);
-
     // For the WF:
     void updateCeilingSignal(int c);
     void updateFloorSignal(int f);
     void updateRGBbandSignal(int r, int g, int b);
     void setRGBLevelsSignal(double r, double g, double b, double gamma, bool);
     void changeWFLengthSignal(int length);
+    void setWFFPS_render_sig(int target);
 
     // For the Controls Box:
     void updateFloorCeilingFromFrameviewChange(double floor, double ceiling);

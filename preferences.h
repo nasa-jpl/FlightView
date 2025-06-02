@@ -34,6 +34,9 @@ struct settingsT {
     int stddevCeiling;
     int stddevFloor;
 
+    int histCeiling;
+    int histFloor = 0;
+
     // New ones:
 
     // Flight screen:

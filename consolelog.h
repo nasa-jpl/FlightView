@@ -13,15 +13,21 @@
 
 #include <fstream>
 #include <iostream>
+#include <ostream>
 #include <sys/utsname.h>
 #include <stdlib.h>
+#include <thread>
+
+#include "startupOptions.h"
+#include "udpbinarylogger.h"
+#include "linebuffer.h"
 
 class consoleLog : public QWidget
 {
     Q_OBJECT
 public:
-    explicit consoleLog(QWidget *parent = nullptr);
-    explicit consoleLog(QString logFileName, bool enableFlightMode, QWidget *parent = nullptr);
+    explicit consoleLog(startupOptionsType options, QWidget *parent = nullptr);
+    explicit consoleLog(startupOptionsType options, QString logFileName, bool enableFlightMode, QWidget *parent = nullptr);
     ~consoleLog();
 
 public slots:
@@ -44,10 +50,17 @@ private:
     void closeFile();
     void makeDirectory(QString directory);
     void logSystemConfig();
+    std::thread udpThread;
+    bool usingUDP = false;
+    bool udpThreadRunning = false;
+    lineBuffer* buffer = NULL;
+    udpbinarylogger *udp = NULL;
     bool fileIsOpen = false;
     bool enableLogToFile = false;
+    bool enableUDPLogging = true;
     bool flightMode = false;
     std::ofstream outfile;
+    startupOptionsType options;
     QString logFileName = "";
     QString createTimeStamp();
     QString createFilenameFromDirectory(QString directoryName);
@@ -57,6 +70,7 @@ private:
     QLineEdit annotateText;
     QVBoxLayout layout;
     QHBoxLayout hLayout;
+    void logToUDPBuffer(QString text);
     void handleOwnText(QString message);
     void handleError(QString errorText);
     void handleNote(QString noteText);

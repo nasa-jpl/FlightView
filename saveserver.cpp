@@ -3,10 +3,11 @@
 #include <QtNetwork/QTcpServer>
 #include <QtNetwork/QNetworkInterface>
 
-saveServer::saveServer(frameWorker *fw, QObject *parent ) :
+saveServer::saveServer(frameWorker *fw, flightAppStatus_t *flightStatus, QObject *parent ) :
     QTcpServer(parent)
 {
     this->reference = fw;
+    this->flightStatus = flightStatus;
     port = 65000; // we'll hardcode the port number for now
     clientConnection = new QTcpSocket();
     clientConnection->setObjectName("lv:saveconn");
@@ -165,7 +166,7 @@ void saveServer::readCommand()
             // the value returned is bogus and should not be used.
             out << (uint16_t)reference->to.save_framenum; // send the number of frames left to save, and
             out << (uint16_t)reference->delta;            // send the frames per second (as a uint)
-            out << (uint16_t)reference->navgs;            // number of averages, new code, bogus
+            out << (uint16_t)reference->navgs;            // number of averages
             if(fname.isEmpty())
                 out << QString("");
             else
@@ -173,6 +174,41 @@ void saveServer::readCommand()
             out.device()->seek(0);
             out << (uint16_t)(block.size() - sizeof(quint16));
             //printHex(&block);
+            clientConnection->write(block);
+            break;
+        }
+        case CMD_STATUS_FLIGHT:
+        {
+            genStatusMessage("Sending CMD_STATUS_FLIGHT information back.");
+            QByteArray block;
+            QDataStream out( &block, QIODevice::WriteOnly );
+            out.setVersion(QDataStream::Qt_4_0);
+            out << (uint16_t)0; // will be changed to the size of the message later.
+
+            out << (uint16_t)CMD_STATUS_FLIGHT; // new addition
+            // NOTE: When the total number of frames to be saved is undefined (start/stop recording mode),
+            // the value returned is bogus and should not be used.
+            out << (uint16_t)reference->to.save_framenum; // 32-bit int, warning. send the number of frames left to save, and
+            out << (uint16_t)reference->delta;            // send the frames per second (as a uint)
+            out << (uint16_t)reference->navgs;            // number of averages
+            if(fname.isEmpty())
+                out << QString("");
+            else
+                out << fname;
+
+            flightStatus->stat_framesCaptured = reference->frameCount;
+
+            out << (uint16_t)flightStatus->stat_diskOk;
+            out << (uint16_t)flightStatus->stat_gpsLinkOk;
+            out << (uint16_t)flightStatus->stat_gpsReady;
+            out << (uint16_t)flightStatus->stat_cameraReady;
+            out << (uint16_t)flightStatus->stat_headerOk;
+            out << (uint16_t)flightStatus->stat_framesCaptured;
+            out.device()->seek(0);
+            out << (uint16_t)(block.size() - sizeof(quint16));
+#ifdef QT_DEBUG
+            printHex(&block);
+#endif
             clientConnection->write(block);
             break;
         }

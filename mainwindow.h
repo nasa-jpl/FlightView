@@ -4,6 +4,7 @@
 /* Qt GUI incude */
 #include <QMainWindow>
 #include <QDateTime>
+#include <QTimer>
 
 /* Live View includes */
 #include "controlsbox.h"
@@ -18,6 +19,8 @@
 #include "startupOptions.h"
 #include "preferences.h"
 #include "consolelog.h"
+#include "flightappstatustypes.h"
+#include "fileformats.h"
 
 // GPS includes:
 
@@ -49,6 +52,8 @@ private:
     void prepareGPS();
     void processGPSMessage();
 
+    QTimer *darkRefLoadTimer = NULL;
+
     /*! All widgets currently used in Live View
      * @{ */
     frameview_widget *unfiltered_widget;
@@ -68,6 +73,8 @@ private:
 
     /*! @} */
 
+    flightAppStatus_t *flightStatus = NULL;
+
     void removeTab(QString tabTitle);
     void closeEvent(QCloseEvent *e);
 
@@ -81,6 +88,8 @@ public slots:
 
 signals:
     void toggleStdDevCalc(bool enabled);
+    void loadDarkMask(QString darkfilename,
+                      fileFormat_t fmt);
 
 protected:
     /*! \brief Defines keyboard controls for all components of Live View */
