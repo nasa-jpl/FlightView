@@ -88,8 +88,9 @@ int main(int argc, char *argv[])
                                "--wfpreviewcontinuous \n"
                                "--wfpreviewlocation /path/to/waterfallpreview/files/ \n"
                                "-v --version \n"
-                               "--rotate \n"
-                               "--remap \n"
+                               "--rotate (rotates image 90 degrees)\n"
+                               "--remap (reorder pixels for some cameras)\n"
+                               "--swap (swap spatial and spectral)\n"
                                "--darkreffile /path/to/dark_file.raw (uint16 frames)\n"
                                "--udplogginghost 1.2.3.4\n"
                                "--udploggingport 10175\n"
@@ -463,6 +464,10 @@ int main(int argc, char *argv[])
 
         if( currentArg == "--remap") {
             startupOptions.remapPixels = true;
+        }
+
+        if( currentArg == "--swap") {
+            startupOptions.swapSpatialSpectral = true;
         }
 
         if(currentArg == "--wfpreview") {

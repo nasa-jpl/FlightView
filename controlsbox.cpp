@@ -24,6 +24,15 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     this->fw = fw;
     frWidth = fw->getFrameWidth();
     frHeight = fw->getFrameHeight();
+    if(options.swapSpatialSpectral) {
+        // Rotated:
+        spatialWidth = frHeight;
+        spectralWidth = frWidth;
+    } else {
+        // Normal:
+        spatialWidth = frWidth;
+        spectralWidth = frHeight;
+    }
     qtw = tw;
     current_tab = qobject_cast<frameview_widget*>(qtw->widget(qtw->currentIndex()));
     old_tab = NULL;
@@ -216,40 +225,40 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     floor_slider.setTickInterval(BIG_TICK);
 
     red_slider.setOrientation(Qt::Horizontal);
-    red_slider.setMaximum(frHeight-1);
+    red_slider.setMaximum(spectralWidth-1);
     red_slider.setMinimum(0);
-    red_slider.setValue((frHeight-1)*0.166);
+    red_slider.setValue((spectralWidth-1)*0.166);
     red_slider.setTickInterval(1);
     red_slider.hide();
 
     green_slider.setOrientation(Qt::Horizontal);
-    green_slider.setMaximum(frHeight-1);
+    green_slider.setMaximum(spectralWidth-1);
     green_slider.setMinimum(0);
-    green_slider.setValue((frHeight-1)*0.5);
+    green_slider.setValue((spectralWidth-1)*0.5);
     green_slider.setTickInterval(1);
     green_slider.hide();
 
     blue_slider.setOrientation(Qt::Horizontal);
-    blue_slider.setMaximum(frHeight-1);
+    blue_slider.setMaximum(spectralWidth-1);
     blue_slider.setMinimum(0);
-    blue_slider.setValue((frHeight-1)*0.833);
+    blue_slider.setValue((spectralWidth-1)*0.833);
     blue_slider.setTickInterval(1);
     blue_slider.hide();
 
     redSpin.setMinimum(0);
-    redSpin.setMaximum(frHeight-1);
+    redSpin.setMaximum(spectralWidth-1);
     redSpin.setValue(red_slider.value());
     redSpin.setSingleStep(1);
     redSpin.hide();
 
     greenSpin.setMinimum(0);
-    greenSpin.setMaximum(frHeight-1);
+    greenSpin.setMaximum(spectralWidth-1);
     greenSpin.setValue(green_slider.value());
     greenSpin.setSingleStep(1);
     greenSpin.hide();
 
     blueSpin.setMinimum(0);
-    blueSpin.setMaximum(frHeight-1);
+    blueSpin.setMaximum(spectralWidth-1);
     blueSpin.setValue(blue_slider.value());
     blueSpin.setSingleStep(1);
     blueSpin.hide();

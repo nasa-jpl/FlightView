@@ -45,9 +45,12 @@ void waterfall::setup(frameWorker *fw, int vSize, int hSize, bool isSecondary, s
     this->vSize = vSize;
     this->hSize = hSize;
     // Override for now:
-    this->vSize = maxWFlength;
-    this->hSize = frWidth;
-
+    this->vSize = maxWFlength; // waterfall temporal length is fixed at 1024 lines
+    if(options.swapSpatialSpectral) {
+        this->hSize = frHeight;
+    } else {
+        this->hSize = frWidth;
+    }
     //specImage = new QImage(this->hSize, this->vSize, QImage::Format_ARGB32);
     //statusMessage(QString("Created specImage with height %1 and width %2.").arg(specImage->height()).arg(specImage->width()));
 

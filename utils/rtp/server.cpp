@@ -18,7 +18,6 @@
 #include <netinet/in.h> 
    
 #define PORT      5004
-#define MAXLINE 1024 
 
 // 8E3  = 125 FPS
 // 5E3  = 196 FPS
@@ -29,7 +28,7 @@
 // 2500 = 400 FPS (385 typically)
 // 2000 = 500 FPS (470 typically)
 
-#define framePeriod_microsec (4444)
+#define framePeriod_microsec (30E3)
 #define packetDelay_ns (1)
 
 #define nFramesToDeliver (100000)
@@ -38,7 +37,7 @@
 // 32 for 1280*480
 // 41 for 1280*328
 // 64 for 512*2048
-#define chunksPerFrame_d (64)
+#define chunksPerFrame_d (256)
 
 struct SRTPData {
     bool	      m_bFirstPacket;
@@ -84,8 +83,9 @@ char * loadFile(char* filename, size_t *length) {
         fclose(fdPrimary);
         return NULL;
     } else {
-        fread(binBuffer, primarySize, 1, fdPrimary);
+        size_t res = fread(binBuffer, primarySize, 1, fdPrimary);
         printf("Read %lu bytes from binary file.\n", primarySize);
+        (void)res;
     }
 
     *length = primarySize;
@@ -290,8 +290,8 @@ int main(int argc, char* argv[]) {
     // uint16_t width = 2048;
 
     // AVIRIS-III: 
-    uint16_t height = 328;
-    uint16_t width = 1280;
+    uint16_t height = 1024;
+    uint16_t width = 1024;
 
     size_t fileLen = 0;
     printf("Loading file [%s]...\n", argv[argc-1]);
@@ -327,9 +327,9 @@ int main(int argc, char* argv[]) {
     
     // Filling server information 
     servaddr.sin_family    = AF_INET; // IPv4 
-    //servaddr.sin_addr.s_addr = INADDR_ANY; // traffic seen on "lo" interface only
+    servaddr.sin_addr.s_addr = INADDR_ANY; // traffic seen on "lo" interface only
     // servaddr.sin_addr.s_addr = inet_addr("0.0.0.0");  // no traffic seen
-    servaddr.sin_addr.s_addr = inet_addr("10.10.10.1"); // traffic on both sides seen, good for fiber RTP testing
+    //servaddr.sin_addr.s_addr = inet_addr("10.10.10.1"); // traffic on both sides seen, good for fiber RTP testing
     //servaddr.sin_addr.s_addr = inet_addr("10.10.10.0"); // no traffic seen
     servaddr.sin_port = htons(PORT); 
        

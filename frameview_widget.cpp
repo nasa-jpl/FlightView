@@ -29,6 +29,14 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
     options = fw->getStartupOptions();
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
+    if(options.swapSpatialSpectral) {
+        spatialWidth = frHeight;
+        spectralWidth = frWidth;
+    } else {
+        // Normal:
+        spatialWidth = frWidth;
+        spectralWidth = frHeight;
+    }
     bool ok = false;
 
     switch(image_type) {
@@ -524,33 +532,64 @@ void frameview_widget::handleNewFrame()
                 int iceiling = (int)this->ceiling;
                 int imid = (iceiling - ifloor)/2;
 
-                if( (redRow < frHeight) && (greenRow < frHeight) && (blueRow < frHeight) )
-                {
-                    for(int col=0; col < frWidth; col++)
-                    {
-                        colorMap->data()->setCell(col, redRow, iceiling);
-                        colorMap->data()->setCell(col, ((redRow+1)<frHeight)?redRow+1:redRow-1, iceiling);
+                if(options.swapSpatialSpectral) {
+                    // We need to highlight a *column* of data. The columns are indicated with redRow, greenRow, and blueRow.
+                    // The setCell function is accessed (column, row, intensity)
+                    if( (redRow < spectralWidth) && (greenRow < spectralWidth) && (blueRow < spectralWidth) ) {
+                        for(int row=frHeight/10; row < frHeight; row++) {
+                            // The pairs are needed to make the  lines thicker.
+                            colorMap->data()->setCell(redRow, row, iceiling);
+                            colorMap->data()->setCell(((redRow+1)<spectralWidth)?redRow+1:redRow-1, row, iceiling);
 
-                        colorMap->data()->setCell(col, greenRow, imid);
-                        colorMap->data()->setCell(col, ((greenRow+1)<frHeight)?greenRow+1:greenRow-1, imid);
+                            colorMap->data()->setCell(greenRow, row, imid);
+                            colorMap->data()->setCell(((greenRow+1)<spectralWidth)?greenRow+1:greenRow-1, row, imid);
 
-                        colorMap->data()->setCell(col, blueRow, ifloor);
-                        colorMap->data()->setCell(col, ((blueRow+1)<frHeight)?blueRow+1:blueRow-1, ifloor);
+                            colorMap->data()->setCell(blueRow, row, ifloor);
+                            colorMap->data()->setCell(((blueRow+1)<spectralWidth)?blueRow+1:blueRow-1, row, ifloor);
+                        }
+
+                        // First 10% get the flashing colors to make them more obvious
+                        for(int row=0; row < frHeight/10; row++)
+                        {
+                            colorMap->data()->setCell(redRow, row, ((row%2)==0)?iceiling:ifloor);
+                            colorMap->data()->setCell(((redRow+1)<spectralWidth)?redRow+1:redRow-1, row, ((row%2)==0)?iceiling:ifloor);
+
+                            colorMap->data()->setCell(greenRow, row, ((row%2)==0)?iceiling:ifloor);
+                            colorMap->data()->setCell(((greenRow+1)<spectralWidth)?greenRow+1:greenRow-1, row, ((row%2)==0)?iceiling:ifloor);
+
+                            colorMap->data()->setCell(blueRow, row, ((row%2)==0)?iceiling:ifloor);
+                            colorMap->data()->setCell(((blueRow+1)<spectralWidth)?blueRow+1:blueRow-1, row, ((row%2)==0)?iceiling:ifloor);
+                        }
                     }
 
-                    for(int col=0; col < frWidth/10; col++)
+                } else {
+
+                    if( (redRow < frHeight) && (greenRow < frHeight) && (blueRow < frHeight) )
                     {
-                        colorMap->data()->setCell(col, redRow, ((col%2)==0)?iceiling:ifloor);
-                        colorMap->data()->setCell(col, ((redRow+1)<frHeight)?redRow+1:redRow-1, ((col%2)==0)?iceiling:ifloor);
+                        for(int col=0; col < frWidth; col++)
+                        {
+                            colorMap->data()->setCell(col, redRow, iceiling);
+                            colorMap->data()->setCell(col, ((redRow+1)<frHeight)?redRow+1:redRow-1, iceiling);
 
-                        colorMap->data()->setCell(col, greenRow, ((col%2)==0)?iceiling:ifloor);
-                        colorMap->data()->setCell(col, ((greenRow+1)<frHeight)?greenRow+1:greenRow-1, ((col%2)==0)?iceiling:ifloor);
+                            colorMap->data()->setCell(col, greenRow, imid);
+                            colorMap->data()->setCell(col, ((greenRow+1)<frHeight)?greenRow+1:greenRow-1, imid);
 
-                        colorMap->data()->setCell(col, blueRow, ((col%2)==0)?iceiling:ifloor);
-                        colorMap->data()->setCell(col, ((blueRow+1)<frHeight)?blueRow+1:blueRow-1, ((col%2)==0)?iceiling:ifloor);
+                            colorMap->data()->setCell(col, blueRow, ifloor);
+                            colorMap->data()->setCell(col, ((blueRow+1)<frHeight)?blueRow+1:blueRow-1, ifloor);
+                        }
+
+                        for(int col=0; col < frWidth/10; col++)
+                        {
+                            colorMap->data()->setCell(col, redRow, ((col%2)==0)?iceiling:ifloor);
+                            colorMap->data()->setCell(col, ((redRow+1)<frHeight)?redRow+1:redRow-1, ((col%2)==0)?iceiling:ifloor);
+
+                            colorMap->data()->setCell(col, greenRow, ((col%2)==0)?iceiling:ifloor);
+                            colorMap->data()->setCell(col, ((greenRow+1)<frHeight)?greenRow+1:greenRow-1, ((col%2)==0)?iceiling:ifloor);
+
+                            colorMap->data()->setCell(col, blueRow, ((col%2)==0)?iceiling:ifloor);
+                            colorMap->data()->setCell(col, ((blueRow+1)<frHeight)?blueRow+1:blueRow-1, ((col%2)==0)?iceiling:ifloor);
+                        }
                     }
-
-
                 }
             }
             qcp->replot();

@@ -45,8 +45,16 @@ void wfengine::setParameters(frameWorker *fw, int vSize, int hSize, startupOptio
     frHeight = fw->getFrameHeight();
     frWidth = fw->getFrameWidth();
     this->options = options;
-    this->vSize = vSize;
-    this->hSize = hSize;
+    if(options.swapSpatialSpectral) {
+        spatialSwath = frHeight;
+        spectralSwath = frWidth;
+    } else {
+        spatialSwath = frWidth;
+        spectralSwath = frHeight;
+    }
+    this->vSize = vSize; // 1 ??
+    this->hSize = hSize; // 1024
+
 }
 
 void wfengine::setup() {
@@ -88,17 +96,24 @@ void wfengine::setup() {
 
     vEdge = 0;
     hEdge = 0;
-    this->vSize = vSize;
-    this->hSize = hSize;
+    //this->vSize = vSize;
+    //this->hSize = hSize;
     // Override for now:
     this->vSize = maxWFlength;
-    this->hSize = frWidth;
+    if(options.swapSpatialSpectral)
+    {
+        this->hSize = frHeight;
+    } else {
+        this->hSize = frWidth;
+    }
     opacity = 0xff;
     useDSF = false; // default to false since the program can't start up with a DSF mask anyway
 
     // liveGPSMessagePointer = new gpsMessage;
     if(liveGPSMessagePointer) {
         statusMessage("Live GPS Message Pointer is not NULL.");
+    } else {
+        statusMessage("Live GPS Message Pointer is NULL.");
     }
 
     buffer = new specImageBuff_t;
@@ -266,7 +281,10 @@ void wfengine::redraw()
 
     int pos = (buffer->lastWrittenImage+1)%WF_SPEC_BUF_COUNT;
     buffer->currentWritingImage = pos;
-    for(int y=maxWFlength; y > 0; y--) {
+    if(!buffer->isValid)
+        return;
+
+    for(volatile int y=maxWFlength; y > 0; y--) {
 
         specImage = buffer->image[pos];
         line = (QRgb*)specImage->scanLine(y-1);
@@ -275,12 +293,40 @@ void wfengine::redraw()
         r = wflines[wfpos]->getRed();
         g = wflines[wfpos]->getGreen();
         b = wflines[wfpos]->getBlue();
+#ifdef QT_DEBUG
+        if(specImage == NULL) {
+            qDebug() << "specImage null";
+            return;
+            //abort();
+        }
+        if(line==NULL) {
+            qDebug() << "line null";
+            return;
+            //abort();
+        }
+        if( (r==NULL) || (g==NULL) || (b==NULL)) {
+            qDebug() << "r,g, or b is null";
+            return;
+            //abort();
+        }
+        //qDebug() << "Red: " << r[0] << "Green: " << g[0] << "Blue: " << b[0];
+#endif
+
 
         for(int x = 0; x < hSize; x++)
         {
+#ifdef QT_DEBUG
+            if( (&r[x]==NULL) || (&g[x]==NULL) || (&b[x]==NULL)) {
+                qDebug() << "array'd r,g, or b is null";
+                return;
+                //abort();
+            }
+#endif
+
             c.setRgb(r[x],
                      g[x],
                      b[x]);
+
             line[x] = c.rgb();
         }
     }
@@ -292,28 +338,75 @@ void wfengine::redraw()
 void wfengine::allocateBlankWF()
 {
     // Static waterfall allocation:
-    for(int n=0; n < maxWFlength; n++)
-    {
-        rgbLine* line = new rgbLine(frWidth, false);
-        wflines[n] = line;
+
+    if(options.swapSpatialSpectral) {
+#ifdef QT_DEBUG
+        qDebug() << "frHeight: " << frHeight;
+#endif
+        for(int n=0; n < maxWFlength; n++)
+        {
+            rgbLine* line = new rgbLine(frHeight, false); // the waterfall is as wide as the FPA image height
+            wflines[n] = line;
+        }
+    } else {
+
+        for(int n=0; n < maxWFlength; n++)
+        {
+            rgbLine* line = new rgbLine(frWidth, false); // the waterfall is as wide as the FPA image width
+            wflines[n] = line;
+        }
     }
 }
 
 void wfengine::copyPixToLine(float *image, float *dst, int rowSelection)
 {
-    for(int p=0; p < frWidth; p++)
-    {
-        if(dst != NULL)
-            dst[p] = image[ rowSelection + p];
+    if(options.swapSpatialSpectral) {
+#ifdef QT_DEBUG
+        volatile int lp=0;
+#else
+        int lp=0;
+#endif
+        for(int p=0; p < frHeight*frWidth; p+=frWidth)
+        {
+            if(dst != NULL) {
+                // note, this is really columnSelected.
+                dst[lp] = image[ rowSelection + p];
+                lp++;
+            }
+        }
+    } else {
+        rowSelection = rowSelection*frWidth;
+        for(int p=0; p < frWidth; p++)
+        {
+            if(dst != NULL)
+                dst[p] = image[ rowSelection + p];
+        }
     }
 }
 
 void wfengine::copyPixToLine(uint16_t *image, float *dst, int rowSelection)
 {
-    for(int p=0; p < frWidth; p++)
-    {
-        if(dst != NULL)
-            dst[p] = (float)image[ rowSelection + p];
+    if(options.swapSpatialSpectral) {
+#ifdef QT_DEBUG
+        volatile int lp = 0; // waterfall line pixel
+#else
+        int lp = 0; // waterfall line pixel
+#endif
+        for(int p=0; p < frHeight*frWidth; p+=frWidth)
+        {
+            if(dst != NULL) {
+                // note, this is really columnSelected.
+                dst[lp] = (float)image[ rowSelection + p];
+                lp++;
+            }
+        }
+    } else {
+        rowSelection = rowSelection*frWidth;
+        for(int p=0; p < frWidth; p++)
+        {
+            if(dst != NULL)
+                dst[p] = (float)image[ rowSelection + p];
+        }
     }
 }
 
@@ -338,9 +431,9 @@ void wfengine::addNewFrame()
 
     // Copy portions of the frame into the line
 
-    int r_row_pix = frWidth * r_row; // width times how many rows
-    int g_row_pix = frWidth * g_row;
-    int b_row_pix = frWidth * b_row;
+    int r_row_pix = r_row; // width times how many rows
+    int g_row_pix = g_row;
+    int b_row_pix = b_row;
 
     //    if(fw->dsfMaskCollected() && useDSF); // prior method
     if(useDSF) // concurrent
@@ -376,7 +469,7 @@ void wfengine::processLineToRGB_Ratio(rgbLine* line) {
     float feature = 0;
     unsigned char pixVal = 0;
     // refgerence is higher
-    for(int p=0; p < frWidth; p++)
+    for(int p=0; p < spatialSwath; p++)
     {
         reference = line->getr_raw()[p];
         feature = line->getg_raw()[p];
@@ -406,7 +499,7 @@ void wfengine::processLineToRGB_Ratio_MP(rgbLine* line) {
     unsigned char pixVal = 0;
 
 #pragma omp parallel for num_threads(4)
-    for(int p=0; p < frWidth; p++)
+    for(int p=0; p < spatialSwath; p++)
     {
         reference = line->getr_raw()[p];
         feature = line->getg_raw()[p];
@@ -427,16 +520,17 @@ void wfengine::processLineToRGB(rgbLine* line)
 {
     // go from float to RGB, with floor and ceiling scaling
 
+
     if(!useGamma)
     {
-        for(int p=0; p < frWidth; p++)
+        for(int p=0; p < spatialSwath; p++)
         {
             line->getRed()[p] =   (unsigned char)MAX8(redLevel *   scaleDataPoint(line->getr_raw()[p]));
             line->getGreen()[p] = (unsigned char)MAX8(greenLevel * scaleDataPoint(line->getg_raw()[p]));
             line->getBlue()[p] =  (unsigned char)MAX8(blueLevel *  scaleDataPoint(line->getb_raw()[p]));
         }
     } else {
-        for(int p=0; p < frWidth; p++)
+        for(int p=0; p < spatialSwath; p++)
         {
             line->getRed()[p] = (unsigned char)MAX8(redLevel * pow(scaleDataPoint(line->getr_raw()[p]), gammaLevel));
             line->getGreen()[p] = (unsigned char)MAX8(greenLevel * pow(scaleDataPoint(line->getg_raw()[p]), gammaLevel));
@@ -460,10 +554,27 @@ void wfengine::processLineToRGB_MP(rgbLine* line)
     unsigned char *gg = line->getGreen();
     unsigned char *gb = line->getBlue();
 
+//    if(options.swapSpatialSpectral) {
+//        spatialSwath = frHeight;
+//    } else {
+//        spatialSwath = frWidth;
+//    }
+
+#ifdef QT_DEBUG
+    if( (r==NULL) || (g==NULL) || (b==NULL) ) {
+        qDebug() << "r,g, or b was null within processLineToRGB_MP";
+        return;
+    }
+    if( (gr==NULL) || (gg==NULL) || (gb==NULL) ) {
+        qDebug() << "gr,gg, or gb was null within processLineToRGB_MP";
+        return;
+    }
+#endif
+
     if(!useGamma)
     {
 #pragma omp parallel for num_threads(4)
-        for(int p=0; p < frWidth; p++)
+        for(int p=0; p < spatialSwath; p++)
         {
             pthread_setname_np(pthread_self(), "GUI_WF");            
             gr[p] =   (unsigned char)MAX8(redLevel *   scaleDataPoint(r[p]));
@@ -472,7 +583,7 @@ void wfengine::processLineToRGB_MP(rgbLine* line)
         }
     } else {
 #pragma omp parallel for num_threads(4)
-        for(int p=0; p < frWidth; p++)
+        for(int p=0; p < spatialSwath; p++)
         {
             pthread_setname_np(pthread_self(), "GUI_WF_G");
             gr[p] = (unsigned char)MAX8(redLevel * pow(scaleDataPoint(r[p]), gammaLevel));
@@ -849,7 +960,11 @@ void wfengine::rescaleWF()
         }
     } else {
 #pragma omp parallel for num_threads(nprocToUse)
+#ifdef QT_DEBUG
+        for(volatile int wfrow=0; wfrow < maxWFlength; wfrow++)
+        #else
         for(int wfrow=0; wfrow < maxWFlength; wfrow++)
+#endif
         {
             //pthread_setname_np(pthread_self(), "GUIRepro");
             processLineToRGB( wflines[wfrow] );

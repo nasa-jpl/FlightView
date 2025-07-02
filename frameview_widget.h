@@ -10,6 +10,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QPushButton>
 #include <QMutex>
 #include <vector>
@@ -76,6 +77,8 @@ class frameview_widget : public QWidget
     /* Plot Rendering elements
      * Contains local copies of the frame geometry and color map range. */
     int frHeight, frWidth;
+    int spatialWidth = 0;
+    int spectralWidth = 0;
 
     int wflength;
 
@@ -96,7 +99,7 @@ class frameview_widget : public QWidget
     /* Frame Timing elements
      * Contains the variables used to keep track of framerate and fps, as well the program time elapsed, which is used
      * to calculate the render FPS. */
-    QTime clock;
+    QElapsedTimer clock;
     unsigned int count;
     double fps;
     QString fps_string;

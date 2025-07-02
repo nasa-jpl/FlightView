@@ -65,6 +65,8 @@ class wfengine : public QObject
     frameWorker *fw;
     int frHeight;
     int frWidth;
+    int spectralSwath = 0;
+    int spatialSwath = 0;
     startupOptionsType options;
 
     unsigned int TARGET_WF_FRAMERATE = 35; // FPS

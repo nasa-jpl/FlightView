@@ -49,6 +49,7 @@ struct startupOptionsType
     bool headless = false;
     bool noGPU = false; // experimental
     bool rotate = false;
+    bool swapSpatialSpectral = false;
     bool remapPixels = false;
     QString instrumentPrefix = QString("UNSET");
     bool haveInstrumentPrefix = false;

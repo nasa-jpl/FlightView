@@ -149,7 +149,19 @@ OTHER_FILES += \
 RESOURCES += \
     images.qrc
 
+QMAKE_CXXFLAGS += -std=c++11
+
+CONFIG(debug, debug|release) {
+QMAKE_CXXFLAGS += -std=c++11 -march=native -mtune=native -fopenmp -Wno-class-memaccess -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result
+
+}
+
+CONFIG(release, debug|release) {
 QMAKE_CXXFLAGS += -O3 -std=c++11 -march=native -mtune=native -fopenmp -Wno-class-memaccess -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result
+
+
+}
+
 QMAKE_LFLAGS += -fopenmp
 LIBS += -lgsl -lgslcblas -lexiv2
 

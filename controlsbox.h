@@ -181,6 +181,8 @@ private:
     settingsT prefs;
     settingsT defaultPrefs;
 
+    int spatialWidth = 0;
+    int spectralWidth = 0;
     int bandRed = 0;
     int bandGreen = 0;
     int bandBlue = 0;

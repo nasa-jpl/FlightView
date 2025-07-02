@@ -129,6 +129,7 @@ void frameWorker::convertOptions()
     takeOptions.noGPU = options.noGPU;
     takeOptions.rotate = options.rotate;
     takeOptions.remapPixels = options.remapPixels;
+    takeOptions.swapSpatialSpectral = options.swapSpatialSpectral;
     takeOptions.useSHM = options.useSHM;
     takeOptions.flightMode = options.flightMode;
     takeOptions.disableGPS = options.disableGPS;
@@ -149,6 +150,7 @@ void frameWorker::convertOptions()
         takeOptions.rtpInterface = options.rtpInterface;
         takeOptions.havertpAddress = options.havertpAddress;
         takeOptions.rtpAddress = options.rtpAddress;
+        takeOptions.rtpPort = options.rtpPort;
         takeOptions.rtprgb = options.rtprgb;
     } else {
         takeOptions.rtpHeight = 0;

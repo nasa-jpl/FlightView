@@ -48,6 +48,7 @@ struct takeOptionsType
     bool headless = false;
     bool noGPU = false; // experimental
     bool rotate = false;
+    bool swapSpatialSpectral = false;
     bool remapPixels = false;
     char* instrumentPrefix = NULL;
     bool haveInstrumentPrefix = false;
