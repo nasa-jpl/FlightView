@@ -1228,7 +1228,8 @@ void take_object::fileImageCopyLoop()
             {
                 uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
                 memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
-                saving_list.push_front(raw_copy);
+                frameSaveBuffer.enqueue_overwrite(raw_copy);
+                //saving_list.push_front(raw_copy);
                 save_framenum--;
             }
 
@@ -1364,6 +1365,7 @@ void take_object::rtpConsumeFrames()
         shmBufferPositionPrior = 0;
     }
 
+
     while(rtpConsumerRun)
     {
         begintp = std::chrono::steady_clock::now();
@@ -1419,7 +1421,8 @@ void take_object::rtpConsumeFrames()
         {
             uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
             memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
-            saving_list.push_front(raw_copy);
+            // saving_list.push_front(raw_copy);
+            this->frameSaveBuffer.enqueue_overwrite(raw_copy); // we always want overwrite just in case we actually need it (which we do not in practice)
             save_framenum--;
         }
 
@@ -1571,7 +1574,8 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         {
             uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
             memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
-            saving_list.push_front(raw_copy);
+            frameSaveBuffer.enqueue_overwrite(raw_copy);
+            //saving_list.push_front(raw_copy);
             save_framenum--;
         }
 
@@ -1655,6 +1659,13 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
     statusMessage(ss);
 
+    bool averagingEnabled;
+    if( (num_avgs==1) || (num_avgs==0) ) {
+        averagingEnabled = false;
+    } else {
+        averagingEnabled = true;
+    }
+
     if(options.debug) {
         if(num_avgs > 1) {
             statusMessage("Saving mode: averaging (float)");
@@ -1691,128 +1702,135 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
     FILE * file_target = fopen(fname.c_str(), "wb");
     int sv_count = 0;
+    int waitCount = 0;
 
     while(  (save_framenum != 0) || continuousRecording.load(std::memory_order_seq_cst))
     {
-        if(saving_list.size() > 2)
+        if(!averagingEnabled)
         {
-            if(num_avgs == 1)
-            {
-                // This is our not-averaging save, where most saves go:
-                if(saving_list.size() > 2) {
-                    // We refuse to take the last item off the list.
-                    // it can wait until we are completely done recording.
-                    // This way the list remains valid in memory.
-                    uint16_t * data = saving_list.back();
-                    saving_list.pop_back();
-                    fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
-                    delete[] data;
-                    sv_count++;
-                    if(sv_count == 1) {
-                        save_count.store(1, std::memory_order_seq_cst);
-                    }
-                    else {
-                        save_count++;
-                    }
-                }
-            }
-            else if(saving_list.size() >= num_avgs && num_avgs != 1)
-            {
-                float * data = new float[frWidth*dataHeight];
-                for(unsigned int i2 = 0; i2 < num_avgs; i2++)
-                {
-                    uint16_t * data2 = saving_list.back();
-                    saving_list.pop_back();
-                    if(i2 == 0)
-                    {
-                        for(unsigned int i = 0; i < frWidth*dataHeight; i++)
-                        {
-                            data[i] = (float)data2[i];
-                        }
-                    }
-                    else if(i2 == num_avgs-1)
-                    {
-                        for(unsigned int i = 0; i < frWidth*dataHeight; i++)
-                        {
-                            data[i] = (data[i] + (float)data2[i])/num_avgs;
-                        }
-                    }
-                    else
-                    {
-                        for(unsigned int i = 0; i < frWidth*dataHeight; i++)
-                        {
-                            data[i] += (float)data2[i];
-                        }
-                    }
-                    delete[] data2;
-                }
-                fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
+            // This is our not-averaging save, where most saves go:
+            uint16_t * data = frameSaveBuffer.try_dequeue();
+            if(data) {
+                fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
                 delete[] data;
                 sv_count++;
                 if(sv_count == 1) {
                     save_count.store(1, std::memory_order_seq_cst);
-                }
-                else {
+                } else {
                     save_count++;
                 }
-                //std::cout << "save_count: " << std::to_string(save_count) << "\n";
-                //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
-                //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
+            } else {
+                // null pointer returned, wait for more frames.
+                // The while loop will break once continuous recording is false.
+                waitCount++; // track for debugging
+                usleep(1000);
             }
-            else if(save_framenum == 0 && saving_list.size() < num_avgs)
+        } else {
+            // Averaging enabled, buckle up...
+            // Since we are on the consuming side, we can do the averaging here
+            // and it will not stop up the production of frames,
+            // assuming we are 'on average' quicker than the frames are produced.
+            // If we are slower, then we can get in a situation where we fall behind
+            // This would be indicated by the overwrite count being non-zero.
+            float * data = new float[frWidth*dataHeight];
+            for(unsigned int i2 = 0; i2 < num_avgs; i2++)
             {
-                warningMessage("Erasing saving_list");
-                saving_list.erase(saving_list.begin(),saving_list.end());
+                uint16_t * data2 = frameSaveBuffer.try_dequeue();
+                if(i2 == 0)
+                {
+                    for(unsigned int i = 0; i < frWidth*dataHeight; i++)
+                    {
+                        data[i] = (float)data2[i];
+                    }
+                }
+                else if(i2 == num_avgs-1)
+                {
+                    for(unsigned int i = 0; i < frWidth*dataHeight; i++)
+                    {
+                        data[i] = (data[i] + (float)data2[i])/num_avgs;
+                    }
+                }
+                else
+                {
+                    for(unsigned int i = 0; i < frWidth*dataHeight; i++)
+                    {
+                        data[i] += (float)data2[i];
+                    }
+                }
+                delete[] data2;
             }
-            else
-            {
-                //We're waiting for data to get added to the list...
-                usleep(250);
+            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
+            delete[] data;
+            sv_count++;
+            if(sv_count == 1) {
+                save_count.store(1, std::memory_order_seq_cst);
+            } else {
+                save_count++;
             }
-        }
-        else
-        {
-            //We're waiting for data to get added to the list...
-            usleep(250);
         }
     }
 
     // Almost done, let's take care of anything left in the buffer.
-
     statusMessage("Finished primary saving loop.");
     char message[128];
-    sprintf(message, "Size of buffer: %ld", saving_list.size());
-    statusMessage(message);
-    if( (num_avgs==1) || (num_avgs==0)) {
-        statusMessage("Finishing write...");
-        while(saving_list.size() > 0) {
+    sprintf(message, "Size of buffer after real-time saving: %ld", frameSaveBuffer.size());
+    statusMessage(message); memset(message, 0, sizeof(message));
+    sprintf(message, "Number of overwrite conditions: %d", frameSaveBuffer.getOverrideCount());
+    statusMessage(message); memset(message, 0, sizeof(message));
+    sprintf(message, "Number of empty read attempts: %d", frameSaveBuffer.getEmptyRequestCount());
+    statusMessage(message); memset(message, 0, sizeof(message));
+    sprintf(message, "Number of waits: %d", waitCount);
+    statusMessage(message); memset(message, 0, sizeof(message));
+    int finishingCounter = 0;
+    int emptyFinishingCounter = 0;
+
+    if(!averagingEnabled) {
+        statusMessage("Finishing write:");
+        while(frameSaveBuffer.size() > 0) {
             statusMessage("Writing additional frame");
-            uint16_t * data = saving_list.back();
-            if(saving_list.size() > 0)
-                saving_list.pop_back();
-            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target);
-            sv_count++;
-            delete[] data;
+//            sprintf(message, "Write Position: %ld, read position: %ld, size: %ld",
+//                    frameSaveBuffer.getWritePos(), frameSaveBuffer.getReadPos(), frameSaveBuffer.size());
+//            statusMessage(message); memset(message, 0, sizeof(message));
+            uint16_t * data = frameSaveBuffer.try_dequeue();
+            if(data) {
+                fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target);
+                sv_count++;
+                delete[] data;
+            } else {
+                emptyFinishingCounter++;
+            }
+            finishingCounter++;
+            if(finishingCounter > 1000) {
+                // Now we have a problem. We will dump some debug out and break.
+                sprintf(message, "Write Position: %ld", frameSaveBuffer.getWritePos());
+                statusMessage(message); memset(message, 0, sizeof(message));
+                sprintf(message, "Read Position: %ld", frameSaveBuffer.getReadPos());
+                statusMessage(message); memset(message, 0, sizeof(message));
+                sprintf(message, "Size: %ld", frameSaveBuffer.size());
+                statusMessage(message); memset(message, 0, sizeof(message));
+                sprintf(message, "emptyFinishingCounter: %d", emptyFinishingCounter);
+                statusMessage(message); memset(message, 0, sizeof(message));
+                break;
+            }
         }
         statusMessage("Done with write.");
     } else {
-        while(saving_list.size() > 0) {
+        while(frameSaveBuffer.size() > 0) {
+            statusMessage("Clearing buffer:");
             //statusMessage("Dropping additional frame at end that does not meet average interval.");
-            uint16_t * data = saving_list.back();
-            if(saving_list.size() > 0)
-                saving_list.pop_back();
-            // Since averaging is typically many frames (>100),
-            // we cannot really average the last two or three frames
-            // in a meaningfull way. Writing the data out will just
-            // confuse people about the scale of the last few frames.
-            //fwrite(data,sizeof(float),frWidth*dataHeight,file_target);
-            delete[] data;
+            uint16_t * data = frameSaveBuffer.try_dequeue();
+            if(data) {
+                delete[] data;
+            }
         }
+        statusMessage("Done.");
     }
 
     fclose(file_target);
+    frameSaveBuffer.clearStats();
+
     std::string hdr_text;
-    if( (num_avgs !=0) && (num_avgs !=1) )
+    if(averagingEnabled)
     {
         hdr_text = "ENVI\ndescription = {FlightView raw export file, " + std::to_string(num_avgs) + " frames mean per line}\n";
     } else {
@@ -1839,7 +1857,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
     hdr_text+= "header offset = 0\n";
     hdr_text+= "file type = ENVI Standard\n";
-    if((num_avgs != 1) && (num_avgs != 0))
+    if(averagingEnabled)
     {
         hdr_text+= "data type = 4\n";
     }
@@ -1855,11 +1873,9 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     std::ofstream hdr_target(hdr_fname);
     hdr_target << hdr_text;
     hdr_target.close();
-    // What does this usleep do? --EHL
-    //if(sv_count == 1)
-    //    usleep(500000);
     save_count.store(0, std::memory_order_seq_cst);
-    statusMessage("Saving complete.");
+    sprintf(message, "Saving Complete. Saved %d frames.", sv_count);
+    statusMessage(message); memset(message, 0, sizeof(message));
     savingMutex.unlock();
     savingData = false;
 }

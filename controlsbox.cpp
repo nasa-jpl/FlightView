@@ -2103,13 +2103,10 @@ void ControlsBox::save_finite_button_slot()
         QString gpsLogFilename = fnamegen.getFullFilename("", "_gps", "");
 
         // Populate the text boxes with the filenames
-
         // If the number of frames to save is blank, continuous recording happens.
         // No averaging.
-        // We might want to hard-code a zero for the number of frames to save,
-        // which is a flag to continuously save. Or, we can keep it as-is
-        // and allow the operator to specify a number of frames.
-        emit startSavingFinite(frames_save_num_edit.value(), rawDataFilename, 1); // to frameWorker (fw) to takeObject
+        frames_save_num_edit.setValue(0);
+        emit startSavingFinite(0, rawDataFilename, 1); // to frameWorker (fw) to takeObject
         emit statusMessage(QString("[Controls Box]: Saving data to file [%1]").arg(rawDataFilename));
         previousNumSaved = frames_save_num_edit.value();
         stop_saving_frames_button.setEnabled(true);

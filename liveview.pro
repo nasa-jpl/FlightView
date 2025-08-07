@@ -120,7 +120,9 @@ DISTFILES +=    cuda_take/include/take_object.hpp \
                 cuda_take/include/cameramodel.h \
                 cuda_take/include/cudalog.h \
                 cuda_take/include/takeoptions.h \
-                cuda_take/include/rtpcamera.hpp
+                cuda_take/include/rtpcamera.hpp \
+                cuda_take/include/safelist.h \
+                cuda_take/include/safebuffer.h
 
 DISTFILES +=    cuda_take/src/take_object.cpp \
                 cuda_take/src/std_dev_filter_device_code.cu \
@@ -131,7 +133,8 @@ DISTFILES +=    cuda_take/src/take_object.cpp \
                 cuda_take/src/dark_subtraction_filter.cpp \
                 cuda_take/src/chroma_translate_filter.cpp \
                 cuda_take/src/xiocamera.cpp \
-                cuda_take/src/rtpcamera.cpp
+                cuda_take/src/rtpcamera.cpp \
+                cuda_take/src/safelist.cpp
 
 
 
@@ -149,7 +152,7 @@ OTHER_FILES += \
 RESOURCES += \
     images.qrc
 
-QMAKE_CXXFLAGS += -std=c++11
+QMAKE_CXXFLAGS += -std=c++11 -faligned-new
 
 CONFIG(debug, debug|release) {
 QMAKE_CXXFLAGS += -std=c++11 -march=native -mtune=native -fopenmp -Wno-class-memaccess -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result

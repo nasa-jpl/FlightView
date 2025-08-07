@@ -19,6 +19,9 @@
 #include <fcntl.h>
 #include "shm_image.h"
 
+// thread-safe Ring Buffer for saving files:
+#include "safebuffer.h"
+
 //multithreading includes
 #include <atomic>
 #include <boost/shared_array.hpp>
@@ -225,6 +228,10 @@ public:
 	void stopSavingRaws();
     //void panicSave(std::string);
     std::list<uint16_t *> saving_list;
+    // 128 is the allocation size for the camera-to-savefile buffer
+    // In practice we are generally only a frame behind the camera, but we allow for up to 128 frames.
+    LockFreeRingBuffer<uint16_t, 128> frameSaveBuffer;
+
 	std::atomic <uint_fast32_t> save_framenum;
 	std::atomic <uint_fast32_t> save_count;
 	unsigned int save_num_avgs;
