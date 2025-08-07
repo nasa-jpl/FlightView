@@ -65,6 +65,8 @@ struct startupOptionsType
     bool UDPLogging = false;
     QString UDPLogHost = QString("");
     unsigned int UDPLogPort = 10175;
+
+    bool showMore = false;
 };
 
 

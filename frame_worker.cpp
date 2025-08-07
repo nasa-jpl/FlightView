@@ -166,6 +166,7 @@ void frameWorker::convertOptions()
     takeOptions.xioWidth = options.xioWidth;
     takeOptions.heightWidthSet = options.heightWidthSet;
     takeOptions.targetFPS = options.targetFPS;
+    takeOptions.showMore = options.showMore;
 
 
     if(takeOptions.rtpCam)
@@ -291,6 +292,12 @@ void frameWorker::captureFrames()
                     emit updateFPS();
                 }
                 lastTime = clock.elapsed();
+                if(to.haveMessage) {
+                    emit toMessageOut(to.messagePasser);
+                    to.haveMessage =false;
+                }
+            }
+            if(options.showMore) {
                 if(to.haveMessage) {
                     emit toMessageOut(to.messagePasser);
                     to.haveMessage =false;

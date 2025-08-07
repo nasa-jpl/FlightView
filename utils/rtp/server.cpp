@@ -18,6 +18,7 @@
 #include <netinet/in.h> 
    
 #define PORT      5004
+#define MAXLINE 1024 
 
 // 8E3  = 125 FPS
 // 5E3  = 196 FPS
@@ -28,7 +29,7 @@
 // 2500 = 400 FPS (385 typically)
 // 2000 = 500 FPS (470 typically)
 
-#define framePeriod_microsec (30E3)
+#define framePeriod_microsec (10000)
 #define packetDelay_ns (1)
 
 #define nFramesToDeliver (100000)
@@ -37,7 +38,7 @@
 // 32 for 1280*480
 // 41 for 1280*328
 // 64 for 512*2048
-#define chunksPerFrame_d (256)
+#define chunksPerFrame_d (41)
 
 struct SRTPData {
     bool	      m_bFirstPacket;
@@ -83,9 +84,8 @@ char * loadFile(char* filename, size_t *length) {
         fclose(fdPrimary);
         return NULL;
     } else {
-        size_t res = fread(binBuffer, primarySize, 1, fdPrimary);
+        fread(binBuffer, primarySize, 1, fdPrimary);
         printf("Read %lu bytes from binary file.\n", primarySize);
-        (void)res;
     }
 
     *length = primarySize;
@@ -290,8 +290,8 @@ int main(int argc, char* argv[]) {
     // uint16_t width = 2048;
 
     // AVIRIS-III: 
-    uint16_t height = 1024;
-    uint16_t width = 1024;
+    uint16_t height = 328;
+    uint16_t width = 1280;
 
     size_t fileLen = 0;
     printf("Loading file [%s]...\n", argv[argc-1]);

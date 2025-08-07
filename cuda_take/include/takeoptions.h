@@ -61,6 +61,7 @@ struct takeOptionsType
     bool xioDirSet = false;
     std::string *xioDirectory = NULL;
 
+    bool showMore = false;
     bool theseAreDefault = false;
 };
 

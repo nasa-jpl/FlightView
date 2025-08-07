@@ -143,6 +143,9 @@ int main(int argc, char *argv[])
         {
             startupOptions.flightMode = true;
         }
+        if(currentArg == "--showmore") {
+            startupOptions.showMore = true;
+        }
         if(currentArg == "--no-gps")
         {
             startupOptions.disableGPS = true;
