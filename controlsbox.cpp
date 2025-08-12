@@ -1619,7 +1619,11 @@ void ControlsBox::tab_changed_slot(int index)
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateCeiling(int)), Qt::UniqueConnection);
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_histogram, SLOT(updateFloor(int)), Qt::UniqueConnection);
             std_dev_N_slider->setEnabled(true);
+            std_dev_N_slider->setVisible(true);
             std_dev_N_edit->setEnabled(true);
+            std_dev_N_edit->setVisible(true);
+            std_dev_n_label->setVisible(true);
+
             use_DSF_cbox.setEnabled(false);
             use_DSF_cbox.setChecked(fw->usingDSF());
             p_histogram->rescaleRange();
