@@ -35,7 +35,7 @@ class dark_subtraction_filter
 {
 public:
     dark_subtraction_filter() {} // Useless default constructor
-	dark_subtraction_filter(int nWidth, int nHeight);
+    dark_subtraction_filter(int nWidth, int nHeight, bool *extMaskReadyFlag);
 	virtual ~dark_subtraction_filter();
     void update_dark_subtraction(uint16_t* pic_in, float* pic_out);
     void static_dark_subtract(unsigned int* pic_in, float* pic_out);
@@ -52,6 +52,7 @@ public:
 private:
 	bool mask_collected;
     bool mean_inProgress = false;
+    bool *extMaskReady = NULL;
 	//boost::shared_array<float> picture_out;
 	unsigned int width;
 	unsigned int height;

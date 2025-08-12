@@ -207,7 +207,7 @@ public:
 	void loadDSFMask(std::string file_name);
     void loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format);
 
-    bool dsfMaskCollected;
+    bool *dsfMaskCollected = NULL;
     bool useDSF = false;
     uint16_t darkStatusPixelVal = obcStatusScience;
 

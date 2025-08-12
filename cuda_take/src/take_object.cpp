@@ -5,6 +5,7 @@
 take_object::take_object(takeOptionsType options, int channel_num, int number_of_buffers,
                          int filter_refresh_rate, bool runStdDev)
 {
+    *dsfMaskCollected = new bool(false);
     changeOptions(options);
     initialSetup(channel_num, number_of_buffers,
                  filter_refresh_rate, runStdDev);
@@ -14,6 +15,7 @@ take_object::take_object(int channel_num, int number_of_buffers,
                          int frf, bool runStdDev)
 {
     statusMessage("Starting take_object with default options.");
+    dsfMaskCollected = new bool(false);
     takeOptionsType options;
     options.theseAreDefault = true;
     options.xioCam = false;
@@ -36,7 +38,7 @@ void take_object::initialSetup(int channel_num, int number_of_buffers,
     frame_ring_buffer = new frame_c[CPU_FRAME_BUFFER_SIZE];
 
     //For the filters
-    dsfMaskCollected = false;
+    *dsfMaskCollected = false;
     this->std_dev_filter_N = 400;
     this->runStdDev = runStdDev;
     whichFFT = PLANE_MEAN;
@@ -359,7 +361,7 @@ void take_object::start()
 #endif
 
     // Initialize the filters
-    dsf = new dark_subtraction_filter(frWidth,frHeight);
+    dsf = new dark_subtraction_filter(frWidth,frHeight, dsfMaskCollected);
     sdvf = new std_dev_filter(frWidth,frHeight, cudaDevNumber);
 
     // Initial dimensions for calculating the mean that can be updated later
@@ -514,7 +516,7 @@ void take_object::enableDarkStatusPixelWrite(bool writeValues) {
 
 void take_object::startCapturingDSFMask()
 {
-    dsfMaskCollected = false;
+    *dsfMaskCollected = false;
 
     dsf->start_mask_collection();
     if(shmValid) {
@@ -537,7 +539,7 @@ void take_object::finishCapturingDSFMask()
     pthread_setname_np(mask_liveMean_thread_handler, "MASKMEAN");
 
     dsf->mask_mutex.unlock();
-    dsfMaskCollected = true;
+    *dsfMaskCollected = true;
     if(shmValid) {
         shm->takingDark = false;
     }
@@ -643,7 +645,7 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     }
 
     dsf->load_mask(mean_frame); // memcopy to stack variable
-    dsfMaskCollected = true;
+    *dsfMaskCollected = true;
 
     if(frames)
         free(frames);

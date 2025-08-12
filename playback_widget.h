@@ -80,7 +80,6 @@ signals:
     void loadMask(float *mask);
     /*! \brief This signal calls to stop the class event loop and deallocate the thread later. */
     void finished();
-
 };
 
 class playback_widget : public QWidget
@@ -190,6 +189,9 @@ private slots:
     void loadMaskIn(float *mask_arr);
     void updateStatus(int frameNum);
     void handleFrame(int frameNum);
+
+private:
+    bool *dsfReady = NULL;
 
 };
 #endif // PLAYBACK_WIDGET_H

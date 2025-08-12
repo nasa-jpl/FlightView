@@ -36,6 +36,8 @@ void dark_subtraction_filter::finish_mask_collection()
         std::cerr << "ERROR, mask averaging is already in progress! Mutex fail!" << std::endl;
         return;
     }
+    if(extMaskReady)
+        *extMaskReady = false;
     pthread_setname_np(pthread_self(), "MASKMEAN");
 
     mean_inProgress = true;
@@ -49,6 +51,8 @@ void dark_subtraction_filter::finish_mask_collection()
 	}
     mean_inProgress = false;
 	mask_collected = true;
+    if(extMaskReady)
+        *extMaskReady = true;
 #ifdef VERBOSE
     std::cout << "mask averaging completed, samples: " << averaged_samples << std::endl;
 #endif
@@ -135,7 +139,7 @@ uint32_t dark_subtraction_filter::update_mask_collection(uint16_t* pic_in)
     return averaged_samples;
 }
 
-dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)
+dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight, bool *extMaskReadyFlag)
 {
     /*! \brief Initializes the filter for a specified frame geometry.
      * \param nWidth The new frame width
@@ -148,6 +152,11 @@ dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight)
     {
         mask[i]=0;
     }
+    if(extMaskReadyFlag == NULL) {
+        // Let's crash right here so we can catch this insanity if it occurs.
+        abort();
+    }
+    this->extMaskReady = extMaskReadyFlag;
 }
 dark_subtraction_filter::~dark_subtraction_filter()
 {
