@@ -36,7 +36,7 @@ public:
                 int startRow,
                 int endRow,
                 int actualWidth,
-                bool useDSF,
+                bool useDSF, bool useWR,
                 FFT_t FFTtype,
                 int lh_start, int lh_end,
                 int cent_start, int cent_end,
@@ -50,7 +50,7 @@ public:
            int startRow,
            int endRow,
            int actualWidth,
-           bool useDSF,
+           bool useDSF, bool useWR,
            FFT_t FFTtype,
            int lh_start, int lh_end,
            int cent_start, int cent_end,
@@ -78,31 +78,36 @@ public:
 	fft myFFT;
 
 private:
-        boost::thread mean_thread;
-        std::atomic<bool> doThreadWork;
-        std::atomic<bool> runningMF;
-        std::mutex locking_mutex;
-        void threadEntry();
-        int beginCol;
-        int width;
-        int beginRow;
-        int height;
-        int frWidth;
-        bool useDSF;
-        int FFTtype;
-        // overlay parameters:
-        int lh_start;
-        int lh_end;
-        int cent_start;
-        int cent_end;
-        int rh_start;
-        int rh_end;
+    boost::thread mean_thread;
+    std::atomic<bool> doThreadWork;
+    std::atomic<bool> runningMF;
+    std::mutex locking_mutex;
+    void threadEntry();
+    unsigned int frameCountUpdate = 0;
+    unsigned int frameCountCalculateMeans = 0;
+    unsigned int frameCountStartMeans = 0;
+    unsigned int frameCountRunningMF = 0;
+    int beginCol;
+    int width;
+    int beginRow;
+    int height;
+    int frWidth;
+    bool useDSF;
+    bool useWR = false;
+    int FFTtype;
+    // overlay parameters:
+    int lh_start;
+    int lh_end;
+    int cent_start;
+    int cent_end;
+    int rh_start;
+    int rh_end;
 
     float tap_profile[TAP_WIDTH*MAX_HEIGHT];
-	float frame_mean;
-	unsigned int mean_ring_buffer_fft_head;
-	unsigned long frame_count;
-	frame_c * frame;
+    float frame_mean;
+    unsigned int mean_ring_buffer_fft_head;
+    unsigned long frame_count;
+    frame_c * frame;
 };
 
 #endif /* MEAN_FILTER_HPP */

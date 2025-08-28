@@ -107,6 +107,15 @@ void dark_subtraction_filter::update_dark_subtraction(uint16_t* pic_in, float* p
 		pic_out[i] = pic_in[i] - mask[i];
 	}
 }
+
+void dark_subtraction_filter::static_dark_subtract(float* pic_in, float* pic_out) {
+    // Perform DSF on the pic_in
+    for(unsigned int i = 0; i < width*height; i++)
+    {
+        pic_out[i] = pic_in[i] - mask[i];
+    }
+}
+
 void dark_subtraction_filter::static_dark_subtract(unsigned int* pic_in, float* pic_out)
 {
     /*! \brief Subtracts the dark mask from the image data for each pixel in a discrete image.
@@ -158,6 +167,11 @@ dark_subtraction_filter::dark_subtraction_filter(int nWidth, int nHeight, bool *
     }
     this->extMaskReady = extMaskReadyFlag;
 }
+
+bool dark_subtraction_filter::maskReady() {
+    return mask_collected;
+}
+
 dark_subtraction_filter::~dark_subtraction_filter()
 {
     /*! When deallocating the filter, dark subtraction must be turned off to avoid

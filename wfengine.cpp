@@ -417,6 +417,7 @@ void wfengine::addNewFrame()
     // MUTEX wait-lock
     addingFrame.lock();
     float *local_image_ptr;
+    float *localWRPtr;
     uint16_t* local_image_ptr_uint16;
     if(fw->curFrame == NULL)
     {
@@ -424,6 +425,7 @@ void wfengine::addNewFrame()
         return;
     }
 
+    localWRPtr = fw->curFrame->white_referenced_data;
     local_image_ptr = fw->curFrame->dark_subtracted_data;
     local_image_ptr_uint16 = fw->curFrame->image_data_ptr;
 
@@ -436,8 +438,12 @@ void wfengine::addNewFrame()
     int b_row_pix = b_row;
 
     //    if(fw->dsfMaskCollected() && useDSF); // prior method
-    if(useDSF) // concurrent
-    {
+    if(useWR) {
+        copyPixToLine(localWRPtr, line->getr_raw(), r_row_pix);
+        copyPixToLine(localWRPtr, line->getg_raw(), g_row_pix);
+        copyPixToLine(localWRPtr, line->getb_raw(), b_row_pix);
+    } else if(useDSF) {
+        // concurrent:
         copyPixToLine(local_image_ptr, line->getr_raw(), r_row_pix);
         copyPixToLine(local_image_ptr, line->getg_raw(), g_row_pix);
         copyPixToLine(local_image_ptr, line->getb_raw(), b_row_pix);
@@ -943,6 +949,10 @@ void wfengine::setUseDSF(bool useDSF)
     this->useDSF = useDSF;
 }
 
+void wfengine::setUseWR(bool useWR) {
+    this->useWR = useWR;
+}
+
 void wfengine::rescaleWF()
 {
     // mutex lock
@@ -1119,7 +1129,7 @@ void wfengine::debugMessage(QString m) {
 #endif
     m.prepend(QString("DBG WF ENGINE: "));
 
-    std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
+    //std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
     emit statusMessageOut(m);
 }
 
@@ -1130,7 +1140,7 @@ void wfengine::statusMessage(QString m)
     // Note: Messages made during the constructor might get emitted before
     // the console log is ready. Uncomment the next line to see them anyway:
 #ifdef QT_DEBUG
-    std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
+    //std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
 #endif
     emit statusMessageOut(m);
 }

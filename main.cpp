@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
                                "--remap (reorder pixels for some cameras)\n"
                                "--swap (swap spatial and spectral)\n"
                                "--darkreffile /path/to/dark_file.raw (uint16 frames)\n"
+                               "--whitereffile /path/to/white_file.raw (uint16 frames)\n"
                                "--udplogginghost 1.2.3.4\n"
                                "--udploggingport 10175\n"
                                )\
@@ -195,7 +196,17 @@ int main(int argc, char *argv[])
                 exit(-1);
             }
         }
-
+        if( (currentArg == "--whitereffile") || (currentArg == "--whitereferencefile") ) {
+            if(argc > c)
+            {
+                startupOptions.whitereffile = argv[c+1];
+                startupOptions.whitereffileSet = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
         if(currentArg == "--rtpcam")
         {
             startupOptions.rtpCam = true;

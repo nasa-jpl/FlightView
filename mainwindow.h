@@ -53,6 +53,7 @@ private:
     void processGPSMessage();
 
     QTimer *darkRefLoadTimer = NULL;
+    QTimer *whiteRefLoadTimer = NULL;
 
     /*! All widgets currently used in Live View
      * @{ */
@@ -81,7 +82,7 @@ private:
 public slots:
     void handleMainWindowStatusMessage(QString message);
     void handleGeneralStatusMessage(QString message);
-
+    void handleWRToggle(bool useWR);
     void handlePreferenceRead(settingsT prefs);
     void enableStdDevTabs();
     void debugThis();
@@ -90,6 +91,9 @@ signals:
     void toggleStdDevCalc(bool enabled);
     void loadDarkMask(QString darkfilename,
                       fileFormat_t fmt);
+    void loadWhiteReference(QString whiteReferenceFilename,
+                      fileFormat_t fmt);
+    void toggleUseWR(bool useWR);
 
 protected:
     /*! \brief Defines keyboard controls for all components of Live View */

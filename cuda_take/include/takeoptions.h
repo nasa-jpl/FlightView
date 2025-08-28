@@ -61,6 +61,9 @@ struct takeOptionsType
     bool xioDirSet = false;
     std::string *xioDirectory = NULL;
 
+    bool whitereffileSet = false;
+    std::string whitereffile;
+
     bool showMore = false;
     bool theseAreDefault = false;
 };

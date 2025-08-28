@@ -176,6 +176,11 @@ void frameWorker::convertOptions()
         if(takeOptions.rtpAddress != NULL)
             qDebug() << "RTP Address: " << takeOptions.rtpAddress;
     }
+
+    if(takeOptions.whitereffileSet) {
+        options.whitereffileSet = true;
+        options.whitereffile = QString::fromStdString(takeOptions.whitereffile);
+    }
 }
 
 // public functions
@@ -248,6 +253,7 @@ void frameWorker::captureFrames()
     frame_c *workingFrame;
     int microSecondsPerFrame = 0;
     // int flags=1;
+    bool firstStdDev = true;
 
     while(doRun) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 1); // 1ms maximum delay permitted
@@ -262,9 +268,16 @@ void frameWorker::captureFrames()
             }
         }
         if(workingFrame->async_filtering_done != 0) {
-            curFrame = workingFrame;
-            if (curFrame->has_valid_std_dev == 1) {
+            // async_filtering_done, ready to draw things:
+            curFrame = workingFrame; // from the frame_ring_buffer, one frame behind the current frame
+            if ( (curFrame->has_valid_std_dev == 1) || (firstStdDev && (curFrame->has_valid_std_dev ==2))) {
+                // The curFrame contains a standard deviation measurement,
+                // but it is not meaningful until it is done processing.
+                // "1" means "processing in progress", and we are "saving" this frame
+                // for the next time we come around when it may be completed.
+                // "2" means complete. We can accept a complete frame to get us going.
                 std_dev_processing_frame = curFrame;
+                firstStdDev = false;
             }
             save_num = to.save_framenum.load(std::memory_order_seq_cst);
             save_ct = to.save_count.load(std::memory_order_seq_cst);
@@ -316,6 +329,25 @@ void frameWorker::captureFrames()
     emit finished();
 }
 
+void frameWorker::loadWRFile(QString filename, fileFormat_t format) {
+    to.loadWR_entry(filename.toStdString(), format);
+}
+
+void frameWorker::startCapturingWR() {
+    sMessage("Starting to record white reference");
+    to.startCapturingWR();
+}
+
+void frameWorker::finishCapturingWR() {
+    sMessage("Finishing capture of white reference");
+    to.finishCapturingWR();
+}
+
+void frameWorker::toggleUseWR(bool t) {
+    sMessage("Toggling take_object use of WR.");
+    to.useWR = t;
+}
+
 void frameWorker::loadDarkFile(QString filename, fileFormat_t format)
 {
     to.loadDSFMask_entry(filename.toStdString(), format);
@@ -347,6 +379,8 @@ void frameWorker::toggleUseDSF(bool t)
      * \param t State variable for the "Use Dark Subtraction Filter" checkbox. */
     to.useDSF = t;
 }
+
+
 void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName, unsigned int numavgsave)
 {
     /*! \brief Calls to start saving frames in cuda_take at a specified location

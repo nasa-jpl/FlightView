@@ -18,6 +18,8 @@ struct startupOptionsType
     QString dataLocation = QString("/data");
     bool darkRefFileSet = false;
     QString darkReferenceFileLocation = QString("/empty.raw");
+    bool whitereffileSet = false;
+    QString whitereffile = QString("/empty.raw");
     bool gpsIPSet = false;
     QString gpsIP = QString("10.0.0.6");
     bool gpsPortSet = false;

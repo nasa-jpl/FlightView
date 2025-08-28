@@ -39,6 +39,7 @@ struct frame_c{
         uint16_t * image_data_ptr;
 
         float dark_subtracted_data[MAX_SIZE];
+        float white_referenced_data[MAX_SIZE];
         float vertical_mean_profile[MAXCUDA(MAX_HEIGHT, MAX_WIDTH)]; //These can use regular C++ allocation because they do not have to deal w/cuda
         float vertical_mean_profile_lh[MAXCUDA(MAX_HEIGHT, MAX_WIDTH)];
         float vertical_mean_profile_rh[MAXCUDA(MAX_HEIGHT, MAX_WIDTH)];

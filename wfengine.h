@@ -160,6 +160,7 @@ class wfengine : public QObject
 
     void redraw();
     bool useDSF;
+    bool useWR = false;
     bool useRatio = false;
     bool recordToJPG = false;
     int jpgQuality = 75; // TODO: parameter
@@ -214,6 +215,7 @@ public slots:
     void updateCeiling(int c);
     void updateFloor(int f);
     void setUseDSF(bool useDSF);
+    void setUseWR(bool useWR);
     void setRecordWFImage(bool recordImageOn);
     void immediatelySaveImage(); // save image right now, no questions asked.
     void setSecondaryWF(bool isSecondary);

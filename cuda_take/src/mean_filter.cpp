@@ -5,7 +5,7 @@
 
 mean_filter::mean_filter(frame_c * frame,unsigned long frame_count,int startCol,\
                          int endCol,int startRow,int endRow,int actualWidth, \
-                         bool useDSF,FFT_t FFTtype,\
+                         bool useDSF, bool useWR, FFT_t FFTtype,\
                          int lh_start, int lh_end,\
                          int cent_start, int cent_end,\
                          int rh_start, int rh_end)
@@ -42,20 +42,21 @@ mean_filter::~mean_filter()
 
 void mean_filter::update(frame_c * frame,unsigned long frame_count,int startCol,\
                          int endCol,int startRow,int endRow,int actualWidth, \
-                         bool useDSF,FFT_t FFTtype,\
+                         bool useDSF, bool useWR, FFT_t FFTtype,\
                          int lh_start, int lh_end,\
                          int cent_start, int cent_end,\
                          int rh_start, int rh_end)
 {
+    // This function is called for every new frame introduced
     beginCol = startCol;
     width = endCol;
     beginRow = startRow;
     height = endRow;
     frWidth = actualWidth;
-
     this->frame = frame;
     this->frame_count = frame_count;
     this->useDSF = useDSF;
+    this->useWR = useWR;
     this->FFTtype = FFTtype;
 
     // copy the latest overlay parameters from the frame:
@@ -66,6 +67,7 @@ void mean_filter::update(frame_c * frame,unsigned long frame_count,int startCol,
     this->cent_end = cent_end;
     this->rh_start = rh_start;
     this->rh_end = rh_end;
+    frameCountUpdate++;
 }
 
 void mean_filter::updateParameters(unsigned long frame_count,int startCol,\
@@ -97,6 +99,7 @@ void mean_filter::updateParameters(unsigned long frame_count,int startCol,\
 
 void mean_filter::start_mean()
 {
+    frameCountStartMeans++;
     doThreadWork.store(true);
 }
 
@@ -111,6 +114,7 @@ void mean_filter::threadEntry()
             usleep(100);
         }
         calculate_means();
+        frameCountRunningMF++;
         lock.unlock();
     }
 }
@@ -174,12 +178,18 @@ void mean_filter::calculate_means()
 
     }
 
+    // Compute the Horizontal and Vertical Mean Profiles:
     for(int r = beginRow; r < height; r++)
     {
         for(int c = beginCol; c < width; c++)
         {
-            if(!useDSF)
-            {
+            if(useWR) {
+                // White reference data is always already dark subtracted at this point.
+                frame->vertical_mean_profile[r] += frame->white_referenced_data[r*frWidth + c];
+                frame->horizontal_mean_profile[c] += frame->white_referenced_data[r*frWidth + c];
+                if(FFTtype == TAP_PROFIL)
+                    tap_profile[r * TAP_WIDTH + c % TAP_WIDTH] = frame->image_data_ptr[r * frWidth + c];
+            } else if(!useDSF) {
                 frame->vertical_mean_profile[r] += frame->image_data_ptr[r*frWidth + c];
                 frame->horizontal_mean_profile[c] += frame->image_data_ptr[r*frWidth + c];
                 if(FFTtype == TAP_PROFIL)
@@ -252,7 +262,7 @@ void mean_filter::calculate_means()
         myFFT.doRealFFT(frame->vertical_mean_profile, 0, frame->fftMagnitude); // FOR THE VERTICAL CROSSHAIR FFT
     else if( FFTtype == TAP_PROFIL )
         myFFT.doRealFFT(tap_profile, 0, frame->fftMagnitude);
-
+    frameCountCalculateMeans++;
     frame->async_filtering_done = 1;
     //delete this; //I can honestly say this is the ugliest line of C++ I've ever written.
     doThreadWork.store(false);

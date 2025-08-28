@@ -6,6 +6,7 @@
 
 /* Qt includes */
 #include <QCheckBox>
+#include <QLabel>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -47,6 +48,7 @@ class profile_widget : public QWidget
     QCheckBox *showCalloutCheck;
     QCheckBox * zoomX_enable_Check;
     QCheckBox * zoomY_enable_Check;
+    QCheckBox* useWhiteReferenceCheckbox;
     QCPItemText *callout;
     QCPItemLine *arrow;
     QSpacerItem * spacer;
@@ -75,6 +77,8 @@ class profile_widget : public QWidget
     int x_coord = 1;
     int y_coord = 1;
     bool allow_callouts = true;
+
+    bool useWhiteReference = false;
 
 public:
     explicit profile_widget(frameWorker *fw, image_t image_type , QWidget *parent = 0);
@@ -116,7 +120,7 @@ public slots:
 
 signals:
     void haveNewRangeFC(double floor, double ceiling);
-
+    void requestWhiteReference(bool useWR);
 private:
     void updateCalloutValue();
 

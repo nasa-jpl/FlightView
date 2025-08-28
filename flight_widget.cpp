@@ -337,6 +337,13 @@ void flight_widget::setUseDSF(bool useDSF)
         //secondWF->setUseDSF(useDSF);
     }
     dsf_widget->setUseDSF(useDSF);
+    this->usingDSF = useDSF; // track status
+}
+
+void flight_widget::setUseWR(bool useWR) {
+    wfcomputer->setUseWR(useWR);
+    dsf_widget->setUseWR(useWR);
+    this->usingWR = useWR; // track status
 }
 
 void flight_widget::toggleDisplayCrosshair()

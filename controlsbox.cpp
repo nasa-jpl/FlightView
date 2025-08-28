@@ -115,11 +115,35 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         emit setWFTargetFPS_render(targetFPS);
     });
 
+    useWRCbox = new QCheckBox("WhiteReference");
+    useWRCbox->setToolTip("Check to use the white reference");
+
+    collectDarkButton = new QPushButton("Collect Darks");
+    collectWRButton = new QPushButton("Collect WR");
+    collectWRButton->setToolTip("Start taking white reference. Must take dark first.");
+
+    connect(useWRCbox, &QCheckBox::stateChanged, [&](int state) {
+        this->useWhiteReference = (bool)state;
+        emit toggleWR(state);
+    });
+
+    connect(collectWRButton, &QPushButton::pressed, [&]() {
+        if(takingWRNow) {
+            collectWRButton->setText("Collect WR");
+            emit stopWRMaskCollection();
+            takingWRNow = false;
+        } else {
+            collectWRButton->setText("Stop WR");
+            emit startWRMaskCollection();
+            takingWRNow = true;
+        }
+    });
+
+
+
     /* ====================================================================== */
     // LEFT SIDE BUTTONS (Collections)
-    collect_dark_frames_button.setText("Record Dark Frames");
-    stop_dark_collection_button.setText("Stop Dark Frames");
-    stop_dark_collection_button.setEnabled(false);
+    collectDarkButton->setText("Take Dark");
     showRGBLevelsButton.setText("RGB Levels");
     showRGBLevelsButton.setEnabled(false);
     showRGBLevelsButton.setVisible(false);
@@ -155,8 +179,8 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     collections_layout = new QGridLayout();
     //First Row
-    collections_layout->addWidget(&collect_dark_frames_button, 1, 1, 1, 1);
-    collections_layout->addWidget(&stop_dark_collection_button, 1, 2, 1, 1);
+    collections_layout->addWidget(collectDarkButton, 1, 1, 1, 1);
+    collections_layout->addWidget(collectWRButton, 1, 2, 1, 1);
     collections_layout->addWidget(&showRGBLevelsButton, 1, 3, 1, 1);
 
     //Second Row
@@ -379,6 +403,8 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     sliders_layout->addWidget(&use_DSF_cbox, 2, 2, 1, 1);
     sliders_layout->addWidget(&show_rgb_lines_cbox, 2, 3, 1, 1);
     sliders_layout->addWidget(&useRatioCbox, 2, 4, 1, 1);
+    sliders_layout->addWidget(useWRCbox, 2, 5, 1, 1);
+
 
     //Third Row
     sliders_layout->addWidget(new QLabel("Ceiling:"),3,1,1,1);
@@ -536,8 +562,23 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     /* =========================================================================== */
     //Connections
-    connect(&collect_dark_frames_button, SIGNAL(clicked()), this, SLOT(start_dark_collection_slot()));
-    connect(&stop_dark_collection_button, SIGNAL(clicked()), this, SLOT(stop_dark_collection_slot()));
+    //connect(collectDarkButton, SIGNAL(clicked()), this, SLOT(start_dark_collection_slot()));
+
+    connect(collectDarkButton, &QPushButton::pressed,
+            [&]() {
+        if(takingWRNow) {
+            emit errorMessage("Cannot take dark while taking white reference.");
+            return;
+        }
+        if(takingDSFNow) {
+            this->stop_dark_collection_slot();
+            takingDSFNow = false;
+        } else {
+            this->start_dark_collection_slot();
+            takingDSFNow = true;
+        }
+    });
+
     connect(&load_mask_from_file, SIGNAL(clicked()), this, SLOT(getMaskFile()));   
     connect(&pref_button, SIGNAL(clicked()), this, SLOT(load_pref_window()));
     connect(&showConsoleLogBtn, &QPushButton::pressed,
@@ -1536,6 +1577,7 @@ void ControlsBox::tab_changed_slot(int index)
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateCeiling(int)), Qt::UniqueConnection);
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateFloor(int)), Qt::UniqueConnection);
             connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_frameview, SLOT(setUseDSF(bool)), Qt::UniqueConnection);
+            connect(this->useWRCbox, SIGNAL(clicked(bool)), p_frameview, SLOT(setUseWR(bool)), Qt::UniqueConnection);
 
             use_DSF_cbox.setChecked(fw->usingDSF());
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
@@ -1581,6 +1623,8 @@ void ControlsBox::tab_changed_slot(int index)
             connect(&showSecondWFBtn, SIGNAL(pressed()), p_flight, SLOT(showSecondWF()), Qt::UniqueConnection);
             connect(fw, SIGNAL(updateFPS()), p_flight, SLOT(updateFPS()), Qt::UniqueConnection);
             connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseDSF(bool)), Qt::UniqueConnection);
+            connect(this->useWRCbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseWR(bool)), Qt::UniqueConnection);
+
             connect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)), Qt::UniqueConnection);
             connect(&useRatioCbox, SIGNAL(toggled(bool)), p_flight, SLOT(setUseRatioSlot(bool)), Qt::UniqueConnection);
 
@@ -2228,22 +2272,19 @@ int ControlsBox::validateFileName(const QString &name)
     return result;
 }
 void ControlsBox::start_dark_collection_slot()
-{ /*! \brief Begins recording dark frames in the backend
-   *  \author Jackie Ryan
-   */
-    collect_dark_frames_button.setEnabled(false);
-    stop_dark_collection_button.setEnabled(true);
+{
+    // Accessed by the GUI button as well as the network control connection.
+    collectDarkButton->setText("Stop Dark");
+    collectDarkButton->setToolTip("Taking darks now. Press button to stop.");
     emit statusMessage(QString("[Controls Box]: Collecting dark frames."));
     emit startDSFMaskCollection();
 }
 void ControlsBox::stop_dark_collection_slot()
 {
-    /*! \brief Stops recording dark frames in the backend
-     *  \author Jackie Ryan
-     */
+    // Accessed by the GUI button as well as the network control connection.
+    collectDarkButton->setText("Take Dark");
+    collectDarkButton->setToolTip("Press button to take darks.");
     emit stopDSFMaskCollection();
-    collect_dark_frames_button.setEnabled(true);
-    stop_dark_collection_button.setEnabled(false);
     emit statusMessage(QString("[Controls Box]: Stopped collecting dark frames."));
 }
 

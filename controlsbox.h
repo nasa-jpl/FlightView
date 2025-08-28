@@ -73,8 +73,13 @@ public:
     /* LEFT SIDE BUTTONS (Collections) */
     QGridLayout *collections_layout;
     QWidget CollectionButtonsBox;
-    QPushButton collect_dark_frames_button;
-    QPushButton stop_dark_collection_button;
+    QPushButton *collectDarkButton = NULL;
+    //QPushButton stop_dark_collection_button;
+    QPushButton *collectWRButton = NULL;
+
+    //QPushButton* startTakingWRBtn = NULL;
+    //QPushButton* stopTakingWRBtn = NULL;
+
     QPushButton showRGBLevelsButton;
     QPushButton load_mask_from_file;
     QPushButton showSecondWFBtn;
@@ -116,6 +121,8 @@ public:
     QCheckBox use_DSF_cbox;
     QCheckBox show_rgb_lines_cbox;
     QCheckBox useRatioCbox;
+    QCheckBox* useWRCbox = NULL;
+
 
     /* RIGHT SIDE BUTTONS (save) */
     QGridLayout *save_layout;
@@ -199,6 +206,9 @@ private:
     bool verticalCrossDSF = false;
     bool verticalOverlayDSF = false;
     bool playbackDSF = false;
+    bool useWhiteReference = false;
+    bool takingWRNow = false;
+    bool takingDSFNow = false;
 
 
 signals:
@@ -217,6 +227,10 @@ signals:
 
     /*! \brief Passes the DSF the message to begin averaging dark frames for all live widgets. */
     void startDSFMaskCollection();
+
+    void toggleWR(bool state);
+    void startWRMaskCollection();
+    void stopWRMaskCollection();
 
     void loadDarkFile(QString filename, fileFormat_t formatSelected);
 

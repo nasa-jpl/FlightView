@@ -5,8 +5,6 @@
 take_object::take_object(takeOptionsType options, int channel_num, int number_of_buffers,
                          int filter_refresh_rate, bool runStdDev)
 {
-    dsfMaskCollected = new bool(false);
-    wrMaskCollected = new bool(false);
     changeOptions(options);
     initialSetup(channel_num, number_of_buffers,
                  filter_refresh_rate, runStdDev);
@@ -16,8 +14,6 @@ take_object::take_object(int channel_num, int number_of_buffers,
                          int frf, bool runStdDev)
 {
     statusMessage("Starting take_object with default options.");
-    dsfMaskCollected = new bool(false);
-    wrMaskCollected = new bool(false);
     takeOptionsType options;
     options.theseAreDefault = true;
     options.xioCam = false;
@@ -40,8 +36,7 @@ void take_object::initialSetup(int channel_num, int number_of_buffers,
     frame_ring_buffer = new frame_c[CPU_FRAME_BUFFER_SIZE];
 
     //For the filters
-    *dsfMaskCollected = false;
-    *wrMaskCollected = false;
+    dsfMaskCollected = false;
     this->std_dev_filter_N = 400;
     this->runStdDev = runStdDev;
     whichFFT = PLANE_MEAN;
@@ -158,12 +153,6 @@ void take_object::changeOptions(takeOptionsType optionsIn)
         }
         if((!options.rtpCam) && (!options.xioCam)) {
             statusMessage("CameraLink enabled.");
-        }
-        if(options.rtpCam) {
-            if ( options.rtpHeight*options.rtpWidth > MAX_SIZE ) {
-                errorMessage("This geometry is not supported, must increase MAX_SIZE in cuda_take/include/constants.h");
-                abort();
-            }
         }
     }
 
@@ -370,8 +359,7 @@ void take_object::start()
 #endif
 
     // Initialize the filters
-    dsf = new dark_subtraction_filter(frWidth,frHeight, dsfMaskCollected);
-    wrf= new white_ref_filter(frWidth, frHeight, wrMaskCollected, dsf);
+    dsf = new dark_subtraction_filter(frWidth,frHeight);
     sdvf = new std_dev_filter(frWidth,frHeight, cudaDevNumber);
 
     // Initial dimensions for calculating the mean that can be updated later
@@ -524,174 +512,9 @@ void take_object::enableDarkStatusPixelWrite(bool writeValues) {
     setDarkStatusInFrame = writeValues;
 }
 
-void take_object::startCapturingWR() {
-    *wrMaskCollected = false;
-    takingWR = true;
-    wrf->start_mask_collection();
-}
-
-void take_object::finishCapturingWR() {
-    //wrf->mask_mutex.lock();
-    takingWR= false; // it's ok that the processing happens now. The point of this variable is to stop collecting additional WR frames.
-    wrf_liveMean_thread = boost::thread( boost::bind(&white_ref_filter::finish_mask_collection, wrf));
-    wrf_liveMean_thread_handler = wrf_liveMean_thread.native_handle();
-    pthread_setname_np(wrf_liveMean_thread_handler, "WR_MEAN");
-}
-
-void take_object::loadWR_entry(std::string filename_s, fileFormat_t fmt) {
-    switch (fmt) {
-    case fmt_float32:
-        mask_thread = boost::thread(boost::bind(&take_object::loadWR_float, this, filename_s));
-        //this->loadWR_float(filename_s);
-        break;
-    case fmt_uint16:
-        mask_thread = boost::thread(boost::bind(&take_object::loadWR_uint16, this, filename_s));
-        //this->loadWR_uint16(filename_s);
-        break;
-    default:
-        errorMessage("WR Filetype not available.");
-        break;
-    }
-}
-
-void take_object::loadWR_float(std::string file_name) {
-    // TODO
-    if(readingWRFile)
-        return;
-
-    readingWRFile = true;
-    // Loads a file containing a single 32-bit float frame.
-    float *mask_in = new float[frWidth*frHeight];
-    FILE *pFile;
-    unsigned long size = 0;
-    pFile  = fopen(file_name.c_str(), "rb");
-    if(pFile == NULL) {
-        errorMessage("error opening float WR file");
-    } else {
-        fseek (pFile, 0, SEEK_END); // non-portable
-        size = ftell(pFile);
-        if(size != (frWidth*frHeight*sizeof(float)))
-        {
-            errorMessage("Error: WR mask file does not match image size");
-            fclose (pFile);
-            delete [] mask_in;
-            readingWRFile = false;
-            return;
-        }
-        rewind(pFile);   // go back to beginning
-        fread(mask_in,sizeof(float),frWidth * frHeight,pFile);
-        fclose (pFile);
-#ifdef VERBOSE
-        std::cout << file_name << " read in "<< size << " bytes successfully " <<  std::endl;
-#endif
-    }
-
-    // Dark sub:
-    if(dsf->maskReady()) {
-        dsf->static_dark_subtract(mask_in, mask_in);
-    } else {
-        errorMessage("DSF not ready, not applying to White Reference.");
-    }
-    // Load:
-    wrf->load_mask(mask_in); // memcopy to stack variable
-
-    delete [] mask_in;
-    statusMessage("Completed White Reference load from float32 type.");
-    readingWRFile = false;
-}
-
-void take_object::loadWR_uint16(std::string file_name) {
-    if(readingWRFile)
-        return;
-
-    readingWRFile = true;
-    std::ostringstream message;
-
-
-    float * mean_frame = NULL;
-    uint16_t * frames = NULL;
-    unsigned int * input_array = NULL;
-
-    unsigned int frame_size_numel = frHeight*frWidth;
-    unsigned int nframes = 0;
-    unsigned int pixel_size = sizeof(uint16_t);
-    size_t items_read = 0;
-
-    FILE * file = fopen(file_name.c_str(), "r");
-    if(file == NULL)
-    {
-        message << "Error, could not load WR file " << file_name;
-        errorMessage(message);
-        readingDSFFile = false;
-        return;
-    }
-
-    fseek(file, 0, SEEK_END);
-    long int filesize = ftell(file);
-    nframes = filesize / pixel_size / (frHeight * frWidth);
-    fseek(file, 0, SEEK_SET);
-    frames = (uint16_t *) malloc(filesize * pixel_size);
-    if(frames == NULL)
-    {
-        errorMessage("Did not successfully allocate frames for white reference file");
-        readingDSFFile = false;
-        abort();
-    }
-
-    items_read = fread(frames, sizeof(uint16_t), filesize/pixel_size, file);
-
-    message << "WR Load: Read      " << items_read << " pixels from " << file_name;
-    statusMessage(message); message.str("");
-
-    fclose(file);
-    mean_frame = (float *) malloc(sizeof(float) * frame_size_numel);
-
-    // The input_array is where the data are initially loaded.
-    // These data can be type-converted after loading.
-    input_array = (unsigned int *) malloc(sizeof(unsigned int) * nframes * frame_size_numel); // native size
-    if(input_array == NULL)
-    {
-        errorMessage("Did not successfully allocate input_array for white reference file");
-        readingDSFFile = false;
-        abort();
-    }
-    // Convert uint16_t to unsigned int for GSL:
-    // TODO: consider loading it in this way
-#pragma omp parallel for num_threads(8)
-    for(unsigned int nth_element = 0; nth_element < frame_size_numel * nframes; nth_element++)
-    {
-        input_array[nth_element] = (unsigned int)frames[nth_element];
-    }
-    // Process (create mean):
-#pragma omp parallel for num_threads(8)
-    for(unsigned int nth_frame_el = 0; nth_frame_el < frame_size_numel; nth_frame_el++)
-    {
-        // iterate over each pixel in a frame
-        mean_frame[nth_frame_el] = (float)gsl_stats_uint_mean(input_array+nth_frame_el, frame_size_numel, nframes);
-    }
-    if(dsf->maskReady()) {
-        dsf->static_dark_subtract(mean_frame, mean_frame);
-    } else {
-        errorMessage("DSF was not ready for White Reference processing from White Reference uint16 raw file");
-    }
-
-    wrf->load_mask(mean_frame); // memcpy out
-    *wrMaskCollected = true;
-
-    if(frames)
-        free(frames);
-    if(mean_frame)
-        free(mean_frame);
-    if(input_array)
-        free(input_array);
-
-    statusMessage("Completed White Reference load from uint16 type.");
-    readingWRFile = false;
-}
-
 void take_object::startCapturingDSFMask()
 {
-    *dsfMaskCollected = false;
+    dsfMaskCollected = false;
 
     dsf->start_mask_collection();
     if(shmValid) {
@@ -703,9 +526,7 @@ void take_object::startCapturingDSFMask()
 void take_object::finishCapturingDSFMask()
 {
     //statusMessage("Entering finishCapturingDSFMask()");
-    // No point in a mutex here because it only protects the setup,
-    // not the actual processing.
-    //dsf->mask_mutex.lock();
+    dsf->mask_mutex.lock();
 
     // launch the thread to take the average:
 #ifdef VERBOSE
@@ -715,8 +536,8 @@ void take_object::finishCapturingDSFMask()
     mask_liveMean_thread_handler = mask_liveMean_thread.native_handle();
     pthread_setname_np(mask_liveMean_thread_handler, "MASKMEAN");
 
-    //dsf->mask_mutex.unlock();
-    *dsfMaskCollected = true;
+    dsf->mask_mutex.unlock();
+    dsfMaskCollected = true;
     if(shmValid) {
         shm->takingDark = false;
     }
@@ -822,15 +643,12 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     }
 
     dsf->load_mask(mean_frame); // memcopy to stack variable
-    *dsfMaskCollected = true;
+    dsfMaskCollected = true;
 
     if(frames)
         free(frames);
     if(mean_frame)
         free(mean_frame);
-    if(input_array)
-        free(input_array);
-
     statusMessage("Completed DSF load from uint16 type.");
     readingDSFFile = false;
 }
@@ -877,14 +695,14 @@ void take_object::loadDSFMask(std::string file_name)
     FILE *pFile;
     unsigned long size = 0;
     pFile  = fopen(file_name.c_str(), "rb");
-    if(pFile == NULL) {
-        errorMessage("Could not open raw DSF mask file.");
-    } else {
+    if(pFile == NULL) std::cerr << "error opening raw file" << std::endl;
+    else
+    {
         fseek (pFile, 0, SEEK_END); // non-portable
         size = ftell(pFile);
         if(size != (frWidth*frHeight*sizeof(float)))
         {
-            errorMessage("Mask file does not match image size.");
+            std::cerr << "Error: mask file does not match image size" << std::endl;
             fclose (pFile);
             delete [] mask_in;
             readingDSFFile = false;
@@ -1282,7 +1100,7 @@ void take_object::fileImageCopyLoop()
         (void)last_framecount; // use count
 
         mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
-                                           meanStartRow,meanHeight,frWidth,useDSF, useWR,\
+                                           meanStartRow,meanHeight,frWidth,useDSF,\
                                            whichFFT, lh_start, lh_end,\
                                            cent_start, cent_end,\
                                            rh_start, rh_end);
@@ -1397,11 +1215,9 @@ void take_object::fileImageCopyLoop()
             {
                 sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
             }
-            // Subtract the new frame from the dark mask,
-            // updates the curFrame->dark_subtracted_data
             dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
             mf->update(curFrame,count,meanStartCol,meanWidth,\
-                       meanStartRow,meanHeight,frWidth,useDSF, useWR,\
+                       meanStartRow,meanHeight,frWidth,useDSF,\
                        whichFFT, lh_start, lh_end,\
                                                cent_start, cent_end,\
                                                rh_start, rh_end);
@@ -1412,8 +1228,7 @@ void take_object::fileImageCopyLoop()
             {
                 uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
                 memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
-                frameSaveBuffer.enqueue_overwrite(raw_copy);
-                //saving_list.push_front(raw_copy);
+                saving_list.push_front(raw_copy);
                 save_framenum--;
             }
 
@@ -1529,7 +1344,7 @@ void take_object::rtpConsumeFrames()
     continuousRecording = false;
 
     mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
-                                       meanStartRow,meanHeight,frWidth,useDSF, useWR,\
+                                       meanStartRow,meanHeight,frWidth,useDSF,\
                                        whichFFT, lh_start, lh_end,\
                                        cent_start, cent_end,\
                                        rh_start, rh_end);
@@ -1548,7 +1363,6 @@ void take_object::rtpConsumeFrames()
         shmBufferPosition = 0;
         shmBufferPositionPrior = 0;
     }
-
 
     while(rtpConsumerRun)
     {
@@ -1591,20 +1405,9 @@ void take_object::rtpConsumeFrames()
             {
                 sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
             }
-            // Update the available dark-subtracted frame
-            // and, if we are recording a mask, update the recorded mask
             dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
-
-            // Update the available white-reference frame
-            // and, if we are recording a white reference, update the recorded mask
-            //wrf->update(in, out);
-            if(takingWR) {
-                wrf->updateTaking(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
-            } else {
-                wrf->updateFrame(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
-            }
             mf->update(curFrame,count,meanStartCol,meanWidth,\
-                       meanStartRow,meanHeight,frWidth,useDSF, useWR,\
+                       meanStartRow,meanHeight,frWidth,useDSF,\
                        whichFFT, lh_start, lh_end,\
                        cent_start, cent_end,\
                        rh_start, rh_end);
@@ -1616,8 +1419,7 @@ void take_object::rtpConsumeFrames()
         {
             uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
             memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
-            // saving_list.push_front(raw_copy);
-            this->frameSaveBuffer.enqueue_overwrite(raw_copy); // we always want overwrite just in case we actually need it (which we do not in practice)
+            saving_list.push_front(raw_copy);
             save_framenum--;
         }
 
@@ -1663,7 +1465,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
     pcv_t pointerConverter;
 
     mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
-                                       meanStartRow,meanHeight,frWidth,useDSF, useWR,\
+                                       meanStartRow,meanHeight,frWidth,useDSF,\
                                        whichFFT, lh_start, lh_end,\
                                        cent_start, cent_end,\
                                        rh_start, rh_end);
@@ -1757,7 +1559,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
             }
             dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
             mf->update(curFrame,count,meanStartCol,meanWidth,\
-                       meanStartRow,meanHeight,frWidth,useDSF, useWR,\
+                       meanStartRow,meanHeight,frWidth,useDSF,\
                        whichFFT, lh_start, lh_end,\
                        cent_start, cent_end,\
                        rh_start, rh_end);
@@ -1769,8 +1571,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         {
             uint16_t * raw_copy = new uint16_t[frWidth*dataHeight];
             memcpy(raw_copy,curFrame->raw_data_ptr,frWidth*dataHeight*sizeof(uint16_t));
-            frameSaveBuffer.enqueue_overwrite(raw_copy);
-            //saving_list.push_front(raw_copy);
+            saving_list.push_front(raw_copy);
             save_framenum--;
         }
 
@@ -1854,13 +1655,6 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
     statusMessage(ss);
 
-    bool averagingEnabled;
-    if( (num_avgs==1) || (num_avgs==0) ) {
-        averagingEnabled = false;
-    } else {
-        averagingEnabled = true;
-    }
-
     if(options.debug) {
         if(num_avgs > 1) {
             statusMessage("Saving mode: averaging (float)");
@@ -1897,135 +1691,128 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
     FILE * file_target = fopen(fname.c_str(), "wb");
     int sv_count = 0;
-    int waitCount = 0;
 
     while(  (save_framenum != 0) || continuousRecording.load(std::memory_order_seq_cst))
     {
-        if(!averagingEnabled)
+        if(saving_list.size() > 2)
         {
-            // This is our not-averaging save, where most saves go:
-            uint16_t * data = frameSaveBuffer.try_dequeue();
-            if(data) {
-                fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
+            if(num_avgs == 1)
+            {
+                // This is our not-averaging save, where most saves go:
+                if(saving_list.size() > 2) {
+                    // We refuse to take the last item off the list.
+                    // it can wait until we are completely done recording.
+                    // This way the list remains valid in memory.
+                    uint16_t * data = saving_list.back();
+                    saving_list.pop_back();
+                    fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target); //It is ok if this blocks
+                    delete[] data;
+                    sv_count++;
+                    if(sv_count == 1) {
+                        save_count.store(1, std::memory_order_seq_cst);
+                    }
+                    else {
+                        save_count++;
+                    }
+                }
+            }
+            else if(saving_list.size() >= num_avgs && num_avgs != 1)
+            {
+                float * data = new float[frWidth*dataHeight];
+                for(unsigned int i2 = 0; i2 < num_avgs; i2++)
+                {
+                    uint16_t * data2 = saving_list.back();
+                    saving_list.pop_back();
+                    if(i2 == 0)
+                    {
+                        for(unsigned int i = 0; i < frWidth*dataHeight; i++)
+                        {
+                            data[i] = (float)data2[i];
+                        }
+                    }
+                    else if(i2 == num_avgs-1)
+                    {
+                        for(unsigned int i = 0; i < frWidth*dataHeight; i++)
+                        {
+                            data[i] = (data[i] + (float)data2[i])/num_avgs;
+                        }
+                    }
+                    else
+                    {
+                        for(unsigned int i = 0; i < frWidth*dataHeight; i++)
+                        {
+                            data[i] += (float)data2[i];
+                        }
+                    }
+                    delete[] data2;
+                }
+                fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
                 delete[] data;
                 sv_count++;
                 if(sv_count == 1) {
                     save_count.store(1, std::memory_order_seq_cst);
-                } else {
+                }
+                else {
                     save_count++;
                 }
-            } else {
-                // null pointer returned, wait for more frames.
-                // The while loop will break once continuous recording is false.
-                waitCount++; // track for debugging
-                usleep(1000);
+                //std::cout << "save_count: " << std::to_string(save_count) << "\n";
+                //std::cout << "list size: " << std::to_string(saving_list.size() ) << "\n";
+                //std::cout << "save_framenum: " << std::to_string(save_framenum) << "\n";
             }
-        } else {
-            // Averaging enabled, buckle up...
-            // Since we are on the consuming side, we can do the averaging here
-            // and it will not stop up the production of frames,
-            // assuming we are 'on average' quicker than the frames are produced.
-            // If we are slower, then we can get in a situation where we fall behind
-            // This would be indicated by the overwrite count being non-zero.
-            float * data = new float[frWidth*dataHeight];
-            for(unsigned int i2 = 0; i2 < num_avgs; i2++)
+            else if(save_framenum == 0 && saving_list.size() < num_avgs)
             {
-                uint16_t * data2 = frameSaveBuffer.try_dequeue();
-                if(i2 == 0)
-                {
-                    for(unsigned int i = 0; i < frWidth*dataHeight; i++)
-                    {
-                        data[i] = (float)data2[i];
-                    }
-                }
-                else if(i2 == num_avgs-1)
-                {
-                    for(unsigned int i = 0; i < frWidth*dataHeight; i++)
-                    {
-                        data[i] = (data[i] + (float)data2[i])/num_avgs;
-                    }
-                }
-                else
-                {
-                    for(unsigned int i = 0; i < frWidth*dataHeight; i++)
-                    {
-                        data[i] += (float)data2[i];
-                    }
-                }
-                delete[] data2;
+                warningMessage("Erasing saving_list");
+                saving_list.erase(saving_list.begin(),saving_list.end());
             }
-            fwrite(data,sizeof(float),frWidth*dataHeight,file_target); //It is ok if this blocks
-            delete[] data;
-            sv_count++;
-            if(sv_count == 1) {
-                save_count.store(1, std::memory_order_seq_cst);
-            } else {
-                save_count++;
+            else
+            {
+                //We're waiting for data to get added to the list...
+                usleep(250);
             }
+        }
+        else
+        {
+            //We're waiting for data to get added to the list...
+            usleep(250);
         }
     }
 
     // Almost done, let's take care of anything left in the buffer.
+
     statusMessage("Finished primary saving loop.");
     char message[128];
-    sprintf(message, "Size of buffer after real-time saving: %ld", frameSaveBuffer.size());
-    statusMessage(message); memset(message, 0, sizeof(message));
-    sprintf(message, "Number of overwrite conditions: %d", frameSaveBuffer.getOverrideCount());
-    statusMessage(message); memset(message, 0, sizeof(message));
-    sprintf(message, "Number of empty read attempts: %d", frameSaveBuffer.getEmptyRequestCount());
-    statusMessage(message); memset(message, 0, sizeof(message));
-    sprintf(message, "Number of waits: %d", waitCount);
-    statusMessage(message); memset(message, 0, sizeof(message));
-    int finishingCounter = 0;
-    int emptyFinishingCounter = 0;
-
-    if(!averagingEnabled) {
-        statusMessage("Finishing write:");
-        while(frameSaveBuffer.size() > 0) {
+    sprintf(message, "Size of buffer: %ld", saving_list.size());
+    statusMessage(message);
+    if( (num_avgs==1) || (num_avgs==0)) {
+        statusMessage("Finishing write...");
+        while(saving_list.size() > 0) {
             statusMessage("Writing additional frame");
-//            sprintf(message, "Write Position: %ld, read position: %ld, size: %ld",
-//                    frameSaveBuffer.getWritePos(), frameSaveBuffer.getReadPos(), frameSaveBuffer.size());
-//            statusMessage(message); memset(message, 0, sizeof(message));
-            uint16_t * data = frameSaveBuffer.try_dequeue();
-            if(data) {
-                fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target);
-                sv_count++;
-                delete[] data;
-            } else {
-                emptyFinishingCounter++;
-            }
-            finishingCounter++;
-            if(finishingCounter > 1000) {
-                // Now we have a problem. We will dump some debug out and break.
-                sprintf(message, "Write Position: %ld", frameSaveBuffer.getWritePos());
-                statusMessage(message); memset(message, 0, sizeof(message));
-                sprintf(message, "Read Position: %ld", frameSaveBuffer.getReadPos());
-                statusMessage(message); memset(message, 0, sizeof(message));
-                sprintf(message, "Size: %ld", frameSaveBuffer.size());
-                statusMessage(message); memset(message, 0, sizeof(message));
-                sprintf(message, "emptyFinishingCounter: %d", emptyFinishingCounter);
-                statusMessage(message); memset(message, 0, sizeof(message));
-                break;
-            }
+            uint16_t * data = saving_list.back();
+            if(saving_list.size() > 0)
+                saving_list.pop_back();
+            fwrite(data,sizeof(uint16_t),frWidth*dataHeight,file_target);
+            sv_count++;
+            delete[] data;
         }
         statusMessage("Done with write.");
     } else {
-        while(frameSaveBuffer.size() > 0) {
-            statusMessage("Clearing buffer:");
+        while(saving_list.size() > 0) {
             //statusMessage("Dropping additional frame at end that does not meet average interval.");
-            uint16_t * data = frameSaveBuffer.try_dequeue();
-            if(data) {
-                delete[] data;
-            }
+            uint16_t * data = saving_list.back();
+            if(saving_list.size() > 0)
+                saving_list.pop_back();
+            // Since averaging is typically many frames (>100),
+            // we cannot really average the last two or three frames
+            // in a meaningfull way. Writing the data out will just
+            // confuse people about the scale of the last few frames.
+            //fwrite(data,sizeof(float),frWidth*dataHeight,file_target);
+            delete[] data;
         }
-        statusMessage("Done.");
     }
 
     fclose(file_target);
-    frameSaveBuffer.clearStats();
-
     std::string hdr_text;
-    if(averagingEnabled)
+    if( (num_avgs !=0) && (num_avgs !=1) )
     {
         hdr_text = "ENVI\ndescription = {FlightView raw export file, " + std::to_string(num_avgs) + " frames mean per line}\n";
     } else {
@@ -2052,7 +1839,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
 
     hdr_text+= "header offset = 0\n";
     hdr_text+= "file type = ENVI Standard\n";
-    if(averagingEnabled)
+    if((num_avgs != 1) && (num_avgs != 0))
     {
         hdr_text+= "data type = 4\n";
     }
@@ -2068,9 +1855,11 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     std::ofstream hdr_target(hdr_fname);
     hdr_target << hdr_text;
     hdr_target.close();
+    // What does this usleep do? --EHL
+    //if(sv_count == 1)
+    //    usleep(500000);
     save_count.store(0, std::memory_order_seq_cst);
-    sprintf(message, "Saving Complete. Saved %d frames.", sv_count);
-    statusMessage(message); memset(message, 0, sizeof(message));
+    statusMessage("Saving complete.");
     savingMutex.unlock();
     savingData = false;
 }
@@ -2140,16 +1929,6 @@ void take_object::statusMessage(const string message)
         g_message("take_object: STATUS: %s", message.c_str());
     }
     strncpy(this->messagePasser, message.c_str(), takeMessageSize-1);
-    haveMessage=true;
-}
-void take_object::errorMessage(std::ostringstream &message)
-{
-    if((!options.rtpCam) || (options.rtpNextGen)) {
-        std::cout << "take_object: ERROR: " << message.str() << std::endl;
-    } else {
-        g_message("take_object: ERROR: %s", message.str().c_str());
-    }
-    strncpy(this->messagePasser, message.str().c_str(), takeMessageSize-1);
     haveMessage=true;
 }
 

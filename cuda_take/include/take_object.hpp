@@ -40,6 +40,7 @@ static int cudaDeviceNumberStatic = 0;
 #include "std_dev_filter.hpp"
 #include "chroma_translate_filter.hpp"
 #include "dark_subtraction_filter.hpp"
+#include "white_ref_filter.hpp"
 #include "mean_filter.hpp"
 #include "camera_types.h"
 #include "cameramodel.h"
@@ -127,6 +128,7 @@ class take_object {
     bool runStdDev = true;
 
     bool readingDSFFile = false;
+    bool readingWRFile = false;
 
     boost::thread cam_thread; // this thread controls the data collection
     boost::thread reading_thread; // this is used for file reading in the XIO camera.
@@ -138,12 +140,21 @@ class take_object {
     boost::thread::native_handle_type rtpAcquireThreadHandler;
     boost::thread::native_handle_type rtpCopyThreadHandler;
 
+    // Used to read in a dark mask file:
     boost::thread mask_thread;
     boost::thread::native_handle_type mask_thread_handler;
 
+    // Used to read in a White Reference file:
+    boost::thread wr_thread;
+    boost::thread::native_handle_type wr_thread_handler;
+
+    // Used to finish the mean collection:
     boost::thread mask_liveMean_thread;
     boost::thread::native_handle_type mask_liveMean_thread_handler;
 
+    // Used to finish the White Reference collection:
+    boost::thread wrf_liveMean_thread;
+    boost::thread::native_handle_type wrf_liveMean_thread_handler;
 
     int pdv_thread_run = 0;
     bool cam_thread_start_complete=false; // added by Michael Bernas 2016
@@ -188,6 +199,8 @@ public:
     void setReadDirectory(const char* directory);
     camControlType* getCamControl();
     dark_subtraction_filter* dsf;
+    white_ref_filter* wrf;
+
     camera_t cam_type;
     frame_c * frame_ring_buffer;
     unsigned long count = 0; // running frame counter
@@ -204,12 +217,22 @@ public:
 	void startCapturingDSFMask();
 	void finishCapturingDSFMask();
     void loadDSFMask_entry(std::string filename_s, fileFormat_t fmt);
-	void loadDSFMask(std::string file_name);
+    void loadDSFMask(std::string file_name); // float
     void loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format);
 
     bool *dsfMaskCollected = NULL;
     bool useDSF = false;
     uint16_t darkStatusPixelVal = obcStatusScience;
+
+    // White Reference functions
+    void startCapturingWR();
+    void finishCapturingWR();
+    void loadWR_entry(std::string filename_s, fileFormat_t fmt);
+    void loadWR_float(std::string file_name);
+    void loadWR_uint16(std::string file_name);
+    bool *wrMaskCollected = NULL;
+    bool useWR = false;
+    bool takingWR = false;
 
     // Std Dev Filter functions
     void setStdDev_N(int s);
@@ -290,6 +313,7 @@ private:
 
     std::streambuf *coutbuf;
     void errorMessage(const char* message);
+    void errorMessage(std::ostringstream &message);
     void warningMessage(const char* message);
     void statusMessage(const char* message);
     void errorMessage(const string message);

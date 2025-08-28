@@ -104,6 +104,7 @@ class frameview_widget : public QWidget
     double fps;
     QString fps_string;
     bool useDSF;
+    bool useWR = false;
     bool havePrefs = false;
     settingsT *prefs;
     startupOptionsType options;
@@ -149,6 +150,7 @@ public slots:
     void updateCeiling(int c);
     void updateFloor(int f);
     void setUseDSF(bool useDSF);
+    void setUseWR(bool useWR);
     void useDarkTheme(bool useDark);
     void rescaleRange();
     void setCrosshairs(QMouseEvent *event);

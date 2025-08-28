@@ -393,11 +393,17 @@ void frameview_widget::handleNewFrame()
 
         wfSelectedRow.setText(QString("Row: %1").arg(fw->crosshair_y));
 
+        float *localWRPtr = fw->curFrame->white_referenced_data;
         float *local_image_ptr = fw->curFrame->dark_subtracted_data;
         uint16_t* local_image_ptr_uint = fw->curFrame->image_data_ptr;
 
         std::vector <float> line;
-        if(useDSF) {
+        if(useWR) {
+            for(int col = 0; col < frWidth; col++)
+            {
+                line.push_back(localWRPtr[row * frWidth + col]);
+            }
+        } else if(useDSF) {
             for(int col = 0; col < frWidth; col++)
             {
                 line.push_back(local_image_ptr[row * frWidth + col]);
@@ -442,9 +448,11 @@ void frameview_widget::handleNewFrame()
         if((image_type == DSF) || (image_type==BASE)) {
             uint16_t* local_image_ptr_uint = fw->curFrame->image_data_ptr;
             float* local_image_ptr_float = fw->curFrame->dark_subtracted_data;
-
-            if(useDSF)
-            {
+            // float* localWRPtr = fw->curFrame->white_referenced_data;
+            if(useWR) {
+                local_image_ptr_float = fw->curFrame->white_referenced_data;
+            }
+            if(useDSF || useWR) {
                 if(peakHoldMode) {
                     // DSF,
                     // Peak Hold Mode
@@ -806,6 +814,10 @@ void frameview_widget::setPeakHoldMode(bool hold) {
 void frameview_widget::setUseDSF(bool useDSF)
 {
     this->useDSF = useDSF;
+}
+
+void frameview_widget::setUseWR(bool useWR) {
+    this->useWR = useWR;
 }
 
 void frameview_widget::rescaleRange()

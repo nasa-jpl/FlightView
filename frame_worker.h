@@ -159,6 +159,11 @@ public slots:
     void loadDarkFile(QString filename, fileFormat_t format);
     /*! @} */
 
+    void startCapturingWR();
+    void finishCapturingWR();
+    void toggleUseWR(bool t);
+    void loadWRFile(QString filename, fileFormat_t format);
+
     /*! \addtogroup savingfunc
      * @{ */
     void startSavingRawData(unsigned int framenum, QString verifiedName, unsigned int numavgsave);
