@@ -68,6 +68,9 @@ struct startupOptionsType
     QString UDPLogHost = QString("");
     unsigned int UDPLogPort = 10175;
 
+    bool frameSkipSet = false;
+    unsigned int frameSkip = 0;
+
     bool showMore = false;
 };
 

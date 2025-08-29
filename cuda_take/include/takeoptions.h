@@ -66,6 +66,9 @@ struct takeOptionsType
 
     bool showMore = false;
     bool theseAreDefault = false;
+
+    bool frameSkipSet = false;
+    unsigned int frameSkip = 0;
 };
 
 

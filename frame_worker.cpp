@@ -168,6 +168,8 @@ void frameWorker::convertOptions()
     takeOptions.targetFPS = options.targetFPS;
     takeOptions.showMore = options.showMore;
 
+    takeOptions.frameSkipSet = options.frameSkipSet;
+    takeOptions.frameSkip = options.frameSkip;
 
     if(takeOptions.rtpCam)
     {

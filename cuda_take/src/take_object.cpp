@@ -1587,29 +1587,31 @@ void take_object::rtpConsumeFrames()
 
         // Calculating the filters for this frame
         if(!options.noGPU) {
-            if(runStdDev)
-            {
-                sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
-            }
-            // Update the available dark-subtracted frame
-            // and, if we are recording a mask, update the recorded mask
-            dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
+            if( (!options.frameSkipSet) || ( options.frameSkipSet && (count%options.frameSkip ==0)) ) {
+                if(runStdDev)
+                {
+                    sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
+                }
+                // Update the available dark-subtracted frame
+                // and, if we are recording a mask, update the recorded mask
+                dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
 
-            // Update the available white-reference frame
-            // and, if we are recording a white reference, update the recorded mask
-            //wrf->update(in, out);
-            if(takingWR) {
-                wrf->updateTaking(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
-            } else {
-                wrf->updateFrame(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
-            }
-            mf->update(curFrame,count,meanStartCol,meanWidth,\
-                       meanStartRow,meanHeight,frWidth,useDSF, useWR,\
-                       whichFFT, lh_start, lh_end,\
-                       cent_start, cent_end,\
-                       rh_start, rh_end);
+                // Update the available white-reference frame
+                // and, if we are recording a white reference, update the recorded mask
+                //wrf->update(in, out);
+                if(takingWR) {
+                    wrf->updateTaking(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
+                } else {
+                    wrf->updateFrame(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
+                }
+                mf->update(curFrame,count,meanStartCol,meanWidth,\
+                           meanStartRow,meanHeight,frWidth,useDSF, useWR,\
+                           whichFFT, lh_start, lh_end,\
+                           cent_start, cent_end,\
+                           rh_start, rh_end);
 
-            mf->start_mean();
+                mf->start_mean();
+            }
         }
 
         if((save_framenum.load(std::memory_order_seq_cst) > 0) || continuousRecording.load(std::memory_order_seq_cst))

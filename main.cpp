@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
                                "--whitereffile /path/to/white_file.raw (uint16 frames)\n"
                                "--udplogginghost 1.2.3.4\n"
                                "--udploggingport 10175\n"
+                               "--frameskip n\n"
                                )\
             .arg(cmdName);
     QString currentArg;
@@ -257,6 +258,25 @@ int main(int argc, char *argv[])
                     widthSet = true;
                     startupOptions.rtpWidth = rtpwidthtemp;
                     c++;
+                } else {
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        if(currentArg == "--frameskip") {
+            if(argc > c) {
+                int frameSkipNumber = 0;
+                bool ok = false;
+                frameSkipNumber = QString(argv[c+1]).toUInt(&ok);
+                if(ok) {
+                    // insert struct here...
+                    startupOptions.frameSkipSet = true;
+                    startupOptions.frameSkip = frameSkipNumber;
                 } else {
                     std::cout << helptext.toStdString() << std::endl;
                     exit(-1);
