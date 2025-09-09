@@ -204,6 +204,7 @@ public:
     camera_t cam_type;
     frame_c * frame_ring_buffer;
     unsigned long count = 0; // running frame counter
+    bool savingData = false; // true while file is being written or when data is being acquired for saving.
     int xioCount = 0; // counter for each set of xio files.
     uint16_t* prior_temp_frame = NULL;
     int getMicroSecondsPerFrame();
@@ -298,7 +299,6 @@ private:
 
     void savingLoop(std::string, unsigned int num_avgs, unsigned int num_frames);
     std::mutex savingMutex;
-    bool savingData = false;
 
     takeOptionsType options;
 

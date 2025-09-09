@@ -1841,7 +1841,7 @@ void take_object::rotate(uint16_t *input, uint16_t *output, int origHeight, int 
 }
 
 
-void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
+void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, unsigned int num_frames)
 {
     // Frame Save Thread (saving_thread)
 
@@ -1855,6 +1855,24 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     ss << "Starting saveLoop. Thread ID: " << boost::this_thread::get_id();
 
     statusMessage(ss);
+    if(savingData)
+    {
+        errorMessage("Saving loop hit but already saving data! Enforcing a delay. This is unsafe, it is better to wait between acquisitions.");
+        std::string loopHitMessage = "Filename: " + filename_in;
+        errorMessage(loopHitMessage);
+        while(savingData) {
+            usleep(1*1E6);
+            statusMessage("...");
+        }
+        statusMessage("Continuing with acquisition request.");
+        // This is dangerous, but it will probably be better than dropping the request.
+        // return;
+    }
+
+    unsigned int num_avgs = num_avgs_in;
+    std::string fname = filename_in;
+
+    savingData = true;
 
     bool averagingEnabled;
     if( (num_avgs==1) || (num_avgs==0) ) {
@@ -1872,13 +1890,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     }
 
 
-    if(savingData)
-    {
-        errorMessage("Saving loop hit but already saving data! Not saving this data!");
-        return;
-    } else {
-        savingData = true;
-    }
+
 
     savingMutex.lock();
 
@@ -1930,9 +1942,20 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
             // If we are slower, then we can get in a situation where we fall behind
             // This would be indicated by the overwrite count being non-zero.
             float * data = new float[frWidth*dataHeight];
+            unsigned int bufferAttemptCounter = 0; // for debugging
+            bool hitDoneCondition = false;
             for(unsigned int i2 = 0; i2 < num_avgs; i2++)
             {
-                uint16_t * data2 = frameSaveBuffer.try_dequeue();
+                uint16_t *data2 = NULL;
+                while(data2 == NULL) {
+                        data2 = frameSaveBuffer.try_dequeue();
+                        bufferAttemptCounter++;
+                        usleep(100);
+                    }
+
+//                if(hitDoneCondition)
+//                    break;
+
                 if(i2 == 0)
                 {
                     for(unsigned int i = 0; i < frWidth*dataHeight; i++)
