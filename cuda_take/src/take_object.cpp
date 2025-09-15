@@ -1652,6 +1652,8 @@ void take_object::rtpConsumeFrames()
         grabbing = false;
     }
     statusMessage("RTP Consumer Loop is done providing frames");
+    if(mf)
+        delete mf;
 }
 
 void take_object::pdv_loop() //Producer Thread (pdv_thread)
@@ -1675,6 +1677,8 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 
     if(shmValid) {
         shm->statusByte = SHM_STATUS_READY;
+        shmBufferPosition = 0;
+        shmBufferPositionPrior = 0;
     }
     while(pdv_thread_run == 1)
     {	
@@ -1758,6 +1762,11 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
                 sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
             }
             dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
+            if(takingWR) {
+                wrf->updateTaking(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
+            } else {
+                wrf->updateFrame(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
+            }
             mf->update(curFrame,count,meanStartCol,meanWidth,\
                        meanStartRow,meanHeight,frWidth,useDSF, useWR,\
                        whichFFT, lh_start, lh_end,\
