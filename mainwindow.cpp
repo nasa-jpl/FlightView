@@ -285,9 +285,15 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
             darkRefLoadTimer->setInterval(5000); // 5 seconds after load
             connect(this->darkRefLoadTimer, &QTimer::timeout,
                     [=]() {
-                handleMainWindowStatusMessage(QString("Loading uint16 dark reference file %1 (all frames)")
-                                              .arg(options->darkReferenceFileLocation));
-                emit loadDarkMask(options->darkReferenceFileLocation, fmt_uint16);
+                if(options->darkRefFileFloat) {
+                    handleMainWindowStatusMessage(QString("Loading float dark reference file %1 (single frame)")
+                                                  .arg(options->darkReferenceFileLocation));
+                    emit loadDarkMask(options->darkReferenceFileLocation, fmt_float32);
+                } else {
+                    handleMainWindowStatusMessage(QString("Loading uint16 dark reference file %1 (all frames)")
+                                                  .arg(options->darkReferenceFileLocation));
+                    emit loadDarkMask(options->darkReferenceFileLocation, fmt_uint16);
+                }
                 controlbox->toggleDSFUsage(true);
             });
             darkRefLoadTimer->setSingleShot(true);
@@ -309,12 +315,20 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
             whiteRefLoadTimer->setInterval(delay_ms);
             connect(this->whiteRefLoadTimer, &QTimer::timeout,
                     [=]() {
-                handleMainWindowStatusMessage(QString("Loading uint16 white reference file %1 (all frames)")
-                                              .arg(options->whitereffile));
-                emit loadWhiteReference(options->whitereffile, fmt_uint16); // TODO
+                if(options->whiteRefFileIsFloat) {
+                    handleMainWindowStatusMessage(QString("Loading float white reference file %1 (single frame)")
+                                                  .arg(options->whitereffile));
+                    emit loadWhiteReference(options->whitereffile, fmt_float32);
+                } else {
+                    handleMainWindowStatusMessage(QString("Loading uint16 white reference file %1 (all frames)")
+                                                  .arg(options->whitereffile));
+                    emit loadWhiteReference(options->whitereffile, fmt_uint16);
+                }
             });
             whiteRefLoadTimer->setSingleShot(true);
             whiteRefLoadTimer->start();
+        } else {
+            handleMainWindowStatusMessage("White reference filename was empty!");
         }
     }
     connect(this->controlbox, SIGNAL(toggleWR(bool)), fw, SLOT(toggleUseWR(bool)));

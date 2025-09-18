@@ -218,7 +218,7 @@ public:
 	void startCapturingDSFMask();
 	void finishCapturingDSFMask();
     void loadDSFMask_entry(std::string filename_s, fileFormat_t fmt);
-    void loadDSFMask(std::string file_name); // float
+    void loadDSFMaskFloat32(std::string file_name); // float
     void loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format);
 
     bool *dsfMaskCollected = NULL;

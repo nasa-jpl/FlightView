@@ -189,8 +189,23 @@ int main(int argc, char *argv[])
         if( (currentArg == "--darkreffile") || (currentArg == "--darkreferencefile") ) {
             if(argc > c)
             {
+                // Datatype is uint16, will read entire file and average
                 startupOptions.darkReferenceFileLocation = argv[c+1];
                 startupOptions.darkRefFileSet = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if( (currentArg == "--darkreffilefloat") || (currentArg == "--darkreferencefilefloat")
+                || (currentArg == "--darkreffloat") || (currentArg == "--darkreferencefloat")) {
+            if(argc > c)
+            {
+                // Datatype is float, use as-is
+                startupOptions.darkReferenceFileLocation = argv[c+1];
+                startupOptions.darkRefFileSet = true;
+                startupOptions.darkRefFileFloat = true;
                 c++;
             } else {
                 std::cout << helptext.toStdString() << std::endl;
@@ -202,6 +217,19 @@ int main(int argc, char *argv[])
             {
                 startupOptions.whitereffile = argv[c+1];
                 startupOptions.whitereffileSet = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if( (currentArg == "--whitereffilefloat") || (currentArg == "--whitereferencefilefloat")
+                || (currentArg == "--whitereffloat") || (currentArg == "--whitereferencefloat")) {
+            if(argc > c)
+            {
+                startupOptions.whitereffile = argv[c+1];
+                startupOptions.whitereffileSet = true;
+                startupOptions.whiteRefFileIsFloat = true;
                 c++;
             } else {
                 std::cout << helptext.toStdString() << std::endl;

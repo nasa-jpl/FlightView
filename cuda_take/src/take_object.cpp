@@ -542,11 +542,9 @@ void take_object::loadWR_entry(std::string filename_s, fileFormat_t fmt) {
     switch (fmt) {
     case fmt_float32:
         mask_thread = boost::thread(boost::bind(&take_object::loadWR_float, this, filename_s));
-        //this->loadWR_float(filename_s);
         break;
     case fmt_uint16:
         mask_thread = boost::thread(boost::bind(&take_object::loadWR_uint16, this, filename_s));
-        //this->loadWR_uint16(filename_s);
         break;
     default:
         errorMessage("WR Filetype not available.");
@@ -555,7 +553,6 @@ void take_object::loadWR_entry(std::string filename_s, fileFormat_t fmt) {
 }
 
 void take_object::loadWR_float(std::string file_name) {
-    // TODO
     if(readingWRFile)
         return;
 
@@ -853,8 +850,7 @@ void take_object::loadDSFMask_entry(std::string filename_s, fileFormat_t fmt) {
         break;
     case fmt_float32:
         statusMessage("Loading float32 DSF mask");
-        return;
-        mask_thread = boost::thread(&take_object::loadDSFMask, this, filename_s);
+        mask_thread = boost::thread(&take_object::loadDSFMaskFloat32, this, filename_s);
         break;
     default:
         errorMessage("Unable to load DSF mask from file, format is unknown.");
@@ -866,7 +862,7 @@ void take_object::loadDSFMask_entry(std::string filename_s, fileFormat_t fmt) {
     //pthread_setname_np(mask_thread_handler, "MASK");
 }
 
-void take_object::loadDSFMask(std::string file_name)
+void take_object::loadDSFMaskFloat32(std::string file_name)
 {
     if(readingDSFFile)
         return;
@@ -1960,7 +1956,7 @@ void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, 
                         data2 = frameSaveBuffer.try_dequeue();
                         bufferAttemptCounter++;
                         usleep(100);
-                    }
+               }
 
 //                if(hitDoneCondition)
 //                    break;

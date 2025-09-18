@@ -62,7 +62,12 @@ struct takeOptionsType
     std::string *xioDirectory = NULL;
 
     bool whitereffileSet = false;
+    bool whiteRefFileIsFloat = false;
     std::string whitereffile;
+
+    bool darkFileSet = false;
+    bool darkFileFloat = false;
+    std::string darkFile;
 
     bool showMore = false;
     bool theseAreDefault = false;

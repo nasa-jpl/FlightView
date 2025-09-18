@@ -179,10 +179,20 @@ void frameWorker::convertOptions()
             qDebug() << "RTP Address: " << takeOptions.rtpAddress;
     }
 
-    if(takeOptions.whitereffileSet) {
-        options.whitereffileSet = true;
-        options.whitereffile = QString::fromStdString(takeOptions.whitereffile);
+    if(options.whitereffileSet) {
+        // Not actually used directly by take -- see mainwindow.cpp
+        takeOptions.whitereffileSet = true;
+        takeOptions.whiteRefFileIsFloat = options.whiteRefFileIsFloat;
+        takeOptions.whitereffile = options.whitereffile.toStdString();
     }
+
+    if(options.darkRefFileSet) {
+        // Not actually used directly by take -- see mainwindow.cpp
+        takeOptions.darkFileSet = true;
+        takeOptions.darkFileFloat = options.darkRefFileFloat;
+        takeOptions.darkFile = options.darkReferenceFileLocation.toStdString();
+    }
+
 }
 
 // public functions
@@ -355,12 +365,12 @@ void frameWorker::loadDarkFile(QString filename, fileFormat_t format)
     to.loadDSFMask_entry(filename.toStdString(), format);
     return;
     // todo: remove these
-    if(format == fmt_float32)
-    {
-        to.loadDSFMask(filename.toStdString());
-    } else {
-        to.loadDSFMaskFromFramesU16(filename.toStdString(), format);
-    }
+//    if(format == fmt_float32)
+//    {
+//        to.loadDSFMask(filename.toStdString());
+//    } else {
+//        to.loadDSFMaskFromFramesU16(filename.toStdString(), format);
+//    }
 }
 
 void frameWorker::startCapturingDSFMask()
