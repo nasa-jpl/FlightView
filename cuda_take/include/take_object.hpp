@@ -251,7 +251,7 @@ public:
     void startSavingRaws(std::string raw_file_name, unsigned int frames_to_save, unsigned int num_avgs_save);
 	void stopSavingRaws();
     //void panicSave(std::string);
-    std::list<uint16_t *> saving_list;
+    //std::list<uint16_t *> saving_list;
     // 128 is the allocation size for the camera-to-savefile buffer
     // In practice we are generally only a frame behind the camera, but we allow for up to 128 frames.
     LockFreeRingBuffer<uint16_t, 128> frameSaveBuffer;

@@ -62,7 +62,7 @@ void take_object::initialSetup(int channel_num, int number_of_buffers,
     save_framenum.store(0, std::memory_order_seq_cst);
     save_count=0;
     save_num_avgs=1;
-    saving_list.clear();
+    //saving_list.clear();
 
     camStatus = CameraModel::camUnknown;
 }
@@ -964,30 +964,23 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
 #ifdef VERBOSE
     printf("ssr called\n");
 #endif
-    bool notEmpty = false;
-    int saving_list_notEmpty_counter = 0;
-    while(!saving_list.empty())
-    {
-#ifdef VERBOSE
-        printf("Waiting for empty saving list...\n");
-#endif
-        notEmpty = true;
-        saving_list_notEmpty_counter++;
-        usleep(1000);
-    }
-    if(notEmpty) {
+    if(frameSaveBuffer.size() > 0) {
         char msgb[160] = {'\0'};
-        sprintf(msgb, "saving_list was not empty, indicates likely concurrent recording request. counter: %d. Forcing a 5 second pause.",
-                saving_list_notEmpty_counter);
+        // This happens when are "left over" frames from prior recordings which were not written out completely.
+        // It should not happen, since the buffer is cleared after each recording, but we will check here anyway.
+        sprintf(msgb, "frameSaveBuffer was not empty, size: %ld.",
+                frameSaveBuffer.size());
         warningMessage(msgb);
-        // At this point, saving_list IS empty.
-        // However, the file has not been confirmed to be closed and the
-        // headers may not have been written yet.
-        usleep( (1E6)/4 ); // pause a quarter second
-        while(savingData) {
-            usleep(1E3); // additional 1ms pause while waiting for savingData to complete
-        }
     }
+    while(frameSaveBuffer.size() > 0)
+    {
+        statusMessage("Clearing saveFrameBuffer...");
+        uint16_t* data = frameSaveBuffer.try_dequeue();
+        if(data)
+            delete data;
+        usleep(100);
+    }
+
     save_framenum.store(frames_to_save,std::memory_order_seq_cst);
     save_count.store(0, std::memory_order_seq_cst);
     save_num_avgs=num_avgs_save;
@@ -1648,8 +1641,8 @@ void take_object::rtpConsumeFrames()
         grabbing = false;
     }
     statusMessage("RTP Consumer Loop is done providing frames");
-    if(mf)
-        delete mf;
+//    if(mf)
+//        delete mf;
 }
 
 void take_object::pdv_loop() //Producer Thread (pdv_thread)
@@ -1917,6 +1910,7 @@ void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, 
     FILE * file_target = fopen(fname.c_str(), "wb");
     int sv_count = 0;
     int waitCount = 0;
+    char messageFrames[128];
 
     while(  (save_framenum != 0) || continuousRecording.load(std::memory_order_seq_cst))
     {
@@ -1948,7 +1942,22 @@ void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, 
             // This would be indicated by the overwrite count being non-zero.
             float * data = new float[frWidth*dataHeight];
             unsigned int bufferAttemptCounter = 0; // for debugging
-            bool hitDoneCondition = false;
+//            sprintf(messageFrames, "Top of save while loop: Frames left to save: %ld, buffered frames: %ld, frames to average: %u",
+//                    save_framenum.load(), frameSaveBuffer.size(), num_avgs);
+//            statusMessage(messageFrames);
+
+            if( (save_framenum.load() + frameSaveBuffer.size()) < num_avgs ) {
+                // trouble. We're not gonna get enough frames to
+                // window-average another set. And then we get stuck.
+                // The frames left to be captured, combined with the size of the frames in the buffer,
+                // are not enough to write a num_avgs average frame.
+
+                sprintf(messageFrames, "Situation: Frames left to save: %ld, buffered frames: %ld, frames to average: %u",
+                        save_framenum.load(), frameSaveBuffer.size(), num_avgs);
+                statusMessage("Could not average last set of frames. Total collection length should be an integer multiple of the averaging window size.");
+                statusMessage(messageFrames);
+                break; // break out of while loop, do not hit the for loop below.
+            }
             for(unsigned int i2 = 0; i2 < num_avgs; i2++)
             {
                 uint16_t *data2 = NULL;
@@ -1995,6 +2004,14 @@ void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, 
         }
     }
 
+    while(  (save_framenum != 0) && !continuousRecording.load(std::memory_order_seq_cst)) {
+        // If we were in averaging mode and we tapped out due to the multiple,
+        // then we must wait and make sure there are no more frames beign pushed into the buffer.
+        // Otherwise, our clearing of the buffer is premature.
+        usleep(100);
+    }
+
+
     // Almost done, let's take care of anything left in the buffer.
     statusMessage("Finished primary saving loop.");
     char message[128];
@@ -2040,15 +2057,16 @@ void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, 
         }
         statusMessage("Done with write.");
     } else {
+        if(frameSaveBuffer.size() > 0)
+            statusMessage("Dropping additional frame(s) at end that did not meet the averaging interval.");
         while(frameSaveBuffer.size() > 0) {
-            statusMessage("Clearing buffer:");
-            //statusMessage("Dropping additional frame at end that does not meet average interval.");
+            statusMessage("Clearing buffer...");
             uint16_t * data = frameSaveBuffer.try_dequeue();
             if(data) {
                 delete[] data;
             }
         }
-        statusMessage("Done.");
+        statusMessage("Done with write.");
     }
 
     fclose(file_target);

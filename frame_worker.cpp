@@ -301,7 +301,12 @@ void frameWorker::captureFrames()
             last_savect = save_ct;
             last_savenum = save_num;
             // count++;
-
+            if(options.showMore) {
+                if(to.haveMessage) {
+                    emit toMessageOut(to.messagePasser);
+                    to.haveMessage =false;
+                }
+            }
             // Every 25 frames, or, every 200ms, whichever comes first.
             if( (count%25 == 0) || ((clock.elapsed() - lastTime) > 50) )
             {
@@ -322,12 +327,7 @@ void frameWorker::captureFrames()
                     to.haveMessage =false;
                 }
             }
-            if(options.showMore) {
-                if(to.haveMessage) {
-                    emit toMessageOut(to.messagePasser);
-                    to.haveMessage =false;
-                }
-            }
+
         } else {
             // This happens when the program is drawing the screen faster than the
             // frames arrive. It is generally not a problem.
