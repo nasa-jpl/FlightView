@@ -946,6 +946,14 @@ void take_object::updateHorizRange(int bc, int ec)
     std::cout << "meanStartCol: " << meanStartCol << " meanWidth: " << meanWidth << std::endl;
 #endif
 }
+void take_object::updateHorizPos(int horizPos) {
+    meanStartCol = horizPos;
+}
+
+void take_object::updateVertPos(int vertPos) {
+    meanStartRow = vertPos;
+}
+
 void take_object::changeFFTtype(FFT_t t)
 {
     whichFFT = t;

@@ -205,16 +205,18 @@ void white_ref_filter::update_wr(float* pic_in, float* pic_out)
      */
     // testPatternMe(pic_in);
     int zeroCounter = 0;
+    float minValue = 2.0;
+    int scalingValue = 1000;
     if(mask)
         for(unsigned int i = width; i < (width*height); i++)
         //for(unsigned int i = 0; i < width*height; i++)
         {
-            if (mask[i] == 0) {
+            if (mask[i] < minValue) {
                 pic_out[i] = pic_in[i];
                 zeroCounter++;
             } else {
                 //pic_out[i] = pic_in[i]; // a good debug test
-                pic_out[i] = 1000*pic_in[i] / mask[i];
+                pic_out[i] = scalingValue*pic_in[i] / mask[i];
             }
             //if(i%123==0)
             //    std::cerr << "mask[i] = " << mask[i] << ", pic_in[i] = " << pic_in[i] << ", pic_out[i] = " << pic_out[i] << std::endl;
@@ -228,15 +230,17 @@ void white_ref_filter::update_wr(unsigned int* pic_in, float* pic_out)
 {
     /*! \brief Subtracts the dark mask from the image data for each pixel in a discrete image.
      * \param pic_in An image in an unsigned int format, 4 bytes per pixel. */
+    float minValue = 2.0;
+    int scalingValue = 1000;
 
     if(mask)
         for(unsigned int i = width; i < (width*height); i++)
             //for(unsigned int i = 0; i < width*height; i++)
         {
-            if (mask[i] == 0) {
+            if (mask[i] < minValue) {
                 pic_out[i] = pic_in[i];
             } else {
-                pic_out[i] = 1000*(float)pic_in[i] / mask[i];
+                pic_out[i] = scalingValue*(float)pic_in[i] / mask[i];
             }
         }
 

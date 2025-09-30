@@ -2653,19 +2653,22 @@ void ControlsBox::updateOverlayParams(int dummy)
     int cent_width = this->overlay_cent_width_spin->value();
     int rh_width = this->overlay_rh_width_spin->value();
 
+    fw->updateOverlayParams(lh_width, cent_width, rh_width);
+    // All these functions below were moved to the frameWorker.
+
     // update list of parameters.
     // Currently uses the crosshairs to determine L, C, R position
     // and the UI sliders determine the span of each averaging.
-    lh_start = fw->crossStartCol - lh_width/2;
-    lh_end = lh_start + lh_width;
+//    lh_start = fw->crossStartCol - lh_width/2;
+//    lh_end = lh_start + lh_width;
 
-    rh_start = fw->crossWidth - rh_width/2;
-    rh_end = rh_start + rh_width;
+//    rh_start = fw->crossWidth - rh_width/2;
+//    rh_end = rh_start + rh_width;
 
-    cent_start = fw->crosshair_x - cent_width/2;
-    cent_end = fw->crosshair_x + cent_width/2;
+//    cent_start = fw->crosshair_x - cent_width/2;
+//    cent_end = fw->crosshair_x + cent_width/2;
 
-    validateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+//    validateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
 
     /*
     std::cout << "----- begin ControlsBox::updateOverlayParams -----\n";
@@ -2677,14 +2680,14 @@ void ControlsBox::updateOverlayParams(int dummy)
     */
 
     // Send to frame worker, which sends to take object which sends to the mean filter.
-    fw->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+//    fw->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
 }
 
 void ControlsBox::validateOverlayParams(int &lh_start, int &lh_end,\
                                         int &cent_start, int &cent_end,\
                                         int &rh_start, int &rh_end)
 {
-
+    // Not used anymore, this function happens inside the frameWorker.
     int width = fw->getFrameWidth() - 1; // last usable index
 
     // check lower bound:

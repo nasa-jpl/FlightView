@@ -106,6 +106,9 @@ public:
     int cent_end;
     int rh_start;
     int rh_end;
+    int lh_width = 1;
+    int rh_width = 1;
+    int cent_width = 1;
 
     bool use_gray = false;
     int color_scheme = 0;
@@ -173,6 +176,11 @@ public slots:
     void skipFirstRow(bool skip);
     void skipLastRow(bool skip);
     void updateMeanRange(int linesToAverage, image_t profile);
+    void updateOverlayParams();
+    void updateOverlayParams(int lh_width, int cent_width, int rh_width);
+    void validateOverlayParams(int &lh_start, int &lh_end,\
+                                            int &cent_start, int &cent_end,\
+                                            int &rh_start, int &rh_end);
     void updateOverlayParams(int lh_start, int lh_end, int cent_start, int cent_end, int rh_start, int rh_end);
     void update_FFT_range(FFT_t type, int tapNum = 0);
     void tapPrfChanged(int tapNum);

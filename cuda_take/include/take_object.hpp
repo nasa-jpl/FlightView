@@ -245,6 +245,8 @@ public:
     void updateVertOverlayParams(int lh_start, int lh_end,\
                                  int cent_start, int cent_end,\
                                  int rh_start, int rh_end);
+    void updateVertPos(int vertPos);
+    void updateHorizPos(int horizPos);
     void changeFFTtype(FFT_t t);
 
     // Frame saving functions

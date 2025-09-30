@@ -491,6 +491,73 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
     }
 }
 
+void frameWorker::updateOverlayParams() {
+    // This function just recalculates everything.
+    // Call it when the crosshairs have changed and the left/center/right plots
+    // need to be updated.
+    // These values are saved from the last call from ControlsBox to updateOverlayParams(...)
+    updateOverlayParams(lh_width, cent_width, rh_width);
+}
+
+void frameWorker::updateOverlayParams(int lh_width, int cent_width, int rh_width) {
+    // This function accepts the minimum information and takes care of everything.
+    // It is designed to be called whenever we wish to update what is plotted from the overlay.
+    int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end;
+
+
+    lh_start = this->crossStartCol - lh_width/2;
+    lh_end = lh_start + lh_width;
+
+    rh_start = this->crossWidth - rh_width/2;
+    rh_end = rh_start + rh_width;
+
+    cent_start = this->crosshair_x - cent_width/2;
+    cent_end = this->crosshair_x + cent_width/2;
+
+    validateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+    this->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+    // Save for later:
+    this->lh_width = lh_width;
+    this->cent_width = cent_width;
+    this->rh_width = rh_width;
+}
+
+void frameWorker::validateOverlayParams(int &lh_start, int &lh_end,\
+                                        int &cent_start, int &cent_end,\
+                                        int &rh_start, int &rh_end)
+{
+    int width = this->getFrameWidth() - 1; // last usable index
+
+    // check lower bound:
+    if(lh_start < 0)
+        lh_start = 0;
+    if(lh_end < 0)
+        lh_end = 0;
+    if(cent_start < 0)
+        cent_start = 0;
+    if(cent_end < 0)
+        cent_end = 0;
+    if(rh_start < 0)
+        rh_start = 0;
+    if(rh_end < 0)
+        rh_end = 0;
+
+    // check upper bound:
+    if(lh_start > width)
+        lh_start = width;
+    if(lh_end > width)
+        lh_end = width;
+    if(cent_start > width)
+        cent_start = width;
+    if(cent_end > width)
+        cent_end = width;
+    if(rh_start > width)
+        rh_start = width;
+    if(rh_end > width)
+        rh_end = width;
+}
+
+
 void frameWorker::updateOverlayParams(int lh_start, int lh_end, int cent_start, int cent_end, int rh_start, int rh_end)
 {
     /*
@@ -520,6 +587,7 @@ void frameWorker::setCrosshairBackend(int pos_x, int pos_y)
     bool repeat = crosshair_x == pos_x && crosshair_y == pos_y;
     crosshair_x = pos_x;
     crosshair_y = pos_y;    
+    // This is not really idea, we should validate first and then assign.
     if (!(crosshair_x == -1 && crosshair_y == -1) && !repeat) {
         crosshair_x = crosshair_x < -1 ? 0 : crosshair_x;
         crosshair_x = crosshair_x >= int(frWidth) ? frWidth : crosshair_x;
@@ -555,6 +623,16 @@ void frameWorker::setCrosshairBackend(int pos_x, int pos_y)
     }
     if(crosshair_x == -1 && crosshair_y == -1)
         displayCross = false;
+
+    if(crosshair_y > 0)
+            to.updateVertPos(crosshair_y);
+
+    if(crosshair_x > 0)
+            to.updateHorizPos(crosshair_x);
+
+    if((crosshair_x > 0) && (crosshair_y > 0) ) {
+        updateOverlayParams();
+    }
 }
 void frameWorker::update_FFT_range(FFT_t type, int tapNum)
 {
