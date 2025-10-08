@@ -31,6 +31,9 @@ STATUS_NAMES = {
     13: "ERROR"
 }
 
+def clear_fast():
+    """Clears the terminal using an ANSI escape sequence."""
+    sys.stdout.write('\033c')
 
 class ShmSharedDataStruct(ctypes.Structure):
     """
@@ -258,7 +261,8 @@ def main():
             monitor.analyze_latest_frame()
             
             # Wait 1 second before next update
-            time.sleep(1.0)
+            time.sleep(0.1)
+            clear_fast()
             
     except KeyboardInterrupt:
         print("\n\nShutting down...")
