@@ -127,7 +127,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
         // Place vertical layout on right side:
         qgl.addLayout(&op_vert, 0,2, Qt::AlignBaseline);
-
+        // TODO: Add splitter
 
         // Left side frame view image:
         qgl.addWidget(overlay_img, 0,1,1,1); // frame view, dark subtracted

@@ -185,12 +185,27 @@ void take_object::shmSetup()
     statusMessage("Preparing shared memory segment for images.");
 
     if(shmValid) {
-        // unexpected to be valid already
         warningMessage("SHM already valid");
         return;
     }
 
-    size_t shmLen = sizeof(struct shmSharedDataStruct);
+    // 1. Get the dynamic dimensions from the object's members
+    const int frameWidth = this->frWidth;
+    const int frameHeight = this->frHeight;
+
+    // 2. Calculate the required total size dynamically
+    size_t metadataSize = sizeof(struct shmSharedDataStruct);
+
+    // Calculate size of all frames in the buffer:
+    // shmFrameBufferSize * (Width * Height * sizeof(uint16_t))
+    size_t framePixelCount = (size_t)frameWidth * (size_t)frameHeight;
+    size_t frameSizeInBytes = framePixelCount * sizeof(uint16_t);
+    size_t bufferDataSize = (size_t)shmFrameBufferSize * frameSizeInBytes;
+
+    // Total shared memory size
+    size_t shmLen = metadataSize + bufferDataSize;
+
+    // --- Standard SHM opening process (unchanged) ---
     shmFd = shm_open("/liveview_image", O_RDWR | O_CREAT ,S_IRUSR | S_IWUSR);
 
     if(shmFd == -1) {
@@ -208,7 +223,7 @@ void take_object::shmSetup()
         shmValid = false;
         goto cleanup;
     } else {
-        sprintf(trunmessage, "Truncated shared memory segment to %zu bytes.", shmLen);
+        sprintf(trunmessage, "Truncated shared memory segment to %zu bytes (Metadata: %zu, Buffer: %zu).", shmLen, metadataSize, bufferDataSize);
         statusMessage(trunmessage);
     }
 
@@ -219,16 +234,20 @@ void take_object::shmSetup()
         goto cleanup;
     }
 
+    // --- Initialization (Updated with dynamic size) ---
     shm->statusByte = SHM_STATUS_INITALIZING;
     shm->recordingDataToFile = false;
     shm->fps = 0.0;
     shm->counter = 0;
     shm->writingFrameNum = 0;
+
+    // Set dynamic size metadata
     shm->bufferSizeFrames = shmFrameBufferSize;
-    shm->frameHeight = this->frHeight;
-    shm->frameWidth = this->frWidth;
+    shm->frameHeight = frameHeight; // Dynamic height
+    shm->frameWidth = frameWidth;   // Dynamic width
     shm->takingDark = false;
 
+    // Clear fixed-size fields
     for(int i=0; i < shmFilenameBufferSize; i++) {
         shm->lastFilename[i] = '\0';
     }
@@ -237,11 +256,13 @@ void take_object::shmSetup()
         shm->frameTime[i] = 0;
     }
 
-    for(int f=0; f < shmFrameBufferSize; f++) {
-        for(int p=0; p < shmHeight*shmWidth; p++) {
-            shm->frameBuffer[f][p] = 0;
-        }
+    // Zero out the entire variable-sized frame buffer block
+    if (bufferDataSize > 0) {
+        // Use memset to efficiently zero out the entire data buffer section.
+        // The buffer starts exactly after the metadata struct.
+        memset(SHM_FRAME_BUFFER_START(shm), 0, bufferDataSize);
     }
+
     shm->statusByte = SHM_STATUS_WAITING;
     shmValid = true;
     goto cleanup;
@@ -1462,17 +1483,21 @@ void take_object::fileImageCopyLoop()
 
 int take_object::getMicroSecondsPerFrame()
 {
-    int max = (meanDeltaArrayPos < meanDeltaSize)?meanDeltaArrayPos:meanDeltaSize;
+    // Called by the frame_worker at regular intervals
+    int nElements = (meanDeltaArrayPos < meanDeltaSize)?meanDeltaArrayPos:meanDeltaSize;
     // If max is 0, we have not actually taken a reading yet.
-    if(max == 0)
+    if(nElements == 0)
         return 0;
 
     int sum = 0;
-    for(int i=0; i < max; i++)
+    for(int i=0; i < nElements; i++)
     {
         sum += meanDeltaArray[i];
     }
-    return sum / max;
+    this->fpsObserved = float(1E6)/(sum/nElements);
+    //printf("FPS: %f\n", fpsObserved);
+
+    return sum / nElements;
 }
 
 void take_object::setReadDirectory(const char *directory)
@@ -1577,8 +1602,10 @@ void take_object::rtpConsumeFrames()
 
         shmBufferPosition = (shmBufferPositionPrior + 1)%shmFrameBufferSize;
         if(shmValid) {
+            uint16_t* shm_frame_ptr = SHM_GET_FRAME_POINTER(shm, shmBufferPosition);
             shm->writingFrameNum = shmBufferPosition;
-            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth*2);
+            //memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth*2);
+            memcpy(shm_frame_ptr, curFrame->raw_data_ptr, shm->frameWidth * shm->frameHeight * sizeof(uint16_t));
         }
 
 
@@ -1636,9 +1663,13 @@ void take_object::rtpConsumeFrames()
         meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
 
         if(shmValid) {
-            if(measuredDelta_micros_final != 0)
-                shm->fps = 1E6/measuredDelta_micros_final;
-            shm->frameTime[shmBufferPosition] = finaltp.time_since_epoch() / std::chrono::milliseconds(1);
+            shm->fps = this->fpsObserved;
+
+            shm->frameTime[shmBufferPosition] = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+
+            // This is not based on the system boot as an epoch, unfortunately.
+            //shm->frameTime[shmBufferPosition] = finaltp.time_since_epoch() / std::chrono::milliseconds(1);
             shm->counter = count;
         }
         shmBufferPositionPrior = shmBufferPosition;
@@ -1747,8 +1778,10 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
 
         shmBufferPosition = (shmBufferPositionPrior + 1)%shmFrameBufferSize;
         if(shmValid) {
+            uint16_t* shm_frame_ptr = SHM_GET_FRAME_POINTER(shm, shmBufferPosition);
             shm->writingFrameNum = shmBufferPosition;
-            memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth*2);
+            memcpy(shm_frame_ptr, curFrame->raw_data_ptr, shm->frameWidth * shm->frameHeight * sizeof(uint16_t));
+            //memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth*2);
         }
 
         // Calculating the filters for this frame
@@ -1798,9 +1831,10 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         meanDeltaArray[(++meanDeltaArrayPos)%meanDeltaSize] = measuredDelta_micros_final;
 
         if(shmValid) {
-            if(measuredDelta_micros_final != 0)
-                shm->fps = 1E6/measuredDelta_micros_final;
-            shm->frameTime[shmBufferPosition] = finaltp.time_since_epoch() / std::chrono::milliseconds(1);
+            shm->fps = this->fpsObserved;
+            shm->frameTime[shmBufferPosition] = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+            //shm->frameTime[shmBufferPosition] = finaltp.time_since_epoch() / std::chrono::milliseconds(1);
             shm->counter = count;
         }
         shmBufferPositionPrior = shmBufferPosition;

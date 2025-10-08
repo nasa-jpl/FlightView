@@ -16,8 +16,9 @@
 // Future versions might make this more dynamic.
 // It is, of course, possible to write smaller frames into a buffer designed
 // for larger frames.
-#define shmHeight (480)
-#define shmWidth (1280)
+
+//define shmHeight (480)
+//define shmWidth (1280)
 #define shmFrameBufferSize (10)
 #define shmFilenameBufferSize (256)
 
@@ -27,6 +28,16 @@
 #define SHM_STATUS_INITALIZING (26)
 #define SHM_STATUS_CLOSED (24)
 #define SHM_STATUS_ERROR (13)
+
+// Helper macros:
+// To access the start of the variable-sized frame buffer data block.
+// This block begins immediately after the fixed metadata struct.
+#define SHM_FRAME_BUFFER_START(shm_ptr) \
+    ((uint16_t*)((char*)(shm_ptr) + sizeof(struct shmSharedDataStruct)))
+
+// To calculate the start of a specific frame (0 to shmFrameBufferSize - 1).
+#define SHM_GET_FRAME_POINTER(shm_ptr, frame_index) \
+    (SHM_FRAME_BUFFER_START(shm_ptr) + (frame_index) * ((shm_ptr)->frameWidth * (shm_ptr)->frameHeight))
 
 // Shared Memory Segment Data Structure:
 struct shmSharedDataStruct {
@@ -42,7 +53,7 @@ struct shmSharedDataStruct {
 
     bool takingDark; // indicates if, at the moment, we are recording darks.
     uint64_t frameTime[shmFrameBufferSize]; // system (computer) time since epoch, in milliseconds. Use to monitor "freshness" of data.
-    uint16_t frameBuffer[shmFrameBufferSize][shmWidth*shmHeight]; // Buffer of frames. Read into the buffer by offsetting how many bytes-of-frame are needed.
+    //uint16_t frameBuffer[shmFrameBufferSize][shmWidth*shmHeight]; // Buffer of frames. Read into the buffer by offsetting how many bytes-of-frame are needed.
     //uint16_t *frameBuffer[shmFrameBufferSize];
     char lastFilename[shmFilenameBufferSize]; // Last used filename for saving data out. Is not cleared or reset after saving.
 };

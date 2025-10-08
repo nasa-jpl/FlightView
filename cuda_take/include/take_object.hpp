@@ -168,6 +168,8 @@ class take_object {
     unsigned int frHeight;
     unsigned int frWidth;
 
+    float fpsObserved = 0;
+
     //Filter-specific variables
 	int std_dev_filter_N;
 
