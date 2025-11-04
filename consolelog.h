@@ -21,6 +21,7 @@
 #include "startupOptions.h"
 #include "udpbinarylogger.h"
 #include "linebuffer.h"
+#include "zmqclient.h"
 
 class consoleLog : public QWidget
 {
@@ -50,11 +51,22 @@ private:
     void closeFile();
     void makeDirectory(QString directory);
     void logSystemConfig();
+    void setupZMQ();
+
+    // UDP Binary Logger:
     std::thread udpThread;
     bool usingUDP = false;
     bool udpThreadRunning = false;
     lineBuffer* buffer = NULL;
     udpbinarylogger *udp = NULL;
+
+    // ZMQ Logger:
+    bool usingZmq = true;
+    QString zmqHost = QString("127.0.0.1");
+    int zmqPort = 54321;
+    ZmqClient *zc = NULL;
+    QThread *zcThread = NULL;
+
     bool fileIsOpen = false;
     bool enableLogToFile = false;
     bool enableUDPLogging = true;

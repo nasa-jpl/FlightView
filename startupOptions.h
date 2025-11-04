@@ -70,6 +70,10 @@ struct startupOptionsType
     QString UDPLogHost = QString("");
     unsigned int UDPLogPort = 10175;
 
+    bool zmqLogging = false;
+    QString zmqLoggingHost = QString("");
+    unsigned int zmqLoggingPort = 0;
+
     bool frameSkipSet = false;
     unsigned int frameSkip = 0;
 

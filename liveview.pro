@@ -56,7 +56,8 @@ SOURCES += main.cpp\
     udpbinarylogger.cpp \
     waterfall.cpp \
     waterfallviewerwindow.cpp \
-    wfengine.cpp
+    wfengine.cpp \
+    zmqclient.cpp
 
 HEADERS  += mainwindow.h \
     consolelog.h \
@@ -100,7 +101,8 @@ HEADERS  += mainwindow.h \
     preferences.h \
     waterfallviewerwindow.h \
     wfengine.h \
-    wfshared.h
+    wfshared.h \
+    zmqclient.h
 
 DISTFILES +=    cuda_take/include/take_object.hpp \
                 aviris3-logo.png \
@@ -168,7 +170,7 @@ QMAKE_CXXFLAGS += -O3 -std=c++11 -march=native -mtune=native -fopenmp -Wno-class
 }
 
 QMAKE_LFLAGS += -fopenmp
-LIBS += -lgsl -lgslcblas -lexiv2
+LIBS += -lgsl -lgslcblas -lexiv2 -lzmq
 
 # Used for build tracking:
 DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"

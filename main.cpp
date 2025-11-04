@@ -97,6 +97,8 @@ int main(int argc, char *argv[])
                                "--whitereffilefloat /path/to/white_file_float.raw (single float32 frame)\n"
                                "--udplogginghost 1.2.3.4\n"
                                "--udploggingport 10175\n"
+                               "--zmqlogginghost 1.2.3.4\n"
+                               "--zmqloggingport 54321\n"
                                "--frameskip n\n"
                                )\
             .arg(cmdName);
@@ -122,6 +124,9 @@ int main(int argc, char *argv[])
     bool widthSet = false;
     bool rtpInterfaceSet = false;
     bool rtpAddressSet = false;
+
+    bool haveZmqHost = false;
+    bool haveZmqPort = false;
 
     // Basic CLI argument parser:
     for(int c=1; c < argc; c++)
@@ -472,6 +477,41 @@ int main(int argc, char *argv[])
                 }
             }
         }
+
+        if( (currentArg == "--zmqlogginghost") || (currentArg == "--zmqhost") ) {
+            if(argc > c) {
+                startupOptions.zmqLoggingHost = argv[c+1];
+                haveZmqHost = true;
+                c++;
+            } else {
+                std::cerr << "Error, don't see ZMQ logging host specified." << std::endl;
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if( (currentArg == "--zmqloggingport") || (currentArg == "--zmqport") ) {
+            if(argc > c) {
+                int portTemp=0;
+                bool ok = false;
+                portTemp = QString(argv[c+1]).toInt(&ok);
+                if( portTemp > 65535 )
+                    ok = false;
+
+                if(ok) {
+                    startupOptions.zmqLoggingPort = portTemp;
+                    haveZmqPort = true;
+                } else {
+                    std::cerr << "Error, don't see ZMQ logging port number specified." << std::endl;
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cerr << "Error, don't see ZMQ logging port number specified." << std::endl;
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
         if( (currentArg == "--udploghost") || (currentArg == "--udplogginghost")) {
             if(argc > c) {
                 // Only IPV4 supported, and no hostnames please, let's not depend upon DNS or resolv in the airplane...
@@ -632,6 +672,10 @@ int main(int argc, char *argv[])
         startupOptions.heightWidthSet = true;
     }
 
+    if(haveZmqHost && haveZmqPort) {
+        startupOptions.zmqLogging = true;
+    }
+
 
     if(startupOptions.wfPreviewEnabled && (!startupOptions.wfPreviewlocationset)) {
         std::cerr << "Warning, waterfall preview option enabled but --wfpreviewlocation was not set." << std::endl;
@@ -655,7 +699,7 @@ int main(int argc, char *argv[])
         // On some displays, the splash screen covers the setup dialog box
         splash->show();
         splash->showMessage(QObject::tr(" "),
-                           Qt::WindowStaysOnTopHint | Qt::AlignCenter | Qt::AlignBottom, Qt::black);
+                            Qt::WindowStaysOnTopHint | Qt::AlignCenter | Qt::AlignBottom, Qt::black);
     }
 
     /* Step 3: Load the parallel worker object which will act as a "backend" for LiveView */

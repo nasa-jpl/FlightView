@@ -12,7 +12,7 @@ consoleLog::consoleLog(startupOptionsType options, QWidget *parent) : QWidget(pa
     this->makeConnections();
     insertText(QString("[ConsoleLog]: Warning: Not logging text to a file."));
     insertText(QString("[ConsoleLog]: Note: Not logging text to UDP"));
-
+    setupZMQ();
     this->logSystemConfig();
  }
 
@@ -43,6 +43,7 @@ consoleLog::consoleLog(startupOptionsType options, QString logFileName, bool ena
     } else {
         insertText(QString("[ConsoleLog]: Note: Not logging text to UDP"));
     }
+    setupZMQ();
     this->logSystemConfig();
 }
 
@@ -90,6 +91,24 @@ void consoleLog::makeConnections()
     connect(&annotateBtn, SIGNAL(pressed()), this, SLOT(onAnnotateBtnPushed()));
     connect(&clearBtn, SIGNAL(pressed()), this, SLOT(onClearBtnPushed()));
     connect(&annotateText, SIGNAL(returnPressed()), this, SLOT(onAnnotateBtnPushed()));
+}
+
+void consoleLog::setupZMQ() {
+    this->usingZmq = false;
+    if(options.zmqLogging) {
+        zc = new ZmqClient();
+        zcThread = new QThread();
+        zc->moveToThread(zcThread);
+        connect(zcThread, &QThread::started,
+                zc, [this](){
+            zc->setConnection(options.zmqLoggingHost, options.zmqLoggingPort);
+        });
+        connect(zcThread, &QThread::finished, zc, &QObject::deleteLater);
+        connect(zcThread, &QThread::finished, zc, &QObject::deleteLater);
+
+        zcThread->start();
+        this->usingZmq = true;
+    }
 }
 
 void consoleLog::destroyUI()
@@ -213,6 +232,11 @@ void consoleLog::insertTextNoTagging(QString text)
     if(enableLogToFile)
         writeToFile(text);
     logToUDPBuffer(text);
+    if(this->usingZmq && (this->zc != NULL)) {
+        QMetaObject::invokeMethod(zc, "sendText",
+                                  Q_ARG(QString, "LOG"),
+                                  Q_ARG(QString, text));
+    }
 }
 
 QString consoleLog::createTimeStamp()
@@ -332,6 +356,7 @@ void consoleLog::logSystemConfig()
 #else
     handleOwnText(QString("Compiled as a RELEASE version"));
 #endif
+
 }
 
 void consoleLog::handleOwnText(QString message)
