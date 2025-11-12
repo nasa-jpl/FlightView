@@ -11,8 +11,11 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <mutex>
+#include <string.h>
 
+#ifdef CAMERALINK
 #include "edtinc.h"
+#endif
 #include "constants.h"
 
 /*! \file

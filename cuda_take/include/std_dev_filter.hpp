@@ -12,9 +12,13 @@
 #include <cmath>
 #include <vector>
 #include <array>
+#include <string.h>
 
 #include "constants.h"
+#ifdef CAMERALINK
 #include "edtinc.h"
+#endif
+
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "cuda_utils.cuh"

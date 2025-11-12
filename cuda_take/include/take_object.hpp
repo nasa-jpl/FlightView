@@ -104,7 +104,9 @@ union pcv_t {
 };
 
 class take_object {
+#ifdef CAMERALINK
     PdvDev * pdv_p = NULL;
+#endif
     unsigned int channel;
     unsigned int numbufs;
     unsigned int filter_refresh_rate;
@@ -276,7 +278,9 @@ public:
 
 private:
     // PDV Camera Link:
+#ifdef CAMERALINK
     void pdv_loop();
+#endif
 
     // XIO (files):
     void fileImageCopyLoop();

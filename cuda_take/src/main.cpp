@@ -57,6 +57,7 @@ void fft_test()
 }
 void simple_pdv_test()
 {
+#ifdef CAMERALINK
 	PdvDev * pdv_p = pdv_open_channel(EDT_INTERFACE,0,0);
 	pdv_start_images(pdv_p,64);
 	//unsigned int height = pdv_get_height(pdv_p);
@@ -67,7 +68,7 @@ void simple_pdv_test()
 		ptr =reinterpret_cast<uint16_t *>(pdv_wait_image(pdv_p));
 		printf("@ 100 100 %u", ptr[width*100 + 100]);
 	}
-
+#endif
 
 }
 int main()

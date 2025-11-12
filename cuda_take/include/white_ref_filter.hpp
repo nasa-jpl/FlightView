@@ -13,7 +13,10 @@
 #include <mutex>
 #include <chrono>
 
+#ifdef CAMERALINK
 #include "edtinc.h"
+#endif
+
 #include "constants.h"
 
 #include "dark_subtraction_filter.hpp"

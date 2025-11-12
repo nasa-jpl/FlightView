@@ -16,6 +16,15 @@ DEFINES += GIT_CURRENT_SHA1_SHORT="\\\"$(shell git -C \"$$PWD\" rev-parse --shor
 DEFINES += GIT_BRANCH="\\\"$(shell git -C \"$$PWD\" symbolic-ref --short HEAD)\\\""
 DEFINES += SRC_DIR="\\\"\'$$PWD\'\\\""
 
+# For CameraLink support,
+# run qmake with the argument CONFIG+=cameralink
+contains(CONFIG, cameralink) {
+    message("Compiling with CameraLink support.")
+    DEFINES += CAMERALINK
+} else {
+    message("Compiling without CameraLink support.")
+}
+
 CONFIG+=link_pkgconfig
 PKGCONFIG+=gstreamer-1.0 gstreamer-app-1.0 glib-2.0 gobject-2.0
 
@@ -196,8 +205,13 @@ QMAKE_POST_LINK += cp \"$$PWD/LiveView.desktop\" $$DESTDIR;
 #LIBS += -L$$PWD/lib/ -l$$QCPLIB
 
 unix:!macx:!symbian: LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lboost_filesystem -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl -lrt # -lGL -lQtOpenGL
-INCLUDEPATH += $$PWD/cuda_take/include\
-/opt/EDTpdv /usr/local/cuda/include
+INCLUDEPATH += $$PWD/cuda_take/include
+INCLUDEPATH += /usr/local/cuda/include
+
+contains(CONFIG, cameralink) {
+    INCLUDEPATH += /opt/EDTpdv
+}
+
 DEPENDPATH += $$PWD/cuda_take
 
 unix:!macx:!symbian: PRE_TARGETDEPS += $$PWD/cuda_take/libcuda_take.a

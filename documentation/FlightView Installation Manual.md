@@ -23,7 +23,7 @@ Part 1: Prerequisites
 
 ### OS
 
-FlightView has been tested on Ubuntu, Linux Mint, and Pop!OS. Most development has taken place using Linux Mint 20.2 with kernel 5.4.0-74-generic. Some drivers required by FlightView require the installed version of Linux to be running a kernel no later than 5.x. FlightView has been tested 5.4.x and 5.15.x. Ensure that the kernel version used is compatible with the hardware in use. For instance, some network devices and video cards don't have drivers available on older versions of the kernel. 
+FlightView has been tested on Ubuntu, Linux Mint, and Pop!OS. Most development has taken place using Linux Mint 20.2 with kernel 5.4.0-74-generic. Some drivers required by FlightView require the installed version of Linux to be running a kernel no later than 5.x. FlightView has been tested 5.4.x and 5.15.x. Ensure that the kernel version used is compatible with the hardware in use. For instance, some network devices and video cards don't have drivers available on older versions of the kernel. Those using camera link cards will have additional kernel constrains. 
 
 ### Dependencies
 
@@ -38,6 +38,8 @@ sudo apt-get -y install libboost-all-dev libgsl-dev libgsl23 libgslcblas0
 ```
 *Note: It may be necessary to reinstall the kernel headers if the OS kernel is updated.*
 
+If a library cannot be found, it may have changed version numbers. Use the ```apt search``` command to locate the missing dependency. 
+
 <details open>
 <summary><strong>Using gstreamer vs. rtpnextgen</strong></summary>
 RTP support is provided via two libraries: gstreamer, and rtpnextgen. If using gstreamer, additional steps are requierd to patch it for 16-big grayscale support. If using rtpnextgen, gstreamer still needs to be installed, but can be installed via apt without a patch.
@@ -45,6 +47,7 @@ RTP support is provided via two libraries: gstreamer, and rtpnextgen. If using g
 gstreamer features:
 * Supports IPv4 & IPv6
 * Requires a patch for 16-bit grayscale
+* Unlikely to be supported in the long term
 
 rtpnextgen features:
 * Supports IPv4
@@ -92,7 +95,7 @@ sudo dpkg --install ./gstreamer1.0*.deb
 </details>
 
 #### SSH Server
-It is **strongly recommended** to install and enable an SSH Server so that, if the graphics don't come up, an SSH connection can be made for diagnostics:
+Before installing or updating the nvidia graphics driver, it is **strongly recommended** to install and enable an SSH Server so that, if the graphics don't come up, an SSH connection can be made for diagnostics:
 
 ```bash
 sudo apt-get -y install openssh-server
@@ -116,6 +119,8 @@ The computer must be using the proprietary Nvidia graphics drivers as well as a 
 **Please use CUDA Development Kit version 11.6 or greater for the smoothest installation of FlightView**
 
 While the RPM or DEB installation options will likely work, **it is recommended to use the Runfile installer for the installation**, as it will not be affected by OS updates. Runfile install instructions are found in section 5 of the linked documentation.
+
+Generally speaking, you will need to disable the display manager and unload any existing graphics drivers prior to installing the nvidia driver. 
 
 ### Remove prior version(s) of CUDA and Nvidia Drivers
 
@@ -146,7 +151,7 @@ Camera Link Drivers
 -------------------
 *FlightView currently only supports EDT PDV software prior to version 6.0*
 
-
+As of November 2025, Camera Link is not required for compiling. Proceed with EDT PDV driver installation only if Camera Link is needed. 
 
 <details open>
     <summary>
@@ -283,7 +288,16 @@ If `nvcc`'s is version is <11.6 (check with `nvcc -V`), extra steps are required
 After verifying nvcc, build cuda_take:
 ```bash
 cd cuda_take # Current directory should be ~/Documents/FlightView/cuda_take
+```
+
+Without Camera Link:
+```bash
 make -j
+```
+
+With Camera Link:
+```bash
+make -j -DUSE_CAMERALINK
 ```
 
 Common errors:
@@ -304,6 +318,9 @@ qmake ../liveview.pro
 
 # For a debug build (for testing):
 qmake CONFIG+=debug ../liveview.pro
+
+# To support Camera Link:
+qmake CONFIG+=cameralink ../liveview.pro
 
 # Build FlightView:
 make -j

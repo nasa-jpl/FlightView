@@ -7,9 +7,7 @@ AR = ar
 LIBTOOL = libtool
 SOURCEDIR = src
 HARDWARE = EDT
-ifeq ($(HARDWARE),OPALKELLY)
-okFP_SDK ?= /usr/lib/ 
-endif
+USE_CAMERALINK ?= 0
 ######################################
 
 
@@ -67,8 +65,13 @@ OBJDIR = obj
 
 ######################################
 #Here we set the directories containing necessary header files (.h,.cuh,.hpp); ones specific to this program are kept in include/, ones needed for cameralink stuff in EDT_include/
-IDIR      = -Iinclude -I/opt/EDTpdv -I/usr/local/cuda/include 
-#IDIR      = -Iinclude -I/opt/EDTpdv -I/usr/local/cuda/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtCore
+ifeq ($(USE_CAMERALINK), 1)
+	CFLAGS   += -DCAMERALINK
+	CXXFLAGS += -DCAMERALINK
+	IDIR      = -Iinclude -I/opt/EDTpdv -I/usr/local/cuda/include 
+else
+	IDIR      = -Iinclude -I/usr/local/cuda/include 
+endif
 
 #SECOND NOTE: ONLY BUILD WITH O1! Somehow, someway, O2 optimizes out things that nvcc needs and O0 has linker redefinition errors. #JankCity <- This has been fixed, but still a good idea
 CFLAGS     = -g -O3 -D HOST=\"`hostname`\" -D UNAME=\"`whoami`\" #This is added to the compilation of every file, enables gdb debugging symbols (-g) and limited optimization (-O1) 
@@ -119,16 +122,17 @@ NVCCFLAGS  = -arch=native -lineinfo -Xcompiler -pthread -Xcompiler -rdynamic --c
 
 NVCCFLAGS += $(CFLAGS)
 
-LINKDIR 	= /opt/EDTpdv #where do the libraries we need to link in go?
-LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lboost_system -lz -lcuda -lcudart -lgsl -lgslcblas -lgomp -lpthread -ldl -lgstapp-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
-ifeq ($(HARDWARE),OPALKELLY)
-LDFLAGS	   := -L$(okFP_SDK)
-okFP_LIBS  := -lokFrontPanel
+ifeq ($(USE_CAMERALINK), 1)
+	LINKDIR 	= /opt/EDTpdv #where do the libraries we need to link in go?
+	LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lboost_system -lz -lcuda -lcudart -lgsl -lgslcblas -lgomp -lpthread -ldl -lgstapp-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
+	AR_COMBINE_SCRIPT = combine_libs_script_cl.ar #For building out output library we compine our stuff with libpdv, this script tells ar how to do that
+	#This switch enables concatenating libpdv.a and libcuda_take.a (and possibly libboost_thread.a)
+else
+	LFLAGS      = -lm -lboost_thread -lboost_system -lz -lcuda -lcudart -lgsl -lgslcblas -lgomp -lpthread -ldl -lgstapp-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
+	AR_COMBINE_SCRIPT = combine_libs_script.ar #For building out output library we compine our stuff with libpdv, this script tells ar how to do that
 endif
-AR_COMBINE_SCRIPT = combine_libs_script.ar #For building out output library we compine our stuff with libpdv, this script tells ar how to do that
-#This switch enables concatenating libpdv.a and libcuda_take.a (and possibly libboost_thread.a)
-CONCATENATE_LIBPDV = 1
 
+CONCATENATE_LIBS = 1
 ######################################
 
 all : $(EXE) $(LIBOUT)
@@ -144,7 +148,7 @@ $(EXE) : $(objects)
 endif
 	
 $(LIBOUT) : $(objects)
-ifeq ($(CONCATENATE_LIBPDV), 1)
+ifeq ($(CONCATENATE_LIBS), 1)
 	$(AR) rcs thin_$@ $(filter-out obj/main.o, $(wildcard obj/*.o))		
 	$(AR) -M <$(AR_COMBINE_SCRIPT)
 else
@@ -160,13 +164,8 @@ $(OBJDIR)/%.o : %.c
 	$(CC) $(CONLYFLAGS) $(IDIR) -c -o $@ $<
 
 #what to do to build cpp files -> o files
-ifeq ($(HARDWARE),OPALKELLY)
-$(OBJDIR)/%.o : %.cpp
-	$(CCPP) $(CPPFLAGS) $(okFP_CXXFLAGS) $(CXXFLAGS) $(IDIR) -c -o $@ $<
-else
 $(OBJDIR)/%.o : %.cpp
 	$(CCPP) $(CPPFLAGS) $(IDIR) -c -o $@ $<
-endif
 #What to do to build cu files -> o files
 $(OBJDIR)/%.o : %.cu 
 	$(NVCC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<

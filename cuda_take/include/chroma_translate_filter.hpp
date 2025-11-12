@@ -7,7 +7,11 @@
 
 #ifndef CHROMA_TRANSLATE_FILTER_H_
 #define CHROMA_TRANSLATE_FILTER_H_
+#include <string.h>
+
+#ifdef CAMERALINK
 #include "edtinc.h"
+#endif
 #include "camera_types.h"
 #include "constants.h"
 #include <stdint.h>

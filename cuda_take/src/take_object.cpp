@@ -80,12 +80,14 @@ take_object::~take_object()
     if(pdv_thread_run != 0) {
         pdv_thread_run = 0;
 
+#ifdef CAMERALINK
         int dummy;
         if(pdv_p)
         {
             pdv_wait_last_image(pdv_p,&dummy); //Collect the last frame to avoid core dump
             pdv_close(pdv_p);
         }
+#endif
         if(Camera)
         {
             LOG << "Deleting camera.";
@@ -283,33 +285,35 @@ void take_object::start()
 
     pthread_setname_np(pthread_self(), "TAKE");
 
+#ifdef CAMERALINK
     this->pdv_p = NULL;
+#endif
     if(!options.noGPU) {
 
-	size_t cudamem[10] = {0};
-	size_t maxMemFound = 0;
-	int bestDevice = 0;
-	for(int i=0; i < getDeviceCount(); i++) {
-		cudaGetDeviceProperties(&cdev, i);
-		cudamem[i] = cdev.totalGlobalMem;
-        printf("Device %d has name %s and memory %ld MiB\n",
-                i, cdev.name, cudamem[i]/1024/1024);
-		if(cudamem[i] > maxMemFound) {
-			maxMemFound = cudamem[i];
-			bestDevice = i;
-		}
-	}
+        size_t cudamem[10] = {0};
+        size_t maxMemFound = 0;
+        int bestDevice = 0;
+        for(int i=0; i < getDeviceCount(); i++) {
+            cudaGetDeviceProperties(&cdev, i);
+            cudamem[i] = cdev.totalGlobalMem;
+            printf("Device %d has name %s and memory %ld MiB\n",
+                   i, cdev.name, cudamem[i]/1024/1024);
+            if(cudamem[i] > maxMemFound) {
+                maxMemFound = cudamem[i];
+                bestDevice = i;
+            }
+        }
 
-	cudaDevNumber = bestDevice;
-	cudaDeviceNumberStatic = cudaDevNumber;
+        cudaDevNumber = bestDevice;
+        cudaDeviceNumberStatic = cudaDevNumber;
 
-	printf("TAKE_OBJECT: Setting device number to %d\n", cudaDevNumber);
-	cudaSetDevice(cudaDevNumber);
-	int cudaDevNumCheck = -1;
-	cudaGetDevice(&cudaDevNumCheck);
-	printf("TAKE_OBJECT: Current device is: %d\n", cudaDevNumCheck);
-	cudaGetDeviceProperties(&cdev, cudaDevNumCheck);
-	printf("TAKE_OBJECT: CUDA device name: %s\n", cdev.name);
+        printf("TAKE_OBJECT: Setting device number to %d\n", cudaDevNumber);
+        cudaSetDevice(cudaDevNumber);
+        int cudaDevNumCheck = -1;
+        cudaGetDevice(&cudaDevNumCheck);
+        printf("TAKE_OBJECT: Current device is: %d\n", cudaDevNumCheck);
+        cudaGetDeviceProperties(&cdev, cudaDevNumCheck);
+        printf("TAKE_OBJECT: CUDA device name: %s\n", cdev.name);
     }
 
     if(options.xioCam)
@@ -348,6 +352,11 @@ void take_object::start()
             std::cout << "rtpInterface: " << options.rtpInterface << std::endl;
         }
     } else {
+#ifndef CAMERALINK
+        errorMessage("This version of FlightView does not have support for Camera Link.");
+        errorMessage("See liveview.pro and enable the CAMERALINK define");
+        abort();
+#else
         this->pdv_p = pdv_open_channel(EDT_INTERFACE,0,this->channel);
         if(pdv_p == NULL) {
             std::cerr << "Could not open device channel. Is one connected?" << std::endl;
@@ -364,6 +373,7 @@ void take_object::start()
             dataHeight = pdv_get_height(pdv_p);
             frHeight = dataHeight;
         }
+#endif
     }
 
     switch(size) {
@@ -503,6 +513,10 @@ void take_object::start()
         statusMessage("Created RTP consumer thread.");
 
     } else {
+#ifndef CAMERALINK
+        errorMessage("Cameralink support was not compiled into this version of FlightView.");
+        errorMessage("Please see the liveview.pro file for a #define CAMERALINK");
+#else
         statusMessage("Creating CameraLink multibuf.");
         if(pdv_p != NULL)
             rtnval = pdv_multibuf(pdv_p,this->numbufs);
@@ -521,9 +535,11 @@ void take_object::start()
         pthread_setname_np(cam_thread_handler, "PDVCAM");
         //usleep(350000);
         while(!cam_thread_start_complete) usleep(1); // Added by Michael Bernas 2016. Used to prevent thread error when starting without a camera
+#endif
     }
     statusMessage("Finished creating threads.");
 }
+
 void take_object::setInversion(bool checked, unsigned int factor)
 {
     inverted = checked;
@@ -1684,6 +1700,7 @@ void take_object::rtpConsumeFrames()
 //        delete mf;
 }
 
+#ifdef CAMERALINK
 void take_object::pdv_loop() //Producer Thread (pdv_thread)
 {
 	count = 0;
@@ -1850,6 +1867,8 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
     if(mf)
         delete mf;
 }
+#endif
+
 
 void take_object::rotate(uint16_t *input, uint16_t *output, int origHeight, int origWidth) {
     // Rotate the input into the output.
