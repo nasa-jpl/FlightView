@@ -122,6 +122,7 @@ public:
     QCheckBox show_rgb_lines_cbox;
     QCheckBox useRatioCbox;
     QCheckBox* useWRCbox = NULL;
+    QCheckBox* setNDOnbox = NULL;
 
 
     /* RIGHT SIDE BUTTONS (save) */
@@ -228,6 +229,7 @@ signals:
     /*! \brief Passes the DSF the message to begin averaging dark frames for all live widgets. */
     void startDSFMaskCollection();
 
+    void setUseND(bool usingND_On);
     void toggleWR(bool state);
     void startWRMaskCollection();
     void stopWRMaskCollection();

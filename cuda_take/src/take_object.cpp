@@ -2159,6 +2159,7 @@ void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, 
         }
     }
 
+    hdr_text = hdr_text + "NDFilter = " + std::to_string(this->useND) + "\n";
     hdr_text+= "header offset = 0\n";
     hdr_text+= "file type = ENVI Standard\n";
     if(averagingEnabled)

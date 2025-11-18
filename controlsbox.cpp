@@ -115,6 +115,14 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         emit setWFTargetFPS_render(targetFPS);
     });
 
+    setNDOnbox = new QCheckBox("ND Filter");
+    setNDOnbox->setToolTip("Check to set the Neutral Density filter status to True in the header file.");
+
+    connect(setNDOnbox, &QCheckBox::stateChanged, [&](int state) {
+        emit setUseND((bool)state);
+        emit statusMessage(QString("ND filter set to %1").arg((bool)state));
+    });
+
     useWRCbox = new QCheckBox("WhiteReference");
     useWRCbox->setToolTip("Check to use the white reference");
 
@@ -328,7 +336,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     floor_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
 
     low_increment_cbox.setText("Precision Slider");
-    use_DSF_cbox.setText("Apply Dark Subtraction Filter");
+    use_DSF_cbox.setText("Dark Subtract");
 
     show_rgb_lines_cbox.setText("Show RGB Lines");
     show_rgb_lines_cbox.setToolTip("Shows the RGB lines on the flight interface frame view\n at all times if checked. Otherwise just for 30 seconds");
@@ -401,9 +409,10 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //Second Row
     sliders_layout->addWidget(&low_increment_cbox, 2, 1, 1, 1);
     sliders_layout->addWidget(&use_DSF_cbox, 2, 2, 1, 1);
-    sliders_layout->addWidget(&show_rgb_lines_cbox, 2, 3, 1, 1);
-    sliders_layout->addWidget(&useRatioCbox, 2, 4, 1, 1);
-    sliders_layout->addWidget(useWRCbox, 2, 5, 1, 1);
+    sliders_layout->addWidget(setNDOnbox ,2,3,1,1); // +1 to the below items in this row
+    sliders_layout->addWidget(&show_rgb_lines_cbox, 2, 4, 1, 1);
+    sliders_layout->addWidget(&useRatioCbox, 2, 5, 1, 1);
+    sliders_layout->addWidget(useWRCbox, 2, 6, 1, 1);
 
 
     //Third Row
@@ -1641,6 +1650,7 @@ void ControlsBox::tab_changed_slot(int index)
             showRGBLevelsButton.setVisible(true);
 
             use_DSF_cbox.setEnabled(true);
+            setNDOnbox->setEnabled(true);
             show_rgb_lines_cbox.setEnabled(true);
             show_rgb_lines_cbox.setVisible(true);
             useRatioCbox.setEnabled(true);
@@ -1669,6 +1679,7 @@ void ControlsBox::tab_changed_slot(int index)
             std_dev_n_label->setVisible(true);
 
             use_DSF_cbox.setEnabled(false);
+            setNDOnbox->setEnabled(false);
             use_DSF_cbox.setChecked(fw->usingDSF());
             p_histogram->rescaleRange();
             waterfallControls(false);
@@ -1684,6 +1695,7 @@ void ControlsBox::tab_changed_slot(int index)
             std_dev_N_edit->setEnabled(false);
             load_mask_from_file.setEnabled(true);
             connect(this, SIGNAL(mask_selected(QString, unsigned int, long)), p_playback, SLOT(loadDSF(QString, unsigned int, long)), Qt::UniqueConnection);
+            setNDOnbox->setEnabled(true);
             use_DSF_cbox.setEnabled(true);
             use_DSF_cbox.setChecked(p_playback->usingDSF());
             p_playback->rescaleRange();
@@ -2817,9 +2829,6 @@ void ControlsBox::debugThis()
     //this->loadDarkFromFile();
     current_tab = qtw->widget(qtw->currentIndex());
     attempt_pointers(current_tab);
-    if(p_profile) {
-        p_profile->setPenWidth(2);
-    }
 
     emit debugSignal();
 }

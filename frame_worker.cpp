@@ -360,6 +360,10 @@ void frameWorker::toggleUseWR(bool t) {
     to.useWR = t;
 }
 
+void frameWorker::setUseND(bool useND_ON) {
+    to.useND = useND_ON;
+}
+
 void frameWorker::loadDarkFile(QString filename, fileFormat_t format)
 {
     to.loadDSFMask_entry(filename.toStdString(), format);

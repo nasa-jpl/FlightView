@@ -164,6 +164,7 @@ public slots:
 
     void startCapturingWR();
     void finishCapturingWR();
+    void setUseND(bool useND_ON);
     void toggleUseWR(bool t);
     void loadWRFile(QString filename, fileFormat_t format);
 

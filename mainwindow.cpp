@@ -335,6 +335,8 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     connect(this->controlbox, SIGNAL(startWRMaskCollection()), fw, SLOT(startCapturingWR()));
     connect(this->controlbox, SIGNAL(stopWRMaskCollection()), fw, SLOT(finishCapturingWR()));
 
+    connect(this->controlbox, SIGNAL(setUseND(bool)), fw, SLOT(setUseND(bool)));
+
     handleMainWindowStatusMessage("Started");
 }
 
