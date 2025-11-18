@@ -50,6 +50,7 @@ class ShmSharedDataStruct(ctypes.Structure):
         ("frameWidth", ctypes.c_int),
         ("frameHeight", ctypes.c_int),
         ("takingDark", ctypes.c_bool),
+        ("usingNDFilter", ctypes.c_bool),
         ("frameTime", ctypes.c_uint64 * SHM_FRAME_BUFFER_SIZE),
         ("lastFilename", ctypes.c_char * SHM_FILENAME_BUFFER_SIZE),
     ]
@@ -120,6 +121,7 @@ class ShmFrameMonitor:
             "frameWidth": self.metadata.frameWidth,
             "frameHeight": self.metadata.frameHeight,
             "takingDark": self.metadata.takingDark,
+            "usingNDFilter": self.metadata.usingNDFilter,
             "lastFilename": filename if filename else "(none)"
         }
     
@@ -199,6 +201,7 @@ class ShmFrameMonitor:
         print(f"Frame Dimensions: {meta['frameWidth']} x {meta['frameHeight']}")
         print(f"Recording: {'YES' if meta['recordingDataToFile'] else 'NO'}")
         print(f"Taking Dark: {'YES' if meta['takingDark'] else 'NO'}")
+        print(f"Using ND Filter: {'YES' if meta['usingNDFilter'] else 'NO'}")
         print(f"Last Filename: {meta['lastFilename']}")
         
         # Display frame times for available frames
