@@ -238,6 +238,8 @@ public:
     bool *wrMaskCollected = NULL;
     bool useWR = false;
     bool takingWR = false;
+
+    void setNDStatus(bool useND);
     bool useND = false;
 
     // Std Dev Filter functions

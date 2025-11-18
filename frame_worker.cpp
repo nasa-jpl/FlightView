@@ -361,7 +361,7 @@ void frameWorker::toggleUseWR(bool t) {
 }
 
 void frameWorker::setUseND(bool useND_ON) {
-    to.useND = useND_ON;
+    to.setNDStatus(useND_ON);
 }
 
 void frameWorker::loadDarkFile(QString filename, fileFormat_t format)

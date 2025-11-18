@@ -52,6 +52,7 @@ struct shmSharedDataStruct {
     int frameHeight; // pixels high, includes "line header"
 
     bool takingDark; // indicates if, at the moment, we are recording darks.
+    bool usingNDFilter = false; // indicates if we are using the ND filter
     uint64_t frameTime[shmFrameBufferSize]; // system (computer) time since epoch, in milliseconds. Use to monitor "freshness" of data.
     //uint16_t frameBuffer[shmFrameBufferSize][shmWidth*shmHeight]; // Buffer of frames. Read into the buffer by offsetting how many bytes-of-frame are needed.
     //uint16_t *frameBuffer[shmFrameBufferSize];

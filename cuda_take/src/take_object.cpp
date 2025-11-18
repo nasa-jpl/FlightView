@@ -567,6 +567,13 @@ void take_object::startCapturingWR() {
     wrf->start_mask_collection();
 }
 
+void take_object::setNDStatus(bool useND) {
+    this->useND = useND;
+    if(shmValid) {
+        shm->usingNDFilter = useND;
+    }
+}
+
 void take_object::finishCapturingWR() {
     //wrf->mask_mutex.lock();
     takingWR= false; // it's ok that the processing happens now. The point of this variable is to stop collecting additional WR frames.
