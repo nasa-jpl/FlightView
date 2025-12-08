@@ -1370,6 +1370,7 @@ void ControlsBox::tab_changed_slot(int index)
             ce = prefs.profileVertCeiling;
             ce_ds = prefs.profileVertDSFCeiling;
             use_DSF_cbox.setChecked(verticalCrossDSF);
+            this->transmitChange(this->lines_slider->value());
             break;
         case VERTICAL_MEAN:
             fl = prefs.profileVertFloor;
@@ -1384,6 +1385,7 @@ void ControlsBox::tab_changed_slot(int index)
             ce = prefs.profileHorizCeiling;
             ce_ds = prefs.profileHorizDSFCeiling;
             use_DSF_cbox.setChecked(horizontalCrossDSF);
+            this->transmitChange(this->lines_slider->value());
             break;
         case HORIZONTAL_MEAN:
             fl = prefs.profileHorizFloor;
