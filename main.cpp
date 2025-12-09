@@ -67,6 +67,7 @@ int main(int argc, char *argv[])
     /* Step 1: Setup this QApplication */
     //QApplication::setGraphicsSystem("raster"); //This is intended to make 2D rendering faster
     QApplication a(argc, argv);
+    //a.setStyle(QStyleFactory::create("Fusion"));
     a.setOrganizationDomain("jpl.nasa.gov");
     a.setOrganizationName("FlightView");
     a.setApplicationDisplayName("FlightView");

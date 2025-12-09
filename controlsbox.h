@@ -74,6 +74,12 @@ public:
     QGridLayout *collections_layout;
     QWidget CollectionButtonsBox;
     QPushButton *collectDarkButton = NULL;
+    QPalette buttonPalette;
+    QString defaultButtonStylesheet;
+    QString modifiedButtonStylesheet;
+    QColor buttonPressedColor;
+    QColor buttonNominalColor;
+
     //QPushButton stop_dark_collection_button;
     QPushButton *collectWRButton = NULL;
 
@@ -175,6 +181,8 @@ private:
     bool checkForOverwrites = true;
     void waterfallControls(bool enabled);
     void overlayControls(bool enabled);
+    QString getButtonStyle(const QString objName, QColor primaryColor);
+    QString getButtonStyle(QColor primaryColor);
 
     QSettings *settings;
     void setDefaultSettings();

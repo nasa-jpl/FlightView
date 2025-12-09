@@ -127,6 +127,19 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     useWRCbox->setToolTip("Check to use the white reference");
 
     collectDarkButton = new QPushButton("Collect Darks");
+    collectDarkButton->setObjectName("collectDarkButtonId");
+
+    buttonPalette = collectDarkButton->palette();
+    defaultButtonStylesheet = collectDarkButton->styleSheet();
+    buttonPressedColor = buttonPalette.color(QPalette::Active, QPalette::Button);
+    buttonNominalColor = buttonPalette.color(QPalette::Inactive, QPalette::Button);
+
+    qDebug() << "Default stylesheet: " << defaultButtonStylesheet;
+
+    modifiedButtonStylesheet = getButtonStyle(QColor(Qt::red));
+
+    qDebug() << "Modified sheet: " << modifiedButtonStylesheet;
+
     collectWRButton = new QPushButton("Collect WR");
     collectWRButton->setToolTip("Start taking white reference. Must take dark first.");
 
@@ -136,12 +149,20 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     });
 
     connect(collectWRButton, &QPushButton::pressed, [&]() {
+        QFont f = collectWRButton->font();
         if(takingWRNow) {
             collectWRButton->setText("Collect WR");
+            f.setBold(false);
+            collectWRButton->setFont(f);
+            collectWRButton->setStyleSheet(defaultButtonStylesheet);
             emit stopWRMaskCollection();
             takingWRNow = false;
         } else {
             collectWRButton->setText("Stop WR");
+            f.setBold(true);
+            collectWRButton->setFont(f);
+            collectDarkButton->setStyleSheet("");
+            collectWRButton->setStyleSheet(modifiedButtonStylesheet);
             emit startWRMaskCollection();
             takingWRNow = true;
         }
@@ -839,6 +860,52 @@ void ControlsBox::closeEvent(QCloseEvent *e)
     /* Note: minor hack below */
     Q_UNUSED(e);
     prefWindow->close();
+}
+
+QString ControlsBox::getButtonStyle(const QString objName,
+        QColor primaryColor) {
+    QColor brighter=primaryColor.lighter(); // bottom
+    QColor darker=primaryColor.darker(125); // top
+    QColor disabled=QColor(170, 170, 127);
+    QString stylestring;
+
+    stylestring = QString(
+                "QPushButton#%1:pressed {\
+                background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:0,   stop:0 rgba(%2, %3, %4, %5), stop:1 rgba(%6, %7, %8, %9))}\
+QPushButton {\
+    background-color: %10; border: 8px solid black;\
+    border-radius: 8px;\
+color: black;}\
+QPushButton:disabled {\
+    background-color: %11}")
+        .arg(objName).arg(darker.red()).arg(darker.green()).arg(darker.blue()).arg(darker.alpha())\
+      .arg(brighter.red()).arg(brighter.green()).arg(brighter.blue()).arg(brighter.alpha())\
+      .arg(primaryColor.name()).arg(disabled.name());
+
+    return stylestring;
+}
+
+QString ControlsBox::getButtonStyle(QColor primaryColor) {
+
+    QColor brighter=primaryColor.lighter(); // bottom
+    QColor darker=primaryColor.darker(125); // top
+    QColor disabled=QColor(170, 170, 127);
+    QString stylestring;
+
+    stylestring = QString(
+                "QPushButton:pressed {\
+                background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,   stop:0 rgba(%1, %2, %3, %4), stop:1 rgba(%5, %6, %7, %8))}\
+QPushButton {\
+    background-color: %9; border: 8px solid black;\
+    border-radius: 8px;\
+color: black;}\
+QPushButton:disabled {\
+    background-color: %10}")
+        .arg(darker.red()).arg(darker.green()).arg(darker.blue()).arg(darker.alpha())\
+      .arg(brighter.red()).arg(brighter.green()).arg(brighter.blue()).arg(brighter.alpha())\
+      .arg(primaryColor.name()).arg(disabled.name());
+
+    return stylestring;
 }
 
 void ControlsBox::getPrefsExternalTrig()
@@ -2285,19 +2352,29 @@ int ControlsBox::validateFileName(const QString &name)
     }
     return result;
 }
-void ControlsBox::start_dark_collection_slot()
-{
+
+void ControlsBox::start_dark_collection_slot() {
     // Accessed by the GUI button as well as the network control connection.
     collectDarkButton->setText("Stop Dark");
     collectDarkButton->setToolTip("Taking darks now. Press button to stop.");
+    QFont font = collectDarkButton->font();
+    font.setBold(true);
+    collectDarkButton->setFont(font);
+    collectDarkButton->setStyleSheet("");
+    collectDarkButton->setStyleSheet(modifiedButtonStylesheet);
+
     emit statusMessage(QString("[Controls Box]: Collecting dark frames."));
     emit startDSFMaskCollection();
 }
-void ControlsBox::stop_dark_collection_slot()
-{
+
+void ControlsBox::stop_dark_collection_slot() {
     // Accessed by the GUI button as well as the network control connection.
     collectDarkButton->setText("Take Dark");
     collectDarkButton->setToolTip("Press button to take darks.");
+    QFont font = collectDarkButton->font();
+    font.setBold(false);
+    collectDarkButton->setFont(font);
+    collectDarkButton->setStyleSheet(defaultButtonStylesheet);
     emit stopDSFMaskCollection();
     emit statusMessage(QString("[Controls Box]: Stopped collecting dark frames."));
 }
