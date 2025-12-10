@@ -898,7 +898,7 @@ QString ControlsBox::getButtonStyle(QColor primaryColor) {
                 "QPushButton:pressed {\
                 background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,   stop:0 rgba(%1, %2, %3, %4), stop:1 rgba(%5, %6, %7, %8))}\
 QPushButton {\
-    background-color: %9; border: 8px solid black;\
+    background-color: %9; border: 4px solid black;\
     border-radius: 8px;\
 color: black;}\
 QPushButton:disabled {\
