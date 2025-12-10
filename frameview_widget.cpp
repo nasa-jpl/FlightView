@@ -167,10 +167,10 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
         displayCrosshairCheck.setChecked(false);
     }
 
-    zoomXCheck.setText("Zoom on X axis only");
-    zoomYCheck.setText("Zoom on Y axis only");
-    zoomXCheck.setChecked(false);
-    zoomYCheck.setChecked(false);
+    zoomXCheck.setText("Zoom on X axis");
+    zoomYCheck.setText("Zoom on Y axis");
+    zoomXCheck.setChecked(true);
+    zoomYCheck.setChecked(true);
 
     fps = 0;
     clock.start();
@@ -691,9 +691,9 @@ void frameview_widget::colorScaleRangeChanged(const QCPRange &newRange) {
     emit haveFloorCeilingValuesFromColorScaleChange(newRange.lower, newRange.upper);
 }
 
-void frameview_widget::setScrollX(bool Yenabled)
-{
-    scrollYenabled = !Yenabled;
+void frameview_widget::setScrollX(bool enabled) {
+    //scrollYenabled = Yenabled;
+    scrollXenabled = enabled;
     qcp->setInteraction(QCP::iRangeDrag, true);
     qcp->setInteraction(QCP::iRangeZoom, true);
 
@@ -710,11 +710,11 @@ void frameview_widget::setScrollX(bool Yenabled)
         qcp->setInteraction(QCP::iRangeDrag, false);
         qcp->setInteraction(QCP::iRangeZoom, false);
     }
-
 }
-void frameview_widget::setScrollY(bool Xenabled)
-{
-    scrollXenabled = !Xenabled;
+
+void frameview_widget::setScrollY(bool enabled) {
+    //scrollXenabled = Xenabled;
+    scrollYenabled = enabled;
     qcp->setInteraction(QCP::iRangeDrag, true);
     qcp->setInteraction(QCP::iRangeZoom, true);
     if (!scrollXenabled && scrollYenabled) {
@@ -729,7 +729,6 @@ void frameview_widget::setScrollY(bool Xenabled)
     } else {
         qcp->setInteraction(QCP::iRangeDrag, false);
         qcp->setInteraction(QCP::iRangeZoom, false);
-
     }
 }
 

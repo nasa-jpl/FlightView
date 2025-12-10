@@ -134,11 +134,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     buttonPressedColor = buttonPalette.color(QPalette::Active, QPalette::Button);
     buttonNominalColor = buttonPalette.color(QPalette::Inactive, QPalette::Button);
 
-    qDebug() << "Default stylesheet: " << defaultButtonStylesheet;
-
     modifiedButtonStylesheet = getButtonStyle(QColor(Qt::red));
-
-    qDebug() << "Modified sheet: " << modifiedButtonStylesheet;
 
     collectWRButton = new QPushButton("Collect WR");
     collectWRButton->setToolTip("Start taking white reference. Must take dark first.");
@@ -525,7 +521,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     diskSpaceBar.setMinimum(0);
     diskSpaceBar.setVisible(false);
 
-    diskSpaceLabel.setText("Disk:");
+    diskSpaceLabel.setText("Disk Used:");
     diskSpaceLabel.setVisible(false);
 
     save_layout = new QGridLayout();
@@ -548,10 +544,16 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     save_layout->addWidget(&save_finite_button,        1, 4, 1, 1);
     save_layout->addWidget(&frames_save_num_edit, 2, 4, 1, 1);
     save_layout->addWidget(&filename_edit, 3, 2, 1, 4);
+#ifdef QT_DEBUG
     save_layout->addWidget(&debugButton, 4, 5, 1, 1);
+#endif
     save_layout->addWidget(&saveRGBPresetButton, 4, 1, 1, 1);
     save_layout->addWidget(&diskSpaceLabel, 4, 2, 1, 1);
+#ifdef QT_DEBUG
     save_layout->addWidget(&diskSpaceBar, 4, 3, 1, 2);
+#else
+    save_layout->addWidget(&diskSpaceBar, 4, 3, 1, 3);
+#endif
     if(options.flightMode)
     {
         filename_edit.setToolTip("Specified using --datastoragelocation option");
@@ -639,7 +641,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     connect(std_dev_N_slider, SIGNAL(valueChanged(int)), std_dev_N_edit, SLOT(setValue(int)), Qt::UniqueConnection);
     connect(line_average_edit, SIGNAL(valueChanged(int)), lines_slider, SLOT(setValue(int)), Qt::UniqueConnection);
     connect(lines_slider, SIGNAL(valueChanged(int)), line_average_edit, SLOT(setValue(int)), Qt::UniqueConnection);
-    connect(lines_slider, SIGNAL(valueChanged(int)), this, SLOT(transmitChange(int)), Qt::UniqueConnection);
+    connect(lines_slider, SIGNAL(valueChanged(int)), this, SLOT(transmitChangeLinesToAverage(int)), Qt::UniqueConnection);
 
     connect(&ceiling_edit, (&QSpinBox::editingFinished),
             [=]() {
@@ -1437,7 +1439,8 @@ void ControlsBox::tab_changed_slot(int index)
             ce = prefs.profileVertCeiling;
             ce_ds = prefs.profileVertDSFCeiling;
             use_DSF_cbox.setChecked(verticalCrossDSF);
-            this->transmitChange(this->lines_slider->value());
+            lines_slider->setValue(prefs.profileVertLines);
+            this->transmitChangeLinesToAverage(this->lines_slider->value());
             break;
         case VERTICAL_MEAN:
             fl = prefs.profileVertFloor;
@@ -1452,7 +1455,8 @@ void ControlsBox::tab_changed_slot(int index)
             ce = prefs.profileHorizCeiling;
             ce_ds = prefs.profileHorizDSFCeiling;
             use_DSF_cbox.setChecked(horizontalCrossDSF);
-            this->transmitChange(this->lines_slider->value());
+            lines_slider->setValue(prefs.profileHorizLines);
+            this->transmitChangeLinesToAverage(this->lines_slider->value());
             break;
         case HORIZONTAL_MEAN:
             fl = prefs.profileHorizFloor;
@@ -1564,7 +1568,7 @@ void ControlsBox::tab_changed_slot(int index)
         if (p_fft->vCrossButton->isChecked() && fw->crosshair_x != -1) {
             lines_slider->setEnabled(true);
             line_average_edit->setEnabled(true);
-            transmitChange(fw->horizLinesAvgd);
+            transmitChangeLinesToAverage(fw->horizLinesAvgd);
         } else {
             lines_slider->setEnabled(false);
             line_average_edit->setEnabled(false);
@@ -2699,7 +2703,7 @@ void ControlsBox::load_pref_window()
     prefWindow->setWindowState(Qt::WindowActive);
     prefWindow->raise();
 }
-void ControlsBox::transmitChange(int linesToAverage)
+void ControlsBox::transmitChangeLinesToAverage(int linesToAverage)
 {
     volatile int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end;
     volatile int lh_width = 20;
@@ -2714,12 +2718,19 @@ void ControlsBox::transmitChange(int linesToAverage)
         // only update the crosshairs and not touch the take object.
         if(p_profile->itype == VERT_OVERLAY)
         {
+            //prefs.profileVertLines = linesToAverage;
             fw->updateMeanRange(linesToAverage, p_profile->itype);
             // fw->redraw_crosshairs(linesToAverage);
             this->updateOverlayParams(0);
         } else {
-            fw->updateMeanRange(linesToAverage, p_profile->itype);
+            if(p_profile->itype == HORIZONTAL_CROSS) {
+                prefs.profileHorizLines = linesToAverage;
+            } else if (p_profile->itype == VERTICAL_CROSS) {
+                prefs.profileVertLines = linesToAverage;
+            }
+            // Why call this here!?
             fw->updateOverlayParams(0, 0, 0, 0, 0, 0); // signal that there is not an overlay plot
+            fw->updateMeanRange(linesToAverage, p_profile->itype);
 
         }
     } else if (p_fft) {

@@ -451,6 +451,8 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
      * average the entire image, then are adjusted based on the image type and the location of the crosshair.
      * \author Jackie Ryan
      */
+    //qDebug() << "-- -- -- -- -- -- -- -- -- --";
+    //qDebug() << "Lines to average: " << linesToAverage;
     crossStartCol = 0;
     crossStartRow = 0;
     crossWidth = frWidth;
@@ -482,6 +484,12 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
     crossStartRow = isSkippingFirst && crossStartRow == 0 ? 1 : crossStartRow;
     crossHeight = isSkippingLast && crossHeight == int(frHeight) ? frHeight - 1 : crossHeight;
 
+    //qDebug() << "crossStartRow: " << crossStartRow;
+    //qDebug() << "crossHeight: " << crossHeight;
+    //qDebug() << "crossStartCol: " << crossStartCol;
+    //qDebug() << "crossWidth: " << crossWidth;
+    //qDebug() << "-- -- -- -- -- -- -- -- -- --";
+
 
     if(profile==VERT_OVERLAY)
     {
@@ -490,8 +498,13 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
         to.updateVertRange(crossStartRow, crossHeight);
     } else {
         // update take object
-        to.updateVertRange(crossStartRow, crossHeight);
-        to.updateHorizRange(crossStartCol, crossWidth);
+        // WAS:
+        to.updateVertRange(crossStartRow, crossHeight); // row and height are used for a horizontal profile
+        to.updateHorizRange(crossStartCol, crossWidth); // column and width are used for a vertical profile
+
+        // IS NOW: crashing
+        //to.updateVertRange(crossStartRow, crossWidth);
+        //to.updateHorizRange(crossStartCol, crossHeight);
     }
 }
 
