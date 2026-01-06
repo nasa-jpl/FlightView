@@ -41,6 +41,13 @@
 #define NG_FRAME_WAIT_MIN_DELAY_US (1)
 #define MAX_FRAME_WAIT_TAPS (100000)
 
+// This number has historically been 65535
+#define maxPacketSize (65535)
+
+// The maxPacketsPerFrame was 1024 in prior versions.
+// Increasing this number really just means we use more RAM
+#define maxPacketsPerFrame (3073)
+
 using namespace std::chrono;
 
 using std::cout;
@@ -126,7 +133,7 @@ private:
     int lpbPos = 0;
     int lpbFramePos = 0;
 
-    size_t packetSizeBuffer[networkPacketBufferFrames][1024]; // buffer to hold the size of incomming packets.
+    size_t packetSizeBuffer[networkPacketBufferFrames][maxPacketsPerFrame]; // buffer to hold the size of incomming packets.
     //                     [psbFramePos][psbPos];
     int psbFramePos = 0;
     int psbPos = 0;

@@ -162,7 +162,7 @@ bool rtpnextgen::initialize() {
     LL(5) << "Initalizing PacketSizeBuffer";
     for(int f = 0; f < networkPacketBufferFrames; f++)
     {
-        for(int n = 0; n < 1024; n++) {
+        for(int n = 0; n < maxPacketsPerFrame; n++) {
             packetSizeBuffer[f][n] = 0;
         }
     }
@@ -568,7 +568,7 @@ bool rtpnextgen::buildFrameFromPackets(int pos) {
     // starttp = std::chrono::steady_clock::now();
 
     for(; packetSizeBuffer[pos][chunk] !=0; chunk++) {
-        if(packetSizeBuffer[pos][chunk] > 65535) {
+        if(packetSizeBuffer[pos][chunk] > maxPacketSize) {
             LOG << "ERROR, packet size recorded is too large. Corruption likely. packetSizeBuffer[" << pos << "][" << chunk << "]: " << packetSizeBuffer[pos][chunk];
             return false;
         } else {
