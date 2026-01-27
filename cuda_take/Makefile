@@ -8,6 +8,24 @@ LIBTOOL = libtool
 SOURCEDIR = src
 HARDWARE = EDT
 USE_CAMERALINK ?= 0
+
+# Detect OS first
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	OS = MACOS
+	# Detect Homebrew location
+	ifeq ($(shell test -d /opt/homebrew && echo yes),yes)
+		HOMEBREW_PREFIX = /opt/homebrew
+	else
+		HOMEBREW_PREFIX = /usr/local
+	endif
+	# Default to no CUDA on macOS (can be overridden with USE_CUDA=1)
+	USE_CUDA ?= 0
+else
+	OS = LINUX
+	# Default to CUDA on Linux (can be overridden with USE_CUDA=0)
+	USE_CUDA ?= 1
+endif
 ######################################
 
 
@@ -26,7 +44,11 @@ LIBOUT = libcuda_take.a
 
 ######################################
 #Here we specify what source files are needed for the program/library, and we create virtual paths so that we don't have to refer to the source directory all the time
+ifeq ($(USE_CUDA), 1)
 SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu white_ref_filter.cu take_object.cpp std_dev_filter_device_code.cu std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp rtpcamera.cpp rtpnextgen.cpp osutils.cpp safestringset.cpp
+else
+SOURCES = fft.cpp main.cpp dark_subtraction_filter.cpp white_ref_filter.cpp take_object.cpp std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp rtpcamera.cpp rtpnextgen.cpp osutils.cpp safestringset.cpp
+endif
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 
 
@@ -83,13 +105,28 @@ CONLYFLAGS = -std=c99
 CONLYFLAGS += $(CFLAGS)
 
 # CFLAGS    += `pkg-config --cflags --libs gstreamer-1.0`
-# -pthread -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0
-CFLAGS += -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 
+# GStreamer configuration (INCLUDES ONLY - libraries go in LFLAGS)
+ifeq ($(OS),MACOS)
+	CFLAGS += $(shell pkg-config --cflags gstreamer-1.0 glib-2.0 gobject-2.0)
+	# GSL doesn't provide pkg-config on macOS, add manually
+	CFLAGS += -I$(HOMEBREW_PREFIX)/include
+else
+	CFLAGS += -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
+endif
+
 #CFLAGS += -Xcompiler="-pthread"
 CPPFLAGS = $(CFLAGS)
-CPPFLAGS += -g -O3 -march=native -mtune=native -std=c++11 -fopenmp -Wall -Werror -Wno-error=cpp -Wno-unused-function -Wno-unused-variable -Wno-unused-result -Wno-mismatched-new-delete #NOTE, NVCC does not support C++11, therefore -std=c++11 cpp files must be split up from cu files
-CPPFLAGS += -fPIC
-CPPFLAGS += -lgsl -lgslcblas -lgomp
+
+ifeq ($(OS),MACOS)
+	# macOS: use -Xpreprocessor for OpenMP with clang
+	CPPFLAGS += -g -O3 -std=c++11 -Xpreprocessor -fopenmp -Wall -Werror -Wno-error=cpp -Wno-unused-function -Wno-unused-variable -Wno-unused-result
+	CPPFLAGS += -fPIC
+	CPPFLAGS += -I$(HOMEBREW_PREFIX)/include -I$(HOMEBREW_PREFIX)/opt/libomp/include
+else
+	# Linux
+	CPPFLAGS += -g -O3 -march=native -mtune=native -std=c++11 -fopenmp -Wall -Werror -Wno-error=cpp -Wno-unused-function -Wno-unused-variable -Wno-unused-result -Wno-mismatched-new-delete
+	CPPFLAGS += -fPIC
+endif
 
 #CPPFLAGS += -isystem /usr/include/x86_64-linux-gnu/qt5 -isystem /usr/include/x86_64-linux-gnu/qt5/QtCore -DQT_NO_VERSION_TAGGING
 #CPPFLAGS += -DQT_CORE_LIB -lQt5Core -lQt5Widgets
@@ -122,17 +159,49 @@ NVCCFLAGS  = -arch=native -lineinfo -Xcompiler -pthread -Xcompiler -rdynamic --c
 
 NVCCFLAGS += $(CFLAGS)
 
-ifeq ($(USE_CAMERALINK), 1)
-	LINKDIR 	= /opt/EDTpdv #where do the libraries we need to link in go?
-	LFLAGS      = -L$(LINKDIR) -lm -lpdv -lboost_thread -lboost_system -lz -lcuda -lcudart -lgsl -lgslcblas -lgomp -lpthread -ldl -lgstapp-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
-	AR_COMBINE_SCRIPT = combine_libs_script_cl.ar #For building out output library we compine our stuff with libpdv, this script tells ar how to do that
-	#This switch enables concatenating libpdv.a and libcuda_take.a (and possibly libboost_thread.a)
+# Platform and feature-specific linking
+ifeq ($(OS),MACOS)
+	# macOS linking
+	BOOST_MT_SUFFIX =
+	BOOST_SYSTEM_LIB =
+	GSTREAMER_LIBS = $(shell pkg-config --libs gstreamer-1.0 gstreamer-app-1.0 glib-2.0 gobject-2.0)
+	PLATFORM_LIBS = -L$(HOMEBREW_PREFIX)/lib -lm -lz -lpthread
+	OPENMP_LIB = -L$(HOMEBREW_PREFIX)/opt/libomp/lib -lomp
+	# macOS doesn't have -lrt or -ldl as separate libraries
+	# Modern Boost (1.69+) made boost_system header-only, so don't link it
 else
-	LFLAGS      = -lm -lboost_thread -lboost_system -lz -lcuda -lcudart -lgsl -lgslcblas -lgomp -lpthread -ldl -lgstapp-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0 #Libraries needed to build program, only libpdv.a is not already visible in the path, as a result that is put in linkdir
-	AR_COMBINE_SCRIPT = combine_libs_script.ar #For building out output library we compine our stuff with libpdv, this script tells ar how to do that
+	# Linux linking
+	BOOST_MT_SUFFIX =
+	BOOST_SYSTEM_LIB = -lboost_system$(BOOST_MT_SUFFIX)
+	GSTREAMER_LIBS = -lgstapp-1.0 -lgstbase-1.0 -lgstreamer-1.0 -lgobject-2.0 -lglib-2.0
+	PLATFORM_LIBS = -lm -lz -lpthread -ldl -lrt
+	OPENMP_LIB = -lgomp
+	# Keep boost_system for backward compatibility with older Boost versions
 endif
 
-CONCATENATE_LIBS = 1
+ifeq ($(USE_CAMERALINK), 1)
+	LINKDIR 	= /opt/EDTpdv
+	ifeq ($(USE_CUDA), 1)
+		LFLAGS = -L$(LINKDIR) -lpdv -lboost_thread$(BOOST_MT_SUFFIX) $(BOOST_SYSTEM_LIB) -lcuda -lcudart -lgsl -lgslcblas $(OPENMP_LIB) $(PLATFORM_LIBS) $(GSTREAMER_LIBS)
+	else
+		LFLAGS = -L$(LINKDIR) -lpdv -lboost_thread$(BOOST_MT_SUFFIX) $(BOOST_SYSTEM_LIB) -lgsl -lgslcblas $(OPENMP_LIB) $(PLATFORM_LIBS) $(GSTREAMER_LIBS)
+	endif
+	AR_COMBINE_SCRIPT = combine_libs_script_cl.ar
+else
+	ifeq ($(USE_CUDA), 1)
+		LFLAGS = -lboost_thread$(BOOST_MT_SUFFIX) $(BOOST_SYSTEM_LIB) -lcuda -lcudart -lgsl -lgslcblas $(OPENMP_LIB) $(PLATFORM_LIBS) $(GSTREAMER_LIBS)
+	else
+		LFLAGS = -lboost_thread$(BOOST_MT_SUFFIX) $(BOOST_SYSTEM_LIB) -lgsl -lgslcblas $(OPENMP_LIB) $(PLATFORM_LIBS) $(GSTREAMER_LIBS)
+	endif
+	AR_COMBINE_SCRIPT = combine_libs_script.ar
+endif
+
+# BSD ar (macOS) doesn't support -M scripting mode, only GNU ar (Linux) does
+ifeq ($(OS),MACOS)
+	CONCATENATE_LIBS = 0
+else
+	CONCATENATE_LIBS = 1
+endif
 ######################################
 
 all : $(EXE) $(LIBOUT)
@@ -141,10 +210,18 @@ all : $(EXE) $(LIBOUT)
 #	@echo $(OBJS)
 ifeq ($(HARDWARE),OPALKELLY)
 $(EXE) : $(objects)
+ifeq ($(USE_CUDA), 1)
 	$(NVCC) $(NVCCFLAGS) $(okFP_LDFLAGS) $(LDFLAGS) -o $@ $(wildcard obj/*.o) $(LFLAGS) $(okFP_LIBS)
 else
+	$(CCPP) $(CPPFLAGS) $(okFP_LDFLAGS) $(LDFLAGS) -o $@ $(wildcard obj/*.o) $(LFLAGS) $(okFP_LIBS)
+endif
+else
 $(EXE) : $(objects)
+ifeq ($(USE_CUDA), 1)
 	$(NVCC) $(NVCCFLAGS) -o $@ $(wildcard obj/*.o) $(LFLAGS)
+else
+	$(CCPP) $(CPPFLAGS) -o $@ $(wildcard obj/*.o) $(LFLAGS)
+endif
 endif
 	
 $(LIBOUT) : $(objects)

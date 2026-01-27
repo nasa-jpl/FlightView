@@ -1,11 +1,18 @@
 #include "std_dev_filter.hpp"
-#include "cuda_utils.cuh"
 #include "constants.h"
-#include <cuda_profiler_api.h>
 #include <math.h>
 #include <iostream>
+#include <cstring>
 
+#ifdef USE_CUDA
+#include "cuda_utils.cuh"
+#include <cuda_profiler_api.h>
 #define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
+#else
+#define HANDLE_ERROR(err) (err)
+// CPU implementation uses OpenMP for parallelization
+#include <omp.h>
+#endif
 
 std_dev_filter::std_dev_filter(int nWidth, int nHeight, int cudaDeviceNumber)
 {
@@ -26,63 +33,89 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight, int cudaDeviceNumber)
 //		    STD_DEV_DEVICE_NUM, getDeviceCount());
 	this->cudaDeviceNumber = cudaDeviceNumber;
 	this->STD_DEV_DEVICE_NUM = cudaDeviceNumber;
-    int cudaDevNumberChecker = -1;
-    cudaGetDevice(&cudaDevNumberChecker);
-    printf("STD_DEV_FILTER: CUDA device actually being used: %d\n", cudaDevNumberChecker);
 
-    // It seems like values above 21 simply do not work.
-    for(int d=21; d > 1; d--)
-    {
-        if((nHeight%d)==0)
-        {
-            optimalBlockSizeY = d;
-            break;
-        }
-    }
-    for(int d=21; d > 1; d--)
-    {
-        if((nWidth%d)==0)
-        {
-            optimalBlockSizeX = d;
-            break;
-        }
-    }
-    printf("[std_dev_filter]: Optimal GPU Block Size X: %d, Y: %d\n", optimalBlockSizeX, optimalBlockSizeY);
+	width = nWidth; // Making the assumption that all frames in a frame buffer are the same size
+	height = nHeight;
+	gpu_buffer_head = 0; // read point for the ring buffer data structure
+	currentN = 0; // number of complete frames in the ring buffer
 
-    width = nWidth; // Making the assumption that all frames in a frame buffer are the same size
-    height = nHeight;
-    gpu_buffer_head = 0; // read point for the GPU ring buffer data structure
-    currentN = 0; // number of complete frames in the GPU ring buffer
+#ifdef USE_CUDA
+	int cudaDevNumberChecker = -1;
+	cudaGetDevice(&cudaDevNumberChecker);
+	printf("STD_DEV_FILTER: CUDA device actually being used: %d\n", cudaDevNumberChecker);
 
-    HANDLE_ERROR(cudaStreamCreate(&std_dev_stream));
-    HANDLE_ERROR(cudaMalloc( (void **)&pictures_device, width*height*sizeof(uint16_t)*GPU_FRAME_BUFFER_SIZE)); // Allocate a huge amount of memory on the GPU (N times the size of each frame stored as a u_char)
-    HANDLE_ERROR(cudaMalloc( (void **)&picture_out_device, width*height*sizeof(float))); // Allocate memory on GPU for reduce target
+	// It seems like values above 21 simply do not work.
+	for(int d=21; d > 1; d--)
+	{
+		if((nHeight%d)==0)
+		{
+			optimalBlockSizeY = d;
+			break;
+		}
+	}
+	for(int d=21; d > 1; d--)
+	{
+		if((nWidth%d)==0)
+		{
+			optimalBlockSizeX = d;
+			break;
+		}
+	}
+	printf("[std_dev_filter]: Optimal GPU Block Size X: %d, Y: %d\n", optimalBlockSizeX, optimalBlockSizeY);
 
-    HANDLE_ERROR(cudaMalloc( (void **)&histogram_bins_device, NUMBER_OF_BINS*sizeof(float)));
-    HANDLE_ERROR(cudaMalloc( (void **)&histogram_out_device, NUMBER_OF_BINS*sizeof(uint32_t)));
-    memcpy(histogram_bins,getHistogramBinValues().data(),NUMBER_OF_BINS*sizeof(float));
+	HANDLE_ERROR(cudaStreamCreate(&std_dev_stream));
+	HANDLE_ERROR(cudaMalloc( (void **)&pictures_device, width*height*sizeof(uint16_t)*GPU_FRAME_BUFFER_SIZE)); // Allocate a huge amount of memory on the GPU (N times the size of each frame stored as a u_char)
+	HANDLE_ERROR(cudaMalloc( (void **)&picture_out_device, width*height*sizeof(float))); // Allocate memory on GPU for reduce target
 
-    HANDLE_ERROR(cudaMemcpyAsync(histogram_bins_device,histogram_bins,NUMBER_OF_BINS*sizeof(float),cudaMemcpyHostToDevice,std_dev_stream)); // Incrementally copies data to device (as each frame comes in it gets copied)
+	HANDLE_ERROR(cudaMalloc( (void **)&histogram_bins_device, NUMBER_OF_BINS*sizeof(float)));
+	HANDLE_ERROR(cudaMalloc( (void **)&histogram_out_device, NUMBER_OF_BINS*sizeof(uint32_t)));
+	memcpy(histogram_bins,getHistogramBinValues().data(),NUMBER_OF_BINS*sizeof(float));
+
+	HANDLE_ERROR(cudaMemcpyAsync(histogram_bins_device,histogram_bins,NUMBER_OF_BINS*sizeof(float),cudaMemcpyHostToDevice,std_dev_stream)); // Incrementally copies data to device (as each frame comes in it gets copied)
+#else
+	// CPU-only implementation: allocate ring buffer in system memory
+	printf("[std_dev_filter]: Using CPU implementation with OpenMP (threads: %d)\n", omp_get_max_threads());
+
+	pictures_cpu = (uint16_t*)aligned_alloc(64, width*height*sizeof(uint16_t)*GPU_FRAME_BUFFER_SIZE);
+	picture_out_cpu = (float*)aligned_alloc(64, width*height*sizeof(float));
+	histogram_out_cpu = (uint32_t*)aligned_alloc(64, NUMBER_OF_BINS*sizeof(uint32_t));
+
+	if(!pictures_cpu || !picture_out_cpu || !histogram_out_cpu) {
+		std::cerr << "ERROR: Failed to allocate memory for std_dev_filter CPU buffers" << std::endl;
+		abort();
+	}
+
+	memcpy(histogram_bins, getHistogramBinValues().data(), NUMBER_OF_BINS*sizeof(float));
+#endif
 }
 std_dev_filter::~std_dev_filter()
 {
     /*! Free all devices and allocated memory (except the current picture), and set the device stream to be destroyed. */
+#ifdef USE_CUDA
     HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
     HANDLE_ERROR(cudaFree(pictures_device)); // Do not free current picture because it points to a location inside pictures_device
     HANDLE_ERROR(cudaFree(picture_out_device));
     HANDLE_ERROR(cudaFree(histogram_out_device));
     HANDLE_ERROR(cudaFree(histogram_bins_device));
     HANDLE_ERROR(cudaStreamDestroy(std_dev_stream));
+#else
+    // CPU-only: free regular memory
+    free(pictures_cpu);
+    free(picture_out_cpu);
+    free(histogram_out_cpu);
+#endif
 }
 
 void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 {
-    /*! \brief CPU code for launching the kernel and copying over the result of the standard deviation calculation.
+    /*! \brief CPU/GPU code for the standard deviation calculation.
      * \param frame The current frame to be worked on.
      * \param N The number of frames to use in the buffer, or the integration length of the calculation.
      */
-    static int count = 0;
+    static int count __attribute__((unused)) = 0;
 
+#ifdef USE_CUDA
+    // GPU implementation
     // Synchronous
     /* Step 1: Set the device, get the status, and create a pointer to the current position on the device ring buffer. */
     HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
@@ -126,26 +159,119 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
         HANDLE_ERROR(cudaMemcpyAsync(frame->std_dev_data,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream)); //Despite the name, these calls are synchronous w/ respect to the CPU
         HANDLE_ERROR(cudaMemcpyAsync(frame->std_dev_histogram,histogram_out_device,NUMBER_OF_BINS*sizeof(uint32_t),cudaMemcpyDeviceToHost,std_dev_stream));
     }
+#else
+    // CPU implementation using OpenMP for parallelization
+    
+    // Step 1: Copy current frame into ring buffer
+    uint16_t *buffer_ptr = pictures_cpu + (gpu_buffer_head * width * height);
+    memcpy(buffer_ptr, frame->image_data_ptr, width * height * sizeof(uint16_t));
+    
+    // Step 2: Increment currentN before computing (we now have one more frame)
+    if(currentN < MAX_N) {
+        currentN++;
+    }
+    
+    // Check if we have enough frames for computation
+    unsigned int usableN = (currentN < N) ? currentN : N;
+    
+    if(usableN >= 2) {  // Need at least 2 frames for std dev
+        // Mark previous frame as ready
+        if(prevFrame != NULL) {
+            prevFrame->has_valid_std_dev = 2; // Ready to display
+        }
+        
+        frame->has_valid_std_dev = 1; // is processing
+        prevFrame = frame;
+        
+        // Step 3: Compute mean and std dev for each pixel using OpenMP
+        memset(histogram_out_cpu, 0, NUMBER_OF_BINS * sizeof(uint32_t));
+        
+        const unsigned int frame_size = width * height;
+        
+        #pragma omp parallel
+        {
+            // Thread-local histogram
+            uint32_t local_histogram[NUMBER_OF_BINS] = {0};
+            
+            #pragma omp for schedule(static)
+            for(unsigned int pixel = 0; pixel < frame_size; pixel++) {
+                // Compute mean and variance for this pixel across N frames
+                double sum = 0.0;
+                double sum_sq = 0.0;
+                
+                // Access frames in ring buffer
+                for(unsigned int f = 0; f < usableN; f++) {
+                    int frame_idx = (gpu_buffer_head + GPU_FRAME_BUFFER_SIZE - f) % GPU_FRAME_BUFFER_SIZE;
+                    uint16_t val = pictures_cpu[frame_idx * frame_size + pixel];
+                    sum += val;
+                    sum_sq += (double)val * val;
+                }
+                
+                double mean = sum / usableN;
+                double variance = (sum_sq / usableN) - (mean * mean);
+                double std_dev = sqrt(variance > 0.0 ? variance : 0.0);
+                
+                picture_out_cpu[pixel] = (float)std_dev;
+                
+                // Update histogram (find appropriate bin)
+                for(unsigned int bin = 0; bin < NUMBER_OF_BINS; bin++) {
+                    if(std_dev <= histogram_bins[bin]) {
+                        local_histogram[bin]++;
+                        break;
+                    }
+                }
+            }
+            
+            // Combine thread-local histograms
+            #pragma omp critical
+            {
+                for(unsigned int bin = 0; bin < NUMBER_OF_BINS; bin++) {
+                    histogram_out_cpu[bin] += local_histogram[bin];
+                }
+            }
+        }
+        
+        // Step 4: Copy results to frame
+        memcpy(frame->std_dev_data, picture_out_cpu, frame_size * sizeof(float));
+        memcpy(frame->std_dev_histogram, histogram_out_cpu, NUMBER_OF_BINS * sizeof(uint32_t));
+        
+        // Note: Do NOT set frame->has_valid_std_dev = 2 here!
+        // The frame stays at status 1 (processing) and will be marked as 2 (ready)
+        // on the NEXT frame (see line 180 above where prevFrame is marked ready).
+        // This matches the async behavior expected by frame_worker.cpp
+    }
+#endif
 
     // Synchronous
-    /*! Step 8: Increment the ring buffer and the current number of frames in the buffer, if applicable. As this is a ring buffer, the
+    /*! Step 8: Increment the ring buffer. As this is a ring buffer, the
      * gpu_buffer_head will return to the beginning of the array when it reaches the end of the allocated space.
      */
     if(++gpu_buffer_head == GPU_FRAME_BUFFER_SIZE) //Increment and test for ring buffer overflow
         gpu_buffer_head = 0; // If overflow, than start overwriting the front
+#ifndef USE_CUDA
+    // For CPU: currentN already incremented before calculation (line 170)
+#else
+    // For CUDA: increment currentN here (after async processing starts)
     if(currentN < MAX_N) // If the frame buffer has not been fully populated
     {
         currentN++; //Increment how much history is available
     }
+#endif
     count++;
 }
 uint16_t * std_dev_filter::getEntireRingBuffer() //For testing only
 {
     /*! Captures the ring buffer of standard deviation frames. */
+#ifdef USE_CUDA
     HANDLE_ERROR(cudaSetDevice(STD_DEV_DEVICE_NUM));
     uint16_t * out = new uint16_t[width*height*MAX_N];
     HANDLE_ERROR(cudaMemcpy(out,pictures_device,width*height*sizeof(uint16_t)*MAX_N,cudaMemcpyDeviceToHost));
     return out;
+#else
+    uint16_t * out = new uint16_t[width*height*MAX_N];
+    memcpy(out, pictures_cpu, width*height*sizeof(uint16_t)*MAX_N);
+    return out;
+#endif
 }
 std::vector <float> * std_dev_filter::getHistogramBins()
 {
@@ -156,5 +282,5 @@ std::vector <float> * std_dev_filter::getHistogramBins()
 bool std_dev_filter::outputReady()
 {
     /*! Returns true if std. dev. frames are ready to be plotted. */
-    return !(currentN < lastN);
+    return currentN >= 2; // Need at least 2 frames for std dev calculation
 }

@@ -165,21 +165,68 @@ OTHER_FILES += \
 RESOURCES += \
     images.qrc
 
+# macOS app icon
+macx {
+    ICON = liveview.icns
+}
+
 QMAKE_CXXFLAGS += -std=c++11 -faligned-new
 
-CONFIG(debug, debug|release) {
-QMAKE_CXXFLAGS += -std=c++11 -march=native -mtune=native -fopenmp -Wno-class-memaccess -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result
+# macOS-specific OpenMP configuration
+macx {
+    # Detect Homebrew installation location
+    exists(/opt/homebrew/bin/brew) {
+        HOMEBREW_PREFIX = /opt/homebrew
+        message("Using Homebrew from /opt/homebrew (Apple Silicon)")
+    } else {
+        HOMEBREW_PREFIX = /usr/local
+        message("Using Homebrew from /usr/local (Intel)")
+    }
+    
+    # OpenMP support via libomp
+    QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp
+    QMAKE_LFLAGS += -lomp
+    INCLUDEPATH += $$HOMEBREW_PREFIX/include
+    INCLUDEPATH += $$HOMEBREW_PREFIX/opt/libomp/include
+    LIBS += -L$$HOMEBREW_PREFIX/lib
+    LIBS += -L$$HOMEBREW_PREFIX/opt/libomp/lib
+}
 
+CONFIG(debug, debug|release) {
+    macx {
+        QMAKE_CXXFLAGS += -std=c++11 -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-result
+    } else {
+        QMAKE_CXXFLAGS += -std=c++11 -march=native -mtune=native -fopenmp -Wno-class-memaccess -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result
+    }
 }
 
 CONFIG(release, debug|release) {
-QMAKE_CXXFLAGS += -O3 -std=c++11 -march=native -mtune=native -fopenmp -Wno-class-memaccess -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result
-
-
+    macx {
+        QMAKE_CXXFLAGS += -O3 -std=c++11 -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-result
+    } else {
+        QMAKE_CXXFLAGS += -O3 -std=c++11 -march=native -mtune=native -fopenmp -Wno-class-memaccess -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-result
+    }
 }
 
-QMAKE_LFLAGS += -fopenmp
-LIBS += -lgsl -lgslcblas -lexiv2 -lzmq
+# OpenMP linking (Linux only, macOS handled above)
+unix:!macx {
+    QMAKE_LFLAGS += -fopenmp
+}
+
+# Platform-specific libraries
+macx {
+    # macOS doesn't have -lrt or -ldl
+    LIBS += -lgsl -lgslcblas -lexiv2 -lzmq
+    # Add ZeroMQ C++ bindings include path (from cppzmq)
+    exists(/opt/homebrew/include) {
+        INCLUDEPATH += /opt/homebrew/include
+    } else {
+        INCLUDEPATH += /usr/local/include
+    }
+} else {
+    # Linux has additional libraries
+    LIBS += -lgsl -lgslcblas -lexiv2 -lzmq -lrt -ldl
+}
 
 # Used for build tracking:
 DEFINES += HOST=\\\"`hostname`\\\" UNAME=\\\"`whoami`\\\"
@@ -190,6 +237,20 @@ DESTDIR = ./lv_release
 # Copy files into DESTDIR for potential releases:
 QMAKE_POST_LINK += cp \"$$PWD/liveview.png\" $$DESTDIR;
 QMAKE_POST_LINK += cp \"$$PWD/LiveView.desktop\" $$DESTDIR;
+
+# macOS app bundle configuration: Install launcher and config file
+macx {
+    # Copy config file to Resources
+    config.files = $$PWD/macos_launch_config.txt
+    config.path = Contents/Resources
+    QMAKE_BUNDLE_DATA += config
+    
+    # Install the launcher script and rename the binary
+    QMAKE_POST_LINK += mv $$DESTDIR/liveview.app/Contents/MacOS/liveview $$DESTDIR/liveview.app/Contents/MacOS/liveview-bin;
+    QMAKE_POST_LINK += cp $$PWD/macos_launcher.sh $$DESTDIR/liveview.app/Contents/MacOS/liveview;
+    QMAKE_POST_LINK += chmod +x $$DESTDIR/liveview.app/Contents/MacOS/liveview;
+    QMAKE_POST_LINK += mv $$DESTDIR/liveview.app/Contents/Resources/macos_launch_config.txt $$DESTDIR/liveview.app/Contents/Resources/launch_config.txt;
+}
 
 
 #NOTE! We're now using qcustomplot.cpp, because we're going to be making modifications to QColorMap stuff
@@ -204,9 +265,17 @@ QMAKE_POST_LINK += cp \"$$PWD/LiveView.desktop\" $$DESTDIR;
 #}
 #LIBS += -L$$PWD/lib/ -l$$QCPLIB
 
-unix:!macx:!symbian: LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lboost_filesystem -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl -lrt # -lGL -lQtOpenGL
-INCLUDEPATH += $$PWD/cuda_take/include
-INCLUDEPATH += /usr/local/cuda/include
+# Link cuda_take library (platform-specific)
+macx {
+    # macOS: no CUDA libraries, boost_system is header-only on macOS
+    LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lboost_filesystem
+    INCLUDEPATH += $$PWD/cuda_take/include
+} else:unix:!symbian {
+    # Linux: include CUDA libraries
+    LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lboost_filesystem -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl -lrt # -lGL -lQtOpenGL
+    INCLUDEPATH += $$PWD/cuda_take/include
+    INCLUDEPATH += /usr/local/cuda/include
+}
 
 contains(CONFIG, cameralink) {
     INCLUDEPATH += /opt/EDTpdv
@@ -214,7 +283,7 @@ contains(CONFIG, cameralink) {
 
 DEPENDPATH += $$PWD/cuda_take
 
-unix:!macx:!symbian: PRE_TARGETDEPS += $$PWD/cuda_take/libcuda_take.a
+unix: PRE_TARGETDEPS += $$PWD/cuda_take/libcuda_take.a
 
 FORMS += \
     flightindicators.ui \

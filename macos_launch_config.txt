@@ -1,0 +1,1 @@
+--rtpcam --rtpnextgen --rtpheight 328 --rtpwidth 1280 --rtpinterface lo0 --rtpport 5004 --datastoragelocation /tmp
