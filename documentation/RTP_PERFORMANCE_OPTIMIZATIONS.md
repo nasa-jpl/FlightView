@@ -16,7 +16,7 @@ This document describes the performance optimizations applied to `rtpnextgen.cpp
 
 ### 1. **Enhanced buildFrameFromPackets() Function**
 
-**Location:** `cuda_take/src/rtpnextgen.cpp` lines 546-656
+**Location:** `backend/src/rtpnextgen.cpp` lines 546-656
 
 **Changes:**
 - **Restrict pointers** (`__restrict__`): Tells compiler that `destFrame` and `srcBuffer` don't alias, enabling better optimization
@@ -36,7 +36,7 @@ This document describes the performance optimizations applied to `rtpnextgen.cpp
 
 ### 2. **Socket Buffer Optimization**
 
-**Location:** `cuda_take/src/rtpnextgen.cpp` lines 222-234
+**Location:** `backend/src/rtpnextgen.cpp` lines 222-234
 
 **Changes:**
 - Sets socket receive buffer to 16MB (from default ~200KB)
@@ -250,7 +250,7 @@ Then add logging to print these metrics periodically.
 If issues arise, revert these changes:
 
 ```bash
-cd /Users/eliggett/Documents/liveview/20260126/FlightView/cuda_take
+cd /Users/eliggett/Documents/liveview/20260126/FlightView/backend
 git diff src/rtpnextgen.cpp
 git checkout src/rtpnextgen.cpp  # Revert to previous version
 make clean && make
@@ -264,7 +264,7 @@ The code maintains identical functional behavior - only performance characterist
 
 ```bash
 # Clean build recommended
-cd /Users/eliggett/Documents/liveview/20260126/FlightView/cuda_take
+cd /Users/eliggett/Documents/liveview/20260126/FlightView/backend
 make clean
 make -j4
 

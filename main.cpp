@@ -39,16 +39,16 @@ const volatile char* COMPILE_INFO_END_STR = "-----------------------------------
 
 /*! \file */
 /*! \mainpage  \header View live plots of focal plane data
- * Live View is a Qt frontend GUI for cuda_take, it displays focal plane data and basic analysis
+ * Live View is a Qt frontend GUI for backend, it displays focal plane data and basic analysis
  * (such as the std. dev, dark subtraction, FFT, Spectral Profile, and Video Savant-like playback). Plots are
  * implemented using the QCustomPlot (http://www.qcustomplot.com) library, which generates live color maps, bar graphs,
  * and line graphs within the Qt C++ environment.
  * \paragraph
  *
  * Live View is designed to be sufficiently modular that it will plot any data with known geometry, up to a maximum word size
- * of 16 bits. To implement new hardware or modify existing parameters, changes must be made to the backend cuda_take software.
+ * of 16 bits. To implement new hardware or modify existing parameters, changes must be made to the backend software.
  *
- * \author This documentation and comments in Live View and cuda_take were written by Jackie Ryan
+ * \author This documentation and comments in Live View and backend were written by Jackie Ryan
  */
 
 int main(int argc, char *argv[])

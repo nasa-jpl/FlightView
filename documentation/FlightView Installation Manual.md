@@ -282,12 +282,12 @@ export PATH=$PATH:/usr/cuda/bin
 ```
 
 If `nvcc`'s is version is <11.6 (check with `nvcc -V`), extra steps are required:
-* Edit the Makefile at `cuda_take/Makefile` and uncomment & edit an NVCCFLAGS line which matches the appropriate card. Card type can be queried with `nvidia-smi -L`. 
+* Edit the Makefile at `backend/Makefile` and uncomment & edit an NVCCFLAGS line which matches the appropriate card. Card type can be queried with `nvidia-smi -L`. 
   * To find the matching specification for the card, use [this](https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/) site.
 
-After verifying nvcc, build cuda_take:
+After verifying nvcc, build backend:
 ```bash
-cd cuda_take # Current directory should be ~/Documents/FlightView/cuda_take
+cd backend # Current directory should be ~/Documents/FlightView/backend
 ```
 
 Without Camera Link:

@@ -357,7 +357,7 @@ void frameview_widget::handleNewFrame()
      * \paragraph
      *
      * frameview_widget plots a color map using data from the curFrame in the backend conditionally selected using the image_t.
-     * frameWorker contains a local copy of a frame from cuda_take with all processed data that can be read from directly.
+     * frameWorker contains a local copy of a frame from backend with all processed data that can be read from directly.
      * \paragraph
      *
      * For BASE type images, image_data_ptr is used, which has the type uint16_t (2 bytes/pixel). BASE images may display crosshairs,

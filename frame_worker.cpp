@@ -8,7 +8,7 @@
 frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     QObject(parent)
 {
-    /*! \brief Launches cuda_take using the take_object.
+    /*! \brief Launches backend using the take_object.
      * \paragraph
      * Also gathers the frame geometry from the backend. These values are used by all other members of Live View.
      * Determines the default ceiling to use based on the camera type (14-bit or 16-bit systems)
@@ -41,7 +41,7 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     if(camcontrol==NULL)
         abort();
 
-    to.start(); // begin cuda_take
+    to.start(); // begin backend
     //to.setReadDirectory("/mnt/DATA/xio/20170828_DCSEFM_TVAC_AMBIENTFUNCTIONAL_COMPRESS_Test1_ROICIMAGE/");
     if( (options.xioDirectoryArray != NULL) && options.xioCam)
     {
@@ -232,7 +232,7 @@ unsigned int frameWorker::getFrameWidth()
 }
 bool frameWorker::dsfMaskCollected()
 {
-    /*! \brief Returns whether or not a dark mask is loaded into cuda_take. */
+    /*! \brief Returns whether or not a dark mask is loaded into backend. */
     return to.dsfMaskCollected;
 }
 bool frameWorker::usingDSF()
@@ -247,15 +247,15 @@ void frameWorker::captureFrames()
     /*!
      * \brief The backend communication with take object is handled for each frame in this loop.
      * \paragraph
-     * This event loop determines which processing elements have been completed for a frame in cuda_take.
+     * This event loop determines which processing elements have been completed for a frame in backend.
      * First, all other events in the thread are completed, then the process sleeps for 50 microseconds to add wait time to the loop.
-     * The backend frame, workingFrame is incremented based on the framecount. The framecount indexes the cuda_take ring buffer data
+     * The backend frame, workingFrame is incremented based on the framecount. The framecount indexes the backend ring buffer data
      * structure which contains 1500 arriving images from the camera link at a time.
      * \paragraph
-     * Standard Deviation processing and Asynchronous processing are sent as signals from cuda_take. As cuda_take is a non-Qt project,
+     * Standard Deviation processing and Asynchronous processing are sent as signals from backend. As backend is a non-Qt project,
      * the signals are handled as status ints. If the asynchronous processing takes longer than a single loop through the backend, it
      * is skipped at the frontend. This prevents access to bad data by the plots. curFrames are therefore the frames which are used by
-     * the frontend. Additionally, the backend frame saving is communicated between Live View and cuda_take in this loop.
+     * the frontend. Additionally, the backend frame saving is communicated between Live View and backend in this loop.
      * \author Noah Levy
      */
     unsigned long count = 0;
@@ -384,13 +384,13 @@ void frameWorker::loadDarkFile(QString filename, fileFormat_t format)
 
 void frameWorker::startCapturingDSFMask()
 {
-    /*! \brief Calls to start collecting dark frames in cuda_take. */
+    /*! \brief Calls to start collecting dark frames in backend. */
     sMessage("Starting to record Dark Frames");
     to.startCapturingDSFMask();
 }
 void frameWorker::finishCapturingDSFMask()
 {
-    /*! \brief Communicates to cuda_take to stop collecting dark frames. */
+    /*! \brief Communicates to backend to stop collecting dark frames. */
     sMessage("Stop recording Dark Frames");
     to.finishCapturingDSFMask();
 }
@@ -404,7 +404,7 @@ void frameWorker::toggleUseDSF(bool t)
 
 void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName, unsigned int numavgsave)
 {
-    /*! \brief Calls to start saving frames in cuda_take at a specified location
+    /*! \brief Calls to start saving frames in backend at a specified location
      * \param framenum Number of frames to save
      * \param name Location of target file */
     navgs = numavgsave; // keep this around for statusing
@@ -412,7 +412,7 @@ void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName
 }
 void frameWorker::stopSavingRawData()
 {
-    /*! \brief Calls to stop saving frames in cuda_take. */
+    /*! \brief Calls to stop saving frames in backend. */
     sMessage("told to stopSavingRawData, telling takeObject.");
 
     to.stopSavingRaws();
@@ -692,7 +692,7 @@ void frameWorker::updateCrossDiplay(bool checked)
 }
 void frameWorker::setStdDev_N(int newN)
 {
-    /*! \brief Communicates changes in the standard deviation boxcar length to cuda_take.
+    /*! \brief Communicates changes in the standard deviation boxcar length to backend.
      *  \param newN Value from the Std. Dev. N slider */
     to.setStdDev_N(newN);
 }

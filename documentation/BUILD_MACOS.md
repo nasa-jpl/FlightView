@@ -177,12 +177,12 @@ If `liveview.icns` doesn't exist, generate it from the PNG:
 
 This creates `liveview.icns` with all required icon resolutions for macOS.
 
-### Step 3: Build cuda_take Library
+### Step 3: Build backend Library
 
-The `cuda_take` library must be built first. On macOS, we build without CUDA support:
+The `backend` library must be built first. On macOS, we build without CUDA support:
 
 ```bash
-cd cuda_take
+cd backend
 
 # Clean any previous build artifacts
 make clean
@@ -191,7 +191,7 @@ make clean
 make -j8
 
 # Verify the library was created
-ls -lh libcuda_take.a
+ls -lh lib_backend.a
 # Should show a file around 1-5 MB
 
 cd ..
@@ -396,10 +396,10 @@ cd /Users/eliggett/Documents/liveview/20260126/FlightView
 # Clean everything
 make clean
 rm -rf lv_release/
-cd cuda_take && make clean && cd ..
+cd backend && make clean && cd ..
 
 # Rebuild from scratch (USE_CUDA=0 is default on macOS)
-cd cuda_take && make -j8 && cd ..
+cd backend && make -j8 && cd ..
 qmake CONFIG+=release
 make -j8
 ```

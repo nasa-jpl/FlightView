@@ -21,7 +21,7 @@ extern "C" {
 #include <gst/app/gstappsink.h>
 }
 
-// cuda_take:
+// backend:
 #include "cameramodel.h"
 #include "constants.h"
 #include "rtplog.h"

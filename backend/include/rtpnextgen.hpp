@@ -25,7 +25,7 @@
 #define IFNAMSIZ (16)
 #endif
 
-// cuda_take:
+// backend:
 #include "cameramodel.h"
 #include "constants.h"
 #include "cudalog.h"

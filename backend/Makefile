@@ -39,8 +39,8 @@ endif
 
 ######################################
 #This makefile will produce a unix executable and a static library. Set there names here
-EXE   = cuda_take
-LIBOUT = libcuda_take.a
+EXE   = backend
+LIBOUT = lib_backend.a
 ######################################
 
 
@@ -50,11 +50,11 @@ LIBOUT = libcuda_take.a
 ######################################
 #Here we specify what source files are needed for the program/library, and we create virtual paths so that we don't have to refer to the source directory all the time
 ifeq ($(USE_CUDA), 1)
-SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu white_ref_filter.cu take_object.cpp std_dev_filter_device_code.cu std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp rtpcamera.cpp rtpnextgen.cpp osutils.cpp safestringset.cpp
+SOURCES = fft.cpp dark_subtraction_filter.cu white_ref_filter.cu acquire.cpp std_dev_filter_device_code.cu std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp rtpcamera.cpp rtpnextgen.cpp osutils.cpp safestringset.cpp
 else ifeq ($(USE_METAL), 1)
-SOURCES = fft.cpp main.cpp dark_subtraction_filter.cpp white_ref_filter.cpp take_object.cpp std_dev_filter.cpp std_dev_filter_metal.mm chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp rtpcamera.cpp rtpnextgen.cpp osutils.cpp safestringset.cpp
+SOURCES = fft.cpp dark_subtraction_filter.cpp white_ref_filter.cpp acquire.cpp std_dev_filter.cpp std_dev_filter_metal.mm chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp rtpcamera.cpp rtpnextgen.cpp osutils.cpp safestringset.cpp
 else
-SOURCES = fft.cpp main.cpp dark_subtraction_filter.cpp white_ref_filter.cpp take_object.cpp std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp rtpcamera.cpp rtpnextgen.cpp osutils.cpp safestringset.cpp
+SOURCES = fft.cpp dark_subtraction_filter.cpp white_ref_filter.cpp acquire.cpp std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp rtpcamera.cpp rtpnextgen.cpp osutils.cpp safestringset.cpp
 endif
 #SOURCES  = $(SOURCEDIR)/cuda_take.c $(SOURCEDIR)/constant_filter.cu
 
@@ -225,7 +225,7 @@ else
 endif
 ######################################
 
-all : $(EXE) $(LIBOUT)
+all : $(LIBOUT)
 #	@echo $(SOURCES)
 #	@echo $(objects)
 #	@echo $(OBJS)

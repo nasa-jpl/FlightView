@@ -36,8 +36,8 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
     consolelog.cpp \
-    cuda_take/src/take_object.cpp \
-    cuda_take/src/rtpnextgen.cpp \
+    backend/src/acquire.cpp \
+    backend/src/rtpnextgen.cpp \
     filenamegenerator.cpp \
     flight_widget.cpp \
     flightindicators.cpp \
@@ -54,7 +54,7 @@ SOURCES += main.cpp\
     fft_widget.cpp \
     profile_widget.cpp \
     pref_window.cpp \
-    cuda_take/src/safestringset.cpp \
+    backend/src/safestringset.cpp \
     rgbadjustments.cpp \
     saveserver.cpp \
     playback_widget.cpp \
@@ -70,8 +70,8 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     consolelog.h \
-    cuda_take/include/fileformats.h \
-    cuda_take/include/rtpnextgen.hpp \
+    backend/include/fileformats.h \
+    backend/include/rtpnextgen.hpp \
     dms.h \
     filenamegenerator.h \
     flight_widget.h \
@@ -94,7 +94,7 @@ HEADERS  += mainwindow.h \
     frame_c_meta.h \
     rgbadjustments.h \
     rgbline.h \
-    cuda_take/include/safestringset.h \
+    backend/include/safestringset.h \
     settings.h \
     profile_widget.h \
     pref_window.h \
@@ -113,41 +113,41 @@ HEADERS  += mainwindow.h \
     wfshared.h \
     zmqclient.h
 
-DISTFILES +=    cuda_take/include/take_object.hpp \
+DISTFILES +=    backend/include/acquire.hpp \
                 aviris3-logo.png \
-                cuda_take/include/chroma_translate_filter.hpp \
-                cuda_take/include/std_dev_filter_device_code.cuh \
-                cuda_take/include/mean_filter.hpp \
-                cuda_take/include/frame_c.hpp \
-                cuda_take/include/fft.hpp \
-                cuda_take/include/dark_subtraction_filter.hpp \
-                cuda_take/include/white_ref_filter.hpp \
-                cuda_take/include/cuda_utils.hpp \
-                cuda_take/include/constants.h \
-                cuda_take/include/camera_types.hpp \
-                cuda_take/include/xiocamera.h \
-                cuda_take/include/osutils.h \
-                cuda_take/include/alphanum.hpp \
-                cuda_take/include/camera_types.h \
-                cuda_take/include/cameramodel.h \
-                cuda_take/include/cudalog.h \
-                cuda_take/include/takeoptions.h \
-                cuda_take/include/rtpcamera.hpp \
-                cuda_take/include/safelist.h \
-                cuda_take/include/safebuffer.h
+                backend/include/chroma_translate_filter.hpp \
+                backend/include/std_dev_filter_device_code.cuh \
+                backend/include/mean_filter.hpp \
+                backend/include/frame_c.hpp \
+                backend/include/fft.hpp \
+                backend/include/dark_subtraction_filter.hpp \
+                backend/include/white_ref_filter.hpp \
+                backend/include/cuda_utils.hpp \
+                backend/include/constants.h \
+                backend/include/camera_types.hpp \
+                backend/include/xiocamera.h \
+                backend/include/osutils.h \
+                backend/include/alphanum.hpp \
+                backend/include/camera_types.h \
+                backend/include/cameramodel.h \
+                backend/include/cudalog.h \
+                backend/include/takeoptions.h \
+                backend/include/rtpcamera.hpp \
+                backend/include/safelist.h \
+                backend/include/safebuffer.h
 
-DISTFILES +=    cuda_take/src/take_object.cpp \
-                cuda_take/src/std_dev_filter_device_code.cu \
-                cuda_take/src/std_dev_filter.cpp \
-                cuda_take/src/mean_filter.cpp \
-                cuda_take/src/main.cpp \
-                cuda_take/src/fft.cpp \
-                cuda_take/src/dark_subtraction_filter.cpp \
-                cuda_take/src/white_ref_filter.cpp \
-                cuda_take/src/chroma_translate_filter.cpp \
-                cuda_take/src/xiocamera.cpp \
-                cuda_take/src/rtpcamera.cpp \
-                cuda_take/src/safelist.cpp
+DISTFILES +=    backend/src/acquire.cpp \
+                backend/src/std_dev_filter_device_code.cu \
+                backend/src/std_dev_filter.cpp \
+                backend/src/mean_filter.cpp \
+                backend/src/main.cpp \
+                backend/src/fft.cpp \
+                backend/src/dark_subtraction_filter.cpp \
+                backend/src/white_ref_filter.cpp \
+                backend/src/chroma_translate_filter.cpp \
+                backend/src/xiocamera.cpp \
+                backend/src/rtpcamera.cpp \
+                backend/src/safelist.cpp
 
 
 
@@ -265,15 +265,15 @@ macx {
 #}
 #LIBS += -L$$PWD/lib/ -l$$QCPLIB
 
-# Link cuda_take library (platform-specific)
+# Link backend library (platform-specific)
 macx {
     # macOS: no CUDA libraries, boost_system is header-only on macOS
-    LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lboost_filesystem
-    INCLUDEPATH += $$PWD/cuda_take/include
+    LIBS += -L$$PWD/backend/ -l_backend -lboost_thread -lboost_filesystem
+    INCLUDEPATH += $$PWD/backend/include
 } else:unix:!symbian {
     # Linux: include CUDA libraries
-    LIBS += -L$$PWD/cuda_take/ -lcuda_take -lboost_thread -lboost_filesystem -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl -lrt # -lGL -lQtOpenGL
-    INCLUDEPATH += $$PWD/cuda_take/include
+    LIBS += -L$$PWD/backend/ -l_backend -lboost_thread -lboost_filesystem -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl -lrt # -lGL -lQtOpenGL
+    INCLUDEPATH += $$PWD/backend/include
     INCLUDEPATH += /usr/local/cuda/include
 }
 
@@ -281,9 +281,9 @@ contains(CONFIG, cameralink) {
     INCLUDEPATH += /opt/EDTpdv
 }
 
-DEPENDPATH += $$PWD/cuda_take
+DEPENDPATH += $$PWD/backend
 
-unix: PRE_TARGETDEPS += $$PWD/cuda_take/libcuda_take.a
+unix: PRE_TARGETDEPS += $$PWD/backend/lib_backend.a
 
 FORMS += \
     flightindicators.ui \

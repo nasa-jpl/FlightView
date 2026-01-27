@@ -1,8 +1,8 @@
-#include "take_object.hpp"
+#include "acquire.hpp"
 #include "fft.hpp"
 
 
-take_object::take_object(takeOptionsType options, int channel_num, int number_of_buffers,
+acquire::acquire(takeOptionsType options, int channel_num, int number_of_buffers,
                          int filter_refresh_rate, bool runStdDev)
 {
     changeOptions(options);
@@ -10,10 +10,10 @@ take_object::take_object(takeOptionsType options, int channel_num, int number_of
                  filter_refresh_rate, runStdDev);
 }
 
-take_object::take_object(int channel_num, int number_of_buffers,
+acquire::acquire(int channel_num, int number_of_buffers,
                          int frf, bool runStdDev)
 {
-    statusMessage("Starting take_object with default options.");
+    statusMessage("Starting acquire with default options.");
     takeOptionsType options;
     options.theseAreDefault = true;
     options.xioCam = false;
@@ -22,7 +22,7 @@ take_object::take_object(int channel_num, int number_of_buffers,
                  frf, runStdDev);
 }
 
-void take_object::initialSetup(int channel_num, int number_of_buffers,
+void acquire::initialSetup(int channel_num, int number_of_buffers,
                                int filter_refresh_rate, bool runStdDev)
 {
     coutbuf = std::cout.rdbuf();
@@ -62,7 +62,7 @@ void take_object::initialSetup(int channel_num, int number_of_buffers,
     camStatus = CameraModel::camUnknown;
 }
 
-take_object::~take_object()
+acquire::~acquire()
 {
     closing = true;
     rtpConsumerRun = false;
@@ -113,7 +113,7 @@ take_object::~take_object()
 }
 
 //public functions
-void take_object::changeOptions(takeOptionsType optionsIn)
+void acquire::changeOptions(takeOptionsType optionsIn)
 {
     this->options = optionsIn;
 
@@ -160,7 +160,7 @@ void take_object::changeOptions(takeOptionsType optionsIn)
     deltaT_micros = 1000000.0 / options.targetFPS;
 }
 
-void take_object::acceptGPSDataPtr(basicGPS_t *basicGPSDataIn) {
+void acquire::acceptGPSDataPtr(basicGPS_t *basicGPSDataIn) {
     if(basicGPSDataIn != NULL) {
         this->basicGPSData = basicGPSDataIn;
         this->haveGPSDataPointer = true;
@@ -169,7 +169,7 @@ void take_object::acceptGPSDataPtr(basicGPS_t *basicGPSDataIn) {
     }
 }
 
-void take_object::shmSetup()
+void acquire::shmSetup()
 {
     statusMessage("Preparing shared memory segment for images.");
 
@@ -242,11 +242,11 @@ void take_object::shmSetup()
     }
 }
 
-void take_object::start()
+void acquire::start()
 {
     pdv_thread_run = 1;
 
-    std::cout << "This version of cuda_take was compiled on " << __DATE__ << " at " << __TIME__ << " using gcc " << __GNUC__ << std::endl;
+    std::cout << "This version of backend was compiled on " << __DATE__ << " at " << __TIME__ << " using gcc " << __GNUC__ << std::endl;
     std::cout << "The compilation was perfromed by " << UNAME << " @ " << HOST << std::endl;
 
     pthread_setname_np(pthread_self(), "TAKE");
@@ -386,7 +386,7 @@ void take_object::start()
         statusMessage("Creating an XIO camera take_object.");
         prepareFileReading(); // make a camera
         statusMessage("Creating an XIO camera thread inside take_object.");
-        cam_thread = boost::thread(&take_object::fileImageCopyLoop, this);
+        cam_thread = boost::thread(&acquire::fileImageCopyLoop, this);
         cam_thread_handler = cam_thread.native_handle();
         pthread_setname_np(cam_thread_handler, "XIOCAM");
         statusMessage("Created thread.");
@@ -395,7 +395,7 @@ void take_object::start()
         // The idea is to hold off on doing anything else until some setup is finished.
 
         statusMessage("Creating XIO File reading thread reading_thread.");
-        reading_thread = boost::thread(&take_object::fileImageReadingLoop, this);
+        reading_thread = boost::thread(&acquire::fileImageReadingLoop, this);
         reading_thread_handler = reading_thread.native_handle();
         pthread_setname_np(reading_thread_handler, "READING");
         statusMessage("Done creating XIO File reading thread reading_thread.");
@@ -430,7 +430,7 @@ void take_object::start()
         std::cout.rdbuf(coutbuf);
 
         statusMessage("Creating boost thread for RTP NextGen camera streamLoop()");
-        rtpAcquireThread = boost::thread(&take_object::rtpNGStreamLoop, this);
+        rtpAcquireThread = boost::thread(&acquire::rtpNGStreamLoop, this);
         rtpAcquireThreadHandler = rtpAcquireThread.native_handle();
         pthread_setname_np(rtpAcquireThreadHandler, "RTPNG Stream");
         statusMessage("Created RTP NextGen streamLoop() thread.");
@@ -442,7 +442,7 @@ void take_object::start()
         // These functions get the data into the rest of take object:
         rtpConsumerRun = true;
         statusMessage("Creating RTP NextGen consumer thread to copy data into take_object");
-        rtpCopyThread = boost::thread(&take_object::rtpConsumeFrames, this);
+        rtpCopyThread = boost::thread(&acquire::rtpConsumeFrames, this);
         rtpCopyThreadHandler = rtpCopyThread.native_handle();
         pthread_setname_np(rtpCopyThreadHandler, "RTPNG Consume");
         statusMessage("Created RTP NextGen consumer thread.");
@@ -454,7 +454,7 @@ void take_object::start()
         prepareRTPCamera();
 
         statusMessage("Creating boost thread for camera streamLoop()");
-        rtpAcquireThread = boost::thread(&take_object::rtpStreamLoop, this);
+        rtpAcquireThread = boost::thread(&acquire::rtpStreamLoop, this);
         rtpAcquireThreadHandler = rtpAcquireThread.native_handle();
         pthread_setname_np(rtpAcquireThreadHandler, "RTP Stream");
         statusMessage("Created RTP streamLoop() thread.");
@@ -464,7 +464,7 @@ void take_object::start()
 
         rtpConsumerRun = true;
         statusMessage("Creating RTP consumer thread to copy data into take_object");
-        rtpCopyThread = boost::thread(&take_object::rtpConsumeFrames, this);
+        rtpCopyThread = boost::thread(&acquire::rtpConsumeFrames, this);
         rtpCopyThreadHandler = rtpCopyThread.native_handle();
         pthread_setname_np(rtpCopyThreadHandler, "RTP Consume");
         statusMessage("Created RTP consumer thread.");
@@ -483,7 +483,7 @@ void take_object::start()
 
 
         pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
-        cam_thread = boost::thread(&take_object::pdv_loop, this);
+        cam_thread = boost::thread(&acquire::pdv_loop, this);
         cam_thread_handler = cam_thread.native_handle();
         pthread_setname_np(cam_thread_handler, "PDVCAM");
         //usleep(350000);
@@ -491,12 +491,12 @@ void take_object::start()
     }
     statusMessage("Finished creating threads.");
 }
-void take_object::setInversion(bool checked, unsigned int factor)
+void acquire::setInversion(bool checked, unsigned int factor)
 {
     inverted = checked;
     invFactor = factor;
 }
-void take_object::set_twoscomp(bool checked )
+void acquire::set_twoscomp(bool checked )
 {
     // This function was, unfortunately, briefly called paraPixRemap
     twoscomp = checked;
@@ -508,11 +508,11 @@ void take_object::set_twoscomp(bool checked )
     }
 }
 
-void take_object::enableDarkStatusPixelWrite(bool writeValues) {
+void acquire::enableDarkStatusPixelWrite(bool writeValues) {
     setDarkStatusInFrame = writeValues;
 }
 
-void take_object::startCapturingDSFMask()
+void acquire::startCapturingDSFMask()
 {
     dsfMaskCollected = false;
 
@@ -523,7 +523,7 @@ void take_object::startCapturingDSFMask()
 
     darkStatusPixelVal = obcStatusDark1;
 }
-void take_object::finishCapturingDSFMask()
+void acquire::finishCapturingDSFMask()
 {
     //statusMessage("Entering finishCapturingDSFMask()");
     dsf->mask_mutex.lock();
@@ -545,7 +545,7 @@ void take_object::finishCapturingDSFMask()
     //statusMessage("Exiting finishCapturingDSFMask()");
 }
 
-void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format)
+void acquire::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format)
 {
     // Creates a mask from a file containing multiple frames
     // The frames are expected to be the same geometry as the
@@ -653,7 +653,7 @@ void take_object::loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t f
     readingDSFFile = false;
 }
 
-void take_object::loadDSFMask_entry(std::string filename_s, fileFormat_t fmt) {
+void acquire::loadDSFMask_entry(std::string filename_s, fileFormat_t fmt) {
     // TODO: Mutex or even lockout
     if(readingDSFFile) {
         // This flag is set and cleared within the load/average functions.
@@ -663,16 +663,16 @@ void take_object::loadDSFMask_entry(std::string filename_s, fileFormat_t fmt) {
     switch(fmt) {
     case fmt_uint16:
         statusMessage("Loading uing16_t DSF mask");
-        mask_thread = boost::thread( boost::bind(&take_object::loadDSFMaskFromFramesU16, this, filename_s, fmt));
+        mask_thread = boost::thread( boost::bind(&acquire::loadDSFMaskFromFramesU16, this, filename_s, fmt));
         break;
     case fmt_uint16_2s:
         statusMessage("Loading uing16_t with 2s compliment DSF mask");
-        mask_thread = boost::thread( boost::bind(&take_object::loadDSFMaskFromFramesU16, this, filename_s, fmt));
+        mask_thread = boost::thread( boost::bind(&acquire::loadDSFMaskFromFramesU16, this, filename_s, fmt));
         break;
     case fmt_float32:
         statusMessage("Loading float32 DSF mask");
         return;
-        mask_thread = boost::thread(&take_object::loadDSFMask, this, filename_s);
+        mask_thread = boost::thread(&acquire::loadDSFMask, this, filename_s);
         break;
     default:
         errorMessage("Unable to load DSF mask from file, format is unknown.");
@@ -684,7 +684,7 @@ void take_object::loadDSFMask_entry(std::string filename_s, fileFormat_t fmt) {
     //pthread_setname_np(mask_thread_handler, "MASK");
 }
 
-void take_object::loadDSFMask(std::string file_name)
+void acquire::loadDSFMask(std::string file_name)
 {
     if(readingDSFFile)
         return;
@@ -720,17 +720,17 @@ void take_object::loadDSFMask(std::string file_name)
     statusMessage("Completed DSF load from float32 type.");
     readingDSFFile = false;
 }
-void take_object::setStdDev_N(int s)
+void acquire::setStdDev_N(int s)
 {
     this->std_dev_filter_N = s;
 }
 
-void take_object::toggleStdDevCalculation(bool enabled)
+void acquire::toggleStdDevCalculation(bool enabled)
 {
     this->runStdDev = enabled;
 }
 
-void take_object::updateVertOverlayParams(int lh_start_in, int lh_end_in,
+void acquire::updateVertOverlayParams(int lh_start_in, int lh_end_in,
                                           int cent_start_in, int cent_end_in,
                                           int rh_start_in, int rh_end_in)
 {
@@ -744,15 +744,15 @@ void take_object::updateVertOverlayParams(int lh_start_in, int lh_end_in,
 
     /*
     // Debug, remove later:
-    std::cout << "----- In take_object::updateVertOverlayParams\n";
+    std::cout << "----- In acquire::updateVertOverlayParams\n";
     std::cout << "->lh_start:   " << lh_start <<   ", lh_end:   " << lh_end << std::endl;
     std::cout << "->rh_start:   " << rh_start <<   ", rh_end:   " << rh_end << std::endl;
     std::cout << "->cent_start: " << cent_start << ", cent_end: " << cent_end << std::endl;
-    std::cout << "----- end take_object::updateVertOverlayParams -----\n";
+    std::cout << "----- end acquire::updateVertOverlayParams -----\n";
     */
 }
 
-void take_object::updateVertRange(int br, int er)
+void acquire::updateVertRange(int br, int er)
 {
     meanStartRow = br;
     meanHeight = er;
@@ -760,7 +760,7 @@ void take_object::updateVertRange(int br, int er)
     std::cout << "meanStartRow: " << meanStartRow << " meanHeight: " << meanHeight << std::endl;
 #endif
 }
-void take_object::updateHorizRange(int bc, int ec)
+void acquire::updateHorizRange(int bc, int ec)
 {
     meanStartCol = bc;
     meanWidth = ec;
@@ -768,11 +768,11 @@ void take_object::updateHorizRange(int bc, int ec)
     std::cout << "meanStartCol: " << meanStartCol << " meanWidth: " << meanWidth << std::endl;
 #endif
 }
-void take_object::changeFFTtype(FFT_t t)
+void acquire::changeFFTtype(FFT_t t)
 {
     whichFFT = t;
 }
-void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames_to_save, unsigned int num_avgs_save)
+void acquire::startSavingRaws(std::string raw_file_name, unsigned int frames_to_save, unsigned int num_avgs_save)
 {
     if(frames_to_save==0)
     {
@@ -820,9 +820,9 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
         strncpy(shm->lastFilename, raw_file_name.c_str(), shmFilenameBufferSize-1);
         shm->recordingDataToFile = true;
     }
-    saving_thread = boost::thread(&take_object::savingLoop,this,raw_file_name,num_avgs_save,frames_to_save);
+    saving_thread = boost::thread(&acquire::savingLoop,this,raw_file_name,num_avgs_save,frames_to_save);
 }
-void take_object::stopSavingRaws()
+void acquire::stopSavingRaws()
 {
     statusMessage("in stopSavingRaws()");
     continuousRecording.store(false, std::memory_order_seq_cst);
@@ -837,34 +837,34 @@ void take_object::stopSavingRaws()
     printf("Stop Saving Raws!");
 #endif
 }
-unsigned int take_object::getDataHeight()
+unsigned int acquire::getDataHeight()
 {
     return dataHeight;
 }
-unsigned int take_object::getFrameHeight()
+unsigned int acquire::getFrameHeight()
 {
     return frHeight;
 }
-unsigned int take_object::getFrameWidth()
+unsigned int acquire::getFrameWidth()
 {
     return frWidth;
 }
-bool take_object::std_dev_ready()
+bool acquire::std_dev_ready()
 {
     return sdvf->outputReady();
 }
-std::vector<float> * take_object::getHistogramBins()
+std::vector<float> * acquire::getHistogramBins()
 {
     return sdvf->getHistogramBins();
 }
-FFT_t take_object::getFFTtype()
+FFT_t acquire::getFFTtype()
 {
     return whichFFT;
 }
 
 // private functions
 
-void take_object::prepareFileReading()
+void acquire::prepareFileReading()
 {
     // Makes an XIO file reading camera
 
@@ -893,7 +893,7 @@ void take_object::prepareFileReading()
     }
 }
 
-void take_object::prepareRTPCamera()
+void acquire::prepareRTPCamera()
 {
     // Makes an RTP gstreamer pipeline and related objects
 
@@ -916,7 +916,7 @@ void take_object::prepareRTPCamera()
     }
 }
 
-void take_object::prepareRTPNGCamera() {
+void acquire::prepareRTPNGCamera() {
     if(Camera == NULL) {
         Camera = new rtpnextgen(options);
         if(Camera == NULL) {
@@ -931,7 +931,7 @@ void take_object::prepareRTPNGCamera() {
     }
 }
 
-void take_object::fileImageReadingLoop()
+void acquire::fileImageReadingLoop()
 {
     // This thread makes the camera keep reading files
     // readLoop() runs readFile() inside.
@@ -953,7 +953,7 @@ void take_object::fileImageReadingLoop()
     }
 }
 
-void take_object::markFrameForChecking(uint16_t *frame)
+void acquire::markFrameForChecking(uint16_t *frame)
 {
     // This function overrides some data in the top three rows of the frame.
     // This is only to be used for debugging.
@@ -997,7 +997,7 @@ void take_object::markFrameForChecking(uint16_t *frame)
     frame[9+640+640] = (uint16_t)0xffff;
 }
 
-bool take_object::checkFrame(uint16_t* Frame)
+bool acquire::checkFrame(uint16_t* Frame)
 {
     bool ok = true;
     ok &= Frame[1] == (uint16_t)0x0000;
@@ -1042,7 +1042,7 @@ bool take_object::checkFrame(uint16_t* Frame)
     return ok;
 }
 
-void take_object::clearAllRingBuffer()
+void acquire::clearAllRingBuffer()
 {
     frame_c *curFrame = NULL;
     uint16_t *zeroFrame = NULL;
@@ -1062,7 +1062,7 @@ void take_object::clearAllRingBuffer()
     statusMessage("Done zero-setting memory in frame_ring_buffer");
 }
 
-void take_object::fileImageCopyLoop()
+void acquire::fileImageCopyLoop()
 {
     // This thread copies data from the XIO Camera's buffer
     // and into curFrane of take_object. It is the "consumer"
@@ -1278,7 +1278,7 @@ void take_object::fileImageCopyLoop()
         free(zeroFrame);
 }
 
-int take_object::getMicroSecondsPerFrame()
+int acquire::getMicroSecondsPerFrame()
 {
     int max = (meanDeltaArrayPos < meanDeltaSize)?meanDeltaArrayPos:meanDeltaSize;
     // If max is 0, we have not actually taken a reading yet.
@@ -1293,7 +1293,7 @@ int take_object::getMicroSecondsPerFrame()
     return sum / max;
 }
 
-void take_object::setReadDirectory(const char *directory)
+void acquire::setReadDirectory(const char *directory)
 {
     if(directory == NULL)
     {
@@ -1316,23 +1316,23 @@ void take_object::setReadDirectory(const char *directory)
     }
 }
 
-camControlType* take_object::getCamControl()
+camControlType* acquire::getCamControl()
 {
     return &cameraController;
 }
 
-void take_object::rtpStreamLoop()
+void acquire::rtpStreamLoop()
 {
     LOG << "Entering streamLoop";
     Camera->streamLoop();
 }
 
-void take_object::rtpNGStreamLoop() {
+void acquire::rtpNGStreamLoop() {
     LOG << "Entering streamLoop";
     Camera->streamLoop();
 }
 
-void take_object::rtpConsumeFrames()
+void acquire::rtpConsumeFrames()
 {
     // This thread copies frames from the RTP Stream Loop
     // guarenteed buffer into the take object.
@@ -1454,7 +1454,7 @@ void take_object::rtpConsumeFrames()
     statusMessage("RTP Consumer Loop is done providing frames");
 }
 
-void take_object::pdv_loop() //Producer Thread (pdv_thread)
+void acquire::pdv_loop() //Producer Thread (pdv_thread)
 {
 	count = 0;
 
@@ -1610,7 +1610,7 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         delete mf;
 }
 
-void take_object::rotate(uint16_t *input, uint16_t *output, int origHeight, int origWidth) {
+void acquire::rotate(uint16_t *input, uint16_t *output, int origHeight, int origWidth) {
     // Rotate the input into the output.
 
     // NOTE: output pointer is a static cuda memory allocation and must meet the rotated size!
@@ -1640,7 +1640,7 @@ void take_object::rotate(uint16_t *input, uint16_t *output, int origHeight, int 
 }
 
 
-void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
+void acquire::savingLoop(std::string fname, unsigned int num_avgs, unsigned int num_frames) 
 {
     // Frame Save Thread (saving_thread)
 
@@ -1864,7 +1864,7 @@ void take_object::savingLoop(std::string fname, unsigned int num_avgs, unsigned 
     savingData = false;
 }
 
-void take_object::errorMessage(const char *message)
+void acquire::errorMessage(const char *message)
 {
     if((!options.rtpCam) || (options.rtpNextGen))
     {
@@ -1876,7 +1876,7 @@ void take_object::errorMessage(const char *message)
     haveMessage=true;
 }
 
-void take_object::warningMessage(const char *message)
+void acquire::warningMessage(const char *message)
 {
     if((!options.rtpCam) || (options.rtpNextGen))
     {
@@ -1888,7 +1888,7 @@ void take_object::warningMessage(const char *message)
     haveMessage=true;
 }
 
-void take_object::statusMessage(const char *message)
+void acquire::statusMessage(const char *message)
 {
     if((!options.rtpCam) || (options.rtpNextGen)) {
         std::cout << "take_object: STATUS: " << message << std::endl;
@@ -1899,7 +1899,7 @@ void take_object::statusMessage(const char *message)
     haveMessage=true;
 }
 
-void take_object::errorMessage(const string message)
+void acquire::errorMessage(const string message)
 {
     if((!options.rtpCam) || (options.rtpNextGen)) {
         std::cerr << "take_object: ERROR: " << message << std::endl;
@@ -1910,7 +1910,7 @@ void take_object::errorMessage(const string message)
     haveMessage=true;
 }
 
-void take_object::warningMessage(const string message)
+void acquire::warningMessage(const string message)
 {
     if((!options.rtpCam) || (options.rtpNextGen)) {
         std::cout << "take_object: WARNING: " << message << std::endl;
@@ -1921,7 +1921,7 @@ void take_object::warningMessage(const string message)
     haveMessage=true;
 }
 
-void take_object::statusMessage(const string message)
+void acquire::statusMessage(const string message)
 {
     if((!options.rtpCam) || (options.rtpNextGen)) {
         std::cout << "take_object: STATUS: " << message << std::endl;
@@ -1932,7 +1932,7 @@ void take_object::statusMessage(const string message)
     haveMessage=true;
 }
 
-void take_object::statusMessage(std::ostringstream &message)
+void acquire::statusMessage(std::ostringstream &message)
 {
     if((!options.rtpCam) || (options.rtpNextGen)) {
         std::cout << "take_object: STATUS: " << message.str() << std::endl;

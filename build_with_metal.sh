@@ -50,7 +50,7 @@ fi
 # Step 1: Compile Metal shader
 echo ""
 echo "Step 1: Compiling Metal shader..."
-cd "$SCRIPT_DIR/cuda_take/src"
+cd "$SCRIPT_DIR/backend/src"
 
 if [ ! -f std_dev_filter.metal ]; then
     echo "ERROR: std_dev_filter.metal not found"
@@ -78,19 +78,19 @@ echo "Metal shader compiled successfully: std_dev_filter.metallib"
 # Clean up intermediate files
 rm -f std_dev_filter.air
 
-# Step 2: Build cuda_take library with Metal support
+# Step 2: Build backend library with Metal support
 echo ""
-echo "Step 2: Building cuda_take library with Metal..."
-cd "$SCRIPT_DIR/cuda_take"
+echo "Step 2: Building backend library with Metal..."
+cd "$SCRIPT_DIR/backend"
 make clean
 make USE_METAL=1 -j8
 
 if [ $? -ne 0 ]; then
-    echo "ERROR: cuda_take build failed"
+    echo "ERROR: backend build failed"
     exit 1
 fi
 
-echo "cuda_take library built successfully"
+echo "backend library built successfully"
 
 # Step 3: Build FlightView application
 echo ""

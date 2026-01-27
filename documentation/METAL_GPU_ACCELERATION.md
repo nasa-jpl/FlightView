@@ -39,7 +39,7 @@ We'll add:
 
 Create a Metal compute shader that does the stddev calculation on GPU.
 
-**File: `cuda_take/src/std_dev_filter.metal`**
+**File: `backend/src/std_dev_filter.metal`**
 
 ```metal
 #include <metal_stdlib>
@@ -111,7 +111,7 @@ kernel void compute_histogram(
 
 ### Phase 2: Metal C++ Host Code
 
-**File: `cuda_take/src/std_dev_filter_metal.mm`** (Objective-C++)
+**File: `backend/src/std_dev_filter_metal.mm`** (Objective-C++)
 
 ```cpp
 #ifdef __APPLE__
@@ -411,7 +411,7 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
 **For qmake (.pro file):**
 
 ```qmake
-# In liveview.pro or cuda_take.pro
+# In liveview.pro or backend.pro
 
 macx {
     # Enable Metal on macOS
@@ -422,17 +422,17 @@ macx {
     
     # Add Metal source files (Objective-C++)
     OBJECTIVE_SOURCES += \
-        cuda_take/src/std_dev_filter_metal.mm
+        backend/src/std_dev_filter_metal.mm
     
     # Compile Metal shaders
     metal_compiler.commands = xcrun -sdk macosx metal \
-        -c $$PWD/cuda_take/src/std_dev_filter.metal \
-        -o $$PWD/cuda_take/src/std_dev_filter.air && \
+        -c $$PWD/backend/src/std_dev_filter.metal \
+        -o $$PWD/backend/src/std_dev_filter.air && \
         xcrun -sdk macosx metallib \
-        $$PWD/cuda_take/src/std_dev_filter.air \
+        $$PWD/backend/src/std_dev_filter.air \
         -o $$PWD/std_dev_filter.metallib
     
-    metal_compiler.depends = cuda_take/src/std_dev_filter.metal
+    metal_compiler.depends = backend/src/std_dev_filter.metal
     metal_compiler.target = std_dev_filter.metallib
     
     QMAKE_EXTRA_TARGETS += metal_compiler
@@ -446,7 +446,7 @@ macx {
 cd /Users/eliggett/Documents/liveview/20260126/FlightView
 
 # Compile Metal shader first
-xcrun -sdk macosx metal -c cuda_take/src/std_dev_filter.metal -o std_dev_filter.air
+xcrun -sdk macosx metal -c backend/src/std_dev_filter.metal -o std_dev_filter.air
 xcrun -sdk macosx metallib std_dev_filter.air -o std_dev_filter.metallib
 
 # Build FlightView

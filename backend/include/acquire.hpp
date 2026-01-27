@@ -1,5 +1,5 @@
-#ifndef TAKEOBJECT_HPP_
-#define TAKEOBJECT_HPP_
+#ifndef ACQUIRE_HPP_
+#define ACQUIRE_HPP_
 
 //standard includes
 #include <cstdint>
@@ -54,7 +54,7 @@ static int cudaDeviceNumberStatic = 0;
 
 #define takeMessageSize (1024)
 
-//** Harware Macros ** These Macros set the hardware type that take_object will use to collect data
+//** Harware Macros ** These Macros set the hardware type that acquire will use to collect data
 #define EDT
 
 
@@ -103,7 +103,7 @@ union pcv_t {
     char* c;
 };
 
-class take_object {
+class acquire {
 #ifdef CAMERALINK
     PdvDev * pdv_p = NULL;
 #endif
@@ -192,11 +192,11 @@ class take_object {
     bool haveGPSDataPointer = false;
 
 public:
-    take_object(int channel_num = 0, int number_of_buffers = 64,
+    acquire(int channel_num = 0, int number_of_buffers = 64,
                 int filter_refresh_rate = 10, bool runStdDev = true);
-    take_object(takeOptionsType options, int channel_num = 0, int number_of_buffers = 64,
+    acquire(takeOptionsType options, int channel_num = 0, int number_of_buffers = 64,
                 int filter_refresh_rate = 10, bool runStdDev = true);
-    virtual ~take_object();
+    virtual ~acquire();
     void initialSetup(int channel_num = 0, int number_of_buffers = 64,
                       int filter_refresh_rate = 10, bool runStdDev = true);
     void start();
@@ -342,4 +342,4 @@ private:
     FFT_t whichFFT;
 };
 
-#endif /* TAKEOBJECT_HPP_ */
+#endif /* ACQUIRE_HPP_ */

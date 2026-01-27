@@ -26,17 +26,17 @@ TOTAL:         3,000-6,000 µs (3-6 ms)
 
 ### New Files Created
 
-1. **`cuda_take/src/std_dev_filter.metal`**
+1. **`backend/src/std_dev_filter.metal`**
    - Metal compute shader for GPU calculation
    - Implements Welford's algorithm for std dev
    - Runs in parallel on GPU cores
 
-2. **`cuda_take/src/std_dev_filter_metal.mm`**
+2. **`backend/src/std_dev_filter_metal.mm`**
    - Objective-C++ host code for Metal
    - Manages GPU buffers and command queues
    - macOS-only compilation
 
-3. **`cuda_take/include/std_dev_filter_metal.h`**
+3. **`backend/include/std_dev_filter_metal.h`**
    - C interface header for Metal functions
    - macOS-only with proper guards
 
@@ -53,16 +53,16 @@ TOTAL:         3,000-6,000 µs (3-6 ms)
 
 ### Modified Files
 
-1. **`cuda_take/include/std_dev_filter.hpp`**
+1. **`backend/include/std_dev_filter.hpp`**
    - Added Metal context pointers
    - Added macOS-only `#ifdef` guards
 
-2. **`cuda_take/src/std_dev_filter.cpp`**
+2. **`backend/src/std_dev_filter.cpp`**
    - Added Metal GPU initialization
    - Added Metal compute path in update_GPU_buffer()
    - Falls back to CPU if Metal unavailable
 
-3. **`cuda_take/Makefile`**
+3. **`backend/Makefile`**
    - Added `USE_METAL` build option (default=1 on macOS)
    - Added Metal framework linking
    - Added `.mm` file compilation rules
@@ -132,13 +132,13 @@ Produces:
 
 ```bash
 # 1. Compile Metal shader
-cd cuda_take/src
+cd backend/src
 xcrun -sdk macosx metal -c std_dev_filter.metal -o std_dev_filter.air
 xcrun -sdk macosx metallib std_dev_filter.air -o ../../std_dev_filter.metallib
 
 # 2. Build library
 cd ../..
-cd cuda_take && make USE_METAL=1 -j8 && cd ..
+cd backend && make USE_METAL=1 -j8 && cd ..
 
 # 3. Build application
 qmake liveview.pro && make -j8
@@ -150,7 +150,7 @@ cp std_dev_filter.metallib lv_release/
 ### Build Without Metal
 
 ```bash
-cd cuda_take
+cd backend
 make clean
 make USE_METAL=0 -j8
 cd ..

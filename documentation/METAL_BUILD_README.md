@@ -29,7 +29,7 @@ cd /Users/eliggett/Documents/liveview/20260126/FlightView
 
 This script will:
 1. Compile the Metal compute shader
-2. Build cuda_take library with Metal support
+2. Build backend library with Metal support
 3. Build FlightView application
 4. Install the Metal shader library
 
@@ -59,7 +59,7 @@ If you prefer to build manually:
 ### Step 1: Compile Metal Shader
 
 ```bash
-cd cuda_take/src
+cd backend/src
 
 # Compile to AIR
 xcrun -sdk macosx metal -c std_dev_filter.metal -o std_dev_filter.air
@@ -72,10 +72,10 @@ rm std_dev_filter.air
 cd ../..
 ```
 
-### Step 2: Build cuda_take Library
+### Step 2: Build backend Library
 
 ```bash
-cd cuda_take
+cd backend
 make clean
 make USE_METAL=1 -j8
 cd ..
@@ -182,7 +182,7 @@ rtpConsumeFrames: === Frame Processing Performance ===
 
 ```bash
 # Build without Metal
-cd cuda_take
+cd backend
 make clean
 make USE_METAL=0 -j8
 cd ..
@@ -231,7 +231,7 @@ cp std_dev_filter.metallib lv_release/liveview.app/Contents/MacOS/
 ls -lh lv_release/std_dev_filter.metallib
 
 # Recompile Metal shader
-cd cuda_take/src
+cd backend/src
 xcrun -sdk macosx metal -c std_dev_filter.metal -o test.air
 # Should complete without errors
 ```
@@ -239,7 +239,7 @@ xcrun -sdk macosx metal -c std_dev_filter.metal -o test.air
 ### Build Errors
 
 **Error: "USE_METAL" undefined:**
-- Make sure you're building cuda_take with `USE_METAL=1`
+- Make sure you're building backend with `USE_METAL=1`
 - Check that Makefile has Metal support added
 
 **Error: Metal framework not found:**
@@ -275,7 +275,7 @@ xcrun -sdk macosx metal -c std_dev_filter.metal -o test.air
 To build without Metal GPU support:
 
 ```bash
-cd cuda_take
+cd backend
 make clean
 make USE_METAL=0 -j8
 cd ..
@@ -290,7 +290,7 @@ The application will use CPU OpenMP implementation instead.
 
 ### Metal Compute Shader Details
 
-**File:** `cuda_take/src/std_dev_filter.metal`
+**File:** `backend/src/std_dev_filter.metal`
 
 - **Kernel:** `compute_stddev`
 - **Threadgroup size:** 16×16 (256 threads)
@@ -300,9 +300,9 @@ The application will use CPU OpenMP implementation instead.
 ### C++ Host Code
 
 **Files:**
-- `cuda_take/src/std_dev_filter_metal.mm` - Objective-C++ Metal host code
-- `cuda_take/include/std_dev_filter_metal.h` - C interface header
-- `cuda_take/src/std_dev_filter.cpp` - Main filter implementation
+- `backend/src/std_dev_filter_metal.mm` - Objective-C++ Metal host code
+- `backend/include/std_dev_filter_metal.h` - C interface header
+- `backend/src/std_dev_filter.cpp` - Main filter implementation
 
 ### Build System
 

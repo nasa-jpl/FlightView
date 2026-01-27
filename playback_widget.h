@@ -12,7 +12,7 @@
 #include <QTimer>
 #include <QWidget>
 
-/* Live View / cuda_take includes */
+/* Live View / backend includes */
 #include "dark_subtraction_filter.hpp"
 #include "frame_worker.h"
 #include "qcustomplot.h"

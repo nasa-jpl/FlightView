@@ -21,7 +21,7 @@
  *
  *The FFT Widget displays the Fourier Transform of three different types of data in a bar graph format.
  * There are three sampling types which may be selected using the buttons underneath the plot. From the
- * cuda_take documentation, here are the three different types of time series input by cuda_take:
+ * backend documentation, here are the three different types of time series input by backend:
  * \paragraph
  *
  * \list

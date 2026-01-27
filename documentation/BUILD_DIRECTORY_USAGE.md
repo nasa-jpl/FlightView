@@ -66,12 +66,12 @@ rm -rf *
    ```
 
 2. **Compiles Metal shader:**
-   - Reads from: `$SOURCE/cuda_take/src/std_dev_filter.metal`
+   - Reads from: `$SOURCE/backend/src/std_dev_filter.metal`
    - Writes to: `$BUILD/std_dev_filter.metallib`
 
-3. **Builds cuda_take library:**
-   - Builds in: `$SOURCE/cuda_take/` (creates object files there)
-   - Creates: `$SOURCE/cuda_take/libcuda_take.a`
+3. **Builds backend library:**
+   - Builds in: `$SOURCE/backend/` (creates object files there)
+   - Creates: `$SOURCE/backend/lib_backend.a`
 
 4. **Builds FlightView:**
    - Runs qmake in: `$BUILD/`
@@ -87,9 +87,9 @@ rm -rf *
 
 ```
 FlightView/                          (source - unchanged)
-├── cuda_take/
+├── backend/
 │   ├── obj/                        (object files)
-│   └── libcuda_take.a             (static library)
+│   └── lib_backend.a              (static library)
 ├── build_with_metal.sh
 └── ...
 
@@ -160,16 +160,16 @@ The script couldn't find the source files. Make sure you're using the correct pa
 ls -l ../FlightView/build_with_metal.sh
 
 # Does the metal file exist?
-ls -l ../FlightView/cuda_take/src/std_dev_filter.metal
+ls -l ../FlightView/backend/src/std_dev_filter.metal
 ```
 
 ### Build artifacts in source directory
 
-The `cuda_take` library still builds in the source directory (creates `obj/` and `libcuda_take.a` there). This is normal - the main application builds in your build directory.
+The `backend` library still builds in the source directory (creates `obj/` and `lib_backend.a` there). This is normal - the main application builds in your build directory.
 
-To clean cuda_take:
+To clean backend:
 ```bash
-cd /path/to/FlightView/cuda_take
+cd /path/to/FlightView/backend
 make clean
 ```
 
