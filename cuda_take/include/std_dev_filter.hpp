@@ -19,10 +19,20 @@
 #include "edtinc.h"
 #endif
 
+#ifdef USE_CUDA
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "cuda_utils.cuh"
 #include "std_dev_filter_device_code.cuh"
+#endif
+
+// Metal GPU support (macOS only)
+#ifdef __APPLE__
+#ifdef USE_METAL
+#include "std_dev_filter_metal.h"
+#endif
+#endif
+
 #include "frame_c.hpp"
 
 /*! \brief Host code for the standard deviation calculation.
@@ -48,7 +58,10 @@ public:
 	uint32_t * wait_std_dev_histogram();
 	std::vector<float> * getHistogramBins();
 	uint16_t * getEntireRingBuffer(); //For testing only
+
+#ifdef USE_CUDA
 	cudaStream_t std_dev_stream;
+#endif
 private:
     std_dev_filter() {} //Private default constructor
     	int STD_DEV_DEVICE_NUM = 0;
@@ -63,6 +76,7 @@ private:
         unsigned int optimalBlockSizeY = 0;
         unsigned int optimalBlockSizeX = 0;
 
+#ifdef USE_CUDA
 	uint16_t * pictures_device;
 	uint16_t * current_picture_device;
 
@@ -70,6 +84,22 @@ private:
 	float * histogram_bins_device;
 
 	uint32_t * histogram_out_device;
+#elif defined(__APPLE__) && defined(USE_METAL)
+	// Metal GPU (macOS only)
+	void* metal_context;
+	float* metal_output_ptr;
+	uint32_t* metal_histogram_ptr;
+	
+	// CPU fallback variables (used if Metal init fails)
+	uint16_t * pictures_cpu;
+	float * picture_out_cpu;
+	uint32_t * histogram_out_cpu;
+#else
+	// CPU-only ring buffer
+	uint16_t * pictures_cpu;
+	float * picture_out_cpu;
+	uint32_t * histogram_out_cpu;
+#endif
 	float histogram_bins[NUMBER_OF_BINS];
 	float * std_dev_result;
 	frame_c * prevFrame = NULL;

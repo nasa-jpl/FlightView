@@ -39,6 +39,16 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight, int cudaDeviceNumber)
 	gpu_buffer_head = 0; // read point for the ring buffer data structure
 	currentN = 0; // number of complete frames in the ring buffer
 
+#if defined(__APPLE__) && defined(USE_METAL)
+	// Initialize pointers to nullptr
+	metal_context = nullptr;
+	metal_output_ptr = nullptr;
+	metal_histogram_ptr = nullptr;
+	pictures_cpu = nullptr;
+	picture_out_cpu = nullptr;
+	histogram_out_cpu = nullptr;
+#endif
+
 #ifdef USE_CUDA
 	int cudaDevNumberChecker = -1;
 	cudaGetDevice(&cudaDevNumberChecker);
@@ -72,6 +82,35 @@ std_dev_filter::std_dev_filter(int nWidth, int nHeight, int cudaDeviceNumber)
 	memcpy(histogram_bins,getHistogramBinValues().data(),NUMBER_OF_BINS*sizeof(float));
 
 	HANDLE_ERROR(cudaMemcpyAsync(histogram_bins_device,histogram_bins,NUMBER_OF_BINS*sizeof(float),cudaMemcpyHostToDevice,std_dev_stream)); // Incrementally copies data to device (as each frame comes in it gets copied)
+#elif defined(__APPLE__) && defined(USE_METAL)
+	// Metal GPU implementation (macOS only)
+	printf("[std_dev_filter]: Using Metal GPU acceleration\n");
+	
+	metal_context = metal_stddev_init(width, height);
+	
+	if(!metal_context) {
+		std::cerr << "[std_dev_filter]: Metal initialization failed, falling back to CPU" << std::endl;
+		// Fall back to CPU implementation - allocate CPU buffers
+		printf("[std_dev_filter]: Using CPU implementation with OpenMP (threads: %d)\n", omp_get_max_threads());
+		
+		pictures_cpu = (uint16_t*)aligned_alloc(64, width*height*sizeof(uint16_t)*GPU_FRAME_BUFFER_SIZE);
+		picture_out_cpu = (float*)aligned_alloc(64, width*height*sizeof(float));
+		histogram_out_cpu = (uint32_t*)aligned_alloc(64, NUMBER_OF_BINS*sizeof(uint32_t));
+		
+		if(!pictures_cpu || !picture_out_cpu || !histogram_out_cpu) {
+			std::cerr << "ERROR: Failed to allocate memory for std_dev_filter CPU buffers" << std::endl;
+			abort();
+		}
+		
+		memcpy(histogram_bins, getHistogramBinValues().data(), NUMBER_OF_BINS*sizeof(float));
+	} else {
+		// Metal initialized successfully
+		metal_output_ptr = metal_stddev_get_output(metal_context);
+		metal_histogram_ptr = metal_stddev_get_histogram(metal_context);
+		
+		memcpy(histogram_bins, getHistogramBinValues().data(), NUMBER_OF_BINS*sizeof(float));
+	}
+	
 #else
 	// CPU-only implementation: allocate ring buffer in system memory
 	printf("[std_dev_filter]: Using CPU implementation with OpenMP (threads: %d)\n", omp_get_max_threads());
@@ -98,6 +137,18 @@ std_dev_filter::~std_dev_filter()
     HANDLE_ERROR(cudaFree(histogram_out_device));
     HANDLE_ERROR(cudaFree(histogram_bins_device));
     HANDLE_ERROR(cudaStreamDestroy(std_dev_stream));
+#elif defined(__APPLE__) && defined(USE_METAL)
+    // Metal GPU cleanup (macOS only)
+    if(metal_context) {
+        metal_stddev_cleanup(metal_context);
+        metal_context = nullptr;
+    }
+    // Also clean up CPU fallback if it was allocated
+    if(pictures_cpu) {
+        free(pictures_cpu);
+        free(picture_out_cpu);
+        free(histogram_out_cpu);
+    }
 #else
     // CPU-only: free regular memory
     free(pictures_cpu);
@@ -158,6 +209,111 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
         HANDLE_ERROR(cudaPeekAtLastError());
         HANDLE_ERROR(cudaMemcpyAsync(frame->std_dev_data,picture_out_device,width*height*sizeof(float),cudaMemcpyDeviceToHost,std_dev_stream)); //Despite the name, these calls are synchronous w/ respect to the CPU
         HANDLE_ERROR(cudaMemcpyAsync(frame->std_dev_histogram,histogram_out_device,NUMBER_OF_BINS*sizeof(uint32_t),cudaMemcpyDeviceToHost,std_dev_stream));
+    }
+#elif defined(__APPLE__) && defined(USE_METAL)
+    // Metal GPU implementation (macOS only) with CPU fallback
+    
+    if(metal_context) {
+        // Use Metal GPU
+        // Step 1: Upload current frame to GPU ring buffer
+        metal_stddev_update_frame(metal_context, frame->image_data_ptr);
+        
+        // Step 2: Increment currentN
+        if(currentN < MAX_N) {
+            currentN++;
+        }
+        
+        // Check if we have enough frames for computation
+        unsigned int usableN = (currentN < N) ? currentN : N;
+        
+        if(usableN >= 2) {  // Need at least 2 frames for std dev
+            // Mark previous frame as ready
+            if(prevFrame != NULL) {
+                prevFrame->has_valid_std_dev = 2; // Ready to display
+            }
+            
+            frame->has_valid_std_dev = 1; // is processing
+            prevFrame = frame;
+            
+            // Step 3: Compute stddev on GPU
+            metal_stddev_compute(metal_context, usableN, true, histogram_bins);
+            
+            // Step 4: Copy results from shared memory (already mapped)
+            memcpy(frame->std_dev_data, metal_output_ptr, width * height * sizeof(float));
+            memcpy(frame->std_dev_histogram, metal_histogram_ptr, NUMBER_OF_BINS * sizeof(uint32_t));
+        }
+    } else {
+        // Fall back to CPU implementation
+        // Step 1: Copy current frame into ring buffer
+        uint16_t *buffer_ptr = pictures_cpu + (gpu_buffer_head * width * height);
+        memcpy(buffer_ptr, frame->image_data_ptr, width * height * sizeof(uint16_t));
+        
+        // Step 2: Increment buffer position and frame count
+        gpu_buffer_head = (gpu_buffer_head + 1) % GPU_FRAME_BUFFER_SIZE;
+        if(currentN < MAX_N) {
+            currentN++;
+        }
+        
+        // Check if we have enough frames for computation
+        unsigned int usableN = (currentN < N) ? currentN : N;
+        
+        if(usableN >= 2) {  // Need at least 2 frames for std dev
+            // Mark previous frame as ready
+            if(prevFrame != NULL) {
+                prevFrame->has_valid_std_dev = 2; // Ready to display
+            }
+            
+            frame->has_valid_std_dev = 1; // is processing
+            prevFrame = frame;
+            
+            // Step 3: Compute stddev on CPU using OpenMP
+            unsigned int start_idx = (gpu_buffer_head >= usableN) ? (gpu_buffer_head - usableN) : (GPU_FRAME_BUFFER_SIZE + gpu_buffer_head - usableN);
+            
+            // Clear histogram
+            memset(histogram_out_cpu, 0, NUMBER_OF_BINS * sizeof(uint32_t));
+            
+            // Compute for each pixel
+            #pragma omp parallel for collapse(2)
+            for(unsigned int y = 0; y < height; y++) {
+                for(unsigned int x = 0; x < width; x++) {
+                    unsigned int pixel_idx = y * width + x;
+                    
+                    // Calculate mean
+                    float sum = 0.0f;
+                    for(unsigned int i = 0; i < usableN; i++) {
+                        unsigned int frame_idx = (start_idx + i) % GPU_FRAME_BUFFER_SIZE;
+                        uint16_t value = pictures_cpu[frame_idx * width * height + pixel_idx];
+                        sum += value;
+                    }
+                    float mean = sum / usableN;
+                    
+                    // Calculate variance
+                    float variance_sum = 0.0f;
+                    for(unsigned int i = 0; i < usableN; i++) {
+                        unsigned int frame_idx = (start_idx + i) % GPU_FRAME_BUFFER_SIZE;
+                        uint16_t value = pictures_cpu[frame_idx * width * height + pixel_idx];
+                        float diff = value - mean;
+                        variance_sum += diff * diff;
+                    }
+                    
+                    float stddev = sqrtf(variance_sum / (usableN - 1));
+                    picture_out_cpu[pixel_idx] = stddev;
+                    
+                    // Update histogram (thread-safe atomic increment)
+                    for(int bin = 0; bin < NUMBER_OF_BINS; bin++) {
+                        if(stddev >= histogram_bins[bin] && (bin == NUMBER_OF_BINS-1 || stddev < histogram_bins[bin+1])) {
+                            #pragma omp atomic
+                            histogram_out_cpu[bin]++;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Copy results to frame
+            memcpy(frame->std_dev_data, picture_out_cpu, width * height * sizeof(float));
+            memcpy(frame->std_dev_histogram, histogram_out_cpu, NUMBER_OF_BINS * sizeof(uint32_t));
+        }
     }
 #else
     // CPU implementation using OpenMP for parallelization
@@ -248,10 +404,10 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
      */
     if(++gpu_buffer_head == GPU_FRAME_BUFFER_SIZE) //Increment and test for ring buffer overflow
         gpu_buffer_head = 0; // If overflow, than start overwriting the front
-#ifndef USE_CUDA
-    // For CPU: currentN already incremented before calculation (line 170)
+#if !defined(USE_CUDA) && !(defined(__APPLE__) && defined(USE_METAL))
+    // For CPU: currentN already incremented before calculation
 #else
-    // For CUDA: increment currentN here (after async processing starts)
+    // For CUDA/Metal: increment currentN here (after async processing starts)
     if(currentN < MAX_N) // If the frame buffer has not been fully populated
     {
         currentN++; //Increment how much history is available
@@ -267,6 +423,18 @@ uint16_t * std_dev_filter::getEntireRingBuffer() //For testing only
     uint16_t * out = new uint16_t[width*height*MAX_N];
     HANDLE_ERROR(cudaMemcpy(out,pictures_device,width*height*sizeof(uint16_t)*MAX_N,cudaMemcpyDeviceToHost));
     return out;
+#elif defined(__APPLE__) && defined(USE_METAL)
+    // Metal or CPU fallback
+    if(metal_context) {
+        // Metal doesn't expose the ring buffer directly
+        std::cerr << "[std_dev_filter]: getEntireRingBuffer not supported with Metal" << std::endl;
+        return nullptr;
+    } else {
+        // CPU fallback
+        uint16_t * out = new uint16_t[width*height*MAX_N];
+        memcpy(out, pictures_cpu, width*height*sizeof(uint16_t)*MAX_N);
+        return out;
+    }
 #else
     uint16_t * out = new uint16_t[width*height*MAX_N];
     memcpy(out, pictures_cpu, width*height*sizeof(uint16_t)*MAX_N);

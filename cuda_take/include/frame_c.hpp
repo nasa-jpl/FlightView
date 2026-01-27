@@ -6,12 +6,18 @@
  */
 #include <atomic>
 #include "constants.h"
+
+#ifdef USE_CUDA
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "cuda_utils.cuh"
+#define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
+#else
+#define HANDLE_ERROR(err) (err)
+#endif
+
 #ifndef FRAME_C_HPP_
 #define FRAME_C_HPP_
-#define HANDLE_ERROR(err) (HandleError( err, __FILE__, __LINE__ ))
 #define MAXCUDA(x,y) ((x>y)?x:y)
 
 #define USE_PINNED_MEMORY
@@ -51,9 +57,16 @@ struct frame_c{
         frame_c() {
             reset();
 #ifdef USE_PINNED_MEMORY
+#ifdef USE_CUDA
             HANDLE_ERROR(cudaMallocHost( (void **)&raw_data_ptr, MAX_SIZE*sizeof(uint16_t), cudaHostAllocPortable));
             HANDLE_ERROR(cudaMallocHost( (void **)&std_dev_data, MAX_SIZE*sizeof(float), cudaHostAllocPortable));
             HANDLE_ERROR(cudaMallocHost( (void **)&std_dev_histogram, NUMBER_OF_BINS*sizeof(uint32_t), cudaHostAllocPortable));
+#else
+            // CPU-only: use regular aligned memory allocation
+            raw_data_ptr = (uint16_t*)aligned_alloc(64, MAX_SIZE*sizeof(uint16_t));
+            std_dev_data = (float*)aligned_alloc(64, MAX_SIZE*sizeof(float));
+            std_dev_histogram = (uint32_t*)aligned_alloc(64, NUMBER_OF_BINS*sizeof(uint32_t));
+#endif
 #endif
         }
         void reset()
@@ -66,9 +79,16 @@ struct frame_c{
 	~frame_c()
 	{
 #ifdef USE_PINNED_MEMORY
+#ifdef USE_CUDA
 		HANDLE_ERROR(cudaFreeHost(raw_data_ptr));
 		HANDLE_ERROR(cudaFreeHost(std_dev_data));
 		HANDLE_ERROR(cudaFreeHost(std_dev_histogram));
+#else
+		// CPU-only: use regular free
+		free(raw_data_ptr);
+		free(std_dev_data);
+		free(std_dev_histogram);
+#endif
 #endif
 
 	}

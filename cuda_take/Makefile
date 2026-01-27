@@ -19,12 +19,17 @@ ifeq ($(UNAME_S),Darwin)
 	else
 		HOMEBREW_PREFIX = /usr/local
 	endif
+	# Use full path to pkg-config
+	PKG_CONFIG = $(HOMEBREW_PREFIX)/bin/pkg-config
 	# Default to no CUDA on macOS (can be overridden with USE_CUDA=1)
 	USE_CUDA ?= 0
+	# Metal GPU acceleration (macOS only, can be overridden with USE_METAL=0)
+	USE_METAL ?= 1
 else
 	OS = LINUX
 	# Default to CUDA on Linux (can be overridden with USE_CUDA=0)
 	USE_CUDA ?= 1
+	USE_METAL = 0
 endif
 ######################################
 
@@ -46,6 +51,8 @@ LIBOUT = libcuda_take.a
 #Here we specify what source files are needed for the program/library, and we create virtual paths so that we don't have to refer to the source directory all the time
 ifeq ($(USE_CUDA), 1)
 SOURCES = fft.cpp main.cpp dark_subtraction_filter.cu white_ref_filter.cu take_object.cpp std_dev_filter_device_code.cu std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp rtpcamera.cpp rtpnextgen.cpp osutils.cpp safestringset.cpp
+else ifeq ($(USE_METAL), 1)
+SOURCES = fft.cpp main.cpp dark_subtraction_filter.cpp white_ref_filter.cpp take_object.cpp std_dev_filter.cpp std_dev_filter_metal.mm chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp rtpcamera.cpp rtpnextgen.cpp osutils.cpp safestringset.cpp
 else
 SOURCES = fft.cpp main.cpp dark_subtraction_filter.cpp white_ref_filter.cpp take_object.cpp std_dev_filter.cpp chroma_translate_filter.cpp mean_filter.cpp xiocamera.cpp rtpcamera.cpp rtpnextgen.cpp osutils.cpp safestringset.cpp
 endif
@@ -55,6 +62,7 @@ endif
 vpath %.c $(SOURCEDIR)
 vpath %.cu $(SOURCEDIR)
 vpath %.cpp $(SOURCEDIR)
+vpath %.mm $(SOURCEDIR)
 
 #SOURCES = $(wildcard src/*.c)
 #SOURCES = $(wildcard src/*.cpp)
@@ -72,7 +80,8 @@ vpath %.cpp $(SOURCEDIR)
 #Here we specify the names of all the intermediate files (.o, object files, we will need for the final lib and executable)
 objects = $(patsubst %.c,obj/%.o,$(SOURCES)) 
 objects += $(patsubst %.cpp,obj/%.o,$(SOURCES)) 
-objects += $(patsubst %.cu,obj/%.o,$(SOURCES)) 
+objects += $(patsubst %.cu,obj/%.o,$(SOURCES))
+objects += $(patsubst %.mm,obj/%.o,$(SOURCES)) 
 
 
 OBJDIR = obj
@@ -107,7 +116,7 @@ CONLYFLAGS += $(CFLAGS)
 # CFLAGS    += `pkg-config --cflags --libs gstreamer-1.0`
 # GStreamer configuration (INCLUDES ONLY - libraries go in LFLAGS)
 ifeq ($(OS),MACOS)
-	CFLAGS += $(shell pkg-config --cflags gstreamer-1.0 glib-2.0 gobject-2.0)
+	CFLAGS += $(shell $(PKG_CONFIG) --cflags gstreamer-1.0 glib-2.0 gobject-2.0)
 	# GSL doesn't provide pkg-config on macOS, add manually
 	CFLAGS += -I$(HOMEBREW_PREFIX)/include
 else
@@ -122,6 +131,12 @@ ifeq ($(OS),MACOS)
 	CPPFLAGS += -g -O3 -std=c++11 -Xpreprocessor -fopenmp -Wall -Werror -Wno-error=cpp -Wno-unused-function -Wno-unused-variable -Wno-unused-result
 	CPPFLAGS += -fPIC
 	CPPFLAGS += -I$(HOMEBREW_PREFIX)/include -I$(HOMEBREW_PREFIX)/opt/libomp/include
+	# Metal GPU support (macOS only)
+	ifeq ($(USE_METAL), 1)
+		CPPFLAGS += -DUSE_METAL
+		OBJCPPFLAGS = $(CPPFLAGS)
+		METAL_FRAMEWORKS = -framework Metal -framework Foundation
+	endif
 else
 	# Linux
 	CPPFLAGS += -g -O3 -march=native -mtune=native -std=c++11 -fopenmp -Wall -Werror -Wno-error=cpp -Wno-unused-function -Wno-unused-variable -Wno-unused-result -Wno-mismatched-new-delete
@@ -164,7 +179,7 @@ ifeq ($(OS),MACOS)
 	# macOS linking
 	BOOST_MT_SUFFIX =
 	BOOST_SYSTEM_LIB =
-	GSTREAMER_LIBS = $(shell pkg-config --libs gstreamer-1.0 gstreamer-app-1.0 glib-2.0 gobject-2.0)
+	GSTREAMER_LIBS = $(shell $(PKG_CONFIG) --libs gstreamer-1.0 gstreamer-app-1.0 glib-2.0 gobject-2.0)
 	PLATFORM_LIBS = -L$(HOMEBREW_PREFIX)/lib -lm -lz -lpthread
 	OPENMP_LIB = -L$(HOMEBREW_PREFIX)/opt/libomp/lib -lomp
 	# macOS doesn't have -lrt or -ldl as separate libraries
@@ -185,6 +200,9 @@ ifeq ($(USE_CAMERALINK), 1)
 		LFLAGS = -L$(LINKDIR) -lpdv -lboost_thread$(BOOST_MT_SUFFIX) $(BOOST_SYSTEM_LIB) -lcuda -lcudart -lgsl -lgslcblas $(OPENMP_LIB) $(PLATFORM_LIBS) $(GSTREAMER_LIBS)
 	else
 		LFLAGS = -L$(LINKDIR) -lpdv -lboost_thread$(BOOST_MT_SUFFIX) $(BOOST_SYSTEM_LIB) -lgsl -lgslcblas $(OPENMP_LIB) $(PLATFORM_LIBS) $(GSTREAMER_LIBS)
+		ifeq ($(USE_METAL), 1)
+			LFLAGS += $(METAL_FRAMEWORKS)
+		endif
 	endif
 	AR_COMBINE_SCRIPT = combine_libs_script_cl.ar
 else
@@ -192,6 +210,9 @@ else
 		LFLAGS = -lboost_thread$(BOOST_MT_SUFFIX) $(BOOST_SYSTEM_LIB) -lcuda -lcudart -lgsl -lgslcblas $(OPENMP_LIB) $(PLATFORM_LIBS) $(GSTREAMER_LIBS)
 	else
 		LFLAGS = -lboost_thread$(BOOST_MT_SUFFIX) $(BOOST_SYSTEM_LIB) -lgsl -lgslcblas $(OPENMP_LIB) $(PLATFORM_LIBS) $(GSTREAMER_LIBS)
+		ifeq ($(USE_METAL), 1)
+			LFLAGS += $(METAL_FRAMEWORKS)
+		endif
 	endif
 	AR_COMBINE_SCRIPT = combine_libs_script.ar
 endif
@@ -246,5 +267,9 @@ $(OBJDIR)/%.o : %.cpp
 #What to do to build cu files -> o files
 $(OBJDIR)/%.o : %.cu 
 	$(NVCC) $(NVCCFLAGS) $(IDIR) -c -o $@ $<
+#What to do to build mm files (Objective-C++) -> o files (macOS Metal)
+$(OBJDIR)/%.o : %.mm
+	$(CCPP) $(OBJCPPFLAGS) $(IDIR) -c -o $@ $<
 clean:
 	rm -rf $(OBJDIR) $(EXE) $(LIBOUT) thin_$(LIBOUT)
+	rm -f *.metallib *.air

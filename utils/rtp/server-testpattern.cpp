@@ -8,10 +8,18 @@
 #include <chrono>
 #include <thread>
 
-#include <bits/stdc++.h> 
-#include <stdlib.h> 
+#if defined(__linux__)
+#include <bits/stdc++.h>
+#else
+// <bits/stdc++.h> is a non-standard GCC header not available on macOS
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <string>
+#include <cstdlib> 
+#include <cstring>
+#endif
 #include <unistd.h> 
-#include <string.h> 
 #include <sys/types.h> 
 #include <sys/socket.h> 
 #include <arpa/inet.h> 

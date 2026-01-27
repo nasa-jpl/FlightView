@@ -150,8 +150,8 @@ bool RTPCamera::initialize()
     // Therefore, I have converted them to strings:
     char widthStr[6] = {'\0'};
     char heightStr[6] = {'\0'};
-    sprintf(widthStr, "%d", options.rtpWidth);
-    sprintf(heightStr, "%d", options.rtpHeight);
+    snprintf(widthStr, sizeof(widthStr), "%d", options.rtpWidth);
+    snprintf(heightStr, sizeof(heightStr), "%d", options.rtpHeight);
     GstCaps *sourceCaps = NULL;
 
     if(rtprgb) {

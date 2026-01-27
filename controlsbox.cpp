@@ -178,6 +178,15 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     load_mask_from_file.setToolTip("Load a dark mask from a file, each pixel is a 32-bit float");
     pref_button.setText("Preferences");
     fps_label.setText("Warning: No Data Recieved");
+    // Calculate and set fixed size for FPS label to prevent UI squishing
+    // Format: "FPS @ backend: XXX.X" where XXX.X is the max expected FPS (e.g., 999.9)
+    QFontMetrics fpsMetrics(fps_label.font());
+    QString maxFpsText = "FPS @ backend: 999.9";
+    int fpsWidth = fpsMetrics.horizontalAdvance(maxFpsText) + 10; // Add padding
+    int fpsHeight = fpsMetrics.height() + 4;
+    fps_label.setFixedSize(fpsWidth, fpsHeight);
+    fps_label.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    
     server_ip_label.setText("Server IP: Not Connected!");
     server_port_label.setText("Port Number: Not Connected!");
 
@@ -231,6 +240,14 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         collections_layout->addWidget(&pausePlaybackChk, 2, 3, 1, 1);
         frameNumberLabel.setText("0");
         frameNumberLabel.setToolTip("Number of frames received");
+        // Calculate and set fixed size for frame number label to prevent UI squishing
+        // Format: "Frame: 99999" (5 digits max, wraps after 99999)
+        QFontMetrics frameMetrics(frameNumberLabel.font());
+        QString maxFrameText = "Frame: 99999";
+        int frameWidth = frameMetrics.horizontalAdvance(maxFrameText) + 10; // Add padding
+        int frameHeight = frameMetrics.height() + 4;
+        frameNumberLabel.setFixedSize(frameWidth, frameHeight);
+        frameNumberLabel.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         collections_layout->addWidget(&frameNumberLabel, 3, 3, 1, 1);
         if(options.xioCam) {
             collections_layout->addWidget(&showXioSetupBtn, 4, 3, 1, 1);
@@ -2147,13 +2164,17 @@ void ControlsBox::update_backend_delta()
     * \author Noah Levy
     */
     fps_float = fw->delta;
-    fps = QString::number(fps_float, 'f', 1).rightJustified(6, ' ');
-    fps_label.setText(QString("FPS @ backend:%1").arg(fps));
+    // Format FPS with 1 decimal place, consistent with the fixed-size format
+    fps = QString::number(fps_float, 'f', 1);
+    fps_label.setText(QString("FPS @ backend: %1").arg(fps));
 }
 void ControlsBox::setFrameNumber(int number)
 {
-    QString frameNumberStr = QString::number(number).rightJustified(6, ' ');
-    frameNumberLabel.setText(QString("Frame:%1").arg(frameNumberStr));
+    // Wrap frame number at 99999 to keep it at 5 digits
+    int displayNumber = number % 100000;
+    // Use 5-digit zero-padded format
+    QString frameNumberStr = QString("%1").arg(displayNumber, 5, 10, QChar('0'));
+    frameNumberLabel.setText(QString("Frame: %1").arg(frameNumberStr));
 }
 void ControlsBox::show_save_dialog()
 {

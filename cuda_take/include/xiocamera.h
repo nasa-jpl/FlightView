@@ -78,8 +78,8 @@ private:
     int headsize; // size of header for decomp and xio data files
     int xioHeadsize;
     std::vector<uint16_t> zero_vec;
-    volatile int dummycounttotal=0;
-    volatile int dummyrepeats=0;
+    volatile int dummycounttotal __attribute__((unused)) = 0;
+    volatile int dummyrepeats __attribute__((unused)) = 0;
 
     size_t image_no;
     std::vector<std::string> xio_files;
@@ -100,7 +100,7 @@ private:
     std::atomic_bool fileListVecLocked;
 
     //QFuture<void> readLoopFuture;
-    int tmoutPeriod;
+    int tmoutPeriod __attribute__((unused));
     unsigned int getFrameCounter = 0;
 
     void debugMessage(const char* msg);

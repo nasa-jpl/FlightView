@@ -1,6 +1,13 @@
 #include "take_object.hpp"
 #include "fft.hpp"
 
+// macOS pthread_setname_np compatibility
+#ifdef __APPLE__
+#define pthread_setname_np_compat(thread, name) pthread_setname_np(name)
+#else
+#define pthread_setname_np_compat(thread, name) pthread_setname_np(thread, name)
+#endif
+
 
 take_object::take_object(takeOptionsType options, int channel_num, int number_of_buffers,
                          int filter_refresh_rate, bool runStdDev)
@@ -146,6 +153,10 @@ void take_object::changeOptions(takeOptionsType optionsIn)
         {
             statusMessage(std::string("XIO directory: ") + *options.xioDirectory);
         }
+        if(options.stdDevNSet) {
+            this->std_dev_filter_N = options.stdDevN;
+            statusMessage(std::string("Standard deviation buffer size (N) set to: ") + std::to_string(options.stdDevN));
+        }
 
         if(options.rtpCam)
         {
@@ -220,12 +231,12 @@ void take_object::shmSetup()
 
     char trunmessage[128];
     if(ftruncate(shmFd, shmLen) == -1) {
-        sprintf(trunmessage, "Could not truncate shared memory segment to %zu bytes.", shmLen);
+        snprintf(trunmessage, sizeof(trunmessage), "Could not truncate shared memory segment to %zu bytes.", shmLen);
         errorMessage(trunmessage);
         shmValid = false;
         goto cleanup;
     } else {
-        sprintf(trunmessage, "Truncated shared memory segment to %zu bytes (Metadata: %zu, Buffer: %zu).", shmLen, metadataSize, bufferDataSize);
+        snprintf(trunmessage, sizeof(trunmessage), "Truncated shared memory segment to %zu bytes (Metadata: %zu, Buffer: %zu).", shmLen, metadataSize, bufferDataSize);
         statusMessage(trunmessage);
     }
 
@@ -283,11 +294,12 @@ void take_object::start()
     std::cout << "This version of cuda_take was compiled on " << __DATE__ << " at " << __TIME__ << " using gcc " << __GNUC__ << std::endl;
     std::cout << "The compilation was perfromed by " << UNAME << " @ " << HOST << std::endl;
 
-    pthread_setname_np(pthread_self(), "TAKE");
+    pthread_setname_np_compat(pthread_self(), "TAKE");
 
 #ifdef CAMERALINK
     this->pdv_p = NULL;
 #endif
+#ifdef USE_CUDA
     if(!options.noGPU) {
 
         size_t cudamem[10] = {0};
@@ -314,7 +326,12 @@ void take_object::start()
         printf("TAKE_OBJECT: Current device is: %d\n", cudaDevNumCheck);
         cudaGetDeviceProperties(&cdev, cudaDevNumCheck);
         printf("TAKE_OBJECT: CUDA device name: %s\n", cdev.name);
+    } else {
+        printf("TAKE_OBJECT: CUDA support compiled in but --noGPU specified, running CPU-only mode\n");
     }
+#else
+    printf("TAKE_OBJECT: Built without CUDA support, running CPU-only mode\n");
+#endif
 
     if(options.xioCam)
     {
@@ -431,7 +448,7 @@ void take_object::start()
         statusMessage("Creating an XIO camera thread inside take_object.");
         cam_thread = boost::thread(&take_object::fileImageCopyLoop, this);
         cam_thread_handler = cam_thread.native_handle();
-        pthread_setname_np(cam_thread_handler, "XIOCAM");
+        pthread_setname_np_compat(cam_thread_handler, "XIOCAM");
         statusMessage("Created thread.");
         while(!cam_thread_start_complete)
             usleep(100);
@@ -440,7 +457,7 @@ void take_object::start()
         statusMessage("Creating XIO File reading thread reading_thread.");
         reading_thread = boost::thread(&take_object::fileImageReadingLoop, this);
         reading_thread_handler = reading_thread.native_handle();
-        pthread_setname_np(reading_thread_handler, "READING");
+        pthread_setname_np_compat(reading_thread_handler, "READING");
         statusMessage("Done creating XIO File reading thread reading_thread.");
 
         char threadinfo[16];
@@ -475,7 +492,7 @@ void take_object::start()
         statusMessage("Creating boost thread for RTP NextGen camera streamLoop()");
         rtpAcquireThread = boost::thread(&take_object::rtpNGStreamLoop, this);
         rtpAcquireThreadHandler = rtpAcquireThread.native_handle();
-        pthread_setname_np(rtpAcquireThreadHandler, "RTPNG Stream");
+        pthread_setname_np_compat(rtpAcquireThreadHandler, "RTPNG Stream");
         statusMessage("Created RTP NextGen streamLoop() thread.");
 
         // At this point, the RTP camera is initialized and now it is running.
@@ -487,7 +504,7 @@ void take_object::start()
         statusMessage("Creating RTP NextGen consumer thread to copy data into take_object");
         rtpCopyThread = boost::thread(&take_object::rtpConsumeFrames, this);
         rtpCopyThreadHandler = rtpCopyThread.native_handle();
-        pthread_setname_np(rtpCopyThreadHandler, "RTPNG Consume");
+        pthread_setname_np_compat(rtpCopyThreadHandler, "RTPNG Consume");
         statusMessage("Created RTP NextGen consumer thread.");
 
     } else if (options.rtpCam) {
@@ -499,7 +516,7 @@ void take_object::start()
         statusMessage("Creating boost thread for camera streamLoop()");
         rtpAcquireThread = boost::thread(&take_object::rtpStreamLoop, this);
         rtpAcquireThreadHandler = rtpAcquireThread.native_handle();
-        pthread_setname_np(rtpAcquireThreadHandler, "RTP Stream");
+        pthread_setname_np_compat(rtpAcquireThreadHandler, "RTP Stream");
         statusMessage("Created RTP streamLoop() thread.");
         // At this point, the RTP camera is initialized and now it is running.
         // Data is being acquired if the stream source is emitting data,
@@ -509,7 +526,7 @@ void take_object::start()
         statusMessage("Creating RTP consumer thread to copy data into take_object");
         rtpCopyThread = boost::thread(&take_object::rtpConsumeFrames, this);
         rtpCopyThreadHandler = rtpCopyThread.native_handle();
-        pthread_setname_np(rtpCopyThreadHandler, "RTP Consume");
+        pthread_setname_np_compat(rtpCopyThreadHandler, "RTP Consume");
         statusMessage("Created RTP consumer thread.");
 
     } else {
@@ -532,7 +549,7 @@ void take_object::start()
         pdv_start_images(pdv_p,numbufs); //Before looping, emit requests to fill the pdv ring buffer
         cam_thread = boost::thread(&take_object::pdv_loop, this);
         cam_thread_handler = cam_thread.native_handle();
-        pthread_setname_np(cam_thread_handler, "PDVCAM");
+        pthread_setname_np_compat(cam_thread_handler, "PDVCAM");
         //usleep(350000);
         while(!cam_thread_start_complete) usleep(1); // Added by Michael Bernas 2016. Used to prevent thread error when starting without a camera
 #endif
@@ -579,7 +596,7 @@ void take_object::finishCapturingWR() {
     takingWR= false; // it's ok that the processing happens now. The point of this variable is to stop collecting additional WR frames.
     wrf_liveMean_thread = boost::thread( boost::bind(&white_ref_filter::finish_mask_collection, wrf));
     wrf_liveMean_thread_handler = wrf_liveMean_thread.native_handle();
-    pthread_setname_np(wrf_liveMean_thread_handler, "WR_MEAN");
+    pthread_setname_np_compat(wrf_liveMean_thread_handler, "WR_MEAN");
 }
 
 void take_object::loadWR_entry(std::string filename_s, fileFormat_t fmt) {
@@ -754,7 +771,7 @@ void take_object::finishCapturingDSFMask()
 #endif
     mask_liveMean_thread = boost::thread( boost::bind(&dark_subtraction_filter::finish_mask_collection, dsf));
     mask_liveMean_thread_handler = mask_liveMean_thread.native_handle();
-    pthread_setname_np(mask_liveMean_thread_handler, "MASKMEAN");
+    pthread_setname_np_compat(mask_liveMean_thread_handler, "MASKMEAN");
 
     //dsf->mask_mutex.unlock();
     *dsfMaskCollected = true;
@@ -1020,7 +1037,7 @@ void take_object::startSavingRaws(std::string raw_file_name, unsigned int frames
         char msgb[160] = {'\0'};
         // This happens when are "left over" frames from prior recordings which were not written out completely.
         // It should not happen, since the buffer is cleared after each recording, but we will check here anyway.
-        sprintf(msgb, "frameSaveBuffer was not empty, size: %ld.",
+        snprintf(msgb, sizeof(msgb), "frameSaveBuffer was not empty, size: %ld.",
                 frameSaveBuffer.size());
         warningMessage(msgb);
     }
@@ -1341,7 +1358,7 @@ void take_object::fileImageCopyLoop()
         std::chrono::steady_clock::time_point finaltp;
 
         xioCount = 0;
-        int ngFrameCount = 0;
+        int ngFrameCount __attribute__((unused)) = 0;
         bool wasPaused = false;
         bool wasTestPattern = false;
         bool wasDone = false;
@@ -1595,70 +1612,135 @@ void take_object::rtpConsumeFrames()
     }
 
 
+    // Performance profiling variables
+    std::chrono::steady_clock::time_point t_op;
+    long total_getframe_us = 0, total_memcpy1_us = 0, total_twoscomp_us = 0;
+    long total_invert_us = 0, total_shm_us = 0, total_stddev_us = 0;
+    long total_dark_us = 0, total_white_us = 0, total_mean_us = 0;
+    int profile_count = 0;
+
     while(rtpConsumerRun)
     {
         begintp = std::chrono::steady_clock::now();
         grabbing = true;
         curFrame = &frame_ring_buffer[count % CPU_FRAME_BUFFER_SIZE];
         curFrame->reset();
+        
+        // TIME: getFrameWait
+        t_op = std::chrono::steady_clock::now();
         temp_frame = Camera->getFrameWait(lastFrameNumber, &this->camStatus);
+        total_getframe_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
+        
+        // TIME: memcpy #1 (RTP buffer to frame buffer)
+        t_op = std::chrono::steady_clock::now();
         memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight*2);
+        total_memcpy1_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
 
-
+        // TIME: 2's complement
         if(twoscomp)
         {
+            t_op = std::chrono::steady_clock::now();
             apply_2sComp_translate_filter(curFrame->raw_data_ptr);
+            total_twoscomp_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
             //curFrame->image_data_ptr = curFrame->raw_data_ptr;
         }
 
-
         curFrame->image_data_ptr = curFrame->raw_data_ptr;
+        
+        // TIME: inversion
         if(inverted)
         { // record the data from high to low. Store the pixel buffer in INVERTED order from the camera link
+            t_op = std::chrono::steady_clock::now();
             for(uint i = 0; i < frHeight*frWidth; i++ )
                 curFrame->image_data_ptr[i] = invFactor - curFrame->image_data_ptr[i];
+            total_invert_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
         }
 
         if(setDarkStatusInFrame) {
             curFrame->image_data_ptr[obcStatusPixel] = darkStatusPixelVal;
         }
 
+        // TIME: shared memory copy
         shmBufferPosition = (shmBufferPositionPrior + 1)%shmFrameBufferSize;
         if(shmValid) {
+            t_op = std::chrono::steady_clock::now();
             uint16_t* shm_frame_ptr = SHM_GET_FRAME_POINTER(shm, shmBufferPosition);
             shm->writingFrameNum = shmBufferPosition;
             //memcpy(shm->frameBuffer[shmBufferPosition],curFrame->raw_data_ptr, frHeight*frWidth*2);
             memcpy(shm_frame_ptr, curFrame->raw_data_ptr, shm->frameWidth * shm->frameHeight * sizeof(uint16_t));
+            total_shm_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
         }
 
 
         // Calculating the filters for this frame
-        if(!options.noGPU) {
-            if( (!options.frameSkipSet) || ( options.frameSkipSet && (count%options.frameSkip ==0)) ) {
-                if(runStdDev)
-                {
-                    sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
-                }
-                // Update the available dark-subtracted frame
-                // and, if we are recording a mask, update the recorded mask
-                dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
-
-                // Update the available white-reference frame
-                // and, if we are recording a white reference, update the recorded mask
-                //wrf->update(in, out);
-                if(takingWR) {
-                    wrf->updateTaking(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
-                } else {
-                    wrf->updateFrame(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
-                }
-                mf->update(curFrame,count,meanStartCol,meanWidth,\
-                           meanStartRow,meanHeight,frWidth,useDSF, useWR,\
-                           whichFFT, lh_start, lh_end,\
-                           cent_start, cent_end,\
-                           rh_start, rh_end);
-
-                mf->start_mean();
+        if( (!options.frameSkipSet) || ( options.frameSkipSet && (count%options.frameSkip ==0)) ) {
+            // TIME: Standard deviation filter (GPU/CPU-based, only if available)
+            if(sdvf != nullptr && !options.noGPU && runStdDev) {
+                t_op = std::chrono::steady_clock::now();
+                sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
+                total_stddev_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
             }
+            
+            // TIME: Dark subtraction, white reference, and mean filters (always CPU-based)
+            // Update the available dark-subtracted frame
+            // and, if we are recording a mask, update the recorded mask
+            t_op = std::chrono::steady_clock::now();
+            dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
+            total_dark_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
+
+            // TIME: Update the available white-reference frame
+            // and, if we are recording a white reference, update the recorded mask
+            //wrf->update(in, out);
+            t_op = std::chrono::steady_clock::now();
+            if(takingWR) {
+                wrf->updateTaking(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
+            } else {
+                wrf->updateFrame(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
+            }
+            total_white_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
+            
+            // TIME: Mean filter
+            t_op = std::chrono::steady_clock::now();
+            mf->update(curFrame,count,meanStartCol,meanWidth,\
+                       meanStartRow,meanHeight,frWidth,useDSF, useWR,\
+                       whichFFT, lh_start, lh_end,\
+                       cent_start, cent_end,\
+                       rh_start, rh_end);
+
+            mf->start_mean();
+            total_mean_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
+            
+            profile_count++;
+        }
+        
+        // Print profiling report every 400 processed frames (and reset)
+        if(options.showStats && profile_count > 0 && profile_count % 400 == 0) {
+            LOG << "=== Frame Processing Performance (avg over last " << profile_count << " frames) ===";
+            LOG << "  getFrameWait:  " << (total_getframe_us / profile_count) << " µs";
+            LOG << "  memcpy (RTP):  " << (total_memcpy1_us / profile_count) << " µs";
+            if(twoscomp) LOG << "  2s complement: " << (total_twoscomp_us / profile_count) << " µs";
+            if(inverted) LOG << "  inversion:     " << (total_invert_us / profile_count) << " µs";
+            if(shmValid) LOG << "  shm copy:      " << (total_shm_us / profile_count) << " µs";
+            if(sdvf != nullptr && !options.noGPU && runStdDev) 
+                LOG << "  stddev filter: " << (total_stddev_us / profile_count) << " µs";
+            LOG << "  dark subtract: " << (total_dark_us / profile_count) << " µs";
+            LOG << "  white ref:     " << (total_white_us / profile_count) << " µs";
+            LOG << "  mean filter:   " << (total_mean_us / profile_count) << " µs";
+            long total_avg = (total_getframe_us + total_memcpy1_us + total_twoscomp_us + total_invert_us + 
+                             total_shm_us + total_stddev_us + total_dark_us + total_white_us + total_mean_us) / profile_count;
+            LOG << "  TOTAL:         " << total_avg << " µs (" << (total_avg/1000.0) << " ms)";
+            
+            // Reset counters for next 400 frames
+            total_getframe_us = 0;
+            total_memcpy1_us = 0;
+            total_twoscomp_us = 0;
+            total_invert_us = 0;
+            total_shm_us = 0;
+            total_stddev_us = 0;
+            total_dark_us = 0;
+            total_white_us = 0;
+            total_mean_us = 0;
+            profile_count = 0;
         }
 
         if((save_framenum.load(std::memory_order_seq_cst) > 0) || continuousRecording.load(std::memory_order_seq_cst))
@@ -1809,26 +1891,25 @@ void take_object::pdv_loop() //Producer Thread (pdv_thread)
         }
 
         // Calculating the filters for this frame
-        if(!options.noGPU) {
-
-            if(runStdDev)
-            {
-                sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
-            }
-            dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
-            if(takingWR) {
-                wrf->updateTaking(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
-            } else {
-                wrf->updateFrame(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
-            }
-            mf->update(curFrame,count,meanStartCol,meanWidth,\
-                       meanStartRow,meanHeight,frWidth,useDSF, useWR,\
-                       whichFFT, lh_start, lh_end,\
-                       cent_start, cent_end,\
-                       rh_start, rh_end);
-
-            mf->start_mean();
+        // Standard deviation filter (GPU/CPU-based, only if available)
+        if(sdvf != nullptr && !options.noGPU && runStdDev) {
+            sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
         }
+        
+        // Dark subtraction, white reference, and mean filters (always CPU-based)
+        dsf->update(curFrame->raw_data_ptr,curFrame->dark_subtracted_data);
+        if(takingWR) {
+            wrf->updateTaking(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
+        } else {
+            wrf->updateFrame(curFrame->dark_subtracted_data, curFrame->white_referenced_data);
+        }
+        mf->update(curFrame,count,meanStartCol,meanWidth,\
+                   meanStartRow,meanHeight,frWidth,useDSF, useWR,\
+                   whichFFT, lh_start, lh_end,\
+                   cent_start, cent_end,\
+                   rh_start, rh_end);
+
+        mf->start_mean();
 
         if((save_framenum > 0) || continuousRecording.load(std::memory_order_seq_cst))
         {
@@ -2009,7 +2090,7 @@ void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, 
             // If we are slower, then we can get in a situation where we fall behind
             // This would be indicated by the overwrite count being non-zero.
             float * data = new float[frWidth*dataHeight];
-            unsigned int bufferAttemptCounter = 0; // for debugging
+            unsigned int bufferAttemptCounter __attribute__((unused)) = 0; // for debugging
 //            sprintf(messageFrames, "Top of save while loop: Frames left to save: %ld, buffered frames: %ld, frames to average: %u",
 //                    save_framenum.load(), frameSaveBuffer.size(), num_avgs);
 //            statusMessage(messageFrames);
@@ -2020,8 +2101,8 @@ void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, 
                 // The frames left to be captured, combined with the size of the frames in the buffer,
                 // are not enough to write a num_avgs average frame.
 
-                sprintf(messageFrames, "Situation: Frames left to save: %ld, buffered frames: %ld, frames to average: %u",
-                        save_framenum.load(), frameSaveBuffer.size(), num_avgs);
+                snprintf(messageFrames, sizeof(messageFrames), "Situation: Frames left to save: %u, buffered frames: %zu, frames to average: %u",
+                        (unsigned int)save_framenum.load(), frameSaveBuffer.size(), num_avgs);
                 statusMessage("Could not average last set of frames. Total collection length should be an integer multiple of the averaging window size.");
                 statusMessage(messageFrames);
                 break; // break out of while loop, do not hit the for loop below.
@@ -2083,13 +2164,13 @@ void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, 
     // Almost done, let's take care of anything left in the buffer.
     statusMessage("Finished primary saving loop.");
     char message[128];
-    sprintf(message, "Size of buffer after real-time saving: %ld", frameSaveBuffer.size());
+    snprintf(message, sizeof(message), "Size of buffer after real-time saving: %ld", frameSaveBuffer.size());
     statusMessage(message); memset(message, 0, sizeof(message));
-    sprintf(message, "Number of overwrite conditions: %d", frameSaveBuffer.getOverrideCount());
+    snprintf(message, sizeof(message), "Number of overwrite conditions: %d", frameSaveBuffer.getOverrideCount());
     statusMessage(message); memset(message, 0, sizeof(message));
-    sprintf(message, "Number of empty read attempts: %d", frameSaveBuffer.getEmptyRequestCount());
+    snprintf(message, sizeof(message), "Number of empty read attempts: %d", frameSaveBuffer.getEmptyRequestCount());
     statusMessage(message); memset(message, 0, sizeof(message));
-    sprintf(message, "Number of waits: %d", waitCount);
+    snprintf(message, sizeof(message), "Number of waits: %d", waitCount);
     statusMessage(message); memset(message, 0, sizeof(message));
     int finishingCounter = 0;
     int emptyFinishingCounter = 0;
@@ -2112,13 +2193,13 @@ void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, 
             finishingCounter++;
             if(finishingCounter > 1000) {
                 // Now we have a problem. We will dump some debug out and break.
-                sprintf(message, "Write Position: %ld", frameSaveBuffer.getWritePos());
+                snprintf(message, sizeof(message), "Write Position: %ld", frameSaveBuffer.getWritePos());
                 statusMessage(message); memset(message, 0, sizeof(message));
-                sprintf(message, "Read Position: %ld", frameSaveBuffer.getReadPos());
+                snprintf(message, sizeof(message), "Read Position: %ld", frameSaveBuffer.getReadPos());
                 statusMessage(message); memset(message, 0, sizeof(message));
-                sprintf(message, "Size: %ld", frameSaveBuffer.size());
+                snprintf(message, sizeof(message), "Size: %ld", frameSaveBuffer.size());
                 statusMessage(message); memset(message, 0, sizeof(message));
-                sprintf(message, "emptyFinishingCounter: %d", emptyFinishingCounter);
+                snprintf(message, sizeof(message), "emptyFinishingCounter: %d", emptyFinishingCounter);
                 statusMessage(message); memset(message, 0, sizeof(message));
                 break;
             }
@@ -2186,7 +2267,7 @@ void take_object::savingLoop(std::string filename_in, unsigned int num_avgs_in, 
     hdr_target << hdr_text;
     hdr_target.close();
     save_count.store(0, std::memory_order_seq_cst);
-    sprintf(message, "Saving Complete. Saved %d frames.", sv_count);
+    snprintf(message, sizeof(message), "Saving Complete. Saved %d frames.", sv_count);
     statusMessage(message); memset(message, 0, sizeof(message));
     savingMutex.unlock();
     savingData = false;

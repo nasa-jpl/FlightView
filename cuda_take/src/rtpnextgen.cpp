@@ -219,6 +219,20 @@ bool rtpnextgen::initialize() {
         rtp.m_siHost.sin_addr.s_addr = htonl(INADDR_ANY);
     }
 
+    // Optimize socket buffer for high-throughput reception (Mac and Linux compatible)
+    // For 220fps @ ~840KB/frame, we need substantial buffering to avoid drops
+    int recv_buffer_size = 16 * 1024 * 1024; // 16MB receive buffer
+    if(setsockopt(rtp.m_nHostSocket, SOL_SOCKET, SO_RCVBUF, &recv_buffer_size, sizeof(recv_buffer_size)) < 0) {
+        LOG << "WARNING: Failed to set socket receive buffer size to " << recv_buffer_size << " bytes. May impact performance at high data rates.";
+    } else {
+        // Verify what size was actually set (kernel may adjust)
+        int actual_size = 0;
+        socklen_t optlen = sizeof(actual_size);
+        if(getsockopt(rtp.m_nHostSocket, SOL_SOCKET, SO_RCVBUF, &actual_size, &optlen) == 0) {
+            LOG << "Socket receive buffer set to " << actual_size << " bytes (requested: " << recv_buffer_size << ").";
+        }
+    }
+
     int nBinding = bind( rtp.m_nHostSocket, (const sockaddr*)&rtp.m_siHost, sizeof(rtp.m_siHost) );
     if( nBinding == -1 )
     {
@@ -563,21 +577,76 @@ bool rtpnextgen::buildFrameFromPackets(int pos) {
     // std::chrono::steady_clock::time_point endtp;
     volatile size_t frameBytesMoved = 0;
     volatile int chunk = 0;
-    int headerOffsetBytes = 12;
+    const int headerOffsetBytes = 12;
     volatile int startOffset = 0;
     // starttp = std::chrono::steady_clock::now();
 
-    for(; packetSizeBuffer[pos][chunk] !=0; chunk++) {
-        if(packetSizeBuffer[pos][chunk] > maxPacketSize) {
-            LOG << "ERROR, packet size recorded is too large. Corruption likely. packetSizeBuffer[" << pos << "][" << chunk << "]: " << packetSizeBuffer[pos][chunk];
-            return false;
-        } else {
-            memcpy(((uint8_t *)guaranteedBufferFrames[constructedFramePosition])+frameBytesMoved,
-                   largePacketBuffer[pos]+startOffset+headerOffsetBytes,
-                   packetSizeBuffer[pos][chunk]-headerOffsetBytes);
+    // Optimization: Pre-declare destination and source pointers outside loop
+    uint8_t* __restrict__ destFrame = (uint8_t*)guaranteedBufferFrames[constructedFramePosition];
+    uint8_t* __restrict__ srcBuffer = largePacketBuffer[pos];
+
+    // Optimization: For very small packet counts, unroll for better performance
+    // This handles the case where we have 10-20 large packets
+    int packetCount = 0;
+    while(packetSizeBuffer[pos][packetCount] != 0 && packetCount < maxPacketsPerFrame) {
+        packetCount++;
+    }
+
+    // FAST PATH: Check if all packets are uniform size (common case for fixed MTU)
+    // This allows for highly optimized bulk copying
+    bool uniformPacketSize = true;
+    const size_t firstPacketSize = packetSizeBuffer[pos][0];
+    for(int i = 1; i < packetCount - 1; i++) {
+        if(packetSizeBuffer[pos][i] != firstPacketSize) {
+            uniformPacketSize = false;
+            break;
         }
-        startOffset += packetSizeBuffer[pos][chunk];
-        frameBytesMoved += packetSizeBuffer[pos][chunk]-headerOffsetBytes;
+    }
+
+    if(uniformPacketSize && packetCount > 5) {
+        // Uniform packet size - use optimized bulk copy with fixed stride
+        const size_t payloadSize = firstPacketSize - headerOffsetBytes;
+        const size_t stride = firstPacketSize;
+        
+        // Copy all uniform packets (all except potentially the last one)
+        for(chunk = 0; chunk < packetCount - 1; chunk++) {
+            memcpy(destFrame + frameBytesMoved,
+                   srcBuffer + startOffset + headerOffsetBytes,
+                   payloadSize);
+            startOffset += stride;
+            frameBytesMoved += payloadSize;
+        }
+        
+        // Handle last packet separately (may be different size)
+        const size_t lastPacketSize = packetSizeBuffer[pos][packetCount - 1];
+        if(__builtin_expect(lastPacketSize > maxPacketSize, 0)) {
+            LOG << "ERROR, packet size recorded is too large. Corruption likely. packetSizeBuffer[" << pos << "][" << packetCount-1 << "]: " << lastPacketSize;
+            return false;
+        }
+        const size_t lastPayloadSize = lastPacketSize - headerOffsetBytes;
+        memcpy(destFrame + frameBytesMoved,
+               srcBuffer + startOffset + headerOffsetBytes,
+               lastPayloadSize);
+    } else {
+        // Variable packet sizes - use standard loop with optimized pointers
+        for(chunk = 0; chunk < packetCount; chunk++) {
+            const size_t packetSize = packetSizeBuffer[pos][chunk];
+            
+            if(__builtin_expect(packetSize > maxPacketSize, 0)) {
+                LOG << "ERROR, packet size recorded is too large. Corruption likely. packetSizeBuffer[" << pos << "][" << chunk << "]: " << packetSize;
+                return false;
+            }
+            
+            const size_t payloadSize = packetSize - headerOffsetBytes;
+            
+            // Use memcpy with pointers already cached
+            memcpy(destFrame + frameBytesMoved,
+                   srcBuffer + startOffset + headerOffsetBytes,
+                   payloadSize);
+            
+            startOffset += packetSize;
+            frameBytesMoved += payloadSize;
+        }
     }
 
     // Capture the time spent copying for benchmark purposes:

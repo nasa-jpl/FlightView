@@ -121,9 +121,11 @@ class take_object {
 
     bool setDarkStatusInFrame = false;
 	
+#ifdef USE_CUDA
     cudaDeviceProp cdev;
+#endif
     int cudaDevNumber = -1;
-    size_t cudaTotalGlobalMem = -1;
+    size_t cudaTotalGlobalMem __attribute__((unused)) = -1;
 
     bool closing = false;
     bool grabbing = true;
@@ -144,11 +146,11 @@ class take_object {
 
     // Used to read in a dark mask file:
     boost::thread mask_thread;
-    boost::thread::native_handle_type mask_thread_handler;
+    boost::thread::native_handle_type mask_thread_handler __attribute__((unused));
 
     // Used to read in a White Reference file:
     boost::thread wr_thread;
-    boost::thread::native_handle_type wr_thread_handler;
+    boost::thread::native_handle_type wr_thread_handler __attribute__((unused));
 
     // Used to finish the mean collection:
     boost::thread mask_liveMean_thread;
@@ -162,7 +164,7 @@ class take_object {
     bool cam_thread_start_complete=false; // added by Michael Bernas 2016
 
 	unsigned int size;
-    int lastfc;
+    int lastfc __attribute__((unused));
 
     //frame dimensions
     frame_c* curFrame;
@@ -183,8 +185,8 @@ class take_object {
     boost::thread saving_thread; // this thread handles the frame saving, as saving frames should not cause data collection to suspend
     //unsigned int save_count;
     bool do_raw_save;
-    bool saveFrameAvailable;
-    uint16_t * raw_save_ptr;
+    bool saveFrameAvailable __attribute__((unused));
+    uint16_t * raw_save_ptr __attribute__((unused));
 
     basicGPS_t *basicGPSData = NULL;
     bool haveGPSDataPointer = false;

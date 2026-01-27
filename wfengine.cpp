@@ -1,5 +1,12 @@
 #include "wfengine.h"
 
+// macOS pthread_setname_np compatibility
+#ifdef __APPLE__
+#define pthread_setname_np_compat(thread, name) pthread_setname_np(name)
+#else
+#define pthread_setname_np_compat(thread, name) pthread_setname_np(thread, name)
+#endif
+
 // This is the RGB waterfall widget used in the flight screen.
 // The "waterfall" tab is handled by a special instance of the Frameview Widget.
 
@@ -582,7 +589,7 @@ void wfengine::processLineToRGB_MP(rgbLine* line)
 #pragma omp parallel for num_threads(4)
         for(int p=0; p < spatialSwath; p++)
         {
-            pthread_setname_np(pthread_self(), "GUI_WF");            
+            pthread_setname_np_compat(pthread_self(), "GUI_WF");            
             gr[p] =   (unsigned char)MAX8(redLevel *   scaleDataPoint(r[p]));
             gg[p] = (unsigned char)MAX8(greenLevel * scaleDataPoint(g[p]));
             gb[p] =  (unsigned char)MAX8(blueLevel *  scaleDataPoint(b[p]));
@@ -591,7 +598,7 @@ void wfengine::processLineToRGB_MP(rgbLine* line)
 #pragma omp parallel for num_threads(4)
         for(int p=0; p < spatialSwath; p++)
         {
-            pthread_setname_np(pthread_self(), "GUI_WF_G");
+            pthread_setname_np_compat(pthread_self(), "GUI_WF_G");
             gr[p] = (unsigned char)MAX8(redLevel * pow(scaleDataPoint(r[p]), gammaLevel));
             gg[p] = (unsigned char)MAX8(greenLevel * pow(scaleDataPoint(g[p]), gammaLevel));
             gb[p] = (unsigned char)MAX8(blueLevel * pow(scaleDataPoint(b[p]), gammaLevel));

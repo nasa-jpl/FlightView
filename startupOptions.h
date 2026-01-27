@@ -77,7 +77,11 @@ struct startupOptionsType
     bool frameSkipSet = false;
     unsigned int frameSkip = 0;
 
+    bool stdDevNSet = false;
+    int stdDevN = 400; // default buffer size
+
     bool showMore = false;
+    bool showStats = false; // show timing statistics
 };
 
 

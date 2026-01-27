@@ -38,7 +38,11 @@ void dark_subtraction_filter::finish_mask_collection()
     }
     if(extMaskReady)
         *extMaskReady = false;
+#ifdef __APPLE__
+    pthread_setname_np("MASKMEAN");
+#else
     pthread_setname_np(pthread_self(), "MASKMEAN");
+#endif
 
     mean_inProgress = true;
 	for(unsigned int i = 0; i < width*height; i++)

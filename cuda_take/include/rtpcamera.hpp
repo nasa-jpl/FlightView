@@ -45,7 +45,7 @@ using std::cout;
 using std::endl;
 
 // This struct is shared among many of the static functions.
-typedef struct
+typedef struct ProgramData
 {
     GMainLoop *loop;
     GstElement *sourcePipe;

@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps \n"
                                "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 \n"
                                "--gpsport 5661 \n"
-                               "--no-stddev --xiocam --rtpcam \n"
+                               "--no-stddev --stddev-n 100 --xiocam --rtpcam \n"
                                "--rtpnextgen \n"
                                "--rtpheight 480 \n"
                                "--rtpwidth 1280 \n"
@@ -101,6 +101,7 @@ int main(int argc, char *argv[])
                                "--zmqlogginghost 1.2.3.4\n"
                                "--zmqloggingport 54321\n"
                                "--frameskip n\n"
+                               "--stats (show frame processing timing statistics)\n"
                                )\
             .arg(cmdName);
     QString currentArg;
@@ -321,6 +322,10 @@ int main(int argc, char *argv[])
                 std::cout << helptext.toStdString() << std::endl;
                 exit(-1);
             }
+        }
+
+        if(currentArg == "--stats") {
+            startupOptions.showStats = true;
         }
 
         if(currentArg == "--rtpinterface")
@@ -552,6 +557,19 @@ int main(int argc, char *argv[])
                 || (currentArg == "--nostdev") || (currentArg == "--nostddev") )
         {
             startupOptions.runStdDevCalculation = false;
+        }
+
+        if( (currentArg == "--stddev-n") || (currentArg == "--stddevn") )
+        {
+            if(argc > c)
+            {
+                startupOptions.stdDevN = atoi(argv[c+1]);
+                startupOptions.stdDevNSet = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
         }
 
         if( (currentArg == "--shm")) {

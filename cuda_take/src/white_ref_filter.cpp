@@ -38,7 +38,11 @@ void white_ref_filter::finish_mask_collection()
     }
     if(extMaskReady)
         *extMaskReady = false;
+#ifdef __APPLE__
+    pthread_setname_np("WR_MEAN");
+#else
     pthread_setname_np(pthread_self(), "WR_MEAN");
+#endif
 
     if(!dsf->maskReady()) {
         std::cerr << "Warning, white reference average cannot be completed without a dark mask." << std::endl;
@@ -204,7 +208,7 @@ void white_ref_filter::update_wr(float* pic_in, float* pic_out)
      * \param pic_in float data that contains dark subtracted data
      */
     // testPatternMe(pic_in);
-    int zeroCounter = 0;
+    int zeroCounter __attribute__((unused)) = 0;
     float minValue = 2.0;
     int scalingValue = 1000;
     if(mask)

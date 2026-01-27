@@ -171,6 +171,11 @@ void frameWorker::convertOptions()
     takeOptions.frameSkipSet = options.frameSkipSet;
     takeOptions.frameSkip = options.frameSkip;
 
+    takeOptions.stdDevNSet = options.stdDevNSet;
+    takeOptions.stdDevN = options.stdDevN;
+    
+    takeOptions.showStats = options.showStats;
+
     if(takeOptions.rtpCam)
     {
         if(takeOptions.rtpInterface != NULL)

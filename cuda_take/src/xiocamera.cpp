@@ -371,7 +371,7 @@ void XIOCamera::readFile()
 void XIOCamera::readLoop()
 {
     LOG << ": Entering readLoop()";
-    int waits = 1;
+    int waits __attribute__((unused)) = 1;
     bool sizeSmall = false;
 
     do {
