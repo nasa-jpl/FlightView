@@ -44,9 +44,10 @@
 // This number has historically been 65535
 #define maxPacketSize (65535)
 
-// The maxPacketsPerFrame was 1024 in prior versions.
-// Increasing this number really just means we use more RAM
-#define maxPacketsPerFrame (3073)
+// The maxPacketsPerFrame was 1024 in prior versions, then 3073.
+// Increasing this number really just means we use more RAM.
+// Set to 3100 to handle 3078 chunks per frame with safety margin.
+#define maxPacketsPerFrame (3100)
 
 using namespace std::chrono;
 

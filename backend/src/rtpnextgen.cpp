@@ -414,6 +414,21 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
     // The number of non-zero members at each primary position's sub entries
     // tells how many chunks per frame.
     // The number stored in each tells how large each chunk is.
+    
+    // Bounds check to prevent buffer overflow
+    if(psbPos >= maxPacketsPerFrame) {
+        LOG << "ERROR: Received more packets than maxPacketsPerFrame (" << maxPacketsPerFrame 
+            << "). psbPos=" << psbPos << ". Discarding packet and forcing end-of-frame.";
+        // Skip processing this packet and force frame completion
+        lpbFramePos = (lpbFramePos+1)%networkPacketBufferFrames;
+        psbFramePos = (psbFramePos+1)%networkPacketBufferFrames;
+        psbPos = 0;
+        lpbPos = 0;
+        rtp.m_uRTPChunkCnt = 0;
+        rtp.m_uOutputBufferUsed = 0;
+        return;
+    }
+    
     packetSizeBuffer[psbFramePos][psbPos] = uRxSize;
 
     uint8_t* pData = nullptr;
@@ -531,7 +546,9 @@ void rtpnextgen::RTPPump(SRTPData& rtp ) {
         rtp.m_uRTPChunkCnt = 0;
         rtp.m_uOutputBufferUsed = 0;
         // Mark the next spot as zero:
-        packetSizeBuffer[psbFramePos][psbPos] = 0; // psbPos has been ++ already.
+        if(psbPos < maxPacketsPerFrame) {
+            packetSizeBuffer[psbFramePos][psbPos] = 0; // psbPos has been ++ already.
+        }
         // Advance to next slot of large packet buffer, and reset sub index
         lpbFramePos = (lpbFramePos+1)%networkPacketBufferFrames;
         psbFramePos = (psbFramePos+1)%networkPacketBufferFrames;
