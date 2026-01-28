@@ -31,6 +31,10 @@ else
 	USE_CUDA ?= 1
 	USE_METAL = 0
 endif
+
+# Debug: Print USE_CUDA value
+$(info Building with USE_CUDA=$(USE_CUDA))
+
 ######################################
 
 
@@ -107,6 +111,13 @@ endif
 #SECOND NOTE: ONLY BUILD WITH O1! Somehow, someway, O2 optimizes out things that nvcc needs and O0 has linker redefinition errors. #JankCity <- This has been fixed, but still a good idea
 CFLAGS     = -g -O3 -D HOST=\"`hostname`\" -D UNAME=\"`whoami`\" #This is added to the compilation of every file, enables gdb debugging symbols (-g) and limited optimization (-O1) 
 # and defines some global constants that interact with the operating 
+
+# Add USE_CUDA preprocessor definition when CUDA is enabled
+ifeq ($(USE_CUDA), 1)
+CFLAGS     += -DUSE_CUDA
+$(info Adding -DUSE_CUDA to CFLAGS)
+endif
+
 ifeq ($(HARDWARE),OPALKELLY)
 CFLAGS	   += -I$(okFP_SDK)
 endif
@@ -121,11 +132,6 @@ ifeq ($(OS),MACOS)
 	CFLAGS += -I$(HOMEBREW_PREFIX)/include
 else
 	CFLAGS += -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
-endif
-
-# Add USE_CUDA preprocessor definition when CUDA is enabled
-ifeq ($(USE_CUDA), 1)
-	CFLAGS += -DUSE_CUDA
 endif
 
 #CFLAGS += -Xcompiler="-pthread"
