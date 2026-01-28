@@ -1671,15 +1671,17 @@ void acquire::rtpConsumeFrames()
             total_shm_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
         }
 
+        // TIME: Standard deviation filter (GPU/CPU-based, only if available)
+        // Always upload frames to GPU to keep pipeline active, but skip computation when frameskipping
+        if(sdvf != nullptr && !options.noGPU && runStdDev) {
+            t_op = std::chrono::steady_clock::now();
+            bool skip_stddev_compute = options.frameSkipSet && (count % options.frameSkip != 0);
+            sdvf->update_GPU_buffer(curFrame, std_dev_filter_N, skip_stddev_compute);
+            total_stddev_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
+        }
 
-        // Calculating the filters for this frame
+        // Calculating the other filters for this frame
         if( (!options.frameSkipSet) || ( options.frameSkipSet && (count%options.frameSkip ==0)) ) {
-            // TIME: Standard deviation filter (GPU/CPU-based, only if available)
-            if(sdvf != nullptr && !options.noGPU && runStdDev) {
-                t_op = std::chrono::steady_clock::now();
-                sdvf->update_GPU_buffer(curFrame,std_dev_filter_N);
-                total_stddev_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
-            }
             
             // TIME: Dark subtraction, white reference, and mean filters (always CPU-based)
             // Update the available dark-subtracted frame
@@ -1785,8 +1787,8 @@ void acquire::rtpConsumeFrames()
         grabbing = false;
     }
     statusMessage("RTP Consumer Loop is done providing frames");
-//    if(mf)
-//        delete mf;
+    if(mf)
+        delete mf;
 }
 
 #ifdef CAMERALINK

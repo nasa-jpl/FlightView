@@ -139,7 +139,7 @@ CPPFLAGS = $(CFLAGS)
 
 ifeq ($(OS),MACOS)
 	# macOS: use -Xpreprocessor for OpenMP with clang
-	CPPFLAGS += -g -O3 -std=c++11 -Xpreprocessor -fopenmp -Wall -Werror -Wno-error=cpp -Wno-unused-function -Wno-unused-variable -Wno-unused-result
+	CPPFLAGS += -g -O3 -std=c++11 -Xpreprocessor -fopenmp -Wall -Werror -Wno-error=cpp -Wno-unused-function -Wno-unused-variable -Wno-unused-result -Wno-unused-private-field
 	CPPFLAGS += -fPIC
 	CPPFLAGS += -I$(HOMEBREW_PREFIX)/include -I$(HOMEBREW_PREFIX)/opt/libomp/include
 	# Metal GPU support (macOS only)

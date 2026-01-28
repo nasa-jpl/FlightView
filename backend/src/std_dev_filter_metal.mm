@@ -22,6 +22,7 @@ struct MetalStdDevContext {
     id<MTLBuffer> outputBuffer;        // Stddev output (shared with CPU)
     id<MTLBuffer> histogramBuffer;     // Histogram output (shared with CPU)
     id<MTLBuffer> histogramBinsBuffer; // Histogram bins (GPU)
+    id<MTLBuffer> stagingBuffer;       // Reusable staging buffer for frame uploads
     
     // Thread configuration
     MTLSize threadsPerGrid;
@@ -139,7 +140,12 @@ void* metal_stddev_init(int width, int height) {
         ctx->histogramBinsBuffer = [ctx->device newBufferWithLength:NUMBER_OF_BINS * sizeof(float)
                                                             options:MTLResourceStorageModeShared];
         
-        if (!ctx->outputBuffer || !ctx->histogramBuffer || !ctx->histogramBinsBuffer) {
+        // Allocate persistent staging buffer for frame uploads (CRITICAL for preventing memory leak)
+        size_t frameSize = width * height * sizeof(uint16_t);
+        ctx->stagingBuffer = [ctx->device newBufferWithLength:frameSize
+                                                      options:MTLResourceStorageModeShared];
+        
+        if (!ctx->outputBuffer || !ctx->histogramBuffer || !ctx->histogramBinsBuffer || !ctx->stagingBuffer) {
             std::cerr << "[std_dev_filter]: Metal - Failed to allocate output buffers" << std::endl;
             delete ctx;
             return nullptr;
@@ -199,6 +205,12 @@ void metal_stddev_update_frame(void* context, const uint16_t* frame_data) {
     @autoreleasepool {
         MetalStdDevContext* ctx = (MetalStdDevContext*)context;
         
+        size_t frameSize = ctx->width * ctx->height * sizeof(uint16_t);
+        
+        // CRITICAL FIX: Reuse persistent staging buffer instead of creating new one every frame
+        // Copy frame data into the persistent staging buffer
+        memcpy([ctx->stagingBuffer contents], frame_data, frameSize);
+        
         // Create command buffer
         id<MTLCommandBuffer> commandBuffer = [ctx->commandQueue commandBuffer];
         commandBuffer.label = @"Frame Upload";
@@ -206,15 +218,9 @@ void metal_stddev_update_frame(void* context, const uint16_t* frame_data) {
         // Create blit encoder for efficient memory copy
         id<MTLBlitCommandEncoder> blitEncoder = [commandBuffer blitCommandEncoder];
         
-        // Create staging buffer with frame data (shared memory for CPU write)
-        size_t frameSize = ctx->width * ctx->height * sizeof(uint16_t);
-        id<MTLBuffer> stagingBuffer = [ctx->device newBufferWithBytes:frame_data
-                                                               length:frameSize
-                                                              options:MTLResourceStorageModeShared];
-        
-        // Copy to appropriate position in ring buffer
+        // Copy from persistent staging buffer to appropriate position in ring buffer
         size_t ringBufferOffset = ctx->buffer_head * frameSize;
-        [blitEncoder copyFromBuffer:stagingBuffer
+        [blitEncoder copyFromBuffer:ctx->stagingBuffer
                        sourceOffset:0
                            toBuffer:ctx->frameRingBuffer
                   destinationOffset:ringBufferOffset
@@ -222,6 +228,7 @@ void metal_stddev_update_frame(void* context, const uint16_t* frame_data) {
         
         [blitEncoder endEncoding];
         [commandBuffer commit];
+        [commandBuffer waitUntilCompleted];
         
         // Update ring buffer position
         ctx->buffer_head = (ctx->buffer_head + 1) % GPU_FRAME_BUFFER_SIZE;

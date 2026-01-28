@@ -157,11 +157,12 @@ std_dev_filter::~std_dev_filter()
 #endif
 }
 
-void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
+void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N, bool skip_compute)
 {
     /*! \brief CPU/GPU code for the standard deviation calculation.
      * \param frame The current frame to be worked on.
      * \param N The number of frames to use in the buffer, or the integration length of the calculation.
+     * \param skip_compute If true, uploads frame to GPU but skips computation (for frameskip mode).
      */
     static int count __attribute__((unused)) = 0;
 
@@ -182,7 +183,8 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
         printf("really weird\n"); // Noah wrote this debug line. I'm not sure when or why it triggers...
     }
 
-    if(cudaSuccess == std_dev_stream_status)
+    // Only perform computation if not skipping (keeps GPU pipeline active but reduces workload)
+    if(!skip_compute && cudaSuccess == std_dev_stream_status)
     {
         /* Step 3: If there are no errors, check that there are std. dev. frames ready to be displayed */
         if(prevFrame != NULL)
@@ -226,7 +228,7 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
         // Check if we have enough frames for computation
         unsigned int usableN = (currentN < N) ? currentN : N;
         
-        if(usableN >= 2) {  // Need at least 2 frames for std dev
+        if(!skip_compute && usableN >= 2) {  // Need at least 2 frames for std dev
             // Mark previous frame as ready
             if(prevFrame != NULL) {
                 prevFrame->has_valid_std_dev = 2; // Ready to display
@@ -257,7 +259,7 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
         // Check if we have enough frames for computation
         unsigned int usableN = (currentN < N) ? currentN : N;
         
-        if(usableN >= 2) {  // Need at least 2 frames for std dev
+        if(!skip_compute && usableN >= 2) {  // Need at least 2 frames for std dev
             // Mark previous frame as ready
             if(prevFrame != NULL) {
                 prevFrame->has_valid_std_dev = 2; // Ready to display
@@ -330,7 +332,7 @@ void std_dev_filter::update_GPU_buffer(frame_c * frame, unsigned int N)
     // Check if we have enough frames for computation
     unsigned int usableN = (currentN < N) ? currentN : N;
     
-    if(usableN >= 2) {  // Need at least 2 frames for std dev
+    if(!skip_compute && usableN >= 2) {  // Need at least 2 frames for std dev
         // Mark previous frame as ready
         if(prevFrame != NULL) {
             prevFrame->has_valid_std_dev = 2; // Ready to display

@@ -52,7 +52,7 @@ public:
 	std_dev_filter(int nWidth, int nHeight, int cudaDeviceNumber);
 	virtual ~std_dev_filter();
 
-	void update_GPU_buffer(frame_c *, unsigned int);
+	void update_GPU_buffer(frame_c *, unsigned int, bool skip_compute = false);
 	bool outputReady();
 	float * wait_std_dev_filter();
 	uint32_t * wait_std_dev_histogram();

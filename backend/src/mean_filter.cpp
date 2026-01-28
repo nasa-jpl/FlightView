@@ -37,7 +37,10 @@ mean_filter::mean_filter(frame_c * frame,unsigned long frame_count,int startCol,
 mean_filter::~mean_filter()
 {
     runningMF.store(false);
-    usleep(200);
+    doThreadWork.store(true); // Wake up thread if it's waiting
+    if(mean_thread.joinable()) {
+        mean_thread.join(); // Properly wait for thread to finish
+    }
 }
 
 void mean_filter::update(frame_c * frame,unsigned long frame_count,int startCol,\
