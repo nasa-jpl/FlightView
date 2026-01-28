@@ -271,7 +271,8 @@ macx {
     LIBS += -L$$PWD/backend/ -l_backend -lboost_thread -lboost_filesystem
     INCLUDEPATH += $$PWD/backend/include
 } else:unix:!symbian {
-    # Linux: include CUDA libraries
+    # Linux: include CUDA libraries and define USE_CUDA
+    DEFINES += USE_CUDA
     LIBS += -L$$PWD/backend/ -l_backend -lboost_thread -lboost_filesystem -L/usr/local/cuda/lib64 -lcudart -lgomp -lboost_system -ldl -lrt # -lGL -lQtOpenGL
     INCLUDEPATH += $$PWD/backend/include
     INCLUDEPATH += /usr/local/cuda/include
