@@ -152,3 +152,18 @@ echo ""
 echo "Metal shader library: std_dev_filter.metallib"
 echo "Metal GPU acceleration will be used for standard deviation calculations."
 echo ""
+
+# Step 5: Copy packaging script to build directory for convenience
+echo "Step 5: Copying packaging script to build directory..."
+if [ -f "$SCRIPT_DIR/package_macos_app.sh" ]; then
+    cp "$SCRIPT_DIR/package_macos_app.sh" "$BUILD_DIR/"
+    chmod +x "$BUILD_DIR/package_macos_app.sh"
+    echo "Packaging script copied to: $BUILD_DIR/package_macos_app.sh"
+    echo ""
+    echo "To create a distributable DMG, run:"
+    echo "  cd $BUILD_DIR"
+    echo "  ./package_macos_app.sh"
+else
+    echo "Note: package_macos_app.sh not found in source directory"
+fi
+echo ""
