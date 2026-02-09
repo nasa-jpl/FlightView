@@ -314,24 +314,41 @@ void consoleLog::logSystemConfig()
     handleOwnText(QString("Domainname: %1").arg(info.domainname));
 #endif
 
-    // Distribution name:
+    // Distribution/OS name:
     FILE *fp;
-    char lsbInfo[1024] = {'\0'};
+    char osInfo[1024] = {'\0'};
     QString infoStr;
+#ifdef __APPLE__
+    // macOS: use sw_vers to get OS version information
+    fp = popen("/usr/bin/sw_vers", "r");
+    if(fp==NULL)
+    {
+        handleOwnText("Could not determine macOS version");
+        return;
+    }
+    while(fgets(osInfo, sizeof(osInfo), fp))
+    {
+        infoStr = QString(osInfo);
+        infoStr.replace(QString("\t"), QString(" ")).replace("\n", "");
+        handleOwnText(QString("macOS: %1").arg(infoStr));
+    }
+#else
+    // Linux: use lsb_release
     fp = popen("/usr/bin/lsb_release -d", "r");
     if(fp==NULL)
     {
         handleOwnText("Could not determine lsb_release");
         return;
     }
-    if(fgets(lsbInfo, sizeof(lsbInfo), fp))
+    if(fgets(osInfo, sizeof(osInfo), fp))
     {
-        infoStr = QString(lsbInfo);
+        infoStr = QString(osInfo);
         infoStr.replace(QString("\t"), QString(" ")).replace("\n", "");
         handleOwnText(QString("Linux LSB %1").arg(infoStr));
     } else {
         handleOwnText("Could not determine lsb_release");
     }
+#endif
     pclose(fp);
 
     handleOwnText(QString("Compiled against Qt version: %1").arg(QT_VERSION_STR));
