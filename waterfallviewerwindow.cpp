@@ -5,6 +5,8 @@ waterfallViewerWindow::waterfallViewerWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::waterfallViewerWindow)
 {
+    QPixmap icon_pixmap(":images/icon.png");
+    this->setWindowIcon(QIcon(icon_pixmap));
     ui->setupUi(this);
     wf = ui->waterfallWidget;
 

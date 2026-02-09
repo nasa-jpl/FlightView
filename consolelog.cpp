@@ -6,7 +6,8 @@ consoleLog::consoleLog(startupOptionsType options, QWidget *parent) : QWidget(pa
     this->logFileName = "";
     this->enableLogToFile = false;
     // enableUDPLogging = options.UDPLogging;
-
+    QPixmap icon_pixmap(":images/icon.png");
+    this->setWindowIcon(QIcon(icon_pixmap));
     buffer = new lineBuffer(512);
     this->createUI();
     this->makeConnections();
@@ -27,6 +28,8 @@ consoleLog::consoleLog(startupOptionsType options, QString logFileName, bool ena
     if(enableUDPLogging) {
         udp = new udpbinarylogger(buffer, options.UDPLogHost.toStdString().c_str(), options.UDPLogPort, true);
     }
+    QPixmap icon_pixmap(":images/icon.png");
+    this->setWindowIcon(QIcon(icon_pixmap));
     this->createUI();
     this->makeConnections();
 
@@ -364,9 +367,9 @@ void consoleLog::logSystemConfig()
         handleOwnText(QString("Source directory was: %1").arg(SRC_DIR));
     }
     if(options.haveInstrumentPrefix) {
-        handleOwnText(QString("Instrument preset name: %1").arg(options.instrumentPrefix));
+        handleOwnText(QString("Instrument prefix name: %1").arg(options.instrumentPrefix));
     } else {
-        handleOwnText(QString("Instrument preset name not set"));
+        handleOwnText(QString("Instrument prefix name not set"));
     }
 #ifdef QT_DEBUG
     handleOwnText(QString("Compiled as a DEBUG version"));
