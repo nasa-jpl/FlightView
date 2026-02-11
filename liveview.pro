@@ -17,8 +17,8 @@ DEFINES += GIT_BRANCH="\\\"$(shell git -C \"$$PWD\" symbolic-ref --short HEAD)\\
 DEFINES += SRC_DIR="\\\"\'$$PWD\'\\\""
 
 # For CameraLink support,
-# run qmake with the argument CONFIG+=USE_CAMERLINK
-contains(CONFIG, USE_CAMERLINK) {
+# run qmake with the argument CONFIG+=USE_CAMERALINK
+contains(CONFIG, USE_CAMERALINK) {
     message("Compiling with CameraLink support.")
     DEFINES += CAMERALINK
 } else {
@@ -278,7 +278,7 @@ macx {
     INCLUDEPATH += /usr/local/cuda/include
 }
 
-contains(CONFIG, USE_CAMERLINK) {
+contains(CONFIG, USE_CAMERALINK) {
     INCLUDEPATH += /opt/EDTpdv
     # Add EDT PDV libraries for Linux camera link builds
     unix:!macx {
