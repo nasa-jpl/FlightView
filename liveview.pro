@@ -280,6 +280,10 @@ macx {
 
 contains(CONFIG, cameralink) {
     INCLUDEPATH += /opt/EDTpdv
+    # Add EDT PDV libraries for Linux camera link builds
+    unix:!macx {
+        LIBS += -L/opt/EDTpdv -lpdv
+    }
 }
 
 DEPENDPATH += $$PWD/backend
