@@ -320,7 +320,7 @@ qmake ../liveview.pro
 qmake CONFIG+=debug ../liveview.pro
 
 # To support Camera Link:
-qmake CONFIG+=cameralink ../liveview.pro
+qmake CONFIG+=USE_CAMERALINK ../liveview.pro
 
 # Build FlightView:
 make -j

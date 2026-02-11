@@ -86,13 +86,13 @@ cd backend && make clean && make USE_CAMERALINK=1
 **CUDA + Camera Link:**
 ```bash
 cd backend && make clean && make USE_CAMERALINK=1
-cd .. && qmake && make clean && make
+cd .. && qmake CONFIG+=USE_CAMERALINK && make clean && make
 ```
 
 **CPU + Camera Link:**
 ```bash
 cd backend && make clean && make USE_CUDA=0 USE_CAMERALINK=1
-cd .. && qmake CONFIG+=nocuda && make clean && make
+cd .. && qmake CONFIG+=nocuda CONFIG+=USE_CAMERALINK && make clean && make
 ```
 
 ---
