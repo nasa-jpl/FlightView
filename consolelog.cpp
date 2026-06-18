@@ -97,6 +97,7 @@ void consoleLog::makeConnections()
 }
 
 void consoleLog::setupZMQ() {
+#ifdef USE_ZMQ
     this->usingZmq = false;
     if(options.zmqLogging) {
         zc = new ZmqClient();
@@ -112,6 +113,7 @@ void consoleLog::setupZMQ() {
         zcThread->start();
         this->usingZmq = true;
     }
+#endif
 }
 
 void consoleLog::destroyUI()
@@ -235,11 +237,13 @@ void consoleLog::insertTextNoTagging(QString text)
     if(enableLogToFile)
         writeToFile(text);
     logToUDPBuffer(text);
+#ifdef USE_ZMQ
     if(this->usingZmq && (this->zc != NULL)) {
         QMetaObject::invokeMethod(zc, "sendText",
                                   Q_ARG(QString, "LOG"),
                                   Q_ARG(QString, text));
     }
+#endif
 }
 
 QString consoleLog::createTimeStamp()

@@ -1,4 +1,7 @@
 #include "zmqclient.h"
+
+#ifdef USE_ZMQ
+
 #include <QDebug>
 #include <QByteArray>
 #include <QThread>
@@ -150,3 +153,5 @@ void ZmqClient::closeConnection()
         emit connectionStatus(false, "Connection explicitly closed.");
     }
 }
+
+#endif // USE_ZMQ

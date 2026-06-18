@@ -25,6 +25,15 @@ contains(CONFIG, USE_CAMERALINK) {
     message("Compiling without CameraLink support.")
 }
 
+# For ZeroMQ support,
+# run qmake with the argument CONFIG+=USE_ZMQ
+contains(CONFIG, USE_ZMQ) {
+    message("Compiling with ZeroMQ support.")
+    DEFINES += USE_ZMQ
+} else {
+    message("Compiling without ZeroMQ support.")
+}
+
 CONFIG+=link_pkgconfig
 PKGCONFIG+=gstreamer-1.0 gstreamer-app-1.0 glib-2.0 gobject-2.0
 
@@ -65,8 +74,11 @@ SOURCES += main.cpp\
     udpbinarylogger.cpp \
     waterfall.cpp \
     waterfallviewerwindow.cpp \
-    wfengine.cpp \
-    zmqclient.cpp
+    wfengine.cpp
+
+contains(CONFIG, USE_ZMQ) {
+    SOURCES += zmqclient.cpp
+}
 
 HEADERS  += mainwindow.h \
     consolelog.h \
@@ -110,8 +122,11 @@ HEADERS  += mainwindow.h \
     preferences.h \
     waterfallviewerwindow.h \
     wfengine.h \
-    wfshared.h \
-    zmqclient.h
+    wfshared.h
+
+contains(CONFIG, USE_ZMQ) {
+    HEADERS += zmqclient.h
+}
 
 DISTFILES +=    backend/include/acquire.hpp \
                 aviris3-logo.png \
@@ -216,16 +231,22 @@ unix:!macx {
 # Platform-specific libraries
 macx {
     # macOS doesn't have -lrt or -ldl
-    LIBS += -lgsl -lgslcblas -lexiv2 -lzmq
-    # Add ZeroMQ C++ bindings include path (from cppzmq)
-    exists(/opt/homebrew/include) {
-        INCLUDEPATH += /opt/homebrew/include
-    } else {
-        INCLUDEPATH += /usr/local/include
+    LIBS += -lgsl -lgslcblas -lexiv2
+    contains(CONFIG, USE_ZMQ) {
+        LIBS += -lzmq
+        # Add ZeroMQ C++ bindings include path (from cppzmq)
+        exists(/opt/homebrew/include) {
+            INCLUDEPATH += /opt/homebrew/include
+        } else {
+            INCLUDEPATH += /usr/local/include
+        }
     }
 } else {
     # Linux has additional libraries
-    LIBS += -lgsl -lgslcblas -lexiv2 -lzmq -lrt -ldl
+    LIBS += -lgsl -lgslcblas -lexiv2 -lrt -ldl
+    contains(CONFIG, USE_ZMQ) {
+        LIBS += -lzmq
+    }
 }
 
 # Used for build tracking:

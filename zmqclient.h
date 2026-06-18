@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef USE_ZMQ
+
 #include <QObject>
 #include <QString>
 #include <QThread>
@@ -87,3 +89,5 @@ public slots:
      */
     void closeConnection();
 };
+
+#endif // USE_ZMQ
