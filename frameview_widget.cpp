@@ -167,10 +167,10 @@ frameview_widget::frameview_widget(frameWorker *fw, image_t image_type, QWidget 
         displayCrosshairCheck.setChecked(false);
     }
 
-    zoomXCheck.setText("Zoom on X axis only");
-    zoomYCheck.setText("Zoom on Y axis only");
-    zoomXCheck.setChecked(false);
-    zoomYCheck.setChecked(false);
+    zoomXCheck.setText("Zoom on X axis");
+    zoomYCheck.setText("Zoom on Y axis");
+    zoomXCheck.setChecked(true);
+    zoomYCheck.setChecked(true);
 
     fps = 0;
     clock.start();
@@ -357,7 +357,7 @@ void frameview_widget::handleNewFrame()
      * \paragraph
      *
      * frameview_widget plots a color map using data from the curFrame in the backend conditionally selected using the image_t.
-     * frameWorker contains a local copy of a frame from cuda_take with all processed data that can be read from directly.
+     * frameWorker contains a local copy of a frame from backend with all processed data that can be read from directly.
      * \paragraph
      *
      * For BASE type images, image_data_ptr is used, which has the type uint16_t (2 bytes/pixel). BASE images may display crosshairs,
@@ -393,11 +393,17 @@ void frameview_widget::handleNewFrame()
 
         wfSelectedRow.setText(QString("Row: %1").arg(fw->crosshair_y));
 
+        float *localWRPtr = fw->curFrame->white_referenced_data;
         float *local_image_ptr = fw->curFrame->dark_subtracted_data;
         uint16_t* local_image_ptr_uint = fw->curFrame->image_data_ptr;
 
         std::vector <float> line;
-        if(useDSF) {
+        if(useWR) {
+            for(int col = 0; col < frWidth; col++)
+            {
+                line.push_back(localWRPtr[row * frWidth + col]);
+            }
+        } else if(useDSF) {
             for(int col = 0; col < frWidth; col++)
             {
                 line.push_back(local_image_ptr[row * frWidth + col]);
@@ -442,9 +448,11 @@ void frameview_widget::handleNewFrame()
         if((image_type == DSF) || (image_type==BASE)) {
             uint16_t* local_image_ptr_uint = fw->curFrame->image_data_ptr;
             float* local_image_ptr_float = fw->curFrame->dark_subtracted_data;
-
-            if(useDSF)
-            {
+            // float* localWRPtr = fw->curFrame->white_referenced_data;
+            if(useWR) {
+                local_image_ptr_float = fw->curFrame->white_referenced_data;
+            }
+            if(useDSF || useWR) {
                 if(peakHoldMode) {
                     // DSF,
                     // Peak Hold Mode
@@ -683,9 +691,9 @@ void frameview_widget::colorScaleRangeChanged(const QCPRange &newRange) {
     emit haveFloorCeilingValuesFromColorScaleChange(newRange.lower, newRange.upper);
 }
 
-void frameview_widget::setScrollX(bool Yenabled)
-{
-    scrollYenabled = !Yenabled;
+void frameview_widget::setScrollX(bool enabled) {
+    //scrollYenabled = Yenabled;
+    scrollXenabled = enabled;
     qcp->setInteraction(QCP::iRangeDrag, true);
     qcp->setInteraction(QCP::iRangeZoom, true);
 
@@ -702,11 +710,11 @@ void frameview_widget::setScrollX(bool Yenabled)
         qcp->setInteraction(QCP::iRangeDrag, false);
         qcp->setInteraction(QCP::iRangeZoom, false);
     }
-
 }
-void frameview_widget::setScrollY(bool Xenabled)
-{
-    scrollXenabled = !Xenabled;
+
+void frameview_widget::setScrollY(bool enabled) {
+    //scrollXenabled = Xenabled;
+    scrollYenabled = enabled;
     qcp->setInteraction(QCP::iRangeDrag, true);
     qcp->setInteraction(QCP::iRangeZoom, true);
     if (!scrollXenabled && scrollYenabled) {
@@ -721,7 +729,6 @@ void frameview_widget::setScrollY(bool Xenabled)
     } else {
         qcp->setInteraction(QCP::iRangeDrag, false);
         qcp->setInteraction(QCP::iRangeZoom, false);
-
     }
 }
 
@@ -806,6 +813,10 @@ void frameview_widget::setPeakHoldMode(bool hold) {
 void frameview_widget::setUseDSF(bool useDSF)
 {
     this->useDSF = useDSF;
+}
+
+void frameview_widget::setUseWR(bool useWR) {
+    this->useWR = useWR;
 }
 
 void frameview_widget::rescaleRange()

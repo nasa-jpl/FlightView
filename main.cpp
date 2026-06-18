@@ -39,16 +39,16 @@ const volatile char* COMPILE_INFO_END_STR = "-----------------------------------
 
 /*! \file */
 /*! \mainpage  \header View live plots of focal plane data
- * Live View is a Qt frontend GUI for cuda_take, it displays focal plane data and basic analysis
+ * Live View is a Qt frontend GUI for backend, it displays focal plane data and basic analysis
  * (such as the std. dev, dark subtraction, FFT, Spectral Profile, and Video Savant-like playback). Plots are
  * implemented using the QCustomPlot (http://www.qcustomplot.com) library, which generates live color maps, bar graphs,
  * and line graphs within the Qt C++ environment.
  * \paragraph
  *
  * Live View is designed to be sufficiently modular that it will plot any data with known geometry, up to a maximum word size
- * of 16 bits. To implement new hardware or modify existing parameters, changes must be made to the backend cuda_take software.
+ * of 16 bits. To implement new hardware or modify existing parameters, changes must be made to the backend software.
  *
- * \author This documentation and comments in Live View and cuda_take were written by Jackie Ryan
+ * \author This documentation and comments in Live View and backend were written by Jackie Ryan
  */
 
 int main(int argc, char *argv[])
@@ -67,6 +67,7 @@ int main(int argc, char *argv[])
     /* Step 1: Setup this QApplication */
     //QApplication::setGraphicsSystem("raster"); //This is intended to make 2D rendering faster
     QApplication a(argc, argv);
+    //a.setStyle(QStyleFactory::create("Fusion"));
     a.setOrganizationDomain("jpl.nasa.gov");
     a.setOrganizationName("FlightView");
     a.setApplicationDisplayName("FlightView");
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
     QString helptext = QString("\nUsage: %1 -d --debug, -f --flight --no-gps \n"
                                "--no-camera --datastoragelocation /path/to/storage --gpsIP 10.0.0.6 \n"
                                "--gpsport 5661 \n"
-                               "--no-stddev --xiocam --rtpcam \n"
+                               "--no-stddev --stddev-n 100 --xiocam --rtpcam \n"
                                "--rtpnextgen \n"
                                "--rtpheight 480 \n"
                                "--rtpwidth 1280 \n"
@@ -92,8 +93,15 @@ int main(int argc, char *argv[])
                                "--remap (reorder pixels for some cameras)\n"
                                "--swap (swap spatial and spectral)\n"
                                "--darkreffile /path/to/dark_file.raw (uint16 frames)\n"
+                               "--darkreffilefloat /path/to/dark_file_float.raw (single float32 frame)\n"
+                               "--whitereffile /path/to/white_file.raw (uint16 frames)\n"
+                               "--whitereffilefloat /path/to/white_file_float.raw (single float32 frame)\n"
                                "--udplogginghost 1.2.3.4\n"
                                "--udploggingport 10175\n"
+                               "--zmqlogginghost 1.2.3.4\n"
+                               "--zmqloggingport 54321\n"
+                               "--frameskip n\n"
+                               "--stats (show frame processing timing statistics)\n"
                                )\
             .arg(cmdName);
     QString currentArg;
@@ -118,6 +126,9 @@ int main(int argc, char *argv[])
     bool widthSet = false;
     bool rtpInterfaceSet = false;
     bool rtpAddressSet = false;
+
+    bool haveZmqHost = false;
+    bool haveZmqPort = false;
 
     // Basic CLI argument parser:
     for(int c=1; c < argc; c++)
@@ -187,6 +198,7 @@ int main(int argc, char *argv[])
         if( (currentArg == "--darkreffile") || (currentArg == "--darkreferencefile") ) {
             if(argc > c)
             {
+                // Datatype is uint16, will read entire file and average
                 startupOptions.darkReferenceFileLocation = argv[c+1];
                 startupOptions.darkRefFileSet = true;
                 c++;
@@ -195,7 +207,44 @@ int main(int argc, char *argv[])
                 exit(-1);
             }
         }
-
+        if( (currentArg == "--darkreffilefloat") || (currentArg == "--darkreferencefilefloat")
+                || (currentArg == "--darkreffloat") || (currentArg == "--darkreferencefloat")) {
+            if(argc > c)
+            {
+                // Datatype is float, use as-is
+                startupOptions.darkReferenceFileLocation = argv[c+1];
+                startupOptions.darkRefFileSet = true;
+                startupOptions.darkRefFileFloat = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if( (currentArg == "--whitereffile") || (currentArg == "--whitereferencefile") ) {
+            if(argc > c)
+            {
+                startupOptions.whitereffile = argv[c+1];
+                startupOptions.whitereffileSet = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if( (currentArg == "--whitereffilefloat") || (currentArg == "--whitereferencefilefloat")
+                || (currentArg == "--whitereffloat") || (currentArg == "--whitereferencefloat")) {
+            if(argc > c)
+            {
+                startupOptions.whitereffile = argv[c+1];
+                startupOptions.whitereffileSet = true;
+                startupOptions.whiteRefFileIsFloat = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
         if(currentArg == "--rtpcam")
         {
             startupOptions.rtpCam = true;
@@ -254,6 +303,29 @@ int main(int argc, char *argv[])
                 std::cout << helptext.toStdString() << std::endl;
                 exit(-1);
             }
+        }
+
+        if(currentArg == "--frameskip") {
+            if(argc > c) {
+                int frameSkipNumber = 0;
+                bool ok = false;
+                frameSkipNumber = QString(argv[c+1]).toUInt(&ok);
+                if(ok) {
+                    // insert struct here...
+                    startupOptions.frameSkipSet = true;
+                    startupOptions.frameSkip = frameSkipNumber;
+                } else {
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
+        if(currentArg == "--stats") {
+            startupOptions.showStats = true;
         }
 
         if(currentArg == "--rtpinterface")
@@ -411,6 +483,41 @@ int main(int argc, char *argv[])
                 }
             }
         }
+
+        if( (currentArg == "--zmqlogginghost") || (currentArg == "--zmqhost") ) {
+            if(argc > c) {
+                startupOptions.zmqLoggingHost = argv[c+1];
+                haveZmqHost = true;
+                c++;
+            } else {
+                std::cerr << "Error, don't see ZMQ logging host specified." << std::endl;
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+        if( (currentArg == "--zmqloggingport") || (currentArg == "--zmqport") ) {
+            if(argc > c) {
+                int portTemp=0;
+                bool ok = false;
+                portTemp = QString(argv[c+1]).toInt(&ok);
+                if( portTemp > 65535 )
+                    ok = false;
+
+                if(ok) {
+                    startupOptions.zmqLoggingPort = portTemp;
+                    haveZmqPort = true;
+                } else {
+                    std::cerr << "Error, don't see ZMQ logging port number specified." << std::endl;
+                    std::cout << helptext.toStdString() << std::endl;
+                    exit(-1);
+                }
+            } else {
+                std::cerr << "Error, don't see ZMQ logging port number specified." << std::endl;
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
+        }
+
         if( (currentArg == "--udploghost") || (currentArg == "--udplogginghost")) {
             if(argc > c) {
                 // Only IPV4 supported, and no hostnames please, let's not depend upon DNS or resolv in the airplane...
@@ -450,6 +557,19 @@ int main(int argc, char *argv[])
                 || (currentArg == "--nostdev") || (currentArg == "--nostddev") )
         {
             startupOptions.runStdDevCalculation = false;
+        }
+
+        if( (currentArg == "--stddev-n") || (currentArg == "--stddevn") )
+        {
+            if(argc > c)
+            {
+                startupOptions.stdDevN = atoi(argv[c+1]);
+                startupOptions.stdDevNSet = true;
+                c++;
+            } else {
+                std::cout << helptext.toStdString() << std::endl;
+                exit(-1);
+            }
         }
 
         if( (currentArg == "--shm")) {
@@ -571,6 +691,10 @@ int main(int argc, char *argv[])
         startupOptions.heightWidthSet = true;
     }
 
+    if(haveZmqHost && haveZmqPort) {
+        startupOptions.zmqLogging = true;
+    }
+
 
     if(startupOptions.wfPreviewEnabled && (!startupOptions.wfPreviewlocationset)) {
         std::cerr << "Warning, waterfall preview option enabled but --wfpreviewlocation was not set." << std::endl;
@@ -594,7 +718,7 @@ int main(int argc, char *argv[])
         // On some displays, the splash screen covers the setup dialog box
         splash->show();
         splash->showMessage(QObject::tr(" "),
-                           Qt::WindowStaysOnTopHint | Qt::AlignCenter | Qt::AlignBottom, Qt::black);
+                            Qt::WindowStaysOnTopHint | Qt::AlignCenter | Qt::AlignBottom, Qt::black);
     }
 
     /* Step 3: Load the parallel worker object which will act as a "backend" for LiveView */

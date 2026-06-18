@@ -8,7 +8,7 @@
 frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     QObject(parent)
 {
-    /*! \brief Launches cuda_take using the take_object.
+    /*! \brief Launches backend using the take_object.
      * \paragraph
      * Also gathers the frame geometry from the backend. These values are used by all other members of Live View.
      * Determines the default ceiling to use based on the camera type (14-bit or 16-bit systems)
@@ -41,7 +41,7 @@ frameWorker::frameWorker(startupOptionsType optionsIn, QObject *parent) :
     if(camcontrol==NULL)
         abort();
 
-    to.start(); // begin cuda_take
+    to.start(); // begin backend
     //to.setReadDirectory("/mnt/DATA/xio/20170828_DCSEFM_TVAC_AMBIENTFUNCTIONAL_COMPRESS_Test1_ROICIMAGE/");
     if( (options.xioDirectoryArray != NULL) && options.xioCam)
     {
@@ -168,6 +168,13 @@ void frameWorker::convertOptions()
     takeOptions.targetFPS = options.targetFPS;
     takeOptions.showMore = options.showMore;
 
+    takeOptions.frameSkipSet = options.frameSkipSet;
+    takeOptions.frameSkip = options.frameSkip;
+
+    takeOptions.stdDevNSet = options.stdDevNSet;
+    takeOptions.stdDevN = options.stdDevN;
+    
+    takeOptions.showStats = options.showStats;
 
     if(takeOptions.rtpCam)
     {
@@ -176,6 +183,21 @@ void frameWorker::convertOptions()
         if(takeOptions.rtpAddress != NULL)
             qDebug() << "RTP Address: " << takeOptions.rtpAddress;
     }
+
+    if(options.whitereffileSet) {
+        // Not actually used directly by take -- see mainwindow.cpp
+        takeOptions.whitereffileSet = true;
+        takeOptions.whiteRefFileIsFloat = options.whiteRefFileIsFloat;
+        takeOptions.whitereffile = options.whitereffile.toStdString();
+    }
+
+    if(options.darkRefFileSet) {
+        // Not actually used directly by take -- see mainwindow.cpp
+        takeOptions.darkFileSet = true;
+        takeOptions.darkFileFloat = options.darkRefFileFloat;
+        takeOptions.darkFile = options.darkReferenceFileLocation.toStdString();
+    }
+
 }
 
 // public functions
@@ -210,7 +232,7 @@ unsigned int frameWorker::getFrameWidth()
 }
 bool frameWorker::dsfMaskCollected()
 {
-    /*! \brief Returns whether or not a dark mask is loaded into cuda_take. */
+    /*! \brief Returns whether or not a dark mask is loaded into backend. */
     return to.dsfMaskCollected;
 }
 bool frameWorker::usingDSF()
@@ -225,15 +247,15 @@ void frameWorker::captureFrames()
     /*!
      * \brief The backend communication with take object is handled for each frame in this loop.
      * \paragraph
-     * This event loop determines which processing elements have been completed for a frame in cuda_take.
+     * This event loop determines which processing elements have been completed for a frame in backend.
      * First, all other events in the thread are completed, then the process sleeps for 50 microseconds to add wait time to the loop.
-     * The backend frame, workingFrame is incremented based on the framecount. The framecount indexes the cuda_take ring buffer data
+     * The backend frame, workingFrame is incremented based on the framecount. The framecount indexes the backend ring buffer data
      * structure which contains 1500 arriving images from the camera link at a time.
      * \paragraph
-     * Standard Deviation processing and Asynchronous processing are sent as signals from cuda_take. As cuda_take is a non-Qt project,
+     * Standard Deviation processing and Asynchronous processing are sent as signals from backend. As backend is a non-Qt project,
      * the signals are handled as status ints. If the asynchronous processing takes longer than a single loop through the backend, it
      * is skipped at the frontend. This prevents access to bad data by the plots. curFrames are therefore the frames which are used by
-     * the frontend. Additionally, the backend frame saving is communicated between Live View and cuda_take in this loop.
+     * the frontend. Additionally, the backend frame saving is communicated between Live View and backend in this loop.
      * \author Noah Levy
      */
     unsigned long count = 0;
@@ -248,6 +270,7 @@ void frameWorker::captureFrames()
     frame_c *workingFrame;
     int microSecondsPerFrame = 0;
     // int flags=1;
+    bool firstStdDev = true;
 
     while(doRun) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 1); // 1ms maximum delay permitted
@@ -262,9 +285,16 @@ void frameWorker::captureFrames()
             }
         }
         if(workingFrame->async_filtering_done != 0) {
-            curFrame = workingFrame;
-            if (curFrame->has_valid_std_dev == 1) {
+            // async_filtering_done, ready to draw things:
+            curFrame = workingFrame; // from the frame_ring_buffer, one frame behind the current frame
+            if ( (curFrame->has_valid_std_dev == 1) || (firstStdDev && (curFrame->has_valid_std_dev ==2))) {
+                // The curFrame contains a standard deviation measurement,
+                // but it is not meaningful until it is done processing.
+                // "1" means "processing in progress", and we are "saving" this frame
+                // for the next time we come around when it may be completed.
+                // "2" means complete. We can accept a complete frame to get us going.
                 std_dev_processing_frame = curFrame;
+                firstStdDev = false;
             }
             save_num = to.save_framenum.load(std::memory_order_seq_cst);
             save_ct = to.save_count.load(std::memory_order_seq_cst);
@@ -276,7 +306,12 @@ void frameWorker::captureFrames()
             last_savect = save_ct;
             last_savenum = save_num;
             // count++;
-
+            if(options.showMore) {
+                if(to.haveMessage) {
+                    emit toMessageOut(to.messagePasser);
+                    to.haveMessage =false;
+                }
+            }
             // Every 25 frames, or, every 200ms, whichever comes first.
             if( (count%25 == 0) || ((clock.elapsed() - lastTime) > 50) )
             {
@@ -297,12 +332,7 @@ void frameWorker::captureFrames()
                     to.haveMessage =false;
                 }
             }
-            if(options.showMore) {
-                if(to.haveMessage) {
-                    emit toMessageOut(to.messagePasser);
-                    to.haveMessage =false;
-                }
-            }
+
         } else {
             // This happens when the program is drawing the screen faster than the
             // frames arrive. It is generally not a problem.
@@ -316,28 +346,51 @@ void frameWorker::captureFrames()
     emit finished();
 }
 
+void frameWorker::loadWRFile(QString filename, fileFormat_t format) {
+    to.loadWR_entry(filename.toStdString(), format);
+}
+
+void frameWorker::startCapturingWR() {
+    sMessage("Starting to record white reference");
+    to.startCapturingWR();
+}
+
+void frameWorker::finishCapturingWR() {
+    sMessage("Finishing capture of white reference");
+    to.finishCapturingWR();
+}
+
+void frameWorker::toggleUseWR(bool t) {
+    sMessage("Toggling take_object use of WR.");
+    to.useWR = t;
+}
+
+void frameWorker::setUseND(bool useND_ON) {
+    to.setNDStatus(useND_ON);
+}
+
 void frameWorker::loadDarkFile(QString filename, fileFormat_t format)
 {
     to.loadDSFMask_entry(filename.toStdString(), format);
     return;
     // todo: remove these
-    if(format == fmt_float32)
-    {
-        to.loadDSFMask(filename.toStdString());
-    } else {
-        to.loadDSFMaskFromFramesU16(filename.toStdString(), format);
-    }
+//    if(format == fmt_float32)
+//    {
+//        to.loadDSFMask(filename.toStdString());
+//    } else {
+//        to.loadDSFMaskFromFramesU16(filename.toStdString(), format);
+//    }
 }
 
 void frameWorker::startCapturingDSFMask()
 {
-    /*! \brief Calls to start collecting dark frames in cuda_take. */
+    /*! \brief Calls to start collecting dark frames in backend. */
     sMessage("Starting to record Dark Frames");
     to.startCapturingDSFMask();
 }
 void frameWorker::finishCapturingDSFMask()
 {
-    /*! \brief Communicates to cuda_take to stop collecting dark frames. */
+    /*! \brief Communicates to backend to stop collecting dark frames. */
     sMessage("Stop recording Dark Frames");
     to.finishCapturingDSFMask();
 }
@@ -347,9 +400,11 @@ void frameWorker::toggleUseDSF(bool t)
      * \param t State variable for the "Use Dark Subtraction Filter" checkbox. */
     to.useDSF = t;
 }
+
+
 void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName, unsigned int numavgsave)
 {
-    /*! \brief Calls to start saving frames in cuda_take at a specified location
+    /*! \brief Calls to start saving frames in backend at a specified location
      * \param framenum Number of frames to save
      * \param name Location of target file */
     navgs = numavgsave; // keep this around for statusing
@@ -357,7 +412,7 @@ void frameWorker::startSavingRawData(unsigned int framenum, QString verifiedName
 }
 void frameWorker::stopSavingRawData()
 {
-    /*! \brief Calls to stop saving frames in cuda_take. */
+    /*! \brief Calls to stop saving frames in backend. */
     sMessage("told to stopSavingRawData, telling takeObject.");
 
     to.stopSavingRaws();
@@ -401,6 +456,8 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
      * average the entire image, then are adjusted based on the image type and the location of the crosshair.
      * \author Jackie Ryan
      */
+    //qDebug() << "-- -- -- -- -- -- -- -- -- --";
+    //qDebug() << "Lines to average: " << linesToAverage;
     crossStartCol = 0;
     crossStartRow = 0;
     crossWidth = frWidth;
@@ -432,6 +489,12 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
     crossStartRow = isSkippingFirst && crossStartRow == 0 ? 1 : crossStartRow;
     crossHeight = isSkippingLast && crossHeight == int(frHeight) ? frHeight - 1 : crossHeight;
 
+    //qDebug() << "crossStartRow: " << crossStartRow;
+    //qDebug() << "crossHeight: " << crossHeight;
+    //qDebug() << "crossStartCol: " << crossStartCol;
+    //qDebug() << "crossWidth: " << crossWidth;
+    //qDebug() << "-- -- -- -- -- -- -- -- -- --";
+
 
     if(profile==VERT_OVERLAY)
     {
@@ -440,10 +503,82 @@ void frameWorker::updateMeanRange(int linesToAverage, image_t profile)
         to.updateVertRange(crossStartRow, crossHeight);
     } else {
         // update take object
-        to.updateVertRange(crossStartRow, crossHeight);
-        to.updateHorizRange(crossStartCol, crossWidth);
+        // WAS:
+        to.updateVertRange(crossStartRow, crossHeight); // row and height are used for a horizontal profile
+        to.updateHorizRange(crossStartCol, crossWidth); // column and width are used for a vertical profile
+
+        // IS NOW: crashing
+        //to.updateVertRange(crossStartRow, crossWidth);
+        //to.updateHorizRange(crossStartCol, crossHeight);
     }
 }
+
+void frameWorker::updateOverlayParams() {
+    // This function just recalculates everything.
+    // Call it when the crosshairs have changed and the left/center/right plots
+    // need to be updated.
+    // These values are saved from the last call from ControlsBox to updateOverlayParams(...)
+    updateOverlayParams(lh_width, cent_width, rh_width);
+}
+
+void frameWorker::updateOverlayParams(int lh_width, int cent_width, int rh_width) {
+    // This function accepts the minimum information and takes care of everything.
+    // It is designed to be called whenever we wish to update what is plotted from the overlay.
+    int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end;
+
+
+    lh_start = this->crossStartCol - lh_width/2;
+    lh_end = lh_start + lh_width;
+
+    rh_start = this->crossWidth - rh_width/2;
+    rh_end = rh_start + rh_width;
+
+    cent_start = this->crosshair_x - cent_width/2;
+    cent_end = this->crosshair_x + cent_width/2;
+
+    validateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+    this->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+    // Save for later:
+    this->lh_width = lh_width;
+    this->cent_width = cent_width;
+    this->rh_width = rh_width;
+}
+
+void frameWorker::validateOverlayParams(int &lh_start, int &lh_end,\
+                                        int &cent_start, int &cent_end,\
+                                        int &rh_start, int &rh_end)
+{
+    int width = this->getFrameWidth() - 1; // last usable index
+
+    // check lower bound:
+    if(lh_start < 0)
+        lh_start = 0;
+    if(lh_end < 0)
+        lh_end = 0;
+    if(cent_start < 0)
+        cent_start = 0;
+    if(cent_end < 0)
+        cent_end = 0;
+    if(rh_start < 0)
+        rh_start = 0;
+    if(rh_end < 0)
+        rh_end = 0;
+
+    // check upper bound:
+    if(lh_start > width)
+        lh_start = width;
+    if(lh_end > width)
+        lh_end = width;
+    if(cent_start > width)
+        cent_start = width;
+    if(cent_end > width)
+        cent_end = width;
+    if(rh_start > width)
+        rh_start = width;
+    if(rh_end > width)
+        rh_end = width;
+}
+
 
 void frameWorker::updateOverlayParams(int lh_start, int lh_end, int cent_start, int cent_end, int rh_start, int rh_end)
 {
@@ -474,6 +609,7 @@ void frameWorker::setCrosshairBackend(int pos_x, int pos_y)
     bool repeat = crosshair_x == pos_x && crosshair_y == pos_y;
     crosshair_x = pos_x;
     crosshair_y = pos_y;    
+    // This is not really idea, we should validate first and then assign.
     if (!(crosshair_x == -1 && crosshair_y == -1) && !repeat) {
         crosshair_x = crosshair_x < -1 ? 0 : crosshair_x;
         crosshair_x = crosshair_x >= int(frWidth) ? frWidth : crosshair_x;
@@ -509,6 +645,16 @@ void frameWorker::setCrosshairBackend(int pos_x, int pos_y)
     }
     if(crosshair_x == -1 && crosshair_y == -1)
         displayCross = false;
+
+    if(crosshair_y > 0)
+            to.updateVertPos(crosshair_y);
+
+    if(crosshair_x > 0)
+            to.updateHorizPos(crosshair_x);
+
+    if((crosshair_x > 0) && (crosshair_y > 0) ) {
+        updateOverlayParams();
+    }
 }
 void frameWorker::update_FFT_range(FFT_t type, int tapNum)
 {
@@ -546,7 +692,7 @@ void frameWorker::updateCrossDiplay(bool checked)
 }
 void frameWorker::setStdDev_N(int newN)
 {
-    /*! \brief Communicates changes in the standard deviation boxcar length to cuda_take.
+    /*! \brief Communicates changes in the standard deviation boxcar length to backend.
      *  \param newN Value from the Std. Dev. N slider */
     to.setStdDev_N(newN);
 }

@@ -57,12 +57,14 @@ struct settingsT {
 
     int profileHorizFloor=0;
     int profileHorizCeiling=2E4;
+    int profileHorizLines = 1;
 
     int profileVertDSFFloor=0;
     int profileVertDSFCeiling=2E4;
 
     int profileVertFloor=0;
     int profileVertCeiling=2E4;
+    int profileVertLines = 1;
 
     int profileOverlayFloor=0;
     int profileOverlayCeiling=2E4;

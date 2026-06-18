@@ -6,13 +6,14 @@ consoleLog::consoleLog(startupOptionsType options, QWidget *parent) : QWidget(pa
     this->logFileName = "";
     this->enableLogToFile = false;
     // enableUDPLogging = options.UDPLogging;
-
+    QPixmap icon_pixmap(":images/icon.png");
+    this->setWindowIcon(QIcon(icon_pixmap));
     buffer = new lineBuffer(512);
     this->createUI();
     this->makeConnections();
     insertText(QString("[ConsoleLog]: Warning: Not logging text to a file."));
     insertText(QString("[ConsoleLog]: Note: Not logging text to UDP"));
-
+    setupZMQ();
     this->logSystemConfig();
  }
 
@@ -27,6 +28,8 @@ consoleLog::consoleLog(startupOptionsType options, QString logFileName, bool ena
     if(enableUDPLogging) {
         udp = new udpbinarylogger(buffer, options.UDPLogHost.toStdString().c_str(), options.UDPLogPort, true);
     }
+    QPixmap icon_pixmap(":images/icon.png");
+    this->setWindowIcon(QIcon(icon_pixmap));
     this->createUI();
     this->makeConnections();
 
@@ -43,6 +46,7 @@ consoleLog::consoleLog(startupOptionsType options, QString logFileName, bool ena
     } else {
         insertText(QString("[ConsoleLog]: Note: Not logging text to UDP"));
     }
+    setupZMQ();
     this->logSystemConfig();
 }
 
@@ -90,6 +94,26 @@ void consoleLog::makeConnections()
     connect(&annotateBtn, SIGNAL(pressed()), this, SLOT(onAnnotateBtnPushed()));
     connect(&clearBtn, SIGNAL(pressed()), this, SLOT(onClearBtnPushed()));
     connect(&annotateText, SIGNAL(returnPressed()), this, SLOT(onAnnotateBtnPushed()));
+}
+
+void consoleLog::setupZMQ() {
+#ifdef USE_ZMQ
+    this->usingZmq = false;
+    if(options.zmqLogging) {
+        zc = new ZmqClient();
+        zcThread = new QThread();
+        zc->moveToThread(zcThread);
+        connect(zcThread, &QThread::started,
+                zc, [this](){
+            zc->setConnection(options.zmqLoggingHost, options.zmqLoggingPort);
+        });
+        connect(zcThread, &QThread::finished, zc, &QObject::deleteLater);
+        connect(zcThread, &QThread::finished, zc, &QObject::deleteLater);
+
+        zcThread->start();
+        this->usingZmq = true;
+    }
+#endif
 }
 
 void consoleLog::destroyUI()
@@ -213,6 +237,13 @@ void consoleLog::insertTextNoTagging(QString text)
     if(enableLogToFile)
         writeToFile(text);
     logToUDPBuffer(text);
+#ifdef USE_ZMQ
+    if(this->usingZmq && (this->zc != NULL)) {
+        QMetaObject::invokeMethod(zc, "sendText",
+                                  Q_ARG(QString, "LOG"),
+                                  Q_ARG(QString, text));
+    }
+#endif
 }
 
 QString consoleLog::createTimeStamp()
@@ -290,24 +321,41 @@ void consoleLog::logSystemConfig()
     handleOwnText(QString("Domainname: %1").arg(info.domainname));
 #endif
 
-    // Distribution name:
+    // Distribution/OS name:
     FILE *fp;
-    char lsbInfo[1024] = {'\0'};
+    char osInfo[1024] = {'\0'};
     QString infoStr;
+#ifdef __APPLE__
+    // macOS: use sw_vers to get OS version information
+    fp = popen("/usr/bin/sw_vers", "r");
+    if(fp==NULL)
+    {
+        handleOwnText("Could not determine macOS version");
+        return;
+    }
+    while(fgets(osInfo, sizeof(osInfo), fp))
+    {
+        infoStr = QString(osInfo);
+        infoStr.replace(QString("\t"), QString(" ")).replace("\n", "");
+        handleOwnText(QString("macOS: %1").arg(infoStr));
+    }
+#else
+    // Linux: use lsb_release
     fp = popen("/usr/bin/lsb_release -d", "r");
     if(fp==NULL)
     {
         handleOwnText("Could not determine lsb_release");
         return;
     }
-    if(fgets(lsbInfo, sizeof(lsbInfo), fp))
+    if(fgets(osInfo, sizeof(osInfo), fp))
     {
-        infoStr = QString(lsbInfo);
+        infoStr = QString(osInfo);
         infoStr.replace(QString("\t"), QString(" ")).replace("\n", "");
         handleOwnText(QString("Linux LSB %1").arg(infoStr));
     } else {
         handleOwnText("Could not determine lsb_release");
     }
+#endif
     pclose(fp);
 
     handleOwnText(QString("Compiled against Qt version: %1").arg(QT_VERSION_STR));
@@ -323,15 +371,16 @@ void consoleLog::logSystemConfig()
         handleOwnText(QString("Source directory was: %1").arg(SRC_DIR));
     }
     if(options.haveInstrumentPrefix) {
-        handleOwnText(QString("Instrument preset name: %1").arg(options.instrumentPrefix));
+        handleOwnText(QString("Instrument prefix name: %1").arg(options.instrumentPrefix));
     } else {
-        handleOwnText(QString("Instrument preset name not set"));
+        handleOwnText(QString("Instrument prefix name not set"));
     }
 #ifdef QT_DEBUG
     handleOwnText(QString("Compiled as a DEBUG version"));
 #else
     handleOwnText(QString("Compiled as a RELEASE version"));
 #endif
+
 }
 
 void consoleLog::handleOwnText(QString message)

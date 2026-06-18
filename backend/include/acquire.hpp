@@ -1,0 +1,345 @@
+#ifndef ACQUIRE_HPP_
+#define ACQUIRE_HPP_
+
+//standard includes
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <ostream>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <chrono>
+
+// Shared Memory:
+// Undefine this variable to disable SHM:
+#define USE_SHM
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include "shm_image.h"
+
+// thread-safe Ring Buffer for saving files:
+#include "safebuffer.h"
+
+//multithreading includes
+#include <atomic>
+#include <boost/shared_array.hpp>
+#include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
+#include <pthread.h>
+#include <mutex>
+#include <gsl/gsl_statistics_uint.h>
+#include <gsl/gsl_statistics.h>
+//#include <boost/atomic.hpp>
+
+static int cudaDeviceNumberStatic = 0;
+
+//custom includes
+#include "frame_c.hpp"
+#include "std_dev_filter.hpp"
+#include "chroma_translate_filter.hpp"
+#include "dark_subtraction_filter.hpp"
+#include "white_ref_filter.hpp"
+#include "mean_filter.hpp"
+#include "camera_types.h"
+#include "cameramodel.h"
+#include "xiocamera.h"
+#include "constants.h"
+#include "safestringset.h"
+#include "takeoptions.h"
+#include "fileformats.h"
+#include "rtpnextgen.hpp"
+#include "rtpcamera.hpp"
+
+#define takeMessageSize (1024)
+
+//** Harware Macros ** These Macros set the hardware type that acquire will use to collect data
+#define EDT
+
+
+//** Debug Macros **
+//#define RESET_GPUS // will reset the GPU hardware on closing the program
+//#define VERBOSE  // sets whether or not to compile the program with some debugging diagnostics
+
+//Handles a corner case for the lines that display the version author. If no HOST or UNAME can be
+// provided by the OS at compile time, this will display instead.
+#ifndef HOST
+#define HOST "unknown location"
+#endif
+#ifndef UNAME
+#define UNAME "unknown person"
+#endif
+
+
+using std::string;
+
+static const bool CHECK_FOR_MISSED_FRAMES_6604A = false; // toggles the presence or absence of the "WARNING: MISSED FRAME X" line
+
+#define meanDeltaSize (20)
+
+#define obcStatusPixel (159)
+#define obcStatusDark1 (2)
+#define obcStatusScience (3)
+#define obcStatusDark2 (4)
+#define obcStatusClosing (8)
+#define obcStatusOpening (9)
+
+struct basicGPS_t {
+    bool usingGPS = false;
+    double chk_longitude = 0;
+    double chk_latiitude = 0;
+    double chk_altitude = 0;
+    float chk_gndspeed = 0;
+    float chk_heading = 0;
+    float chk_course = 0;
+    float fps = 0;
+    uint16_t collectionID = 0;
+};
+
+union pcv_t {
+    uint16_t* u16;
+    unsigned char* uc;
+    char* c;
+};
+
+class acquire {
+#ifdef CAMERALINK
+    PdvDev * pdv_p = NULL;
+#endif
+    unsigned int channel;
+    unsigned int numbufs;
+    unsigned int filter_refresh_rate;
+
+    // Shared memory support:
+    int shmFd = 0;
+    bool shmValid = false;
+    unsigned char shmBufferPositionPrior = 0;
+    unsigned char shmBufferPosition = 0;
+    shmSharedDataStruct *shm = NULL;
+    void shmSetup();
+
+    bool setDarkStatusInFrame = false;
+	
+#ifdef USE_CUDA
+    cudaDeviceProp cdev;
+#endif
+    int cudaDevNumber = -1;
+    size_t cudaTotalGlobalMem = -1;
+
+    bool closing = false;
+    bool grabbing = true;
+    bool runStdDev = true;
+
+    bool readingDSFFile = false;
+    bool readingWRFile = false;
+
+    boost::thread cam_thread; // this thread controls the data collection
+    boost::thread reading_thread; // this is used for file reading in the XIO camera.
+    boost::thread::native_handle_type cam_thread_handler;
+    boost::thread::native_handle_type reading_thread_handler;
+
+    boost::thread rtpAcquireThread; // copy from RTP stream into buffer
+    boost::thread rtpCopyThread; // copy from buffer into currFrame
+    boost::thread::native_handle_type rtpAcquireThreadHandler;
+    boost::thread::native_handle_type rtpCopyThreadHandler;
+
+    // Used to read in a dark mask file:
+    boost::thread mask_thread;
+    boost::thread::native_handle_type mask_thread_handler;
+
+    // Used to read in a White Reference file:
+    boost::thread wr_thread;
+    boost::thread::native_handle_type wr_thread_handler;
+
+    // Used to finish the mean collection:
+    boost::thread mask_liveMean_thread;
+    boost::thread::native_handle_type mask_liveMean_thread_handler;
+
+    // Used to finish the White Reference collection:
+    boost::thread wrf_liveMean_thread;
+    boost::thread::native_handle_type wrf_liveMean_thread_handler;
+
+    int pdv_thread_run = 0;
+    bool cam_thread_start_complete=false; // added by Michael Bernas 2016
+
+	unsigned int size;
+    int lastfc;
+
+    //frame dimensions
+    frame_c* curFrame;
+    unsigned int dataHeight;
+    unsigned int frHeight;
+    unsigned int frWidth;
+
+    float fpsObserved = 0;
+
+    //Filter-specific variables
+	int std_dev_filter_N;
+
+    std_dev_filter* sdvf;
+    int meanStartRow, meanHeight, meanStartCol, meanWidth; // dimensions used by the mean filter
+    int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end; // VERT_OVERLAY
+
+    //frame saving variables
+    boost::thread saving_thread; // this thread handles the frame saving, as saving frames should not cause data collection to suspend
+    //unsigned int save_count;
+    bool do_raw_save;
+    bool saveFrameAvailable;
+    uint16_t * raw_save_ptr;
+
+    basicGPS_t *basicGPSData = NULL;
+    bool haveGPSDataPointer = false;
+
+public:
+    acquire(int channel_num = 0, int number_of_buffers = 64,
+                int filter_refresh_rate = 10, bool runStdDev = true);
+    acquire(takeOptionsType options, int channel_num = 0, int number_of_buffers = 64,
+                int filter_refresh_rate = 10, bool runStdDev = true);
+    virtual ~acquire();
+    void initialSetup(int channel_num = 0, int number_of_buffers = 64,
+                      int filter_refresh_rate = 10, bool runStdDev = true);
+    void start();
+    void changeOptions(takeOptionsType options);
+    void acceptGPSDataPtr(basicGPS_t *basicGPSDataIn);
+    void setReadDirectory(const char* directory);
+    camControlType* getCamControl();
+    dark_subtraction_filter* dsf;
+    white_ref_filter* wrf;
+
+    camera_t cam_type;
+    frame_c * frame_ring_buffer;
+    unsigned long count = 0; // running frame counter
+    bool savingData = false; // true while file is being written or when data is being acquired for saving.
+    int xioCount = 0; // counter for each set of xio files.
+    uint16_t* prior_temp_frame = NULL;
+    int getMicroSecondsPerFrame();
+
+    //Frame filters that affect everything at the raw data level
+    void setInversion(bool checked, unsigned int factor);
+    void set_twoscomp(bool checked);
+    void enableDarkStatusPixelWrite(bool writeValues);
+
+    //DSF mask functions
+	void startCapturingDSFMask();
+	void finishCapturingDSFMask();
+    void loadDSFMask_entry(std::string filename_s, fileFormat_t fmt);
+    void loadDSFMaskFloat32(std::string file_name); // float
+    void loadDSFMaskFromFramesU16(std::string file_name, fileFormat_t format);
+
+    bool *dsfMaskCollected = NULL;
+    bool useDSF = false;
+    uint16_t darkStatusPixelVal = obcStatusScience;
+
+    // White Reference functions
+    void startCapturingWR();
+    void finishCapturingWR();
+    void loadWR_entry(std::string filename_s, fileFormat_t fmt);
+    void loadWR_float(std::string file_name);
+    void loadWR_uint16(std::string file_name);
+    bool *wrMaskCollected = NULL;
+    bool useWR = false;
+    bool takingWR = false;
+
+    void setNDStatus(bool useND);
+    bool useND = false;
+
+    // Std Dev Filter functions
+    void setStdDev_N(int s);
+    void toggleStdDevCalculation(bool enabled);
+
+    // Mean filter functions
+    void updateVertRange(int br, int er);
+    void updateHorizRange(int bc, int ec);
+    void updateVertOverlayParams(int lh_start, int lh_end,\
+                                 int cent_start, int cent_end,\
+                                 int rh_start, int rh_end);
+    void updateVertPos(int vertPos);
+    void updateHorizPos(int horizPos);
+    void changeFFTtype(FFT_t t);
+
+    // Frame saving functions
+    void startSavingRaws(std::string raw_file_name, unsigned int frames_to_save, unsigned int num_avgs_save);
+	void stopSavingRaws();
+    //void panicSave(std::string);
+    //std::list<uint16_t *> saving_list;
+    // 128 is the allocation size for the camera-to-savefile buffer
+    // In practice we are generally only a frame behind the camera, but we allow for up to 128 frames.
+    LockFreeRingBuffer<uint16_t, 128> frameSaveBuffer;
+
+	std::atomic <uint_fast32_t> save_framenum;
+	std::atomic <uint_fast32_t> save_count;
+	unsigned int save_num_avgs;
+
+    //Getter functions / variables
+    unsigned int getDataHeight();
+    unsigned int getFrameHeight();
+    unsigned int getFrameWidth();
+    bool std_dev_ready();
+    std::vector<float> * getHistogramBins();
+    FFT_t getFFTtype();
+    bool haveMessage = false;
+    char messagePasser[takeMessageSize] = {'\0'};
+
+private:
+    // PDV Camera Link:
+#ifdef CAMERALINK
+    void pdv_loop();
+#endif
+
+    // XIO (files):
+    void fileImageCopyLoop();
+    void fileImageReadingLoop();
+    void prepareFileReading();
+
+    // RTP using gstreamer library:
+    void prepareRTPCamera();
+    void rtpStreamLoop(); // acquire from RTP network source
+    void rtpConsumeFrames(); // copy into take object.
+
+    // RTP using NextGen RTP:
+    void prepareRTPNGCamera();
+    void rtpNGStreamLoop();
+
+    // Rotation:
+    void rotate(uint16_t *input, uint16_t *output, int inHeight, int inWidth);
+
+    CameraModel *Camera = NULL;
+    bool fileReadingLoopRun = false;
+    bool rtpConsumerRun = false;
+    camControlType cameraController;
+    CameraModel::camStatusEnum camStatus;
+
+    void savingLoop(std::string, unsigned int num_avgs, unsigned int num_frames);
+    std::mutex savingMutex;
+
+    takeOptionsType options;
+
+    float deltaT_micros = 100.0;
+    int measuredDelta_micros_final = 0;
+    int meanDeltaArrayPos = 0;
+    int meanDeltaArray[meanDeltaSize] = {10}; // = {10,10,10,10,10,10,10,10,10,10};
+
+    void markFrameForChecking(uint16_t * frame);
+    bool checkFrame(uint16_t *Frame);
+    void clearAllRingBuffer();
+
+    std::streambuf *coutbuf;
+    void errorMessage(const char* message);
+    void errorMessage(std::ostringstream &message);
+    void warningMessage(const char* message);
+    void statusMessage(const char* message);
+    void errorMessage(const string message);
+    void warningMessage(const string message);
+    void statusMessage(const string message);
+    void statusMessage(std::ostringstream &message);
+
+    // variables needed by the Raw Filters
+    unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
+    bool inverted = false;
+    bool twoscomp = false; // Enable Parallel Pixel Mapping (Chroma Translate filter)
+    std::atomic<bool> continuousRecording{false}; // flag to enable continuous recording
+    FFT_t whichFFT;
+};
+
+#endif /* ACQUIRE_HPP_ */

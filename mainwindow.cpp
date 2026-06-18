@@ -90,6 +90,14 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     connect(waterfall_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
     connect(std_dev_widget, SIGNAL(statusMessage(QString)), this, SLOT(handleMainWindowStatusMessage(QString)));
     connect(save_server, SIGNAL(sigMessage(QString)), this, SLOT(handleGeneralStatusMessage(QString)));
+
+    // White Reference signals
+    connect(this, SIGNAL(toggleUseWR(bool)), fw, SLOT(toggleUseWR(bool)));
+    connect(vert_mean_widget, SIGNAL(requestWhiteReference(bool)), this, SLOT(handleWRToggle(bool)));
+    connect(horiz_mean_widget, SIGNAL(requestWhiteReference(bool)), this, SLOT(handleWRToggle(bool)));
+    connect(vert_cross_widget, SIGNAL(requestWhiteReference(bool)), this, SLOT(handleWRToggle(bool)));
+    connect(horiz_cross_widget, SIGNAL(requestWhiteReference(bool)), this, SLOT(handleWRToggle(bool)));
+
     raw_play_widget = NULL;
     if(!options->flightMode)
     {
@@ -277,15 +285,58 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
             darkRefLoadTimer->setInterval(5000); // 5 seconds after load
             connect(this->darkRefLoadTimer, &QTimer::timeout,
                     [=]() {
-                handleMainWindowStatusMessage(QString("Loading uint16 dark reference file %1 (all frames)")
-                                              .arg(options->darkReferenceFileLocation));
-                emit loadDarkMask(options->darkReferenceFileLocation, fmt_uint16);
+                if(options->darkRefFileFloat) {
+                    handleMainWindowStatusMessage(QString("Loading float dark reference file %1 (single frame)")
+                                                  .arg(options->darkReferenceFileLocation));
+                    emit loadDarkMask(options->darkReferenceFileLocation, fmt_float32);
+                } else {
+                    handleMainWindowStatusMessage(QString("Loading uint16 dark reference file %1 (all frames)")
+                                                  .arg(options->darkReferenceFileLocation));
+                    emit loadDarkMask(options->darkReferenceFileLocation, fmt_uint16);
+                }
                 controlbox->toggleDSFUsage(true);
             });
             darkRefLoadTimer->setSingleShot(true);
             darkRefLoadTimer->start();
         }
     }
+
+    whiteRefLoadTimer = new QTimer();
+    connect(this, SIGNAL(loadWhiteReference(QString,fileFormat_t)),
+            fw, SLOT(loadWRFile(QString,fileFormat_t)));
+
+    if(options->whitereffileSet) {
+        if(!options->whitereffile.isEmpty()) {
+            int delay_ms = 5000;
+            if(options->darkRefFileSet) {
+                delay_ms  = delay_ms*2;
+            }
+            handleMainWindowStatusMessage(QString("Planning to load dark reference file in %1 seconds.").arg(delay_ms/1000));
+            whiteRefLoadTimer->setInterval(delay_ms);
+            connect(this->whiteRefLoadTimer, &QTimer::timeout,
+                    [=]() {
+                if(options->whiteRefFileIsFloat) {
+                    handleMainWindowStatusMessage(QString("Loading float white reference file %1 (single frame)")
+                                                  .arg(options->whitereffile));
+                    emit loadWhiteReference(options->whitereffile, fmt_float32);
+                } else {
+                    handleMainWindowStatusMessage(QString("Loading uint16 white reference file %1 (all frames)")
+                                                  .arg(options->whitereffile));
+                    emit loadWhiteReference(options->whitereffile, fmt_uint16);
+                }
+            });
+            whiteRefLoadTimer->setSingleShot(true);
+            whiteRefLoadTimer->start();
+        } else {
+            handleMainWindowStatusMessage("White reference filename was empty!");
+        }
+    }
+    connect(this->controlbox, SIGNAL(toggleWR(bool)), fw, SLOT(toggleUseWR(bool)));
+    connect(this->controlbox, SIGNAL(startWRMaskCollection()), fw, SLOT(startCapturingWR()));
+    connect(this->controlbox, SIGNAL(stopWRMaskCollection()), fw, SLOT(finishCapturingWR()));
+
+    connect(this->controlbox, SIGNAL(setUseND(bool)), fw, SLOT(setUseND(bool)));
+
     handleMainWindowStatusMessage("Started");
 }
 
@@ -465,9 +516,9 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
         } else if ((controlbox->use_DSF_cbox.isEnabled()) && (c->key() == Qt::Key_M)) {
             controlbox->use_DSF_cbox.setChecked(!controlbox->use_DSF_cbox.isChecked());
         } else if (c->key() == Qt::Key_Comma) {
-            controlbox->collect_dark_frames_button.click();
+            controlbox->collectDarkButton->click();
         } else if (c->key() == Qt::Key_Period) {
-            controlbox->stop_dark_collection_button.click();
+            controlbox->collectWRButton->click();
         }
     }
 }
@@ -478,6 +529,10 @@ void MainWindow::keyPressEvent(QKeyEvent *c)
 
 
 //}
+
+void MainWindow::handleWRToggle(bool useWR) {
+    emit toggleUseWR(useWR);
+}
 
 void MainWindow::handlePreferenceRead(settingsT prefs)
 {

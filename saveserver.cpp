@@ -139,7 +139,13 @@ void saveServer::readCommand()
             QDataStream out( &block, QIODevice::WriteOnly );
             out.setVersion(QDataStream::Qt_4_0);
             out << (uint16_t)0;
-            out << (uint16_t)reference->to.save_framenum; // send the number of frames left to save, and
+
+            uint16_t framesLeft = (uint16_t)reference->to.save_framenum;
+            if(reference->to.savingData) {
+                framesLeft++;
+            }
+
+            out << (uint16_t)framesLeft;
             out << (uint16_t)reference->delta;            // send the frames per second
             out << (uint16_t)reference->navgs;                       // number of averages, new code, bogus
             out.device()->seek(0);
@@ -164,7 +170,14 @@ void saveServer::readCommand()
             out << (uint16_t)CMD_STATUS_EXTENDED; // new addition
             // NOTE: When the total number of frames to be saved is undefined (start/stop recording mode),
             // the value returned is bogus and should not be used.
-            out << (uint16_t)reference->to.save_framenum; // send the number of frames left to save, and
+            // send the number of frames left to save, and
+
+            uint16_t framesLeft = (uint16_t)reference->to.save_framenum;
+            if(reference->to.savingData) {
+                framesLeft++;
+            }
+            out << (uint16_t)framesLeft;
+
             out << (uint16_t)reference->delta;            // send the frames per second (as a uint)
             out << (uint16_t)reference->navgs;            // number of averages
             if(fname.isEmpty())
@@ -188,7 +201,13 @@ void saveServer::readCommand()
             out << (uint16_t)CMD_STATUS_FLIGHT; // new addition
             // NOTE: When the total number of frames to be saved is undefined (start/stop recording mode),
             // the value returned is bogus and should not be used.
-            out << (uint16_t)reference->to.save_framenum; // 32-bit int, warning. send the number of frames left to save, and
+
+            uint16_t framesLeft = (uint16_t)reference->to.save_framenum;
+            if(reference->to.savingData) {
+                framesLeft++;
+            }
+            out << (uint16_t)framesLeft;
+            // out << (uint16_t)reference->to.save_framenum; // 32-bit int, warning. send the number of frames left to save, and
             out << (uint16_t)reference->delta;            // send the frames per second (as a uint)
             out << (uint16_t)reference->navgs;            // number of averages
             if(fname.isEmpty())

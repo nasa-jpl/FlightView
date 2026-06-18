@@ -73,8 +73,19 @@ public:
     /* LEFT SIDE BUTTONS (Collections) */
     QGridLayout *collections_layout;
     QWidget CollectionButtonsBox;
-    QPushButton collect_dark_frames_button;
-    QPushButton stop_dark_collection_button;
+    QPushButton *collectDarkButton = NULL;
+    QPalette buttonPalette;
+    QString defaultButtonStylesheet;
+    QString modifiedButtonStylesheet;
+    QColor buttonPressedColor;
+    QColor buttonNominalColor;
+
+    //QPushButton stop_dark_collection_button;
+    QPushButton *collectWRButton = NULL;
+
+    //QPushButton* startTakingWRBtn = NULL;
+    //QPushButton* stopTakingWRBtn = NULL;
+
     QPushButton showRGBLevelsButton;
     QPushButton load_mask_from_file;
     QPushButton showSecondWFBtn;
@@ -116,6 +127,9 @@ public:
     QCheckBox use_DSF_cbox;
     QCheckBox show_rgb_lines_cbox;
     QCheckBox useRatioCbox;
+    QCheckBox* useWRCbox = NULL;
+    QCheckBox* setNDOnbox = NULL;
+
 
     /* RIGHT SIDE BUTTONS (save) */
     QGridLayout *save_layout;
@@ -167,6 +181,8 @@ private:
     bool checkForOverwrites = true;
     void waterfallControls(bool enabled);
     void overlayControls(bool enabled);
+    QString getButtonStyle(const QString objName, QColor primaryColor);
+    QString getButtonStyle(QColor primaryColor);
 
     QSettings *settings;
     void setDefaultSettings();
@@ -199,6 +215,9 @@ private:
     bool verticalCrossDSF = false;
     bool verticalOverlayDSF = false;
     bool playbackDSF = false;
+    bool useWhiteReference = false;
+    bool takingWRNow = false;
+    bool takingDSFNow = false;
 
 
 signals:
@@ -217,6 +236,11 @@ signals:
 
     /*! \brief Passes the DSF the message to begin averaging dark frames for all live widgets. */
     void startDSFMaskCollection();
+
+    void setUseND(bool usingND_On);
+    void toggleWR(bool state);
+    void startWRMaskCollection();
+    void stopWRMaskCollection();
 
     void loadDarkFile(QString filename, fileFormat_t formatSelected);
 
@@ -296,7 +320,7 @@ private slots:
 
     void load_pref_window();
     void updatePenWidth(int penWidth);
-    void transmitChange(int linesToAverage);
+    void transmitChangeLinesToAverage(int linesToAverage);
     void updateOverlayParams(int dummy);
     void validateOverlayParams(int &lh_start, int &lh_end, int &cent_start, int &cent_end, int &rh_start, int &rh_end);
 

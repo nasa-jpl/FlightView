@@ -12,7 +12,7 @@
 #include <QTimer>
 #include <QWidget>
 
-/* Live View / cuda_take includes */
+/* Live View / backend includes */
 #include "dark_subtraction_filter.hpp"
 #include "frame_worker.h"
 #include "qcustomplot.h"
@@ -80,7 +80,6 @@ signals:
     void loadMask(float *mask);
     /*! \brief This signal calls to stop the class event loop and deallocate the thread later. */
     void finished();
-
 };
 
 class playback_widget : public QWidget
@@ -190,6 +189,9 @@ private slots:
     void loadMaskIn(float *mask_arr);
     void updateStatus(int frameNum);
     void handleFrame(int frameNum);
+
+private:
+    bool *dsfReady = NULL;
 
 };
 #endif // PLAYBACK_WIDGET_H

@@ -17,7 +17,11 @@ struct startupOptionsType
     bool dataLocationSet = false;
     QString dataLocation = QString("/data");
     bool darkRefFileSet = false;
+    bool darkRefFileFloat = false;
     QString darkReferenceFileLocation = QString("/empty.raw");
+    bool whitereffileSet = false;
+    bool whiteRefFileIsFloat = false;
+    QString whitereffile = QString("/empty.raw");
     bool gpsIPSet = false;
     QString gpsIP = QString("10.0.0.6");
     bool gpsPortSet = false;
@@ -66,7 +70,18 @@ struct startupOptionsType
     QString UDPLogHost = QString("");
     unsigned int UDPLogPort = 10175;
 
+    bool zmqLogging = false;
+    QString zmqLoggingHost = QString("");
+    unsigned int zmqLoggingPort = 0;
+
+    bool frameSkipSet = false;
+    unsigned int frameSkip = 0;
+
+    bool stdDevNSet = false;
+    int stdDevN = 400; // default buffer size
+
     bool showMore = false;
+    bool showStats = false; // show timing statistics
 };
 
 

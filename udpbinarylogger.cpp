@@ -1,5 +1,12 @@
 #include "udpbinarylogger.h"
 
+// macOS pthread_setname_np compatibility
+#ifdef __APPLE__
+#define pthread_setname_np_compat(thread, name) pthread_setname_np(name)
+#else
+#define pthread_setname_np_compat(thread, name) pthread_setname_np(thread, name)
+#endif
+
 // UDP Binary Logger
 
 // Based off code from:
@@ -22,7 +29,7 @@ udpbinarylogger::udpbinarylogger(lineBuffer* buffer, const char *ipaddressIn,
 }
 
 void udpbinarylogger::startNow() {
-    pthread_setname_np(pthread_self(), "UDPLogger");
+    pthread_setname_np_compat(pthread_self(), "UDPLogger");
     process_buffer(ipaddress, port);
 }
 

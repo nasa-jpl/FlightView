@@ -398,7 +398,9 @@ void waterfall::debugMessage(QString m) {
     } else {
         m.prepend(QString("DBG WATERFALL (1): "));
     }
-    std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
+#ifdef QT_DEBUG
+    //std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
+#endif
     emit statusMessageOut(m);
 }
 
@@ -412,7 +414,7 @@ void waterfall::statusMessage(QString m)
     // Note: Messages made during the constructor might get emitted before
     // the console log is ready. Uncomment the next line to see them anyway:
 #ifdef QT_DEBUG
-    std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
+    //std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
 #endif
     emit statusMessageOut(m);
 }

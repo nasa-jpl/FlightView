@@ -3,6 +3,7 @@
 *.lo
 *.o
 *.obj
+*.a
 
 # Executables
 *.exe
@@ -25,6 +26,7 @@ Thumbs.db
 desktop.ini
 #Mac Specific things (Why am I copying this if it's only being used in Linux?)
 .DS_Store
+*.iconset
 #Temp files
 *~
 *.pro.user

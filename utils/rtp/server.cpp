@@ -8,10 +8,18 @@
 #include <chrono>
 #include <thread>
 
-#include <bits/stdc++.h> 
-#include <stdlib.h> 
+#if defined(__linux__)
+#include <bits/stdc++.h>
+#else
+// <bits/stdc++.h> is a non-standard GCC header not available on macOS
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <string>
+#include <cstdlib> 
+#include <cstring>
+#endif
 #include <unistd.h> 
-#include <string.h> 
 #include <sys/types.h> 
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
@@ -20,25 +28,24 @@
 #define PORT      5004
 #define MAXLINE 1024 
 
-// 8E3  = 125 FPS
-// 5E3  = 196 FPS
-// 4444 = 225 FPS
-// 4E3  = 250 FPS (243.5 typically)
-// 3333 = 300 FPS (295 typically)
-// 3E3  = 330 FPS (328 typically)
-// 2500 = 400 FPS (385 typically)
-// 2000 = 500 FPS (470 typically)
+// Frame rate reference (for manual calculation):
+// 8E3 µs  = 125 FPS
+// 5E3 µs  = 196 FPS
+// 4444 µs = 225 FPS
+// 4E3 µs  = 250 FPS
+// 3333 µs = 300 FPS
+// 3E3 µs  = 330 FPS
+// 2500 µs = 400 FPS
+// 2000 µs = 500 FPS
 
-#define framePeriod_microsec (10000)
-#define packetDelay_ns (1)
-
+#define packetDelay_ns (0)  // Removed delay for maximum throughput
 #define nFramesToDeliver (100000)
 
-// Frame size must be integer divisible
-// 32 for 1280*480
-// 41 for 1280*328
-// 64 for 512*2048
-#define chunksPerFrame_d (41)
+// Default values if not specified on command line
+#define DEFAULT_WIDTH 1280
+#define DEFAULT_HEIGHT 328
+#define DEFAULT_FPS 225.0
+#define DEFAULT_PACKETS_PER_FRAME 256
 
 struct SRTPData {
     bool	      m_bFirstPacket;
@@ -159,8 +166,8 @@ void buildHeader(uint8_t* buffer, bool isMark,
     buffer[0] = 0x00;
     buffer[0] = (ver<<6);
     buffer[0] = buffer[0] | ( ((int)padding) << 5);
-    buffer[0] = buffer[0] | ( ((int)extension) << 6);
-    buffer[0] = buffer[0] | ( payloadType & 0x7f);
+    buffer[0] = buffer[0] | ( ((int)extension) << 4);
+    buffer[0] = buffer[0] | ( uCRSCCount & 0x0F);
 
     // buffer[1]:
     // marker
@@ -220,21 +227,15 @@ void buildPacket(uint8_t *header, uint8_t *frameImage,
                 size_t bytesFramePerPacket) 
                 {
    
-    // copy the header into the packet buffer: 
-    size_t pos = 0;
-    for(pos=0; pos < 12; pos++) {
-        packetBuffer[pos] = header[pos];
-    }
+    // Optimized: Use memcpy instead of byte-by-byte loops
+    memcpy(packetBuffer, header, 12);
     
     size_t offset = bytesFramePerPacket*sequenceNumber;
     // Comment this out to always send 
     // the same frame of garbage data 
     // (much faster) 
     
-    for(; pos < 12+bytesFramePerPacket; pos++) {
-        packetBuffer[pos] = frameImage[pos-12 + offset];
-    }
-    
+    memcpy(packetBuffer + 12, frameImage + offset, bytesFramePerPacket);
 }
 
 void genFrame(uint8_t* buffer, uint16_t height, uint16_t width) {
@@ -251,28 +252,37 @@ void genFrameOffset(uint8_t* buffer, uint16_t height, uint16_t width, uint8_t of
 }
 
 void insertFrameHeader(uint8_t* frameImage, unsigned int frameCounter) {
-    frameImage[1] = (uint8_t)frameCounter&0x00ff;
-    frameImage[0] = (uint8_t)frameCounter&0xff00>>8;
-
-    //frameImage[1] = 0xf0;
-    //frameImage[0] = 0x00;
-
-    frameImage[2] = 0xff;
-    frameImage[3] = 0xff;
-    frameImage[4] = 0xff;
-    frameImage[5] = 0xff;
-
-    frameImage[6] = 0;
-    frameImage[7] = 0;
-    frameImage[8] = 0;
-    frameImage[9] = 0;
-
-    frameImage[10] = 0xff;
-    frameImage[11] = 0xff;
-    frameImage[12] = 0xff;
-    frameImage[13] = 0xff;
+    // Optimized: Use 32/64-bit writes instead of byte-by-byte
+    uint16_t* frame16 = (uint16_t*)frameImage;
+    frame16[0] = frameCounter; // First 2 bytes
+    
+    uint32_t* frame32 = (uint32_t*)frameImage;
+    frame32[0] = (uint32_t)frameCounter | 0xffff0000; // Combines first operations
+    frame32[1] = 0x00000000;
+    frame32[2] = 0xffffffff;
 }
 
+void printUsage(const char* progName) {
+    printf("\n=== RTP Test Server - High-Performance Frame Sender ===\n\n");
+    printf("Usage: %s [options] <filename>\n\n", progName);
+    printf("Required:\n");
+    printf("  <filename>              Raw binary file containing frame data\n\n");
+    printf("Options:\n");
+    printf("  -w, --width <pixels>    Frame width (default: %d)\n", DEFAULT_WIDTH);
+    printf("  -h, --height <pixels>   Frame height (default: %d)\n", DEFAULT_HEIGHT);
+    printf("  -f, --fps <rate>        Target frame rate (default: %.1f)\n", DEFAULT_FPS);
+    printf("  -p, --packets <count>   Packets per frame (default: %d)\n", DEFAULT_PACKETS_PER_FRAME);
+    printf("  --help                  Show this help message\n\n");
+    printf("Examples:\n");
+    printf("  %s data.raw\n", progName);
+    printf("  %s -w 1280 -h 480 -f 200 data.raw\n", progName);
+    printf("  %s --width 512 --height 2048 --fps 125 --packets 64 data.raw\n\n", progName);
+    printf("Notes:\n");
+    printf("  - Packets per frame will be rounded to ensure frame size is evenly divisible\n");
+    printf("  - Higher FPS requires faster CPU and optimized compilation (-O3 -march=native)\n");
+    printf("  - Frame size = width × height × 2 bytes (16-bit pixels)\n");
+    printf("  - Actual FPS may vary slightly due to timing precision\n\n");
+}
 
 int main(int argc, char* argv[]) {
 
@@ -280,22 +290,121 @@ int main(int argc, char* argv[]) {
     std::chrono::steady_clock::time_point begintp;
     std::chrono::steady_clock::time_point endtp;
 
-    if(argc < 2) {
-        errno = 131;
-        perror("Please specify filename to load data from as an argument to the program.\n");
-        return errno;
-    }
-    // CARBO Air: 
-    // uint16_t height = 512;
-    // uint16_t width = 2048;
+    // Default values
+    uint16_t width = DEFAULT_WIDTH;
+    uint16_t height = DEFAULT_HEIGHT;
+    double targetFPS = DEFAULT_FPS;
+    int desiredPacketsPerFrame = DEFAULT_PACKETS_PER_FRAME;
+    const char* filename = nullptr;
 
-    // AVIRIS-III: 
-    uint16_t height = 328;
-    uint16_t width = 1280;
+    // Parse command line arguments
+    int i = 1;
+    while(i < argc) {
+        if(strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--width") == 0) {
+            if(i + 1 >= argc) {
+                fprintf(stderr, "Error: %s requires an argument\n", argv[i]);
+                printUsage(argv[0]);
+                return 1;
+            }
+            width = atoi(argv[i+1]);
+            if(width <= 0) {
+                fprintf(stderr, "Error: Invalid width: %s\n", argv[i+1]);
+                return 1;
+            }
+            i += 2;
+        } else if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--height") == 0) {
+            if(i + 1 >= argc) {
+                fprintf(stderr, "Error: %s requires an argument\n", argv[i]);
+                printUsage(argv[0]);
+                return 1;
+            }
+            height = atoi(argv[i+1]);
+            if(height <= 0) {
+                fprintf(stderr, "Error: Invalid height: %s\n", argv[i+1]);
+                return 1;
+            }
+            i += 2;
+        } else if(strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--fps") == 0) {
+            if(i + 1 >= argc) {
+                fprintf(stderr, "Error: %s requires an argument\n", argv[i]);
+                printUsage(argv[0]);
+                return 1;
+            }
+            targetFPS = atof(argv[i+1]);
+            if(targetFPS <= 0) {
+                fprintf(stderr, "Error: Invalid FPS: %s\n", argv[i+1]);
+                return 1;
+            }
+            i += 2;
+        } else if(strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--packets") == 0) {
+            if(i + 1 >= argc) {
+                fprintf(stderr, "Error: %s requires an argument\n", argv[i]);
+                printUsage(argv[0]);
+                return 1;
+            }
+            desiredPacketsPerFrame = atoi(argv[i+1]);
+            if(desiredPacketsPerFrame <= 0) {
+                fprintf(stderr, "Error: Invalid packets per frame: %s\n", argv[i+1]);
+                return 1;
+            }
+            i += 2;
+        } else if(strcmp(argv[i], "--help") == 0) {
+            printUsage(argv[0]);
+            return 0;
+        } else if(argv[i][0] == '-') {
+            fprintf(stderr, "Error: Unknown option: %s\n", argv[i]);
+            printUsage(argv[0]);
+            return 1;
+        } else {
+            // This is the filename
+            filename = argv[i];
+            i++;
+        }
+    }
+
+    if(filename == nullptr) {
+        fprintf(stderr, "Error: No filename specified\n");
+        printUsage(argv[0]);
+        return 1;
+    }
+
+    // Calculate frame parameters from parsed arguments
+    unsigned int frameSize = width * height * 2; // 16-bit pixels
+    
+    // Round packets per frame to ensure even division
+    int chunksPerFrame = desiredPacketsPerFrame;
+    size_t bytesPerPacket = frameSize / chunksPerFrame;
+    
+    // Adjust to ensure frame is evenly divisible
+    while(frameSize % chunksPerFrame != 0 && chunksPerFrame > 0) {
+        chunksPerFrame--;
+    }
+    if(chunksPerFrame <= 0) chunksPerFrame = 1;
+    
+    bytesPerPacket = frameSize / chunksPerFrame;
+    
+    // Calculate frame period from desired FPS
+    int framePeriod = (int)(1000000.0 / targetFPS); // microseconds
+    
+    // Print configuration
+    printf("\n=== RTP Server Configuration ===\n");
+    printf("Frame geometry:       %d × %d pixels\n", width, height);
+    printf("Frame size:           %u bytes (%.1f KB)\n", frameSize, frameSize/1024.0);
+    printf("Target frame rate:    %.1f FPS\n", targetFPS);
+    printf("Frame period:         %d µs\n", framePeriod);
+    printf("Packets per frame:    %d", chunksPerFrame);
+    if(chunksPerFrame != desiredPacketsPerFrame) {
+        printf(" (requested: %d, adjusted for even division)", desiredPacketsPerFrame);
+    }
+    printf("\n");
+    printf("Bytes per packet:     %zu bytes (payload)\n", bytesPerPacket);
+    printf("Packet size:          %zu bytes (with 12-byte header)\n", bytesPerPacket + 12);
+    printf("Target data rate:     %.2f Mbps\n", (frameSize * 8 * targetFPS) / 1000000.0);
+    printf("================================\n\n");
 
     size_t fileLen = 0;
-    printf("Loading file [%s]...\n", argv[argc-1]);
-    uint8_t* imageData = (uint8_t *)loadFile(argv[argc-1], &fileLen);
+    printf("Loading file [%s]...\n", filename);
+    uint8_t* imageData = (uint8_t *)loadFile((char*)filename, &fileLen);
     if(imageData) {
         printf("Loaded %zu MiB from file into memory.\n", fileLen/1024/1024);
     } else {
@@ -322,30 +431,56 @@ int main(int argc, char* argv[]) {
     } else {
         printf("\tDone.\n");
     }
+    
+    // Optimize socket for high-throughput sending (Mac and Linux compatible)
+    int send_buffer_size = 16 * 1024 * 1024; // 16MB send buffer
+    if(setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &send_buffer_size, sizeof(send_buffer_size)) < 0) {
+        printf("WARNING: Failed to set socket send buffer size. May limit throughput.\n");
+    } else {
+        int actual_size = 0;
+        socklen_t optlen = sizeof(actual_size);
+        if(getsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, &actual_size, &optlen) == 0) {
+            printf("Socket send buffer set to %d bytes (requested: %d).\n", actual_size, send_buffer_size);
+        }
+    }
        
     memset(&servaddr, 0, sizeof(servaddr)); 
     
     // Filling server information 
     servaddr.sin_family    = AF_INET; // IPv4 
-    servaddr.sin_addr.s_addr = INADDR_ANY; // traffic seen on "lo" interface only
-    // servaddr.sin_addr.s_addr = inet_addr("0.0.0.0");  // no traffic seen
-    //servaddr.sin_addr.s_addr = inet_addr("10.10.10.1"); // traffic on both sides seen, good for fiber RTP testing
-    //servaddr.sin_addr.s_addr = inet_addr("10.10.10.0"); // no traffic seen
+    // IMPORTANT:
+    //       The address specified here is the address we are 
+    //       sending packets *to*. 
+    //       Typically that is the address of the computer
+    //       running FlightView. 
+    //
+    // For localhost testing (FlightView on same machine):
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");  // Use this for localhost on macOS/Linux
+    
+    // For network testing (FlightView on different machine):
+    //servaddr.sin_addr.s_addr = inet_addr("10.0.0.141"); // Change to target IP address
+    
+    // NOTE: INADDR_ANY (0.0.0.0) is for binding/listening, NOT for sending!
+    //       Use explicit IP addresses for sendto() destination.
+    
     servaddr.sin_port = htons(PORT); 
        
     socklen_t len;
    
     len = sizeof(servaddr);
-     
+    
+    // Print connection info
+    char ipstr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(servaddr.sin_addr), ipstr, INET_ADDRSTRLEN);
+    printf("Configured to send RTP packets to: %s:%d\n", ipstr, PORT);
     printf("Sending frames...\n");
     size_t bytesSent = 0; 
 
     unsigned int framesSent = 0;
 
-    unsigned int frameSize = height*width*2; 
-    bool marker = false; 
-    int chunksPerFrame = chunksPerFrame_d;
-    size_t frameBytesPerPacket = frameSize/chunksPerFrame; 
+    // frameSize, chunksPerFrame, and bytesPerPacket already calculated above
+    bool marker = false;
+    size_t frameBytesPerPacket = bytesPerPacket;
     unsigned int chunksSent = 0;
     unsigned int chunks = 0;
     uint16_t sequenceNumber = 0;
@@ -358,20 +493,7 @@ int main(int argc, char* argv[]) {
     uint32_t ssrc = 0xdeadbeef; 
     uint32_t timestamp = 0;
 
-    // Higher frame rates are possible
-    // if compiled with -O3 -march=native
-    // 
-    // There is some loss in accuracy due to function
-    // return time in the timing function. 
-    //
-    // 8E3  = 125 FPS
-    // 5E3  = 196 FPS
-    // 4444 = 225 FPS
-    // 4E3  = 250 FPS (243.5 typically)
-    // 3333 = 300 FPS (295 typically)
-    // 2500 = 400 FPS (385 typically)
-    // 2000 = 500 FPS (470 typically)
-    int framePeriod = framePeriod_microsec; // microseconds
+    // framePeriod already calculated from command-line FPS argument
     int underspeedEvents = 0;
     uintmax_t bytesSentTotal = 0;
     size_t offsetIntoFrameData = 0;
@@ -379,6 +501,14 @@ int main(int argc, char* argv[]) {
     startMaintp = std::chrono::steady_clock::now();
 
     frameImage = imageData;
+    
+    // Pre-build the static parts of the header once (huge optimization)
+    // These fields don't change packet-to-packet
+    buildHeader(headerBuffer, false, 0, ver,
+        padding, extension, uCRSCCount, 
+        payloadType, 0, ssrc);
+    // Note: We'll update marker (byte 1), sequence (bytes 2-3), 
+    // and timestamp (bytes 4-7) in the tight loop
 
     bool keepGoing = true;
 
@@ -390,6 +520,13 @@ int main(int argc, char* argv[]) {
 
         // Mark the frame, in case we save data and look at it later.
         insertFrameHeader(frameImage, framesSent);
+        
+        // Update timestamp in header buffer once per frame (bytes 4-7)
+        headerBuffer[7] = (timestamp&0x000000ff);
+        headerBuffer[6] = (timestamp&0x0000ff00)>>8;
+        headerBuffer[5] = (timestamp&0x00ff0000)>>16;
+        headerBuffer[4] = (timestamp&0xff000000)>>24;
+        
         //printf("Sending frame %d\n", framesSent);
         // This loop sends ONE frame of data via chunksPerFrame number of packets.
         for(int c=0; c < chunksPerFrame; c++) {
@@ -400,14 +537,15 @@ int main(int argc, char* argv[]) {
                  marker = false;
             }
 
-            buildHeader(headerBuffer, marker, sequenceNumber, ver,
-                padding, extension, uCRSCCount, 
-                payloadType, timestamp, ssrc);  
-
-
-            buildPacket(headerBuffer, frameImage, packetBuffer, chunks, frameBytesPerPacket);
-            //buildPacket(headerBuffer, frameImage+ (chunks*frameBytesPerPacket) , packetBuffer, chunks,
-            //        frameBytesPerPacket);
+            // Optimized: Build header inline to avoid function call overhead
+            // Only rebuild parts that change per packet
+            headerBuffer[1] = (marker ? 0x80 : 0x00) | (payloadType&0x7f);
+            headerBuffer[3] = (sequenceNumber&0x00ff);
+            headerBuffer[2] = (sequenceNumber&0xff00)>>8;
+            
+            // Optimized packet build with memcpy
+            memcpy(packetBuffer, headerBuffer, 12);
+            memcpy(packetBuffer + 12, frameImage + (chunks * frameBytesPerPacket), frameBytesPerPacket);
 
             offsetIntoFrameData += frameBytesPerPacket;
 
@@ -423,7 +561,15 @@ int main(int argc, char* argv[]) {
 
             chunksSent++;
             sequenceNumber++;
-            std::this_thread::sleep_for(std::chrono::nanoseconds(packetDelay_ns));
+            // Removed sleep - causes severe throughput limitation
+            
+            // Optional: macOS loopback pacing - reduces burst pressure on lo0
+            // Uncomment the next 4 lines if experiencing drops on macOS localhost
+            //#ifdef __APPLE__
+            //if((c > 0) && ((c % 32) == 0)) {
+            //    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+            //}
+            //#endif
         }
 
         frameImage += height*width*2; // next frame

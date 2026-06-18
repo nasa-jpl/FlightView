@@ -14,14 +14,14 @@
 #include <memory>
 // include <atomic>
 
-/* cuda_take includes */
-#include "take_object.hpp"
+/* backend includes */
+#include "acquire.hpp"
 #include "frame_c_meta.h"
 #include "image_type.h"
 #include "startupOptions.h"
-#include "cuda_take/include/takeoptions.h"
+#include "backend/include/takeoptions.h"
 #include "initialsetup.h"
-#include "cuda_take/include/fileformats.h"
+#include "backend/include/fileformats.h"
 
 /*! \file
  * \brief Communicates with the backend and connects public information between widgets.
@@ -32,8 +32,8 @@
  * may therefore be considered the function handleNewFrame() which periodically grabs a frame from the backend
  * and checks for asynchronous signals from the filters about the status of the data processing. A frame may still
  * be displayed even if analysis functions associated with it time out for the loop.
- * In general, the frameWorker is the only object with a copy of the take_object and should exclusively handle
- * communication with cuda_take.
+ * In general, the frameWorker is the only object with a copy of the acquire and should exclusively handle
+ * communication with backend.
  *
  * \author Noah Levy
  * \author Jackie Ryan
@@ -74,7 +74,7 @@ public:
     explicit frameWorker(startupOptionsType options, QObject *parent = 0);
     virtual ~frameWorker();
 
-    take_object to;
+    acquire to;
     camControlType *camcontrol= NULL;
     void setCameraPaused(bool isPaused);
 
@@ -106,6 +106,9 @@ public:
     int cent_end;
     int rh_start;
     int rh_end;
+    int lh_width = 1;
+    int rh_width = 1;
+    int cent_width = 1;
 
     bool use_gray = false;
     int color_scheme = 0;
@@ -159,6 +162,12 @@ public slots:
     void loadDarkFile(QString filename, fileFormat_t format);
     /*! @} */
 
+    void startCapturingWR();
+    void finishCapturingWR();
+    void setUseND(bool useND_ON);
+    void toggleUseWR(bool t);
+    void loadWRFile(QString filename, fileFormat_t format);
+
     /*! \addtogroup savingfunc
      * @{ */
     void startSavingRawData(unsigned int framenum, QString verifiedName, unsigned int numavgsave);
@@ -168,6 +177,11 @@ public slots:
     void skipFirstRow(bool skip);
     void skipLastRow(bool skip);
     void updateMeanRange(int linesToAverage, image_t profile);
+    void updateOverlayParams();
+    void updateOverlayParams(int lh_width, int cent_width, int rh_width);
+    void validateOverlayParams(int &lh_start, int &lh_end,\
+                                            int &cent_start, int &cent_end,\
+                                            int &rh_start, int &rh_end);
     void updateOverlayParams(int lh_start, int lh_end, int cent_start, int cent_end, int rh_start, int rh_end);
     void update_FFT_range(FFT_t type, int tapNum = 0);
     void tapPrfChanged(int tapNum);
@@ -180,7 +194,7 @@ public slots:
     void debugThis();
     void sMessage(QString message); // includes stdout
     void sMessageQuiet(QString message); // no stdout
-    void toMessageOut(QString message); // append [take_object]:
+    void toMessageOut(QString message); // append [acquire]:
 };
 
 

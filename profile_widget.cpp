@@ -53,8 +53,11 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     y_lh = QVector<double>(xAxisMax);
     y_rh = QVector<double>(xAxisMax);
 
-    qcp->xAxis->setRange(QCPRange(0, xAxisMax));
+    useWhiteReferenceCheckbox = new QCheckBox("Use White Reference");
+    useWhiteReferenceCheckbox->setChecked(false);
+    useWhiteReference = false;
 
+    qcp->xAxis->setRange(QCPRange(0, xAxisMax));
     qcp->addLayer("Box Layer", qcp->currentLayer());
     qcp->setCurrentLayer("Box Layer");
     callout = new QCPItemText(qcp);
@@ -124,7 +127,7 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
         // Place vertical layout on right side:
         qgl.addLayout(&op_vert, 0,2, Qt::AlignBaseline);
-
+        // TODO: Add splitter
 
         // Left side frame view image:
         qgl.addWidget(overlay_img, 0,1,1,1); // frame view, dark subtracted
@@ -147,6 +150,9 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
 
         this->setLayout(&qvbl);
     }
+
+    horiz_layout.addWidget(useWhiteReferenceCheckbox, 0);
+
     qcp->setNoAntialiasingOnDrag(true);
 
     connect(reset_zoom_btn, SIGNAL(released()), this, SLOT(defaultZoom())); // disconnect?
@@ -156,6 +162,11 @@ profile_widget::profile_widget(frameWorker *fw, image_t image_type, QWidget *par
     connect(qcp->yAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(profileScrolledY(QCPRange)));
     connect(showCalloutCheck, SIGNAL(clicked()), this, SLOT(hideCallout()));
     connect(&rendertimer, SIGNAL(timeout()), this, SLOT(handleNewFrame()));
+
+    connect(useWhiteReferenceCheckbox, &QCheckBox::stateChanged, [&](int state) {
+        this->useWhiteReference = (bool)state;
+        emit requestWhiteReference((bool)state);
+    });
 
     if(!options.headless) {
         rendertimer.start(FRAME_DISPLAY_PERIOD_MSECS);
@@ -240,7 +251,6 @@ void profile_widget::handleNewFrame()
         case HORIZONTAL_CROSS:
             // same as mean:
         case HORIZONTAL_MEAN:
-
             local_image_ptr = fw->curFrame->horizontal_mean_profile; // horizontal profiles
             for (int c = 0; c < frWidth; c++)
                 y[c] = double(local_image_ptr[c]);

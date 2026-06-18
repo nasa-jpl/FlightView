@@ -115,11 +115,60 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         emit setWFTargetFPS_render(targetFPS);
     });
 
+    setNDOnbox = new QCheckBox("ND Filter");
+    setNDOnbox->setToolTip("Check to set the Neutral Density filter status to True in the header file.");
+
+    connect(setNDOnbox, &QCheckBox::stateChanged, [&](int state) {
+        emit setUseND((bool)state);
+        emit statusMessage(QString("ND filter set to %1").arg((bool)state));
+    });
+
+    useWRCbox = new QCheckBox("WhiteReference");
+    useWRCbox->setToolTip("Check to use the white reference");
+
+    collectDarkButton = new QPushButton("Collect Darks");
+    collectDarkButton->setObjectName("collectDarkButtonId");
+
+    buttonPalette = collectDarkButton->palette();
+    defaultButtonStylesheet = collectDarkButton->styleSheet();
+    buttonPressedColor = buttonPalette.color(QPalette::Active, QPalette::Button);
+    buttonNominalColor = buttonPalette.color(QPalette::Inactive, QPalette::Button);
+
+    modifiedButtonStylesheet = getButtonStyle(QColor(Qt::red));
+
+    collectWRButton = new QPushButton("Collect WR");
+    collectWRButton->setToolTip("Start taking white reference. Must take dark first.");
+
+    connect(useWRCbox, &QCheckBox::stateChanged, [&](int state) {
+        this->useWhiteReference = (bool)state;
+        emit toggleWR(state);
+    });
+
+    connect(collectWRButton, &QPushButton::pressed, [&]() {
+        QFont f = collectWRButton->font();
+        if(takingWRNow) {
+            collectWRButton->setText("Collect WR");
+            f.setBold(false);
+            collectWRButton->setFont(f);
+            collectWRButton->setStyleSheet(defaultButtonStylesheet);
+            emit stopWRMaskCollection();
+            takingWRNow = false;
+        } else {
+            collectWRButton->setText("Stop WR");
+            f.setBold(true);
+            collectWRButton->setFont(f);
+            collectDarkButton->setStyleSheet("");
+            collectWRButton->setStyleSheet(modifiedButtonStylesheet);
+            emit startWRMaskCollection();
+            takingWRNow = true;
+        }
+    });
+
+
+
     /* ====================================================================== */
     // LEFT SIDE BUTTONS (Collections)
-    collect_dark_frames_button.setText("Record Dark Frames");
-    stop_dark_collection_button.setText("Stop Dark Frames");
-    stop_dark_collection_button.setEnabled(false);
+    collectDarkButton->setText("Take Dark");
     showRGBLevelsButton.setText("RGB Levels");
     showRGBLevelsButton.setEnabled(false);
     showRGBLevelsButton.setVisible(false);
@@ -129,6 +178,15 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     load_mask_from_file.setToolTip("Load a dark mask from a file, each pixel is a 32-bit float");
     pref_button.setText("Preferences");
     fps_label.setText("Warning: No Data Recieved");
+    // Calculate and set fixed size for FPS label to prevent UI squishing
+    // Format: "FPS @ backend: XXX.X" where XXX.X is the max expected FPS (e.g., 999.9)
+    QFontMetrics fpsMetrics(fps_label.font());
+    QString maxFpsText = "FPS @ backend: 999.9";
+    int fpsWidth = fpsMetrics.horizontalAdvance(maxFpsText) + 10; // Add padding
+    int fpsHeight = fpsMetrics.height() + 4;
+    fps_label.setFixedSize(fpsWidth, fpsHeight);
+    fps_label.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    
     server_ip_label.setText("Server IP: Not Connected!");
     server_port_label.setText("Port Number: Not Connected!");
 
@@ -155,8 +213,8 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     collections_layout = new QGridLayout();
     //First Row
-    collections_layout->addWidget(&collect_dark_frames_button, 1, 1, 1, 1);
-    collections_layout->addWidget(&stop_dark_collection_button, 1, 2, 1, 1);
+    collections_layout->addWidget(collectDarkButton, 1, 1, 1, 1);
+    collections_layout->addWidget(collectWRButton, 1, 2, 1, 1);
     collections_layout->addWidget(&showRGBLevelsButton, 1, 3, 1, 1);
 
     //Second Row
@@ -182,6 +240,14 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
         collections_layout->addWidget(&pausePlaybackChk, 2, 3, 1, 1);
         frameNumberLabel.setText("0");
         frameNumberLabel.setToolTip("Number of frames received");
+        // Calculate and set fixed size for frame number label to prevent UI squishing
+        // Format: "Frame: 99999" (5 digits max, wraps after 99999)
+        QFontMetrics frameMetrics(frameNumberLabel.font());
+        QString maxFrameText = "Frame: 99999";
+        int frameWidth = frameMetrics.horizontalAdvance(maxFrameText) + 10; // Add padding
+        int frameHeight = frameMetrics.height() + 4;
+        frameNumberLabel.setFixedSize(frameWidth, frameHeight);
+        frameNumberLabel.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         collections_layout->addWidget(&frameNumberLabel, 3, 3, 1, 1);
         if(options.xioCam) {
             collections_layout->addWidget(&showXioSetupBtn, 4, 3, 1, 1);
@@ -304,7 +370,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     floor_edit.setButtonSymbols(QAbstractSpinBox::NoButtons);
 
     low_increment_cbox.setText("Precision Slider");
-    use_DSF_cbox.setText("Apply Dark Subtraction Filter");
+    use_DSF_cbox.setText("Dark Subtract");
 
     show_rgb_lines_cbox.setText("Show RGB Lines");
     show_rgb_lines_cbox.setToolTip("Shows the RGB lines on the flight interface frame view\n at all times if checked. Otherwise just for 30 seconds");
@@ -377,8 +443,11 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     //Second Row
     sliders_layout->addWidget(&low_increment_cbox, 2, 1, 1, 1);
     sliders_layout->addWidget(&use_DSF_cbox, 2, 2, 1, 1);
-    sliders_layout->addWidget(&show_rgb_lines_cbox, 2, 3, 1, 1);
-    sliders_layout->addWidget(&useRatioCbox, 2, 4, 1, 1);
+    sliders_layout->addWidget(setNDOnbox ,2,3,1,1); // +1 to the below items in this row
+    sliders_layout->addWidget(&show_rgb_lines_cbox, 2, 4, 1, 1);
+    sliders_layout->addWidget(&useRatioCbox, 2, 5, 1, 1);
+    sliders_layout->addWidget(useWRCbox, 2, 6, 1, 1);
+
 
     //Third Row
     sliders_layout->addWidget(new QLabel("Ceiling:"),3,1,1,1);
@@ -469,7 +538,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     diskSpaceBar.setMinimum(0);
     diskSpaceBar.setVisible(false);
 
-    diskSpaceLabel.setText("Disk:");
+    diskSpaceLabel.setText("Disk Used:");
     diskSpaceLabel.setVisible(false);
 
     save_layout = new QGridLayout();
@@ -492,10 +561,16 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     save_layout->addWidget(&save_finite_button,        1, 4, 1, 1);
     save_layout->addWidget(&frames_save_num_edit, 2, 4, 1, 1);
     save_layout->addWidget(&filename_edit, 3, 2, 1, 4);
+#ifdef QT_DEBUG
     save_layout->addWidget(&debugButton, 4, 5, 1, 1);
+#endif
     save_layout->addWidget(&saveRGBPresetButton, 4, 1, 1, 1);
     save_layout->addWidget(&diskSpaceLabel, 4, 2, 1, 1);
+#ifdef QT_DEBUG
     save_layout->addWidget(&diskSpaceBar, 4, 3, 1, 2);
+#else
+    save_layout->addWidget(&diskSpaceBar, 4, 3, 1, 3);
+#endif
     if(options.flightMode)
     {
         filename_edit.setToolTip("Specified using --datastoragelocation option");
@@ -536,8 +611,23 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
 
     /* =========================================================================== */
     //Connections
-    connect(&collect_dark_frames_button, SIGNAL(clicked()), this, SLOT(start_dark_collection_slot()));
-    connect(&stop_dark_collection_button, SIGNAL(clicked()), this, SLOT(stop_dark_collection_slot()));
+    //connect(collectDarkButton, SIGNAL(clicked()), this, SLOT(start_dark_collection_slot()));
+
+    connect(collectDarkButton, &QPushButton::pressed,
+            [&]() {
+        if(takingWRNow) {
+            emit errorMessage("Cannot take dark while taking white reference.");
+            return;
+        }
+        if(takingDSFNow) {
+            this->stop_dark_collection_slot();
+            takingDSFNow = false;
+        } else {
+            this->start_dark_collection_slot();
+            takingDSFNow = true;
+        }
+    });
+
     connect(&load_mask_from_file, SIGNAL(clicked()), this, SLOT(getMaskFile()));   
     connect(&pref_button, SIGNAL(clicked()), this, SLOT(load_pref_window()));
     connect(&showConsoleLogBtn, &QPushButton::pressed,
@@ -568,7 +658,7 @@ ControlsBox::ControlsBox(frameWorker *fw, QTabWidget *tw, startupOptionsType opt
     connect(std_dev_N_slider, SIGNAL(valueChanged(int)), std_dev_N_edit, SLOT(setValue(int)), Qt::UniqueConnection);
     connect(line_average_edit, SIGNAL(valueChanged(int)), lines_slider, SLOT(setValue(int)), Qt::UniqueConnection);
     connect(lines_slider, SIGNAL(valueChanged(int)), line_average_edit, SLOT(setValue(int)), Qt::UniqueConnection);
-    connect(lines_slider, SIGNAL(valueChanged(int)), this, SLOT(transmitChange(int)), Qt::UniqueConnection);
+    connect(lines_slider, SIGNAL(valueChanged(int)), this, SLOT(transmitChangeLinesToAverage(int)), Qt::UniqueConnection);
 
     connect(&ceiling_edit, (&QSpinBox::editingFinished),
             [=]() {
@@ -789,6 +879,52 @@ void ControlsBox::closeEvent(QCloseEvent *e)
     /* Note: minor hack below */
     Q_UNUSED(e);
     prefWindow->close();
+}
+
+QString ControlsBox::getButtonStyle(const QString objName,
+        QColor primaryColor) {
+    QColor brighter=primaryColor.lighter(); // bottom
+    QColor darker=primaryColor.darker(125); // top
+    QColor disabled=QColor(170, 170, 127);
+    QString stylestring;
+
+    stylestring = QString(
+                "QPushButton#%1:pressed {\
+                background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:0,   stop:0 rgba(%2, %3, %4, %5), stop:1 rgba(%6, %7, %8, %9))}\
+QPushButton {\
+    background-color: %10; border: 8px solid black;\
+    border-radius: 8px;\
+color: black;}\
+QPushButton:disabled {\
+    background-color: %11}")
+        .arg(objName).arg(darker.red()).arg(darker.green()).arg(darker.blue()).arg(darker.alpha())\
+      .arg(brighter.red()).arg(brighter.green()).arg(brighter.blue()).arg(brighter.alpha())\
+      .arg(primaryColor.name()).arg(disabled.name());
+
+    return stylestring;
+}
+
+QString ControlsBox::getButtonStyle(QColor primaryColor) {
+
+    QColor brighter=primaryColor.lighter(); // bottom
+    QColor darker=primaryColor.darker(125); // top
+    QColor disabled=QColor(170, 170, 127);
+    QString stylestring;
+
+    stylestring = QString(
+                "QPushButton:pressed {\
+                background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1,   stop:0 rgba(%1, %2, %3, %4), stop:1 rgba(%5, %6, %7, %8))}\
+QPushButton {\
+    background-color: %9; border: 4px solid black;\
+    border-radius: 8px;\
+color: black;}\
+QPushButton:disabled {\
+    background-color: %10}")
+        .arg(darker.red()).arg(darker.green()).arg(darker.blue()).arg(darker.alpha())\
+      .arg(brighter.red()).arg(brighter.green()).arg(brighter.blue()).arg(brighter.alpha())\
+      .arg(primaryColor.name()).arg(disabled.name());
+
+    return stylestring;
 }
 
 void ControlsBox::getPrefsExternalTrig()
@@ -1320,6 +1456,8 @@ void ControlsBox::tab_changed_slot(int index)
             ce = prefs.profileVertCeiling;
             ce_ds = prefs.profileVertDSFCeiling;
             use_DSF_cbox.setChecked(verticalCrossDSF);
+            lines_slider->setValue(prefs.profileVertLines);
+            this->transmitChangeLinesToAverage(this->lines_slider->value());
             break;
         case VERTICAL_MEAN:
             fl = prefs.profileVertFloor;
@@ -1334,6 +1472,8 @@ void ControlsBox::tab_changed_slot(int index)
             ce = prefs.profileHorizCeiling;
             ce_ds = prefs.profileHorizDSFCeiling;
             use_DSF_cbox.setChecked(horizontalCrossDSF);
+            lines_slider->setValue(prefs.profileHorizLines);
+            this->transmitChangeLinesToAverage(this->lines_slider->value());
             break;
         case HORIZONTAL_MEAN:
             fl = prefs.profileHorizFloor;
@@ -1445,7 +1585,7 @@ void ControlsBox::tab_changed_slot(int index)
         if (p_fft->vCrossButton->isChecked() && fw->crosshair_x != -1) {
             lines_slider->setEnabled(true);
             line_average_edit->setEnabled(true);
-            transmitChange(fw->horizLinesAvgd);
+            transmitChangeLinesToAverage(fw->horizLinesAvgd);
         } else {
             lines_slider->setEnabled(false);
             line_average_edit->setEnabled(false);
@@ -1536,6 +1676,7 @@ void ControlsBox::tab_changed_slot(int index)
             connect(&ceiling_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateCeiling(int)), Qt::UniqueConnection);
             connect(&floor_slider, SIGNAL(valueChanged(int)), p_frameview, SLOT(updateFloor(int)), Qt::UniqueConnection);
             connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_frameview, SLOT(setUseDSF(bool)), Qt::UniqueConnection);
+            connect(this->useWRCbox, SIGNAL(clicked(bool)), p_frameview, SLOT(setUseWR(bool)), Qt::UniqueConnection);
 
             use_DSF_cbox.setChecked(fw->usingDSF());
             fw->setCrosshairBackend(fw->crosshair_x, fw->crosshair_y);
@@ -1581,6 +1722,8 @@ void ControlsBox::tab_changed_slot(int index)
             connect(&showSecondWFBtn, SIGNAL(pressed()), p_flight, SLOT(showSecondWF()), Qt::UniqueConnection);
             connect(fw, SIGNAL(updateFPS()), p_flight, SLOT(updateFPS()), Qt::UniqueConnection);
             connect(&use_DSF_cbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseDSF(bool)), Qt::UniqueConnection);
+            connect(this->useWRCbox, SIGNAL(clicked(bool)), p_flight, SLOT(setUseWR(bool)), Qt::UniqueConnection);
+
             connect(&show_rgb_lines_cbox, SIGNAL(toggled(bool)), p_flight, SLOT(setShowRGBLines(bool)), Qt::UniqueConnection);
             connect(&useRatioCbox, SIGNAL(toggled(bool)), p_flight, SLOT(setUseRatioSlot(bool)), Qt::UniqueConnection);
 
@@ -1597,6 +1740,7 @@ void ControlsBox::tab_changed_slot(int index)
             showRGBLevelsButton.setVisible(true);
 
             use_DSF_cbox.setEnabled(true);
+            setNDOnbox->setEnabled(true);
             show_rgb_lines_cbox.setEnabled(true);
             show_rgb_lines_cbox.setVisible(true);
             useRatioCbox.setEnabled(true);
@@ -1625,6 +1769,7 @@ void ControlsBox::tab_changed_slot(int index)
             std_dev_n_label->setVisible(true);
 
             use_DSF_cbox.setEnabled(false);
+            setNDOnbox->setEnabled(false);
             use_DSF_cbox.setChecked(fw->usingDSF());
             p_histogram->rescaleRange();
             waterfallControls(false);
@@ -1640,6 +1785,7 @@ void ControlsBox::tab_changed_slot(int index)
             std_dev_N_edit->setEnabled(false);
             load_mask_from_file.setEnabled(true);
             connect(this, SIGNAL(mask_selected(QString, unsigned int, long)), p_playback, SLOT(loadDSF(QString, unsigned int, long)), Qt::UniqueConnection);
+            setNDOnbox->setEnabled(true);
             use_DSF_cbox.setEnabled(true);
             use_DSF_cbox.setChecked(p_playback->usingDSF());
             p_playback->rescaleRange();
@@ -2018,13 +2164,17 @@ void ControlsBox::update_backend_delta()
     * \author Noah Levy
     */
     fps_float = fw->delta;
-    fps = QString::number(fps_float, 'f', 1).rightJustified(6, ' ');
-    fps_label.setText(QString("FPS @ backend:%1").arg(fps));
+    // Format FPS with 1 decimal place, consistent with the fixed-size format
+    fps = QString::number(fps_float, 'f', 1);
+    fps_label.setText(QString("FPS @ backend: %1").arg(fps));
 }
 void ControlsBox::setFrameNumber(int number)
 {
-    QString frameNumberStr = QString::number(number).rightJustified(6, ' ');
-    frameNumberLabel.setText(QString("Frame:%1").arg(frameNumberStr));
+    // Wrap frame number at 99999 to keep it at 5 digits
+    int displayNumber = number % 100000;
+    // Use 5-digit zero-padded format
+    QString frameNumberStr = QString("%1").arg(displayNumber, 5, 10, QChar('0'));
+    frameNumberLabel.setText(QString("Frame: %1").arg(frameNumberStr));
 }
 void ControlsBox::show_save_dialog()
 {
@@ -2227,23 +2377,30 @@ int ControlsBox::validateFileName(const QString &name)
     }
     return result;
 }
-void ControlsBox::start_dark_collection_slot()
-{ /*! \brief Begins recording dark frames in the backend
-   *  \author Jackie Ryan
-   */
-    collect_dark_frames_button.setEnabled(false);
-    stop_dark_collection_button.setEnabled(true);
+
+void ControlsBox::start_dark_collection_slot() {
+    // Accessed by the GUI button as well as the network control connection.
+    collectDarkButton->setText("Stop Dark");
+    collectDarkButton->setToolTip("Taking darks now. Press button to stop.");
+    QFont font = collectDarkButton->font();
+    font.setBold(true);
+    collectDarkButton->setFont(font);
+    collectDarkButton->setStyleSheet("");
+    collectDarkButton->setStyleSheet(modifiedButtonStylesheet);
+
     emit statusMessage(QString("[Controls Box]: Collecting dark frames."));
     emit startDSFMaskCollection();
 }
-void ControlsBox::stop_dark_collection_slot()
-{
-    /*! \brief Stops recording dark frames in the backend
-     *  \author Jackie Ryan
-     */
+
+void ControlsBox::stop_dark_collection_slot() {
+    // Accessed by the GUI button as well as the network control connection.
+    collectDarkButton->setText("Take Dark");
+    collectDarkButton->setToolTip("Press button to take darks.");
+    QFont font = collectDarkButton->font();
+    font.setBold(false);
+    collectDarkButton->setFont(font);
+    collectDarkButton->setStyleSheet(defaultButtonStylesheet);
     emit stopDSFMaskCollection();
-    collect_dark_frames_button.setEnabled(true);
-    stop_dark_collection_button.setEnabled(false);
     emit statusMessage(QString("[Controls Box]: Stopped collecting dark frames."));
 }
 
@@ -2567,7 +2724,7 @@ void ControlsBox::load_pref_window()
     prefWindow->setWindowState(Qt::WindowActive);
     prefWindow->raise();
 }
-void ControlsBox::transmitChange(int linesToAverage)
+void ControlsBox::transmitChangeLinesToAverage(int linesToAverage)
 {
     volatile int lh_start, lh_end, cent_start, cent_end, rh_start, rh_end;
     volatile int lh_width = 20;
@@ -2582,12 +2739,19 @@ void ControlsBox::transmitChange(int linesToAverage)
         // only update the crosshairs and not touch the take object.
         if(p_profile->itype == VERT_OVERLAY)
         {
+            //prefs.profileVertLines = linesToAverage;
             fw->updateMeanRange(linesToAverage, p_profile->itype);
             // fw->redraw_crosshairs(linesToAverage);
             this->updateOverlayParams(0);
         } else {
-            fw->updateMeanRange(linesToAverage, p_profile->itype);
+            if(p_profile->itype == HORIZONTAL_CROSS) {
+                prefs.profileHorizLines = linesToAverage;
+            } else if (p_profile->itype == VERTICAL_CROSS) {
+                prefs.profileVertLines = linesToAverage;
+            }
+            // Why call this here!?
             fw->updateOverlayParams(0, 0, 0, 0, 0, 0); // signal that there is not an overlay plot
+            fw->updateMeanRange(linesToAverage, p_profile->itype);
 
         }
     } else if (p_fft) {
@@ -2612,19 +2776,22 @@ void ControlsBox::updateOverlayParams(int dummy)
     int cent_width = this->overlay_cent_width_spin->value();
     int rh_width = this->overlay_rh_width_spin->value();
 
+    fw->updateOverlayParams(lh_width, cent_width, rh_width);
+    // All these functions below were moved to the frameWorker.
+
     // update list of parameters.
     // Currently uses the crosshairs to determine L, C, R position
     // and the UI sliders determine the span of each averaging.
-    lh_start = fw->crossStartCol - lh_width/2;
-    lh_end = lh_start + lh_width;
+//    lh_start = fw->crossStartCol - lh_width/2;
+//    lh_end = lh_start + lh_width;
 
-    rh_start = fw->crossWidth - rh_width/2;
-    rh_end = rh_start + rh_width;
+//    rh_start = fw->crossWidth - rh_width/2;
+//    rh_end = rh_start + rh_width;
 
-    cent_start = fw->crosshair_x - cent_width/2;
-    cent_end = fw->crosshair_x + cent_width/2;
+//    cent_start = fw->crosshair_x - cent_width/2;
+//    cent_end = fw->crosshair_x + cent_width/2;
 
-    validateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+//    validateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
 
     /*
     std::cout << "----- begin ControlsBox::updateOverlayParams -----\n";
@@ -2636,14 +2803,14 @@ void ControlsBox::updateOverlayParams(int dummy)
     */
 
     // Send to frame worker, which sends to take object which sends to the mean filter.
-    fw->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
+//    fw->updateOverlayParams(lh_start, lh_end, cent_start, cent_end, rh_start, rh_end);
 }
 
 void ControlsBox::validateOverlayParams(int &lh_start, int &lh_end,\
                                         int &cent_start, int &cent_end,\
                                         int &rh_start, int &rh_end)
 {
-
+    // Not used anymore, this function happens inside the frameWorker.
     int width = fw->getFrameWidth() - 1; // last usable index
 
     // check lower bound:
@@ -2773,9 +2940,6 @@ void ControlsBox::debugThis()
     //this->loadDarkFromFile();
     current_tab = qtw->widget(qtw->currentIndex());
     attempt_pointers(current_tab);
-    if(p_profile) {
-        p_profile->setPenWidth(2);
-    }
 
     emit debugSignal();
 }

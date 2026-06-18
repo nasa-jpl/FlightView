@@ -1,0 +1,4 @@
+CREATE lib_backend.a
+ADDLIB thin_lib_backend.a
+SAVE
+END

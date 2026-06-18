@@ -25,6 +25,8 @@ preferenceWindow::preferenceWindow(frameWorker *fw, QTabWidget *qtw, settingsT p
     penWidthSpin = new QSpinBox();
     penWidthSpin->setRange(1,20);
     penWidthLabel = new QLabel("Pen Width (for plots)");
+    QPixmap icon_pixmap(":images/icon.png");
+    this->setWindowIcon(QIcon(icon_pixmap));
     //createLogFileTab();
     createRenderingTab();
 

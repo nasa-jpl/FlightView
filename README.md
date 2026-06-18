@@ -41,7 +41,7 @@ Please see the documentation folder for the latest detailed directions.
 ## System Requirements
 ### Minimum Requirements:
 - Fast, modern, multi-core CPU. 
-- NVIDIA Graphics Card with 512MB VRAM, i.e, GTX 560 (adjust the size of GPU_BUFFER_SIZE in constants.h of cuda_take and make a clean compile to change this setting)
+- NVIDIA Graphics Card with 512MB VRAM, i.e, GTX 560 (adjust the size of GPU_BUFFER_SIZE in constants.h of backend and make a clean compile to change this setting)
 - Linux OS such as Debian, Ubuntu, or Mint
 - Proprietary NVIDIA CUDA-capable driver version 10.1 or greater (>=12.1 preferred). 
 

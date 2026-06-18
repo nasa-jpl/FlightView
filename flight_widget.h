@@ -104,6 +104,9 @@ class flight_widget : public QWidget
 
     bool showRGBp = false;
 
+    bool usingDSF = false;
+    bool usingWR = false;
+
     settingsT prefs;
     bool havePrefs = false;
 
@@ -159,6 +162,7 @@ public slots:
     void setWFFPS_secondary(int target);
     void rescaleRange();
     void setUseDSF(bool useDSF);
+    void setUseWR(bool useWR);
     void hideRGB();
     void updateFPS();
     void checkDiskSpace();

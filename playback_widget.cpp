@@ -179,6 +179,7 @@ void buffer_handler::debug()
 playback_widget::playback_widget(frameWorker *fw, QWidget *parent) :
     QWidget(parent)
 {
+    dsfReady = new bool(false);
     this->fw = fw;
     this->frHeight = fw->getDataHeight();
     this->frWidth = fw->getFrameWidth();
@@ -251,7 +252,7 @@ playback_widget::playback_widget(frameWorker *fw, QWidget *parent) :
     qcp->rescaleAxes();
     qcp->axisRect()->setBackgroundScaled(false);
 
-    dark = new dark_subtraction_filter(frWidth,frHeight);
+    dark = new dark_subtraction_filter(frWidth,frHeight, dsfReady);
 
     // connecting the buttons to slots
     connect(openFileButton, SIGNAL(clicked()), this, SLOT(loadFile()));

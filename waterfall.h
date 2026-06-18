@@ -15,7 +15,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#if defined(__linux__)
 #include <bits/shared_ptr.h>
+#endif
+// Note: <memory> header already provides std::shared_ptr on all platforms
 
 #include <QObject>
 #include <QWidget>

@@ -19,7 +19,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#if defined(__linux__)
 #include <bits/shared_ptr.h>
+#endif
+// Note: <memory> header already provides std::shared_ptr on all platforms
 
 #include <QObject>
 #include <QWidget>
@@ -160,6 +163,7 @@ class wfengine : public QObject
 
     void redraw();
     bool useDSF;
+    bool useWR = false;
     bool useRatio = false;
     bool recordToJPG = false;
     int jpgQuality = 75; // TODO: parameter
@@ -214,6 +218,7 @@ public slots:
     void updateCeiling(int c);
     void updateFloor(int f);
     void setUseDSF(bool useDSF);
+    void setUseWR(bool useWR);
     void setRecordWFImage(bool recordImageOn);
     void immediatelySaveImage(); // save image right now, no questions asked.
     void setSecondaryWF(bool isSecondary);

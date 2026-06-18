@@ -1,5 +1,12 @@
 #include "wfengine.h"
 
+// macOS pthread_setname_np compatibility
+#ifdef __APPLE__
+#define pthread_setname_np_compat(thread, name) pthread_setname_np(name)
+#else
+#define pthread_setname_np_compat(thread, name) pthread_setname_np(thread, name)
+#endif
+
 // This is the RGB waterfall widget used in the flight screen.
 // The "waterfall" tab is handled by a special instance of the Frameview Widget.
 
@@ -417,6 +424,7 @@ void wfengine::addNewFrame()
     // MUTEX wait-lock
     addingFrame.lock();
     float *local_image_ptr;
+    float *localWRPtr;
     uint16_t* local_image_ptr_uint16;
     if(fw->curFrame == NULL)
     {
@@ -424,6 +432,7 @@ void wfengine::addNewFrame()
         return;
     }
 
+    localWRPtr = fw->curFrame->white_referenced_data;
     local_image_ptr = fw->curFrame->dark_subtracted_data;
     local_image_ptr_uint16 = fw->curFrame->image_data_ptr;
 
@@ -436,8 +445,12 @@ void wfengine::addNewFrame()
     int b_row_pix = b_row;
 
     //    if(fw->dsfMaskCollected() && useDSF); // prior method
-    if(useDSF) // concurrent
-    {
+    if(useWR) {
+        copyPixToLine(localWRPtr, line->getr_raw(), r_row_pix);
+        copyPixToLine(localWRPtr, line->getg_raw(), g_row_pix);
+        copyPixToLine(localWRPtr, line->getb_raw(), b_row_pix);
+    } else if(useDSF) {
+        // concurrent:
         copyPixToLine(local_image_ptr, line->getr_raw(), r_row_pix);
         copyPixToLine(local_image_ptr, line->getg_raw(), g_row_pix);
         copyPixToLine(local_image_ptr, line->getb_raw(), b_row_pix);
@@ -576,7 +589,7 @@ void wfengine::processLineToRGB_MP(rgbLine* line)
 #pragma omp parallel for num_threads(4)
         for(int p=0; p < spatialSwath; p++)
         {
-            pthread_setname_np(pthread_self(), "GUI_WF");            
+            pthread_setname_np_compat(pthread_self(), "GUI_WF");            
             gr[p] =   (unsigned char)MAX8(redLevel *   scaleDataPoint(r[p]));
             gg[p] = (unsigned char)MAX8(greenLevel * scaleDataPoint(g[p]));
             gb[p] =  (unsigned char)MAX8(blueLevel *  scaleDataPoint(b[p]));
@@ -585,7 +598,7 @@ void wfengine::processLineToRGB_MP(rgbLine* line)
 #pragma omp parallel for num_threads(4)
         for(int p=0; p < spatialSwath; p++)
         {
-            pthread_setname_np(pthread_self(), "GUI_WF_G");
+            pthread_setname_np_compat(pthread_self(), "GUI_WF_G");
             gr[p] = (unsigned char)MAX8(redLevel * pow(scaleDataPoint(r[p]), gammaLevel));
             gg[p] = (unsigned char)MAX8(greenLevel * pow(scaleDataPoint(g[p]), gammaLevel));
             gb[p] = (unsigned char)MAX8(blueLevel * pow(scaleDataPoint(b[p]), gammaLevel));
@@ -943,6 +956,10 @@ void wfengine::setUseDSF(bool useDSF)
     this->useDSF = useDSF;
 }
 
+void wfengine::setUseWR(bool useWR) {
+    this->useWR = useWR;
+}
+
 void wfengine::rescaleWF()
 {
     // mutex lock
@@ -1119,7 +1136,7 @@ void wfengine::debugMessage(QString m) {
 #endif
     m.prepend(QString("DBG WF ENGINE: "));
 
-    std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
+    //std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
     emit statusMessageOut(m);
 }
 
@@ -1130,7 +1147,7 @@ void wfengine::statusMessage(QString m)
     // Note: Messages made during the constructor might get emitted before
     // the console log is ready. Uncomment the next line to see them anyway:
 #ifdef QT_DEBUG
-    std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
+    //std::cout << m.toLocal8Bit().toStdString() << std::endl; fflush(stdout);
 #endif
     emit statusMessageOut(m);
 }
