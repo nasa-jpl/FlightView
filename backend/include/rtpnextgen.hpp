@@ -21,6 +21,10 @@
 #include <sys/types.h>
 #include <ifaddrs.h>
 
+#ifdef __APPLE__
+#include <pthread/qos.h>
+#endif
+
 #ifndef IFNAMSIZ
 #define IFNAMSIZ (16)
 #endif

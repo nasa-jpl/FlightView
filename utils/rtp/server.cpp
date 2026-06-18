@@ -561,15 +561,16 @@ int main(int argc, char* argv[]) {
 
             chunksSent++;
             sequenceNumber++;
-            // Removed sleep - causes severe throughput limitation
             
-            // Optional: macOS loopback pacing - reduces burst pressure on lo0
-            // Uncomment the next 4 lines if experiencing drops on macOS localhost
-            //#ifdef __APPLE__
-            //if((c > 0) && ((c % 32) == 0)) {
-            //    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
-            //}
-            //#endif
+            // CRITICAL FIX: Packet pacing to prevent microburst drops
+            // Sending all packets in tight loop overwhelms receiver kernel buffers
+            // Even with large socket buffers, bursts of 200+ packets cause drops
+            // Add tiny delay every N packets to allow receiver to drain buffer
+            if((c > 0) && ((c % 32) == 0)) {
+                // Yield every 32 packets (~300ns delay)
+                // Total overhead: ~2-3µs per frame (negligible at 33 FPS = 30,000µs period)
+                std::this_thread::sleep_for(std::chrono::nanoseconds(300));
+            }
         }
 
         frameImage += height*width*2; // next frame

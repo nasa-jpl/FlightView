@@ -675,6 +675,23 @@ bool rtpnextgen::buildFrameFromPackets(int pos) {
 void rtpnextgen::streamLoop() {
     // This will run until we are closing.
 
+    // CRITICAL FIX: Boost thread priority to reduce scheduling latency
+    // The RTPPump thread must run with high priority to drain socket buffer
+    // before it fills up, especially during packet bursts from sender
+#ifdef __APPLE__
+    // macOS: Use QoS class for real-time network I/O
+    pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+#else
+    // Linux: Increase thread priority (requires CAP_SYS_NICE or root)
+    struct sched_param param;
+    param.sched_priority = sched_get_priority_max(SCHED_FIFO) - 10; // High but not max
+    if(pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) != 0) {
+        LOG << "WARNING: Could not set real-time thread priority. Run with CAP_SYS_NICE for better performance.";
+    } else {
+        LOG << "RTP receive thread priority boosted to RT priority " << param.sched_priority;
+    }
+#endif
+
     LL(3) << "Starting RTPPump()";
     volatile uint64_t pumpCount=0;
     g_bRunning = true;
