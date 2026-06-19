@@ -81,6 +81,9 @@ class flight_widget : public QWidget
     QLabel diskLEDLabel;
     QLedLabel *diskLED = NULL;
     QLedLabel *cameraLinkLED = NULL;
+    QLedLabel *frameMagicLED = NULL;
+    QLedLabel *frameCountLED = NULL;
+    QLedLabel *ppsCountLED = NULL;
 
     QStringList priorGPSErrorMessages;
     QStringList priorGPSWarningMessages;

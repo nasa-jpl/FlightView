@@ -14,8 +14,8 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Detect the 10G interface (en8 from your command)
-INTERFACE="en8"
+# Detect the 10G interface (enX usually)
+INTERFACE="lo0"
 
 echo "Step 1: Fix MTU Mismatch"
 echo "------------------------"

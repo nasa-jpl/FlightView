@@ -519,7 +519,7 @@ int main(int argc, char* argv[]) {
         //genFrameOffset(frameImage, height, width, framesSent); // slows down loop
 
         // Mark the frame, in case we save data and look at it later.
-        insertFrameHeader(frameImage, framesSent);
+        // insertFrameHeader(frameImage, framesSent);
         
         // Update timestamp in header buffer once per frame (bytes 4-7)
         headerBuffer[7] = (timestamp&0x000000ff);

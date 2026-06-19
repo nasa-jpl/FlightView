@@ -578,6 +578,10 @@ void acquire::enableDarkStatusPixelWrite(bool writeValues) {
     setDarkStatusInFrame = writeValues;
 }
 
+void acquire::acceptFrameHealthPtr(flightAppStatus_t *p) {
+    frameHealth = p;
+}
+
 void acquire::startCapturingWR() {
     *wrMaskCollected = false;
     takingWR = true;
@@ -1589,6 +1593,7 @@ void acquire::rtpConsumeFrames()
     // Initializers just in case:
     save_framenum = 0;
     continuousRecording = false;
+    fhFirstFrame = true;
 
     mean_filter * mf = new mean_filter(curFrame,count,meanStartCol,meanWidth,\
                                        meanStartRow,meanHeight,frWidth,useDSF, useWR,\
@@ -1635,6 +1640,107 @@ void acquire::rtpConsumeFrames()
         t_op = std::chrono::steady_clock::now();
         memcpy(curFrame->raw_data_ptr,temp_frame,frWidth*dataHeight*2);
         total_memcpy1_us += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t_op).count();
+
+        // Frame header health checks on embedded metadata.
+        // Performed on the raw frame *before* the 2's complement filter, since the
+        // ancillary data lives in the frame's zero row and must be read before any
+        // pixel transformation can alter it. All offsets below are byte offsets
+        // (pixels are 16-bit).
+        //   Check 1: 16-bit magic at offset 0x50 == 0xDEAD, 0xBABE, or 0x5EAD or 0x3ABE.
+        //   Check 2: 32-bit frame count at offset 0x04 increments by 1 (or laps).
+        //   Check 3: 32-bit PPS count at offset 0x00 ticks up ~once per second, never backwards.
+        // Each warning is edge-triggered: it fires only when a check's status
+        // changes, so a long run of identical failures yields a single message.
+        if(frameHealth != NULL) {
+            const uint8_t *rb = reinterpret_cast<const uint8_t*>(curFrame->raw_data_ptr);
+            uint16_t magic;
+            uint32_t frameCount32, ppsCount;
+            memcpy(&magic,        rb + 0x50, sizeof(uint16_t));
+            memcpy(&frameCount32, rb + 0x04, sizeof(uint32_t));
+            memcpy(&ppsCount,     rb + 0x1C, sizeof(uint32_t));
+
+            const std::chrono::steady_clock::time_point fhNow = std::chrono::steady_clock::now();
+
+            // --- Check 1: magic word at offset 0x50 ---
+            bool magicOk = (magic == 0xDEAD || magic == 0xBABE || magic == 0x5EAD || magic == 0x3ABE);
+            if(magicOk != frameHealth->fh_magicOk) { // status changed since last frame
+                frameHealth->fh_magicOk = magicOk;
+                if(!magicOk) {
+                    frameHealth->fh_magicOkSticky = false;
+                    std::ostringstream m;
+                    m << "Magic number check failed. Value at 0x50: 0x"
+                      << std::hex << std::uppercase << magic;
+                    warningMessage(m);
+#ifdef FV_DEBUG_BUILD
+                    printFrameHex(rb, 160);
+#endif
+                }
+            }
+
+            // --- Check 2: frame count increments by exactly 1 (or laps) ---
+            bool frameCountOk = fhFirstFrame || ((uint32_t)(frameCount32 - fhLastFrameCount) == 1u);
+            if(frameCountOk != frameHealth->fh_frameCountOk) { // status changed since last frame
+                frameHealth->fh_frameCountOk = frameCountOk;
+                if(!frameCountOk) {
+                    frameHealth->fh_frameCountOkSticky = false;
+                    std::ostringstream m;
+                    m << "Frame count check failed. Frame count: " << frameCount32
+                      << " Last frame count: " << fhLastFrameCount;
+                    warningMessage(m);
+#ifdef FV_DEBUG_BUILD
+                    printFrameHex(rb, 160);
+#endif
+                }
+            }
+            fhLastFrameCount = frameCount32;
+
+            // --- Check 3: PPS count (1 Hz GPS pulse counter) ---
+            // The counter advances by one roughly once per second, so it stays
+            // constant across most frames. We fail immediately if it steps backwards
+            // (a genuine 32-bit rollover excepted), or if it stalls for longer than
+            // one second plus a 25% margin (frame arrival timing is not guaranteed).
+            bool ppsOk = true;
+            if(fhFirstFrame) {
+                fhLastPpsCount = ppsCount;
+                fhLastPpsChangeTime = fhNow;
+            } else if(ppsCount > fhLastPpsCount) {
+                // Advanced as expected.
+                fhLastPpsCount = ppsCount;
+                fhLastPpsChangeTime = fhNow;
+            } else if(ppsCount < fhLastPpsCount) {
+                // Stepped backwards: permit only a true 32-bit rollover (top wrap to near zero).
+                bool rollover = (fhLastPpsCount > 0xF0000000u) && (ppsCount < 0x10000000u);
+                if(!rollover)
+                    ppsOk = false; // flag this frame as a backward step
+                // Resynchronize the baseline either way, so a single backward step
+                // (e.g. a looping source file) does not latch the check into a
+                // permanent failure -- the next frame is judged against this value.
+                fhLastPpsCount = ppsCount;
+                fhLastPpsChangeTime = fhNow;
+            } else {
+                // Unchanged: the counter must tick at least once per second (+25% margin).
+                double secsSinceChange = std::chrono::duration_cast<std::chrono::duration<double>>(
+                            fhNow - fhLastPpsChangeTime).count();
+                if(secsSinceChange > 1.25)
+                    ppsOk = false; // PPS counter has stalled
+            }
+            if(ppsOk != frameHealth->fh_ppsCountOk) { // status changed since last frame
+                frameHealth->fh_ppsCountOk = ppsOk;
+                if(!ppsOk) {
+                    frameHealth->fh_ppsCountOkSticky = false;
+                    std::ostringstream m;
+                    m << "PPS count check failed. PPS count: " << ppsCount
+                      << " (0x" << std::hex << std::uppercase << ppsCount << std::dec
+                      << ") Last PPS count: " << fhLastPpsCount
+                      << " (0x" << std::hex << std::uppercase << fhLastPpsCount << std::dec << ")";
+                    warningMessage(m);
+                }
+            }
+
+            fhFirstFrame = false;
+        } else {
+            warningMessage("Frame health pointer was NULL!");
+        }
 
         // TIME: 2's complement
         if(twoscomp)
@@ -2353,6 +2459,17 @@ void acquire::errorMessage(std::ostringstream &message)
     haveMessage=true;
 }
 
+void acquire::warningMessage(std::ostringstream &message)
+{
+    if((!options.rtpCam) || (options.rtpNextGen)) {
+        std::cout << "acquire: WARNING: " << message.str() << std::endl;
+    } else {
+        g_message("acquire: WARNING: %s", message.str().c_str());
+    }
+    strncpy(this->messagePasser, message.str().c_str(), takeMessageSize-1);
+    haveMessage=true;
+}
+
 void acquire::statusMessage(std::ostringstream &message)
 {
     if((!options.rtpCam) || (options.rtpNextGen)) {
@@ -2362,4 +2479,21 @@ void acquire::statusMessage(std::ostringstream &message)
     }
     strncpy(this->messagePasser, message.str().c_str(), takeMessageSize-1);
     haveMessage=true;
+}
+
+void acquire::printFrameHex(const uint8_t *data, int numBytes)
+{
+    // Debug helper: dump the first numBytes of a frame as hex (e.g. "00 AA FF 22"),
+    // 16 bytes per line, for inspecting the embedded ancillary data layout.
+    // Intended to be called only from debug builds (see FV_DEBUG_BUILD).
+    if(data == NULL)
+        return;
+    std::ostringstream hexDump;
+    hexDump << "First " << numBytes << " bytes of frame:" << std::endl;
+    hexDump << std::hex << std::uppercase << std::setfill('0');
+    for(int i = 0; i < numBytes; i++) {
+        hexDump << std::setw(2) << (unsigned int)data[i];
+        hexDump << ((i % 16 == 15) ? "\n" : " ");
+    }
+    statusMessage(hexDump);
 }

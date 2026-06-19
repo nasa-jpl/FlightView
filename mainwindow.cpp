@@ -63,6 +63,7 @@ MainWindow::MainWindow(startupOptionsType *optionsIn, QThread *qth, frameWorker 
     tabWidget = new QTabWidget;
     flightStatus = new flightAppStatus_t;
     flightStatus->stat_headerOk = true; // not used at this time
+    fw->to.acceptFrameHealthPtr(flightStatus);
     save_server = new saveServer(fw, flightStatus);
 
     /*! \note Care should be taken to ensure that tabbed widgets are ordered by the value of their image_type enum

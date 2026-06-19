@@ -1942,3 +1942,14 @@ void acquire::statusMessage(std::ostringstream &message)
     strncpy(this->messagePasser, message.str().c_str(), takeMessageSize-1);
     haveMessage=true;
 }
+
+void acquire::warningMessage(std::ostringstream &message)
+{
+    if((!options.rtpCam) || (options.rtpNextGen)) {
+        std::cout << "take_object: WARNING: " << message.str() << std::endl;
+    } else {
+        g_message("take_object: WARNING: %s", message.str().c_str());
+    }
+    strncpy(this->messagePasser, message.str().c_str(), takeMessageSize-1);
+    haveMessage=true;
+}

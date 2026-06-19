@@ -73,7 +73,7 @@ private:
 
     bool fileIsOpen = false;
     bool enableLogToFile = false;
-    bool enableUDPLogging = true;
+    bool enableUDPLogging = false;
     bool flightMode = false;
     std::ofstream outfile;
     startupOptionsType options;

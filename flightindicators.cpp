@@ -17,6 +17,9 @@ flightIndicators::flightIndicators(QWidget *parent) :
     defLabelFont = ui->lastRecLabel->font();
 
     int ledSize = 18;
+    ui->frameMagicLED->setSizeCustom(ledSize);
+    ui->frameCountLED->setSizeCustom(ledSize);
+    ui->ppsCountLED->setSizeCustom(ledSize);
     ui->diskLED->setSizeCustom(ledSize);
     ui->imageLED->setSizeCustom(ledSize);
     ui->gpsLinkLED->setSizeCustom(ledSize);
@@ -84,6 +87,9 @@ void flightIndicators::doneRecording()
 fiUI_t flightIndicators::getElements()
 {
     fiUI_t e;
+    e.frameMagicLED = ui->frameMagicLED;
+    e.frameCountLED = ui->frameCountLED;
+    e.ppsCountLED = ui->ppsCountLED;
     e.diskLED = ui->diskLED;
     e.imageLED = ui->imageLED;
     e.imageLabel = ui->imageLabel;

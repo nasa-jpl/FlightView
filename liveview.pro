@@ -208,6 +208,8 @@ macx {
 }
 
 CONFIG(debug, debug|release) {
+    # Debug-only diagnostics (e.g. frame hex dumps) are gated behind this define.
+    DEFINES += FV_DEBUG_BUILD
     macx {
         QMAKE_CXXFLAGS += -std=c++11 -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter -Wno-unused-result
     } else {

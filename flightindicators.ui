@@ -7,19 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>658</width>
-    <height>161</height>
+    <height>190</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>658</width>
-    <height>161</height>
+    <height>190</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>731</width>
-    <height>161</height>
+    <height>190</height>
    </size>
   </property>
   <property name="font">
@@ -34,7 +34,7 @@
    <property name="bottomMargin">
     <number>9</number>
    </property>
-   <item row="2" column="0">
+   <item row="3" column="0">
     <widget class="QLabel" name="label_15">
      <property name="font">
       <font>
@@ -46,7 +46,7 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="3">
+   <item row="1" column="3">
     <widget class="QLabel" name="label_24">
      <property name="font">
       <font>
@@ -58,7 +58,7 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="3">
+   <item row="2" column="3">
     <widget class="QLabel" name="label_11">
      <property name="font">
       <font>
@@ -70,7 +70,7 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="1">
+   <item row="4" column="1">
     <widget class="QLedLabel" name="gpsTroubleLED">
      <property name="minimumSize">
       <size>
@@ -88,7 +88,7 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="7">
+   <item row="3" column="7">
     <widget class="QLabel" name="utcDateLabel">
      <property name="font">
       <font>
@@ -101,7 +101,7 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="4">
+   <item row="1" column="4">
     <widget class="QLabel" name="latLabel">
      <property name="font">
       <font>
@@ -114,7 +114,7 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="6">
+   <item row="3" column="6">
     <widget class="QLabel" name="label_56">
      <property name="font">
       <font>
@@ -126,7 +126,7 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0">
+   <item row="2" column="0">
     <widget class="QLabel" name="imageLabel">
      <property name="font">
       <font>
@@ -138,7 +138,7 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="4">
+   <item row="2" column="4">
     <widget class="QLabel" name="longLabel">
      <property name="font">
       <font>
@@ -151,7 +151,7 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="4">
+   <item row="3" column="4">
     <widget class="QLabel" name="headingLabel">
      <property name="font">
       <font>
@@ -164,7 +164,7 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="2">
+   <item row="1" column="2">
     <widget class="QLabel" name="label_60">
      <property name="minimumSize">
       <size>
@@ -183,7 +183,7 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="6">
+   <item row="1" column="6">
     <widget class="QLabel" name="label_26">
      <property name="font">
       <font>
@@ -195,7 +195,7 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="8">
+   <item row="1" column="8">
     <spacer name="horizontalSpacer">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -208,7 +208,7 @@
      </property>
     </spacer>
    </item>
-   <item row="0" column="7">
+   <item row="1" column="7">
     <widget class="QLabel" name="groundSpeedLabel">
      <property name="font">
       <font>
@@ -221,7 +221,7 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="6">
+   <item row="2" column="6">
     <widget class="QLabel" name="label_28">
      <property name="font">
       <font>
@@ -233,7 +233,7 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="1">
+   <item row="1" column="1">
     <widget class="QLedLabel" name="diskLED">
      <property name="minimumSize">
       <size>
@@ -251,7 +251,7 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="3">
+   <item row="3" column="3">
     <widget class="QLabel" name="label_20">
      <property name="font">
       <font>
@@ -263,7 +263,7 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="1">
+   <item row="2" column="1">
     <widget class="QLedLabel" name="imageLED">
      <property name="minimumSize">
       <size>
@@ -281,7 +281,7 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="7">
+   <item row="2" column="7">
     <widget class="QLabel" name="altitudeLabel">
      <property name="font">
       <font>
@@ -294,7 +294,7 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="0">
+   <item row="1" column="0">
     <widget class="QLabel" name="label_2">
      <property name="font">
       <font>
@@ -306,7 +306,7 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="5">
+   <item row="1" column="5">
     <widget class="QLabel" name="label_7">
      <property name="minimumSize">
       <size>
@@ -325,7 +325,7 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="0">
+   <item row="4" column="0">
     <widget class="QLabel" name="label_16">
      <property name="font">
       <font>
@@ -337,7 +337,7 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="3">
+   <item row="4" column="3">
     <widget class="QLabel" name="label_29">
      <property name="font">
       <font>
@@ -349,7 +349,7 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="4">
+   <item row="4" column="4">
     <widget class="QLabel" name="alignmentLabel">
      <property name="font">
       <font>
@@ -361,7 +361,7 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="6">
+   <item row="4" column="6">
     <widget class="QLabel" name="label_54">
      <property name="font">
       <font>
@@ -373,7 +373,7 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="7">
+   <item row="4" column="7">
     <widget class="QLabel" name="utcTimeLabel">
      <property name="font">
       <font>
@@ -386,7 +386,7 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="6">
+   <item row="5" column="6">
     <widget class="QLabel" name="label_8">
      <property name="font">
       <font>
@@ -398,7 +398,7 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="7">
+   <item row="5" column="7">
     <widget class="QLabel" name="lastRecLabel">
      <property name="font">
       <font>
@@ -411,7 +411,7 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="4">
+   <item row="5" column="4">
     <widget class="QLabel" name="lastIssueLabel">
      <property name="minimumSize">
       <size>
@@ -424,14 +424,14 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="3">
+   <item row="5" column="3">
     <widget class="QLabel" name="label_10">
      <property name="text">
       <string>Last Issue:</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
+   <item row="3" column="1">
     <widget class="QLedLabel" name="gpsLinkLED">
      <property name="minimumSize">
       <size>
@@ -444,7 +444,7 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0" colspan="2">
+   <item row="5" column="0" colspan="2">
     <widget class="QPushButton" name="clearErrorsBtn">
      <property name="font">
       <font>
@@ -456,6 +456,45 @@
      <property name="text">
       <string>Clear Errors</string>
      </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label_fhFrame">
+     <property name="font"><font><pointsize>12</pointsize></font></property>
+     <property name="text"><string>FrameMagic</string></property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QLedLabel" name="frameMagicLED">
+     <property name="minimumSize"><size><width>0</width><height>0</height></size></property>
+     <property name="font"><font><pointsize>12</pointsize></font></property>
+     <property name="text"><string/></property>
+    </widget>
+   </item>
+   <item row="0" column="3">
+    <widget class="QLabel" name="label_fhCount">
+     <property name="font"><font><pointsize>12</pointsize></font></property>
+     <property name="text"><string>FrameCount</string></property>
+    </widget>
+   </item>
+   <item row="0" column="4">
+    <widget class="QLedLabel" name="frameCountLED">
+     <property name="minimumSize"><size><width>0</width><height>0</height></size></property>
+     <property name="font"><font><pointsize>12</pointsize></font></property>
+     <property name="text"><string/></property>
+    </widget>
+   </item>
+   <item row="0" column="6">
+    <widget class="QLabel" name="label_fhPPS">
+     <property name="font"><font><pointsize>12</pointsize></font></property>
+     <property name="text"><string>PPS</string></property>
+    </widget>
+   </item>
+   <item row="0" column="7">
+    <widget class="QLedLabel" name="ppsCountLED">
+     <property name="minimumSize"><size><width>0</width><height>0</height></size></property>
+     <property name="font"><font><pointsize>12</pointsize></font></property>
+     <property name="text"><string/></property>
     </widget>
    </item>
   </layout>

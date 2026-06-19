@@ -13,6 +13,11 @@
 
 
 struct fiUI_t {
+    // COL 0 (frame health row):
+    QLedLabel *frameMagicLED = NULL;
+    QLedLabel *frameCountLED = NULL;
+    QLedLabel *ppsCountLED = NULL;
+
     // COL 1:
     QLedLabel *diskLED = NULL;
     QLabel *imageLabel = NULL;

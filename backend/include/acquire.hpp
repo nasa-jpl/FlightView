@@ -8,6 +8,7 @@
 #include <ostream>
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <chrono>
 
@@ -51,6 +52,7 @@ static int cudaDeviceNumberStatic = 0;
 #include "fileformats.h"
 #include "rtpnextgen.hpp"
 #include "rtpcamera.hpp"
+#include "../../flightappstatustypes.h"
 
 #define takeMessageSize (1024)
 
@@ -191,6 +193,13 @@ class acquire {
     basicGPS_t *basicGPSData = NULL;
     bool haveGPSDataPointer = false;
 
+    flightAppStatus_t ownedFrameHealth;           // fallback, always valid
+    flightAppStatus_t *frameHealth = &ownedFrameHealth;
+    uint32_t fhLastFrameCount = 0;
+    uint32_t fhLastPpsCount = 0;
+    std::chrono::steady_clock::time_point fhLastPpsChangeTime; // when the PPS counter last advanced
+    bool fhFirstFrame = true;
+
 public:
     acquire(int channel_num = 0, int number_of_buffers = 64,
                 int filter_refresh_rate = 10, bool runStdDev = true);
@@ -202,6 +211,7 @@ public:
     void start();
     void changeOptions(takeOptionsType options);
     void acceptGPSDataPtr(basicGPS_t *basicGPSDataIn);
+    void acceptFrameHealthPtr(flightAppStatus_t *p);
     void setReadDirectory(const char* directory);
     camControlType* getCamControl();
     dark_subtraction_filter* dsf;
@@ -328,11 +338,13 @@ private:
     void errorMessage(const char* message);
     void errorMessage(std::ostringstream &message);
     void warningMessage(const char* message);
+    void warningMessage(std::ostringstream &message);
     void statusMessage(const char* message);
     void errorMessage(const string message);
     void warningMessage(const string message);
     void statusMessage(const string message);
     void statusMessage(std::ostringstream &message);
+    void printFrameHex(const uint8_t *data, int numBytes);
 
     // variables needed by the Raw Filters
     unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude

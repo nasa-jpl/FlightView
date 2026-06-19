@@ -150,6 +150,9 @@ flight_widget::flight_widget(frameWorker *fw, startupOptionsType options, flight
 
     diskLED = flightDisplayElements.diskLED;
     cameraLinkLED = flightDisplayElements.imageLED;
+    frameMagicLED = flightDisplayElements.frameMagicLED;
+    frameCountLED = flightDisplayElements.frameCountLED;
+    ppsCountLED   = flightDisplayElements.ppsCountLED;
 
     // Unused labels are Roll, Pitch, and Rate of Climb
     gps->insertLabels(flightDisplayElements.latLabel , flightDisplayElements.longLabel, flightDisplayElements.altitudeLabel,
@@ -372,6 +375,16 @@ void flight_widget::handleNewFrame()
 
 void flight_widget::updateFPS()
 {
+    if(flightStatus != NULL) {
+        auto fhState = [](bool cur, bool sticky) -> QLedLabel::State {
+            if(!sticky) return QLedLabel::StateError;
+            if(!cur)    return QLedLabel::StateWarning;
+            return QLedLabel::StateOk;
+        };
+        if(frameMagicLED) frameMagicLED->setState(fhState(flightStatus->fh_magicOk,      flightStatus->fh_magicOkSticky));
+        if(frameCountLED) frameCountLED->setState(fhState(flightStatus->fh_frameCountOk,  flightStatus->fh_frameCountOkSticky));
+        if(ppsCountLED)   ppsCountLED->setState(  fhState(flightStatus->fh_ppsCountOk,    flightStatus->fh_ppsCountOkSticky));
+    }
     if(cameraLinkLED != NULL) {
         if(fw->delta < 12.8f)
         {
@@ -842,6 +855,21 @@ void flight_widget::clearStickyErrors()
     if(diskLED != NULL) {
         diskLED->setState(QLedLabel::StateOk);
     }
+
+    if(flightStatus != NULL) {
+        // Reset both the latched (sticky) and the most-recent-frame status, so the
+        // LEDs return to green immediately rather than lingering in the warning
+        // state on the stale live flag. The backend re-flags on the next bad frame.
+        flightStatus->fh_magicOk            = true;
+        flightStatus->fh_frameCountOk       = true;
+        flightStatus->fh_ppsCountOk         = true;
+        flightStatus->fh_magicOkSticky      = true;
+        flightStatus->fh_frameCountOkSticky = true;
+        flightStatus->fh_ppsCountOkSticky   = true;
+    }
+    if(frameMagicLED) frameMagicLED->setState(QLedLabel::StateOk);
+    if(frameCountLED) frameCountLED->setState(QLedLabel::StateOk);
+    if(ppsCountLED)   ppsCountLED->setState(QLedLabel::StateOk);
 
     gpsMessageToLogReporterSlot(); // capture current warning set
 
