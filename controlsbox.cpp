@@ -1792,6 +1792,19 @@ void ControlsBox::tab_changed_slot(int index)
             waterfallControls(false);
         }
     }
+    update_floor_ceiling_slider_params();
+}
+
+void ControlsBox::update_floor_ceiling_slider_params() {
+    // This function should update the floor and ceiling slider parameters,
+    // specifically the max and min for these sliders.
+    // This is a new feature added primarily to address the desire for a higher
+    // maximum histogram ceiling.
+
+    ceiling_edit.setMaximum(ceiling_maximum);
+    ceiling_slider.setMaximum(ceiling_maximum);
+    floor_edit.setMaximum(ceiling_maximum-1);
+    floor_slider.setMaximum(ceiling_maximum-1);
 }
 
 

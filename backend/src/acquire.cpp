@@ -1678,14 +1678,19 @@ void acquire::rtpConsumeFrames()
             }
 
             // --- Check 2: frame count increments by exactly 1 (or laps) ---
-            bool frameCountOk = fhFirstFrame || ((uint32_t)(frameCount32 - fhLastFrameCount) == 1u);
+            const uint32_t frameCountStep = (uint32_t)(frameCount32 - fhLastFrameCount);
+            bool frameCountOk = fhFirstFrame || (frameCountStep == 1u);
             if(frameCountOk != frameHealth->fh_frameCountOk) { // status changed since last frame
                 frameHealth->fh_frameCountOk = frameCountOk;
                 if(!frameCountOk) {
                     frameHealth->fh_frameCountOkSticky = false;
+                    // frameCountStep==0 means the count didn't move at all (stalled/repeated
+                    // frame); any larger step means (step-1) frames were never seen.
+                    const uint64_t missingFrames = (frameCountStep == 0) ? 0 : (uint64_t)frameCountStep - 1;
                     std::ostringstream m;
                     m << "Frame count check failed. Frame count: " << frameCount32
-                      << " Last frame count: " << fhLastFrameCount;
+                      << " Last frame count: " << fhLastFrameCount
+                      << " Missing frames: " << missingFrames;
                     warningMessage(m);
 #ifdef FV_DEBUG_BUILD
                     printFrameHex(rb, 160);
@@ -1700,6 +1705,11 @@ void acquire::rtpConsumeFrames()
             // (a genuine 32-bit rollover excepted), or if it stalls for longer than
             // one second plus a 25% margin (frame arrival timing is not guaranteed).
             bool ppsOk = true;
+            uint64_t missingPpsTicks = 0;
+            // Captured before fhLastPpsCount is possibly reassigned below, so the warning
+            // message (built further down) always reports the count as of the *previous*
+            // frame rather than the value that just overwrote it.
+            const uint32_t fhPrevPpsCount = fhLastPpsCount;
             if(fhFirstFrame) {
                 fhLastPpsCount = ppsCount;
                 fhLastPpsChangeTime = fhNow;
@@ -1710,8 +1720,10 @@ void acquire::rtpConsumeFrames()
             } else if(ppsCount < fhLastPpsCount) {
                 // Stepped backwards: permit only a true 32-bit rollover (top wrap to near zero).
                 bool rollover = (fhLastPpsCount > 0xF0000000u) && (ppsCount < 0x10000000u);
-                if(!rollover)
+                if(!rollover) {
                     ppsOk = false; // flag this frame as a backward step
+                    missingPpsTicks = (uint64_t)fhPrevPpsCount - (uint64_t)ppsCount;
+                }
                 // Resynchronize the baseline either way, so a single backward step
                 // (e.g. a looping source file) does not latch the check into a
                 // permanent failure -- the next frame is judged against this value.
@@ -1721,8 +1733,10 @@ void acquire::rtpConsumeFrames()
                 // Unchanged: the counter must tick at least once per second (+25% margin).
                 double secsSinceChange = std::chrono::duration_cast<std::chrono::duration<double>>(
                             fhNow - fhLastPpsChangeTime).count();
-                if(secsSinceChange > 1.25)
+                if(secsSinceChange > 1.25) {
                     ppsOk = false; // PPS counter has stalled
+                    missingPpsTicks = (uint64_t)secsSinceChange; // ~1 tick/sec expected: elapsed seconds approximates ticks missed
+                }
             }
             if(ppsOk != frameHealth->fh_ppsCountOk) { // status changed since last frame
                 frameHealth->fh_ppsCountOk = ppsOk;
@@ -1731,8 +1745,9 @@ void acquire::rtpConsumeFrames()
                     std::ostringstream m;
                     m << "PPS count check failed. PPS count: " << ppsCount
                       << " (0x" << std::hex << std::uppercase << ppsCount << std::dec
-                      << ") Last PPS count: " << fhLastPpsCount
-                      << " (0x" << std::hex << std::uppercase << fhLastPpsCount << std::dec << ")";
+                      << ") Last PPS count: " << fhPrevPpsCount
+                      << " (0x" << std::hex << std::uppercase << fhPrevPpsCount << std::dec << ")"
+                      << " Missing PPS ticks (approx): " << missingPpsTicks;
                     warningMessage(m);
                 }
             }
@@ -2389,8 +2404,7 @@ void acquire::errorMessage(const char *message)
     } else {
         g_critical("acquire: ERROR: %s", message);
     }
-    strncpy(this->messagePasser, message, takeMessageSize-1);
-    haveMessage=true;
+    pushMessage(message);
 }
 
 void acquire::warningMessage(const char *message)
@@ -2401,8 +2415,7 @@ void acquire::warningMessage(const char *message)
     } else {
         g_message("acquire: WARNING: %s", message);
     }
-    strncpy(this->messagePasser, message, takeMessageSize-1);
-    haveMessage=true;
+    pushMessage(message);
 }
 
 void acquire::statusMessage(const char *message)
@@ -2412,8 +2425,7 @@ void acquire::statusMessage(const char *message)
     } else {
         g_message("take_object: STATUS: %s", message);
     }
-    strncpy(this->messagePasser, message, takeMessageSize-1);
-    haveMessage=true;
+    pushMessage(message);
 }
 
 void acquire::errorMessage(const string message)
@@ -2423,8 +2435,7 @@ void acquire::errorMessage(const string message)
     } else {
         g_error("acquire: ERROR: %s", message.c_str());
     }
-    strncpy(this->messagePasser, message.c_str(), takeMessageSize-1);
-    haveMessage=true;
+    pushMessage(message);
 }
 
 void acquire::warningMessage(const string message)
@@ -2434,8 +2445,7 @@ void acquire::warningMessage(const string message)
     } else {
         g_message("take_object: WARNING: %s", message.c_str());
     }
-    strncpy(this->messagePasser, message.c_str(), takeMessageSize-1);
-    haveMessage=true;
+    pushMessage(message);
 }
 
 void acquire::statusMessage(const string message)
@@ -2445,8 +2455,7 @@ void acquire::statusMessage(const string message)
     } else {
         g_message("acquire: STATUS: %s", message.c_str());
     }
-    strncpy(this->messagePasser, message.c_str(), takeMessageSize-1);
-    haveMessage=true;
+    pushMessage(message);
 }
 void acquire::errorMessage(std::ostringstream &message)
 {
@@ -2455,8 +2464,7 @@ void acquire::errorMessage(std::ostringstream &message)
     } else {
         g_message("acquire: ERROR: %s", message.str().c_str());
     }
-    strncpy(this->messagePasser, message.str().c_str(), takeMessageSize-1);
-    haveMessage=true;
+    pushMessage(message.str());
 }
 
 void acquire::warningMessage(std::ostringstream &message)
@@ -2466,8 +2474,7 @@ void acquire::warningMessage(std::ostringstream &message)
     } else {
         g_message("acquire: WARNING: %s", message.str().c_str());
     }
-    strncpy(this->messagePasser, message.str().c_str(), takeMessageSize-1);
-    haveMessage=true;
+    pushMessage(message.str());
 }
 
 void acquire::statusMessage(std::ostringstream &message)
@@ -2477,8 +2484,32 @@ void acquire::statusMessage(std::ostringstream &message)
     } else {
         g_message("acquire: STATUS: %s", message.str().c_str());
     }
-    strncpy(this->messagePasser, message.str().c_str(), takeMessageSize-1);
-    haveMessage=true;
+    pushMessage(message.str());
+}
+
+void acquire::pushMessage(const std::string &text, int timeoutMs)
+{
+    // Called from the acquisition thread (e.g. rtpConsumeFrames()) while tryGetMessage()
+    // is called from frameWorker's thread. Never block acquisition waiting on the GUI
+    // side to catch up -- if the lock isn't free almost immediately, drop this message
+    // and move on. A dropped status/warning line is far cheaper than a stalled capture
+    // loop, or the previous bug where an unsynchronized shared buffer produced log lines
+    // with garbage trailing bytes from whatever message used to occupy messagePasser.
+    std::unique_lock<std::timed_mutex> lock(messageMutex, std::chrono::milliseconds(timeoutMs));
+    if(!lock.owns_lock())
+        return;
+    strncpy(this->messagePasser, text.c_str(), takeMessageSize-1);
+    haveMessage = true;
+}
+
+bool acquire::tryGetMessage(std::string &out, int timeoutMs)
+{
+    std::unique_lock<std::timed_mutex> lock(messageMutex, std::chrono::milliseconds(timeoutMs));
+    if(!lock.owns_lock() || !haveMessage)
+        return false;
+    out = messagePasser;
+    haveMessage = false;
+    return true;
 }
 
 void acquire::printFrameHex(const uint8_t *data, int numBytes)

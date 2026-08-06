@@ -307,9 +307,9 @@ void frameWorker::captureFrames()
             last_savenum = save_num;
             // count++;
             if(options.showMore) {
-                if(to.haveMessage) {
-                    emit toMessageOut(to.messagePasser);
-                    to.haveMessage =false;
+                std::string pendingMessage;
+                if(to.tryGetMessage(pendingMessage)) {
+                    emit toMessageOut(QString::fromStdString(pendingMessage));
                 }
             }
             // Every 25 frames, or, every 200ms, whichever comes first.
@@ -327,9 +327,9 @@ void frameWorker::captureFrames()
                     emit updateFPS();
                 }
                 lastTime = clock.elapsed();
-                if(to.haveMessage) {
-                    emit toMessageOut(to.messagePasser);
-                    to.haveMessage =false;
+                std::string pendingMessage;
+                if(to.tryGetMessage(pendingMessage)) {
+                    emit toMessageOut(QString::fromStdString(pendingMessage));
                 }
             }
 

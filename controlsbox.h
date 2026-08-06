@@ -193,6 +193,8 @@ private:
     void setLevelToPrefs(bool isCeiling, int val);
     void updateUIToPrefs();
 
+    void update_floor_ceiling_slider_params();
+
     QString prefsFilename;
     settingsT prefs;
     settingsT defaultPrefs;

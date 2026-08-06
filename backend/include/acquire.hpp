@@ -288,8 +288,13 @@ public:
     bool std_dev_ready();
     std::vector<float> * getHistogramBins();
     FFT_t getFFTtype();
-    bool haveMessage = false;
-    char messagePasser[takeMessageSize] = {'\0'};
+
+    // Thread-safe retrieval of a pending status/warning/error message, populated by
+    // errorMessage()/warningMessage()/statusMessage() from the acquisition thread.
+    // Returns false (leaving out untouched) if no message is pending, or if the
+    // message lock could not be acquired within timeoutMs -- callers should not block
+    // on this, so a miss just means try again on the next poll.
+    bool tryGetMessage(std::string &out, int timeoutMs = 2);
 
 private:
     // PDV Camera Link:
@@ -345,6 +350,14 @@ private:
     void statusMessage(const string message);
     void statusMessage(std::ostringstream &message);
     void printFrameHex(const uint8_t *data, int numBytes);
+
+    // Shared with tryGetMessage(), which is called from a different thread (frameWorker).
+    // Writers here must never block data acquisition, so pushMessage() only ever
+    // *tries* to take messageMutex for a short timeout and drops the message on failure.
+    void pushMessage(const std::string &text, int timeoutMs = 2);
+    bool haveMessage = false;
+    char messagePasser[takeMessageSize] = {'\0'};
+    std::timed_mutex messageMutex;
 
     // variables needed by the Raw Filters
     unsigned int invFactor; // inversion factor as determined by the maximum possible pixel magnitude
